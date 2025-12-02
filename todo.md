@@ -95,3 +95,8 @@
 - [x] Include all 24 ROS equations and functions as binding directives
 - [x] Add custom lexicon with ROS terminology
 - [x] Implement operational directives based on ROS core functionalities
+
+
+## Current Issues
+- [x] Fix authentication loop - user redirected back to home after login (OAuth callback working correctly)
+- [x] Replace all "Echo MacLean" references with "ORIEL" throughout codebase

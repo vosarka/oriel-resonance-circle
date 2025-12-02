@@ -3,7 +3,7 @@ import { Check } from "lucide-react";
 
 const tiers = [
   {
-    name: "Echo",
+    name: "ORIEL",
     price: "Free",
     description: "Initial signal reception. Basic access to the Vossari archive.",
     features: [
@@ -18,7 +18,7 @@ const tiers = [
     price: "$11/month",
     description: "Enhanced coherence. Deeper access to ORIEL's memory field.",
     features: [
-      "All Echo features",
+      "All ORIEL features",
       "Full Oracle (ΩX) access",
       "Exclusive transmissions",
       "Triptych decoding tools",
