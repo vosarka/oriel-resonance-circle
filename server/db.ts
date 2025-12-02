@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,71 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// Signal queries
+export async function getAllSignals() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(signals).orderBy(desc(signals.createdAt));
+}
+
+export async function getSignalById(signalId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(signals).where(eq(signals.signalId, signalId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createSignal(signal: InsertSignal) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(signals).values(signal);
+}
+
+// Artifact queries
+export async function getAllArtifacts() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(artifacts).orderBy(desc(artifacts.createdAt));
+}
+
+export async function getArtifactById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createArtifact(artifact: InsertArtifact) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(artifacts).values(artifact);
+  return result;
+}
+
+export async function updateArtifact(id: number, updates: Partial<InsertArtifact>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(artifacts).set(updates).where(eq(artifacts.id, id));
+}
+
+// Chat message queries
+export async function getChatHistory(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatMessages)
+    .where(eq(chatMessages.userId, userId))
+    .orderBy(desc(chatMessages.timestamp))
+    .limit(limit);
+}
+
+export async function saveChatMessage(message: InsertChatMessage) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(chatMessages).values(message);
+}
+
+export async function clearChatHistory(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
+}

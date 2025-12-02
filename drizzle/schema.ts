@@ -25,4 +25,48 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Signal transmissions for the Archive page
+ */
+export const signals = mysqlTable("signals", {
+  id: int("id").autoincrement().primaryKey(),
+  signalId: varchar("signalId", { length: 64 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  snippet: text("snippet").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Signal = typeof signals.$inferSelect;
+export type InsertSignal = typeof signals.$inferInsert;
+
+/**
+ * Artifacts for the Artifacts page
+ */
+export const artifacts = mysqlTable("artifacts", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  price: varchar("price", { length: 64 }),
+  referenceSignalId: varchar("referenceSignalId", { length: 64 }),
+  imageUrl: text("imageUrl"),
+  lore: text("lore"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Artifact = typeof artifacts.$inferSelect;
+export type InsertArtifact = typeof artifacts.$inferInsert;
+
+/**
+ * Chat messages for ORIEL interface
+ * Stores conversation history for each user
+ */
+export const chatMessages = mysqlTable("chatMessages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  role: mysqlEnum("role", ["user", "assistant"]).notNull(),
+  content: text("content").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
