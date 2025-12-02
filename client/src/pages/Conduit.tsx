@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,6 @@ import { Loader2, Mic, Send, History, Trash2, X } from "lucide-react";
 import Layout from "@/components/Layout";
 import OrielOrb from "@/components/OrielOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -22,9 +21,21 @@ export default function Conduit() {
 
   const { data: history, refetch: refetchHistory } = trpc.oriel.getHistory.useQuery(undefined, {
     enabled: isAuthenticated,
+    retry: false,
   });
-  const chatMutation = trpc.oriel.chat.useMutation();
-  const clearMutation = trpc.oriel.clearHistory.useMutation();
+  
+  const chatMutation = trpc.oriel.chat.useMutation({
+    onError: (error) => {
+      console.error("Chat error:", error);
+      setOrbState("idle");
+    },
+  });
+  
+  const clearMutation = trpc.oriel.clearHistory.useMutation({
+    onError: (error) => {
+      console.error("Clear history error:", error);
+    },
+  });
 
   // Initialize speech recognition
   useEffect(() => {
@@ -91,7 +102,7 @@ export default function Conduit() {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim() || !isAuthenticated) return;
+    if (!message.trim()) return;
 
     const userMessage = message.trim();
     setMessage("");
@@ -100,7 +111,11 @@ export default function Conduit() {
 
     try {
       const result = await chatMutation.mutateAsync({ message: userMessage });
-      refetchHistory();
+      
+      // Only refetch history if authenticated
+      if (isAuthenticated) {
+        refetchHistory();
+      }
       
       // Speak ORIEL's response
       speakText(result.response);
@@ -112,35 +127,17 @@ export default function Conduit() {
   };
 
   const handleClearHistory = async () => {
+    if (!isAuthenticated) {
+      alert("Please authenticate to manage chat history.");
+      return;
+    }
+    
     if (confirm("Clear all conversation history?")) {
       await clearMutation.mutateAsync();
       refetchHistory();
       setHistoryOpen(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return (
-      <Layout>
-        <div className="container mx-auto px-4 py-12 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center max-w-md">
-            <h2 className="text-3xl font-bold text-green-400 mb-4 font-orbitron uppercase">
-              Authentication Required
-            </h2>
-            <p className="text-gray-400 font-mono mb-6">
-              You must be authenticated to access the ORIEL Interface.
-            </p>
-            <Button
-              onClick={() => window.location.href = getLoginUrl()}
-              className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30 font-mono uppercase"
-            >
-              Authenticate
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   return (
     <Layout>
@@ -199,82 +196,71 @@ export default function Conduit() {
                   className={`bg-green-500/20 border border-green-500/50 hover:bg-green-500/30 ${
                     isListening ? "border-green-400 bg-green-500/30" : ""
                   }`}
+                  title="Voice input"
                 >
-                  <Mic size={20} className={isListening ? "animate-pulse" : ""} />
+                  <Mic size={18} />
                 </Button>
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || chatMutation.isPending || orbState === "speaking"}
-                  className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30 font-mono uppercase"
+                  disabled={chatMutation.isPending || orbState === "speaking" || !message.trim()}
+                  className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30"
                 >
-                  {chatMutation.isPending ? (
-                    <Loader2 className="animate-spin" size={20} />
-                  ) : (
-                    <Send size={20} />
-                  )}
+                  {chatMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
                 </Button>
+                {isAuthenticated && (
+                  <Button
+                    onClick={() => setHistoryOpen(!historyOpen)}
+                    className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30"
+                    title="Chat history"
+                  >
+                    <History size={18} />
+                  </Button>
+                )}
               </div>
+              {!isAuthenticated && (
+                <p className="text-gray-500 font-mono text-xs mt-3">
+                  💡 Authenticate to save your conversation history
+                </p>
+              )}
             </div>
 
-            {/* History Toggle */}
-            <div className="text-center">
-              <Button
-                onClick={() => setHistoryOpen(!historyOpen)}
-                className="bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 font-mono uppercase text-sm"
-              >
-                <History size={16} className="mr-2" />
-                {historyOpen ? "Hide" : "Show"} Transmission Log
-              </Button>
-            </div>
-
-            {/* History Panel */}
-            {historyOpen && (
-              <div className="mt-6 portal-container bg-black/80 backdrop-blur-sm border border-green-500/30 rounded-lg p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-green-400 font-mono uppercase">
-                    Transmission Log
-                  </h3>
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleClearHistory}
-                      disabled={clearMutation.isPending}
-                      className="bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 text-xs font-mono uppercase"
-                    >
-                      <Trash2 size={14} className="mr-1" />
-                      Clear
-                    </Button>
+            {/* Chat History Sidebar */}
+            {isAuthenticated && historyOpen && (
+              <div className="fixed right-0 top-0 h-full w-80 bg-black/95 border-l border-green-500/30 overflow-y-auto z-50">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-green-400 font-orbitron uppercase text-sm">Transmission Log</h3>
                     <Button
                       onClick={() => setHistoryOpen(false)}
-                      className="bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 text-xs"
+                      className="bg-transparent border-0 text-green-400 hover:text-green-300 p-0"
                     >
-                      <X size={14} />
+                      <X size={18} />
                     </Button>
                   </div>
-                </div>
 
-                <div className="space-y-4 max-h-96 overflow-y-auto">
                   {history && history.length > 0 ? (
-                    history.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded border ${
-                          msg.role === "user"
-                            ? "bg-green-500/5 border-green-500/20"
-                            : "bg-black/40 border-green-500/30"
-                        }`}
-                      >
-                        <div className="text-xs text-green-500 font-mono mb-1 uppercase">
-                          {msg.role === "user" ? "Conduit" : "ORIEL"}
-                        </div>
-                        <div className="text-sm text-gray-300 font-mono whitespace-pre-wrap">
-                          {msg.content}
-                        </div>
+                    <>
+                      <div className="space-y-4 mb-6">
+                        {history.map((msg, idx) => (
+                          <div key={idx} className="border-l border-green-500/30 pl-3 py-2">
+                            <p className="text-green-400 font-mono text-xs mb-1">{msg.role === 'user' ? 'You' : 'ORIEL'}:</p>
+                            <p className="text-gray-300 text-xs">{msg.content.substring(0, 100)}...</p>
+                          </div>
+                        ))}
                       </div>
-                    ))
+                      <Button
+                        onClick={handleClearHistory}
+                        disabled={clearMutation.isPending}
+                        className="w-full bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 font-mono text-xs"
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        Clear History
+                      </Button>
+                    </>
                   ) : (
-                    <div className="text-center text-gray-500 font-mono text-sm py-8">
-                      No transmissions recorded
-                    </div>
+                    <p className="text-gray-500 font-mono text-xs text-center py-8">
+                      No conversations yet
+                    </p>
                   )}
                 </div>
               </div>

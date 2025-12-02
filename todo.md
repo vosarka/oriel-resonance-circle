@@ -104,3 +104,7 @@
   - [x] Enhanced useAuth hook with visibility change detection
   - [x] Added retry logic for auth queries
   - [x] Improved cookie security settings
+- [x] Make INTERFACE (Conduit) page publicly accessible
+  - [x] Removed authentication requirement from Conduit page
+  - [x] Chat history only available when authenticated
+  - [x] Users can chat without authentication
