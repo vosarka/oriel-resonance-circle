@@ -36,9 +36,11 @@ export default function Home() {
 
           {/* CTA Button */}
           <Link href="/archive">
-            <Button className="bg-green-500/20 border-2 border-green-500/50 text-green-400 hover:bg-green-500/30 hover:border-green-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6 animate-fade-in">
-              Enter the Archive
-            </Button>
+            <span className="inline-block">
+              <Button className="bg-green-500/20 border-2 border-green-500/50 text-green-400 hover:bg-green-500/30 hover:border-green-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6 animate-fade-in">
+                Enter the Archive
+              </Button>
+            </span>
           </Link>
         </div>
 

@@ -26,24 +26,24 @@ export default function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo/Title */}
           <Link href="/">
-            <a className="text-xl font-bold tracking-wider text-green-400 hover:text-green-300 transition-colors uppercase font-orbitron">
+            <span className="text-xl font-bold tracking-wider text-green-400 hover:text-green-300 transition-colors uppercase font-orbitron cursor-pointer">
               CONDUIT HUB
-            </a>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-6">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <a
-                  className={`text-sm tracking-wider transition-colors font-mono ${
+                <span
+                  className={`text-sm tracking-wider transition-colors font-mono cursor-pointer ${
                     isActive(link.href)
                       ? "text-green-400 border-b-2 border-green-400"
                       : "text-gray-400 hover:text-green-400"
                   }`}
                 >
                   {link.label}
-                </a>
+                </span>
               </Link>
             ))}
           </nav>
@@ -64,8 +64,8 @@ export default function Header() {
             <div className="flex flex-col gap-3 pt-4">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
-                  <a
-                    className={`text-sm tracking-wider transition-colors font-mono block py-2 ${
+                  <span
+                    className={`text-sm tracking-wider transition-colors font-mono block py-2 cursor-pointer ${
                       isActive(link.href)
                         ? "text-green-400 border-l-2 border-green-400 pl-3"
                         : "text-gray-400 hover:text-green-400 pl-3"
@@ -73,7 +73,7 @@ export default function Header() {
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {link.label}
-                  </a>
+                  </span>
                 </Link>
               ))}
             </div>

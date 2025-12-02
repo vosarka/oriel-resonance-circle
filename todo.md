@@ -80,3 +80,7 @@
 - [x] Test mobile responsiveness
 - [x] Test accessibility features
 - [x] Create checkpoint for deployment
+
+
+## Bug Fixes
+- [x] Fix nested anchor tag error in Header/Home components
