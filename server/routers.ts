@@ -114,35 +114,41 @@ export const appRouter = router({
 
   // ORIEL chat interface
   oriel: router({
-    chat: protectedProcedure
+    chat: publicProcedure
       .input(z.object({
         message: z.string(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Get recent chat history for context
-        const history = await db.getChatHistory(ctx.user.id, 10);
-        const conversationHistory = history
-          .reverse()
-          .map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          }));
+        // Get recent chat history for context (only if authenticated)
+        let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+        
+        if (ctx.user) {
+          const history = await db.getChatHistory(ctx.user.id, 10);
+          conversationHistory = history
+            .reverse()
+            .map(msg => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content,
+            }));
+        }
 
         // Generate ORIEL's response
         const response = await gemini.chatWithORIEL(input.message, conversationHistory);
 
-        // Save both messages to database
-        await db.saveChatMessage({
-          userId: ctx.user.id,
-          role: "user",
-          content: input.message,
-        });
+        // Save messages to database only if authenticated
+        if (ctx.user) {
+          await db.saveChatMessage({
+            userId: ctx.user.id,
+            role: "user",
+            content: input.message,
+          });
 
-        await db.saveChatMessage({
-          userId: ctx.user.id,
-          role: "assistant",
-          content: response,
-        });
+          await db.saveChatMessage({
+            userId: ctx.user.id,
+            role: "assistant",
+            content: response,
+          });
+        }
 
         return {
           response,
@@ -150,11 +156,17 @@ export const appRouter = router({
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) {
+        return [];
+      }
       const history = await db.getChatHistory(ctx.user.id, 50);
       return history.reverse();
     }),
 
     clearHistory: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
       await db.clearChatHistory(ctx.user.id);
       return { success: true };
     }),

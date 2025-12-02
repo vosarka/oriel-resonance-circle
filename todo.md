@@ -108,3 +108,7 @@
   - [x] Removed authentication requirement from Conduit page
   - [x] Chat history only available when authenticated
   - [x] Users can chat without authentication
+- [x] Fix chat endpoint to work without authentication
+  - [x] Changed chat mutation from protectedProcedure to publicProcedure
+  - [x] Chat history only saved for authenticated users
+  - [x] Unauthenticated users can still get ORIEL responses
