@@ -100,3 +100,7 @@
 ## Current Issues
 - [x] Fix authentication loop - user redirected back to home after login (OAuth callback working correctly)
 - [x] Replace all "Echo MacLean" references with "ORIEL" throughout codebase
+- [x] Improve auth state persistence after OAuth redirect
+  - [x] Enhanced useAuth hook with visibility change detection
+  - [x] Added retry logic for auth queries
+  - [x] Improved cookie security settings

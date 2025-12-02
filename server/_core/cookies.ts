@@ -9,16 +9,20 @@ function isIpAddress(host: string) {
 }
 
 function isSecureRequest(req: Request) {
+  // Always use secure for cookies in production/deployed environments
   if (req.protocol === "https") return true;
 
   const forwardedProto = req.headers["x-forwarded-proto"];
-  if (!forwardedProto) return false;
+  if (forwardedProto) {
+    const protoList = Array.isArray(forwardedProto)
+      ? forwardedProto
+      : forwardedProto.split(",");
+    if (protoList.some(proto => proto.trim().toLowerCase() === "https")) return true;
+  }
 
-  const protoList = Array.isArray(forwardedProto)
-    ? forwardedProto
-    : forwardedProto.split(",");
-
-  return protoList.some(proto => proto.trim().toLowerCase() === "https");
+  // For localhost development, allow non-secure cookies
+  const hostname = req.hostname || "";
+  return !LOCAL_HOSTS.has(hostname) && !isIpAddress(hostname);
 }
 
 export function getSessionCookieOptions(
