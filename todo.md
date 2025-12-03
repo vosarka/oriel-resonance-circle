@@ -145,3 +145,12 @@
 - [x] Add geometric cuts to orb edges
 - [x] Cuts become visible during pulsation
 - [x] Refine layout with sidebar integration
+
+
+## Ambient Background Effects
+- [x] Create ambient energy field canvas component
+- [x] Sync pulsation with orb state
+- [x] Add rainbow/indigo glow during processing
+- [x] Create expanding energy waves
+- [x] Add particle effects to background
+- [x] Integrate into Conduit page layout
