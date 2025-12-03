@@ -10,7 +10,6 @@ export default function Header() {
     { href: "/", label: "HOME" },
     { href: "/archive", label: "ARCHIVE" },
     { href: "/artifacts", label: "ARTIFACTS" },
-    { href: "/tiers", label: "TIERS" },
     { href: "/protocol", label: "PROTOCOL" },
     { href: "/conduit", label: "INTERFACE" },
   ];

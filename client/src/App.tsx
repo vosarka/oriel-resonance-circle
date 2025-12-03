@@ -7,7 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import Archive from "./pages/Archive";
 import Artifacts from "./pages/Artifacts";
-import Tiers from "./pages/Tiers";
+
 import Protocol from "./pages/Protocol";
 import Conduit from "./pages/Conduit";
 
@@ -17,7 +17,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/artifacts"} component={Artifacts} />
-      <Route path={"/tiers"} component={Tiers} />
+
       <Route path={"/protocol"} component={Protocol} />
       <Route path={"/conduit"} component={Conduit} />
       <Route path={"/404"} component={NotFound} />

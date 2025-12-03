@@ -145,3 +145,10 @@
 - [x] Add geometric cuts to orb edges
 - [x] Cuts become visible during pulsation
 - [x] Refine layout with sidebar integration
+
+
+## Cleanup & Modifications
+- [x] Remove Tiers page and update routing
+- [x] Remove ambient bird sounds from footer
+- [x] Update volume control for ORIEL voice only
+- [x] Add PayPal subscription button

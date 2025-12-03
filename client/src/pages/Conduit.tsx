@@ -25,6 +25,7 @@ export default function Conduit() {
   const [isListening, setIsListening] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [voiceVolume, setVoiceVolume] = useState(1);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -119,6 +120,7 @@ export default function Conduit() {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
       utterance.pitch = 0.9;
+      utterance.volume = voiceVolume;
 
       utterance.onend = () => {
         setOrbState("idle");

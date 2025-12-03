@@ -1,50 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Volume2, VolumeX } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
 
 export default function Footer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [volume, setVolume] = useState(0.3);
-  const [isMuted, setIsMuted] = useState(false);
-
-  useEffect(() => {
-    // Create audio element for ambient sound
-    const audio = new Audio();
-    // Using a placeholder ambient space drone URL - replace with actual audio file
-    audio.src = "https://assets.mixkit.co/active_storage/sfx/2467/2467-preview.mp3";
-    audio.loop = true;
-    audio.volume = volume;
-    audioRef.current = audio;
-
-    // Auto-play on user interaction (browsers require user gesture)
-    const playAudio = () => {
-      audio.play().catch(err => console.log("Audio autoplay prevented:", err));
-      document.removeEventListener("click", playAudio);
-    };
-    document.addEventListener("click", playAudio);
-
-    return () => {
-      audio.pause();
-      document.removeEventListener("click", playAudio);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = isMuted ? 0 : volume;
-    }
-  }, [volume, isMuted]);
-
-  const handleVolumeChange = (values: number[]) => {
-    const newVolume = values[0] || 0;
-    setVolume(newVolume);
-    if (newVolume > 0) {
-      setIsMuted(false);
-    }
-  };
-
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
+  const handlePayPalSubscription = () => {
+    // Replace with your actual PayPal subscription link
+    // Format: https://www.paypal.com/subscribe/?hosted_button_id=YOUR_BUTTON_ID
+    window.open("https://www.paypal.com/subscribe", "_blank");
   };
 
   return (
@@ -57,26 +17,14 @@ export default function Footer() {
             <span className="text-green-500/70">VOSSARI TRANSMISSION NODE</span>
           </div>
 
-          {/* Audio Controls */}
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-gray-500 font-mono hidden sm:inline">AMBIENT</span>
-            <button
-              onClick={toggleMute}
-              className="text-green-400 hover:text-green-300 transition-colors"
-              aria-label={isMuted ? "Unmute" : "Mute"}
-            >
-              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-            </button>
-            <div className="w-24 hidden sm:block">
-              <Slider
-                value={[isMuted ? 0 : volume]}
-                onValueChange={handleVolumeChange}
-                max={1}
-                step={0.01}
-                className="cursor-pointer"
-              />
-            </div>
-          </div>
+          {/* PayPal Subscription Button */}
+          <Button
+            onClick={handlePayPalSubscription}
+            className="bg-blue-600/80 border border-blue-500/50 text-white hover:bg-blue-600 text-xs"
+            title="Subscribe via PayPal"
+          >
+            <span className="ml-1">SUBSCRIBE</span>
+          </Button>
         </div>
       </div>
     </footer>
