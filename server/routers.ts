@@ -171,6 +171,44 @@ export const appRouter = router({
       return { success: true };
     }),
   }),
+
+  // User profile and subscription management
+  profile: router({
+    getProfile: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      return ctx.user;
+    }),
+
+    updateSubscriptionStatus: protectedProcedure
+      .input(z.object({
+        subscriptionStatus: z.enum(["free", "active", "cancelled", "expired"]),
+        paypalSubscriptionId: z.string().optional(),
+        subscriptionStartDate: z.date().optional(),
+        subscriptionRenewalDate: z.date().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+        
+        await db.updateUserSubscription(ctx.user.id, input);
+        return { success: true };
+      }),
+
+    generateConduitId: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      
+      // Generate a unique Conduit ID if not already present
+      const conduitId = `CONDUIT-${ctx.user.id}-${Date.now().toString(36).toUpperCase()}`;
+      await db.updateUserConduitId(ctx.user.id, conduitId);
+      
+      return { conduitId };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

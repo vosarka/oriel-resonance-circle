@@ -15,6 +15,13 @@
       "when": 1764683486094,
       "tag": "0001_strong_bloodscream",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1764800830249,
+      "tag": "0002_plain_fabian_cortez",
+      "breakpoints": true
     }
   ]
 }

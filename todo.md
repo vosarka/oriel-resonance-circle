@@ -152,3 +152,19 @@
 - [x] Remove ambient bird sounds from footer
 - [x] Update volume control for ORIEL voice only
 - [x] Add PayPal subscription button
+
+
+## PayPal Integration & User Profile
+- [x] Add PayPal SDK script to index.html head
+- [x] Update database schema for subscription tracking
+- [x] Create user profile page with Conduit ID
+- [x] Display subscription status on profile
+- [x] Integrate PayPal hosted button into payment flow
+- [x] Add subscription status management endpoints
+- [x] Add Profile link to Header navigation
+- [x] Add Login/Logout buttons to Header
+- [x] Create subscription management database functions
+- [x] Create Conduit ID generation and update functions
+- [x] Write comprehensive unit tests for subscription features (17 tests)
+- [x] Write comprehensive unit tests for profile features (32 tests)
+- [x] All 50 tests passing

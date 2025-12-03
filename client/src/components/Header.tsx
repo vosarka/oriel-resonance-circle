@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, LogOut, User } from "lucide-react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 export default function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
     { href: "/", label: "HOME" },
@@ -47,6 +50,35 @@ export default function Header() {
             ))}
           </nav>
 
+          {/* Auth Links - Desktop */}
+          <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated && user ? (
+              <>
+                <Link href="/profile">
+                  <span className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2">
+                    <User size={16} />
+                    PROFILE
+                  </span>
+                </Link>
+                <button
+                  onClick={() => logout()}
+                  className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  LOGOUT
+                </button>
+              </>
+            ) : (
+              <a
+                href={getLoginUrl()}
+                className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2"
+              >
+                <LogIn size={16} />
+                LOGIN
+              </a>
+            )}
+          </div>
+
           {/* Mobile Menu Button */}
           <button
             className="md:hidden text-green-400 hover:text-green-300 transition-colors"
@@ -75,6 +107,42 @@ export default function Header() {
                   </span>
                 </Link>
               ))}
+              
+              {/* Mobile Auth Links */}
+              <div className="border-t border-green-500/30 mt-4 pt-4">
+                {isAuthenticated && user ? (
+                  <>
+                    <Link href="/profile">
+                      <span
+                        className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono block py-2 pl-3 cursor-pointer flex items-center gap-2"
+                        onClick={() => setMobileMenuOpen(false)}
+                      >
+                        <User size={16} />
+                        PROFILE
+                      </span>
+                    </Link>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setMobileMenuOpen(false);
+                      }}
+                      className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono w-full text-left py-2 pl-3 cursor-pointer flex items-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      LOGOUT
+                    </button>
+                  </>
+                ) : (
+                  <a
+                    href={getLoginUrl()}
+                    className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono block py-2 pl-3 cursor-pointer flex items-center gap-2"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <LogIn size={16} />
+                    LOGIN
+                  </a>
+                )}
+              </div>
             </div>
           </nav>
         )}

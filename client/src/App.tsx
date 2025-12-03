@@ -5,11 +5,11 @@ import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import Artifacts from "./pages/Artifacts";
-
-import Protocol from "./pages/Protocol";
 import Conduit from "./pages/Conduit";
+import Protocol from "./pages/Protocol";
 
 function Router() {
   return (
@@ -17,9 +17,9 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/artifacts"} component={Artifacts} />
-
       <Route path={"/protocol"} component={Protocol} />
       <Route path={"/conduit"} component={Conduit} />
+      <Route path={"/profile"} component={Profile} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

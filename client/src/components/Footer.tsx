@@ -1,11 +1,37 @@
-import { Button } from "@/components/ui/button";
+import { useEffect } from "react";
 
 export default function Footer() {
-  const handlePayPalSubscription = () => {
-    // Replace with your actual PayPal subscription link
-    // Format: https://www.paypal.com/subscribe/?hosted_button_id=YOUR_BUTTON_ID
-    window.open("https://www.paypal.com/subscribe", "_blank");
-  };
+  useEffect(() => {
+    // Initialize PayPal hosted button when component mounts
+    if ((window as any).paypal) {
+      (window as any).paypal.HostedButtons({
+        hostedButtonId: "3CUYAWGL4XBEA",
+      }).render("#paypal-container-3CUYAWGL4XBEA");
+      
+      // Also render in profile page if the container exists
+      const profileContainer = document.getElementById("paypal-button-container");
+      if (profileContainer && profileContainer.children.length === 0) {
+        (window as any).paypal.HostedButtons({
+          hostedButtonId: "3CUYAWGL4XBEA",
+        }).render("#paypal-button-container");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Watch for profile container and render PayPal button when it appears
+    const observer = new MutationObserver(() => {
+      const profileContainer = document.getElementById("paypal-button-container");
+      if (profileContainer && profileContainer.children.length === 0 && (window as any).paypal) {
+        (window as any).paypal.HostedButtons({
+          hostedButtonId: "3CUYAWGL4XBEA",
+        }).render("#paypal-button-container");
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-t border-green-500/30">
@@ -17,14 +43,8 @@ export default function Footer() {
             <span className="text-green-500/70">VOSSARI TRANSMISSION NODE</span>
           </div>
 
-          {/* PayPal Subscription Button */}
-          <Button
-            onClick={handlePayPalSubscription}
-            className="bg-blue-600/80 border border-blue-500/50 text-white hover:bg-blue-600 text-xs"
-            title="Subscribe via PayPal"
-          >
-            <span className="ml-1">SUBSCRIBE</span>
-          </Button>
+          {/* PayPal Hosted Button */}
+          <div id="paypal-container-3CUYAWGL4XBEA"></div>
         </div>
       </div>
     </footer>

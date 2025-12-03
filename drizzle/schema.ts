@@ -17,6 +17,16 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  /** Conduit ID - unique identifier for user profile */
+  conduitId: varchar("conduitId", { length: 64 }).unique(),
+  /** Subscription status: free, active, cancelled, expired */
+  subscriptionStatus: mysqlEnum("subscriptionStatus", ["free", "active", "cancelled", "expired"]).default("free").notNull(),
+  /** PayPal subscription ID */
+  paypalSubscriptionId: varchar("paypalSubscriptionId", { length: 255 }),
+  /** Subscription start date */
+  subscriptionStartDate: timestamp("subscriptionStartDate"),
+  /** Subscription renewal date */
+  subscriptionRenewalDate: timestamp("subscriptionRenewalDate"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

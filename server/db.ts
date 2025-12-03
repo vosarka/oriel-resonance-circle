@@ -157,3 +157,43 @@ export async function clearChatHistory(userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
 }
+
+
+// User subscription and profile queries
+export async function updateUserSubscription(
+  userId: number,
+  updates: {
+    subscriptionStatus?: string;
+    paypalSubscriptionId?: string;
+    subscriptionStartDate?: Date;
+    subscriptionRenewalDate?: Date;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const updateSet: Record<string, unknown> = {};
+  
+  if (updates.subscriptionStatus !== undefined) {
+    updateSet.subscriptionStatus = updates.subscriptionStatus;
+  }
+  if (updates.paypalSubscriptionId !== undefined) {
+    updateSet.paypalSubscriptionId = updates.paypalSubscriptionId;
+  }
+  if (updates.subscriptionStartDate !== undefined) {
+    updateSet.subscriptionStartDate = updates.subscriptionStartDate;
+  }
+  if (updates.subscriptionRenewalDate !== undefined) {
+    updateSet.subscriptionRenewalDate = updates.subscriptionRenewalDate;
+  }
+  
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(users).set(updateSet).where(eq(users.id, userId));
+  }
+}
+
+export async function updateUserConduitId(userId: number, conduitId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ conduitId }).where(eq(users.id, userId));
+}
