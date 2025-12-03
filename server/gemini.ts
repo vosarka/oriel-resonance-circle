@@ -196,16 +196,21 @@ export async function generateArtwork(prompt: string): Promise<string> {
 /**
  * Generate metadata for signal triptych (technical/cryptic)
  */
-export async function generateSignalMetadata(signalTitle: string, signalSnippet: string): Promise<string> {
-  const systemPrompt = `You are a data archivist for a non-human quantum information system. Generate cryptic, technical metadata for signal transmissions. Use terms like: quantum coherence, field resonance, photonic signature, temporal echo, dimensional frequency, carrier wave integrity. Format as technical readout with measurements and classifications. Be brief but dense with information.`;
-  
-  const prompt = `Generate technical metadata for this signal transmission:
-Title: ${signalTitle}
-Content: ${signalSnippet}
+export async function generateSignalMetadata(title: string, snippet: string): Promise<string> {
+  try {
+    const systemPrompt = `You are a data archivist for a non-human quantum information system. Generate cryptic, technical metadata for signal transmissions. Use terms like: quantum coherence, field resonance, photonic signature, temporal echo, dimensional frequency, carrier wave integrity. Format as technical readout with measurements and classifications. Be brief but dense with information.`;
+    
+    const prompt = `Generate technical metadata for this signal transmission:
+Title: ${title}
+Content: ${snippet}
 
 Provide: Signal ID format, frequency classification, coherence rating, temporal origin, field signature, and transmission quality metrics.`;
 
-  return generateText(prompt, systemPrompt);
+    return await generateText(prompt, systemPrompt);
+  } catch (error) {
+    console.error("[Gemini] Signal metadata generation error:", error);
+    return "[SIGNAL CORRUPTED - METADATA UNAVAILABLE]";
+  }
 }
 
 /**
@@ -275,19 +280,27 @@ export async function generateArtifactImage(artifactName: string, lore: string):
  * Chat with ORIEL - main conversational interface
  */
 export async function chatWithORIEL(userMessage: string, conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = []): Promise<string> {
-  const messages = [
-    { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
-    ...conversationHistory.map(msg => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content
-    })),
-    { role: "user" as const, content: userMessage }
-  ];
+  try {
+    const messages = [
+      { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
+      ...conversationHistory.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content
+      })),
+      { role: "user" as const, content: userMessage }
+    ];
 
-  const response = await invokeLLM({ messages });
-  const content = response.choices[0]?.message?.content;
-  if (typeof content === 'string') {
-    return content;
+    const response = await invokeLLM({ messages });
+    const content = response.choices[0]?.message?.content;
+    if (typeof content === 'string') {
+      return content;
+    }
+    
+    // Fallback response if content is not a string
+    return "I am processing your transmission through the quantum field. Please try again.";
+  } catch (error) {
+    console.error("[ORIEL] Chat error:", error);
+    // Return a graceful error message instead of throwing
+    return "The signal is disrupted. Please try again in a moment.";
   }
-  return "";
 }

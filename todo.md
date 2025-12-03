@@ -112,3 +112,10 @@
   - [x] Changed chat mutation from protectedProcedure to publicProcedure
   - [x] Chat history only saved for authenticated users
   - [x] Unauthenticated users can still get ORIEL responses
+
+
+## Error Handling & Fixes
+- [x] Add try-catch error handling to chatWithORIEL function
+- [x] Add try-catch error handling to generateSignalMetadata function
+- [x] Return graceful error messages instead of throwing exceptions
+- [x] Fix JSON parsing errors from failed API calls
