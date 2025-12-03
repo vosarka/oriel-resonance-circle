@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Loader2, Mic, Send, History, Trash2, X, Pause, Square } from "lucide-react";
 import Layout from "@/components/Layout";
 import OrielOrb from "@/components/OrielOrb";
-import AmbientBackground from "@/components/AmbientBackground";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
@@ -227,8 +226,7 @@ export default function Conduit() {
 
   return (
     <Layout>
-      <AmbientBackground state={orbState} />
-      <div className="container mx-auto px-4 py-8 h-screen flex flex-col relative z-10">
+      <div className="container mx-auto px-4 py-8 h-screen flex flex-col">
         {!initiated ? (
           // Pre-initiation screen
           <div className="flex flex-col items-center justify-center min-h-[70vh]">
