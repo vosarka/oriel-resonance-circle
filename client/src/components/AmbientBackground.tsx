@@ -172,7 +172,7 @@ export default function AmbientBackground({ state = "idle" }: AmbientBackgroundP
         createParticles(1, useRainbow);
       }
 
-      // Update and draw particles
+        // Update and draw particles
       for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
         p.x += p.vx;
@@ -181,6 +181,7 @@ export default function AmbientBackground({ state = "idle" }: AmbientBackgroundP
 
         const lifeRatio = p.life / p.maxLife;
         const alpha = Math.max(0, 1 - lifeRatio) * glowIntensity;
+        const radius = Math.max(0.5, p.size * (1 - lifeRatio));
 
         if (useRainbow) {
           const colorIndex = (frame / 5 + i) % rainbowColors.length;
@@ -191,7 +192,7 @@ export default function AmbientBackground({ state = "idle" }: AmbientBackgroundP
         }
 
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (1 - lifeRatio), 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
         ctx.fill();
 
         // Remove dead particles
@@ -201,7 +202,7 @@ export default function AmbientBackground({ state = "idle" }: AmbientBackgroundP
       }
 
       // Draw central glow
-      const centralGlowRadius = 200 + pulse * 100;
+      const centralGlowRadius = Math.max(50, 200 + pulse * 100);
       const centralGradient = ctx.createRadialGradient(
         canvas.width / 2,
         canvas.height / 2,

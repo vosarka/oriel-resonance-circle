@@ -154,3 +154,7 @@
 - [x] Create expanding energy waves
 - [x] Add particle effects to background
 - [x] Integrate into Conduit page layout
+
+
+## Bug Fixes - Current
+- [x] Fix negative radius error in AmbientBackground canvas drawing
