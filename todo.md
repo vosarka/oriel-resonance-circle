@@ -136,3 +136,12 @@
 - [x] Add clear history button
 - [x] Show message timestamps
 - [x] Implement message scrolling and auto-scroll to latest
+
+
+## Voice Control & UI Improvements
+- [x] Add pause button for voice transmission
+- [x] Add stop button for voice transmission
+- [x] Move chat history to toggleable right sidebar
+- [x] Add geometric cuts to orb edges
+- [x] Cuts become visible during pulsation
+- [x] Refine layout with sidebar integration

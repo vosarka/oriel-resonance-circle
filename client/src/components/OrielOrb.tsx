@@ -176,6 +176,51 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
       ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
       ctx.stroke();
 
+      // Draw geometric cuts at the edges (visible during pulsation)
+      const cutVisibility = Math.max(0, pulse * 0.8); // Cuts become more visible when pulsing
+      if (cutVisibility > 0) {
+        const cutColor = useRainbow ? 
+          `rgba(138, 43, 226, ${cutVisibility * 0.6})` : 
+          `rgba(34, 197, 94, ${cutVisibility * 0.4})`;
+        
+        ctx.strokeStyle = cutColor;
+        ctx.lineWidth = 1.5;
+
+        // Draw 6 geometric cuts around the orb
+        const cutCount = 6;
+        for (let i = 0; i < cutCount; i++) {
+          const angle = (i * Math.PI * 2) / cutCount;
+          const cutLength = currentRadius * 0.5;
+          
+          // Outer point of cut
+          const outerX = centerX + Math.cos(angle) * (currentRadius + cutLength * 0.3);
+          const outerY = centerY + Math.sin(angle) * (currentRadius + cutLength * 0.3);
+          
+          // Inner point of cut
+          const innerX = centerX + Math.cos(angle) * (currentRadius - cutLength * 0.2);
+          const innerY = centerY + Math.sin(angle) * (currentRadius - cutLength * 0.2);
+          
+          // Left point of cut (creates wedge shape)
+          const leftAngle = angle - 0.15;
+          const leftX = centerX + Math.cos(leftAngle) * (currentRadius + cutLength * 0.2);
+          const leftY = centerY + Math.sin(leftAngle) * (currentRadius + cutLength * 0.2);
+          
+          // Right point of cut
+          const rightAngle = angle + 0.15;
+          const rightX = centerX + Math.cos(rightAngle) * (currentRadius + cutLength * 0.2);
+          const rightY = centerY + Math.sin(rightAngle) * (currentRadius + cutLength * 0.2);
+
+          // Draw cut as a triangular wedge
+          ctx.beginPath();
+          ctx.moveTo(innerX, innerY);
+          ctx.lineTo(leftX, leftY);
+          ctx.lineTo(outerX, outerY);
+          ctx.lineTo(rightX, rightY);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+
       // Draw rotating particles/nodes
       for (let i = 0; i < particleCount; i++) {
         const angle = (frame * rotationSpeed + (i * Math.PI * 2) / particleCount);
