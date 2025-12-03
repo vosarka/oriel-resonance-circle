@@ -127,3 +127,12 @@
 - [x] Integrate animation into OrielOrb component
 - [x] Animate orb state transitions smoothly
 - [x] Test animation performance and visual quality
+
+
+## Conversation History
+- [x] Display conversation history in chat interface
+- [x] Persist chat messages to localStorage
+- [x] Pass conversation context to ORIEL API calls
+- [x] Add clear history button
+- [x] Show message timestamps
+- [x] Implement message scrolling and auto-scroll to latest
