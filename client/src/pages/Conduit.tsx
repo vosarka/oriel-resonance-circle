@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Mic, Send, History, Trash2, X, Pause, Square } from "lucide-react";
 import Layout from "@/components/Layout";
-import OrielOrb from "@/components/OrielOrb";
+import WireframeFace from "@/components/WireframeFace";
 import { useAuth } from "@/_core/hooks/useAuth";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
@@ -25,6 +25,7 @@ export default function Conduit() {
   const [isListening, setIsListening] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -124,6 +125,7 @@ export default function Conduit() {
         setOrbState("idle");
         setSubtitle("");
         setIsSpeaking(false);
+        setIsPaused(false);
       };
 
       utteranceRef.current = utterance;
@@ -133,13 +135,13 @@ export default function Conduit() {
 
   const handlePauseVoice = () => {
     if ("speechSynthesis" in window) {
-      window.speechSynthesis.pause();
-    }
-  };
-
-  const handleResumeVoice = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.resume();
+      if (isPaused) {
+        window.speechSynthesis.resume();
+        setIsPaused(false);
+      } else {
+        window.speechSynthesis.pause();
+        setIsPaused(true);
+      }
     }
   };
 
@@ -149,6 +151,7 @@ export default function Conduit() {
       setOrbState("idle");
       setSubtitle("");
       setIsSpeaking(false);
+      setIsPaused(false);
     }
   };
 
@@ -252,9 +255,9 @@ export default function Conduit() {
           <div className="flex flex-1 gap-4 overflow-hidden">
             {/* Main chat area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Orb Display */}
+              {/* Wireframe Face Display */}
               <div className="mb-4 flex-shrink-0">
-                <OrielOrb state={orbState} />
+                <WireframeFace state={orbState} isSpeaking={isSpeaking} />
               </div>
 
               {/* Subtitle Display */}
@@ -341,10 +344,10 @@ export default function Conduit() {
                     <Button
                       onClick={handlePauseVoice}
                       className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30"
-                      title="Pause transmission"
+                      title={isPaused ? "Resume transmission" : "Pause transmission"}
                     >
                       <Pause size={16} />
-                      <span className="ml-1 text-xs">Pause</span>
+                      <span className="ml-1 text-xs">{isPaused ? "Resume" : "Pause"}</span>
                     </Button>
                     <Button
                       onClick={handleStopVoice}
