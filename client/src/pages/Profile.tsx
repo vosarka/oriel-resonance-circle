@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Copy, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import Layout from "@/components/Layout";
+import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
 
 export default function Profile() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -21,12 +21,14 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-green-400 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-2xl font-mono mb-4">INITIALIZING CONDUIT...</div>
-          <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto" />
+      <Layout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <div className="text-2xl font-mono mb-4 text-green-400">INITIALIZING CONDUIT...</div>
+            <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto" />
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -34,7 +36,7 @@ export default function Profile() {
     return null;
   }
 
-  const subscriptionStatus = (user as any).subscriptionStatus || "inactive";
+  const subscriptionStatus = (user as any).subscriptionStatus || "free";
   const conduitId = (user as any).conduitId || `ORIEL-${user.id}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const isSubscribed = subscriptionStatus === "active";
 
@@ -45,12 +47,10 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-green-400 flex flex-col">
-      <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
+    <Layout>
+      <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-mono font-bold mb-8 text-center border-b-2 border-green-400 pb-4">
+          <h1 className="text-4xl font-mono font-bold mb-8 text-center border-b-2 border-green-400 pb-4 text-green-400">
             CONDUIT PROFILE
           </h1>
 
@@ -134,12 +134,6 @@ export default function Profile() {
                   <p className="text-sm text-red-400 mb-4">
                     Subscribe to unlock premium features and advanced ORIEL interactions.
                   </p>
-                  <Button 
-                    onClick={() => document.getElementById("paypal-button-container")?.scrollIntoView({ behavior: "smooth" })}
-                    className="bg-green-600 hover:bg-green-700 text-black font-mono font-bold"
-                  >
-                    SUBSCRIBE NOW
-                  </Button>
                 </div>
               )}
 
@@ -214,14 +208,29 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          {/* PayPal Button Container */}
-          <div id="paypal-button-container" className="mt-8 flex justify-center">
-            {/* PayPal button will be rendered here by the script in index.html */}
-          </div>
+          {/* PayPal Subscription Button */}
+          {!isSubscribed && (
+            <Card className="bg-black border-2 border-green-400 mb-6">
+              <CardHeader>
+                <CardTitle className="text-green-400 font-mono">SUBSCRIBE NOW</CardTitle>
+                <CardDescription className="text-green-600">Unlock premium features with a monthly subscription</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PayPalSubscriptionButton
+                  userId={user.id}
+                  onSubscriptionSuccess={() => {
+                    // Refresh the page to show updated subscription status
+                    window.location.reload();
+                  }}
+                  onSubscriptionError={(error) => {
+                    console.error("Subscription error:", error);
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
-      </main>
-
-      <Footer />
-    </div>
+      </div>
+    </Layout>
   );
 }
