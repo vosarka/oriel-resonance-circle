@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import * as gemini from "./gemini";
+import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 
 export const appRouter = router({
   system: systemRouter,
@@ -209,6 +210,22 @@ export const appRouter = router({
       return { conduitId };
     }),
   }),
+
+  // PayPal webhook handler
+  paypal: router({
+    webhook: publicProcedure
+      .input(z.record(z.string(), z.any()))
+      .mutation(async ({ input }) => {
+        try {
+          const payload = input as unknown as PayPalWebhookPayload;
+          await handlePayPalWebhook(payload);
+          return { success: true };
+        } catch (error) {
+          console.error("[PayPal Webhook] Error:", error);
+          throw error;
+        }
+      }),
+  })
 });
 
 export type AppRouter = typeof appRouter;
