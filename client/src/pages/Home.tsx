@@ -15,16 +15,39 @@ export default function Home() {
               <div className="absolute inset-0 border-4 border-green-500/40 rounded-full animate-pulse" />
               <div className="absolute inset-4 border-2 border-green-400/60 rounded-full animate-spin-slow" />
               <div className="absolute inset-8 border-2 border-green-300/40" style={{ clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)" }} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-6xl md:text-8xl text-green-400 font-orbitron animate-pulse">
-                  ◈
+              <div 
+                className="absolute inset-0 flex items-center justify-center" 
+                style={{
+                  backgroundColor: '#383838',
+                  borderRadius: '97px',
+                  borderStyle: 'solid',
+                  borderColor: '#00c703',
+                  borderWidth: '4px',
+                  opacity: 0.3
+                }}
+              >
+                <div 
+                  className="text-6xl md:text-8xl font-orbitron animate-pulse" 
+                  style={{
+                    color: '#000000',
+                    fontSize: '73px'
+                  }}
+                >
+                  ᴪ
                 </div>
               </div>
             </div>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-5xl md:text-7xl font-bold text-green-400 mb-6 font-orbitron uppercase tracking-wider animate-fade-in">
+          <h1 
+            className="text-5xl md:text-7xl font-bold text-green-400 mb-6 font-orbitron uppercase tracking-wider animate-fade-in" 
+            style={{
+              color: '#383838',
+              fontSize: '42px',
+              fontWeight: '100'
+            }}
+          >
             Receive the Transmission
           </h1>
 
@@ -37,7 +60,13 @@ export default function Home() {
           {/* CTA Button */}
           <Link href="/archive">
             <span className="inline-block">
-              <Button className="bg-green-500/20 border-2 border-green-500/50 text-green-400 hover:bg-green-500/30 hover:border-green-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6 animate-fade-in">
+              <Button 
+                className="bg-green-500/20 border-2 border-green-500/50 text-green-400 hover:bg-green-500/30 hover:border-green-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6 animate-fade-in" 
+                style={{
+                  color: '#212121',
+                  fontWeight: '200'
+                }}
+              >
                 Enter the Archive
               </Button>
             </span>
@@ -45,7 +74,10 @@ export default function Home() {
         </div>
 
         {/* Scrolling Marquee */}
-        <div className="border-t border-b border-green-500/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm">
+        <div 
+          className="border-t border-b border-green-500/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm" 
+          style={{backgroundColor: '#525151'}}
+        >
           <div className="marquee">
             <div className="marquee-content">
               <span className="text-green-400 font-mono text-sm uppercase tracking-wider mx-8">
