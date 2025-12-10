@@ -74,10 +74,12 @@ export default function Home() {
         </div>
 
         {/* Scrolling Marquee */}
-        <div 
-          className="border-t border-b border-green-500/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm" 
-          style={{backgroundColor: '#525151'}}
-        >
+      </div>
+      <div 
+        className="border-t border-b border-green-500/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm w-full" 
+        style={{backgroundColor: '#525151'}}
+      >
+        <div className="container mx-auto px-4">
           <div className="marquee">
             <div className="marquee-content">
               <span className="text-green-400 font-mono text-sm uppercase tracking-wider mx-8">
@@ -98,7 +100,9 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="container mx-auto px-4">
         {/* Lore Introduction */}
         <div className="py-16 max-w-4xl mx-auto">
           <div className="portal-container bg-black/60 backdrop-blur-sm border border-green-500/30 p-8 rounded-lg">
