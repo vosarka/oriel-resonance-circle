@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import DonateButton from "./DonateButton";
 
 export default function Footer() {
   useEffect(() => {
@@ -43,8 +44,11 @@ export default function Footer() {
             <span className="text-green-500/70">VOSSARI TRANSMISSION NODE</span>
           </div>
 
-          {/* PayPal Hosted Button */}
-          <div id="paypal-container-3CUYAWGL4XBEA"></div>
+          {/* Donate Button */}
+          <div className="flex items-center gap-4">
+            <DonateButton />
+            <div id="paypal-container-3CUYAWGL4XBEA"></div>
+          </div>
         </div>
       </div>
     </footer>
