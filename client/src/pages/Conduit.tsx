@@ -179,6 +179,7 @@ export default function Conduit() {
     try {
       const result = await chatMutation.mutateAsync({ 
         message: userMessage,
+        history: !isAuthenticated ? updatedMessages : undefined,
       });
       
       // Add ORIEL response to local history

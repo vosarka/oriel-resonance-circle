@@ -27,7 +27,12 @@ export default function Artifacts() {
 
   const handleExpand = async (artifactId: number) => {
     try {
-      await expandMutation.mutateAsync({ artifactId });
+      const artifact = artifacts?.find(a => a.id === artifactId);
+      if (!artifact || !artifact.lore) {
+        console.error("Artifact or lore not found");
+        return;
+      }
+      await expandMutation.mutateAsync({ artifactId, currentLore: artifact.lore });
     } catch (error) {
       console.error("Failed to expand lore:", error);
     }

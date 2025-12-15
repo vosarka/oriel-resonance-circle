@@ -78,10 +78,9 @@ export const appRouter = router({
         const imageUrl = await gemini.generateArtifactImage(artifact.name, lore);
 
         // Update artifact in database
-        await db.updateArtifact(input.artifactId, {
-          lore,
-          imageUrl,
-        });
+        if (imageUrl) {
+          await db.updateArtifact(input.artifactId, { imageUrl });
+        }
 
         return {
           lore,
@@ -92,38 +91,41 @@ export const appRouter = router({
     expandLore: publicProcedure
       .input(z.object({
         artifactId: z.number(),
+        currentLore: z.string(),
       }))
       .mutation(async ({ input }) => {
         const artifact = await db.getArtifactById(input.artifactId);
-        if (!artifact || !artifact.lore) {
-          throw new Error("Artifact or existing lore not found");
+        if (!artifact) {
+          throw new Error("Artifact not found");
         }
 
-        const expandedLore = await gemini.expandArtifactLore(artifact.name, artifact.lore);
-
-        // Append to existing lore
-        const updatedLore = `${artifact.lore}\n\n${expandedLore}`;
-        await db.updateArtifact(input.artifactId, {
-          lore: updatedLore,
-        });
+        const expandedLore = await gemini.expandArtifactLore(
+          artifact.name,
+          input.currentLore
+        );
 
         return {
-          lore: updatedLore,
+          expandedLore,
         };
       }),
   }),
 
-  // ORIEL chat interface
+  // ORIEL Interface router
   oriel: router({
     chat: publicProcedure
       .input(z.object({
         message: z.string(),
+        history: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        })).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        // Get recent chat history for context (only if authenticated)
+        // Get conversation history from frontend or database
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
         
         if (ctx.user) {
+          // Authenticated users: use database history
           const history = await db.getChatHistory(ctx.user.id, 10);
           conversationHistory = history
             .reverse()
@@ -131,6 +133,9 @@ export const appRouter = router({
               role: msg.role as 'user' | 'assistant',
               content: msg.content,
             }));
+        } else if (input.history && input.history.length > 0) {
+          // Unauthenticated users: use history passed from frontend
+          conversationHistory = input.history;
         }
 
         // Generate ORIEL's response
@@ -175,16 +180,21 @@ export const appRouter = router({
 
   // User profile and subscription management
   profile: router({
-    getProfile: protectedProcedure.query(async ({ ctx }) => {
-      if (!ctx.user) {
-        throw new Error("Authentication required");
-      }
-      return ctx.user;
-    }),
-
-    updateSubscriptionStatus: protectedProcedure
+    updateConduitId: protectedProcedure
       .input(z.object({
-        subscriptionStatus: z.enum(["free", "active", "cancelled", "expired"]),
+        conduitId: z.string(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+        await db.updateUserConduitId(ctx.user.id, input.conduitId);
+        return { success: true };
+      }),
+
+    updateSubscription: protectedProcedure
+      .input(z.object({
+        subscriptionStatus: z.string().optional(),
         paypalSubscriptionId: z.string().optional(),
         subscriptionStartDate: z.date().optional(),
         subscriptionRenewalDate: z.date().optional(),
@@ -193,39 +203,28 @@ export const appRouter = router({
         if (!ctx.user) {
           throw new Error("Authentication required");
         }
-        
         await db.updateUserSubscription(ctx.user.id, input);
         return { success: true };
       }),
-
-    generateConduitId: protectedProcedure.mutation(async ({ ctx }) => {
-      if (!ctx.user) {
-        throw new Error("Authentication required");
-      }
-      
-      // Generate a unique Conduit ID if not already present
-      const conduitId = `CONDUIT-${ctx.user.id}-${Date.now().toString(36).toUpperCase()}`;
-      await db.updateUserConduitId(ctx.user.id, conduitId);
-      
-      return { conduitId };
-    }),
   }),
 
   // PayPal webhook handler
   paypal: router({
     webhook: publicProcedure
-      .input(z.record(z.string(), z.any()))
+      .input(z.record(z.string(), z.unknown()))
       .mutation(async ({ input }) => {
         try {
-          const payload = input as unknown as PayPalWebhookPayload;
-          await handlePayPalWebhook(payload);
+          // Validate webhook payload has required fields
+          if (input.id && input.event_type && input.resource) {
+            await handlePayPalWebhook(input as any);
+          }
           return { success: true };
         } catch (error) {
-          console.error("[PayPal Webhook] Error:", error);
-          throw error;
+          console.error("PayPal webhook error:", error);
+          return { success: false };
         }
       }),
-  })
+  }),
 });
 
 export type AppRouter = typeof appRouter;

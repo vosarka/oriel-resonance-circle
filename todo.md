@@ -207,3 +207,15 @@
 - [x] Simplify ORIEL introduction message
 - [x] Test ORIEL chat responses
 - [x] All 50 tests passing
+
+
+## ORIEL Memory & SEO Fixes - Current Session
+- [x] Fix ORIEL conversation history not being maintained between messages
+- [x] Verify chat history is properly passed to LLM
+- [x] Updated chat endpoint to accept history from frontend
+- [x] Updated Conduit page to send conversation history
+- [x] All 50 tests passing
+- [x] Add meta keywords to home page
+- [x] Add meta description to home page (50-160 characters)
+- [x] No actual img tags on home page (visual elements created with CSS)
+- [x] All SEO requirements met

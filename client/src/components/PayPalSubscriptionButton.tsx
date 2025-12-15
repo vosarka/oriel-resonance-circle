@@ -25,7 +25,7 @@ export default function PayPalSubscriptionButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const updateSubscriptionMutation = trpc.profile.updateSubscriptionStatus.useMutation();
+  const updateSubscriptionMutation = trpc.profile.updateSubscription.useMutation();
 
   useEffect(() => {
     // Load PayPal SDK dynamically only when this component mounts
