@@ -219,3 +219,11 @@
 - [x] Add meta description to home page (50-160 characters)
 - [x] No actual img tags on home page (visual elements created with CSS)
 - [x] All SEO requirements met
+
+
+## ORIEL Symbol Removal - Current Session
+- [x] Remove all mathematical symbols from ORIEL responses
+- [x] Remove all special characters except basic punctuation
+- [x] Keep only words and natural language
+- [x] Updated system prompt to enforce word-only communication
+- [x] All 50 tests passing
