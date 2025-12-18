@@ -227,3 +227,10 @@
 - [x] Keep only words and natural language
 - [x] Updated system prompt to enforce word-only communication
 - [x] All 50 tests passing
+
+
+## tRPC API Error Fix - Current Session
+- [x] Investigate server error returning HTML instead of JSON
+- [x] Fixed missing COOKIE_NAME import in routers.ts
+- [x] Test Conduit page functionality
+- [x] All 50 tests passing
