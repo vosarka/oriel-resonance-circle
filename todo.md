@@ -234,3 +234,13 @@
 - [x] Fixed missing COOKIE_NAME import in routers.ts
 - [x] Test Conduit page functionality
 - [x] All 50 tests passing
+
+
+## Inworld AI Text-to-Speech Integration - Current Session
+- [x] Add Inworld API credentials as secrets (API key, JWT token, JWT secret)
+- [x] Create server-side Inworld TTS helper function (server/inworld-tts.ts)
+- [x] Create tRPC endpoint for text-to-speech generation (oriel.generateSpeech)
+- [x] Update Conduit page to use Inworld TTS for ORIEL voice
+- [x] Implement graceful fallback to browser SpeechSynthesis
+- [x] Test Inworld TTS integration (4 tests passing)
+- [x] Verify all tests passing (54 tests total: 50 original + 4 new Inworld TTS tests)

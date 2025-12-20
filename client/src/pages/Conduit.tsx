@@ -111,12 +111,51 @@ export default function Conduit() {
     }
   };
 
-  const speakText = (text: string) => {
-    if ("speechSynthesis" in window) {
-      setOrbState("speaking");
-      setIsSpeaking(true);
-      setSubtitle(text);
+  const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
 
+  const speakText = async (text: string) => {
+    setOrbState("speaking");
+    setIsSpeaking(true);
+    setSubtitle(text);
+
+    try {
+      // Try to generate speech using Inworld TTS
+      const result = await generateSpeechMutation.mutateAsync({ text });
+
+      if (result.success && result.audioUrl) {
+        // Play Inworld TTS audio
+        const audio = new Audio(result.audioUrl);
+        audio.volume = voiceVolume;
+
+        audio.onended = () => {
+          setOrbState("idle");
+          setSubtitle("");
+          setIsSpeaking(false);
+        };
+
+        audio.onerror = () => {
+          console.error("Audio playback error, falling back to browser TTS");
+          // Fall back to browser SpeechSynthesis
+          fallbackToSpeechSynthesis(text);
+        };
+
+        audio.play().catch(() => {
+          console.error("Failed to play audio, falling back to browser TTS");
+          fallbackToSpeechSynthesis(text);
+        });
+      } else {
+        // Fall back to browser SpeechSynthesis
+        fallbackToSpeechSynthesis(text);
+      }
+    } catch (error) {
+      console.error("Failed to generate speech:", error);
+      // Fall back to browser SpeechSynthesis
+      fallbackToSpeechSynthesis(text);
+    }
+  };
+
+  const fallbackToSpeechSynthesis = (text: string) => {
+    if ("speechSynthesis" in window) {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 0.9;
       utterance.pitch = 0.9;
@@ -130,6 +169,11 @@ export default function Conduit() {
 
       utteranceRef.current = utterance;
       window.speechSynthesis.speak(utterance);
+    } else {
+      // No TTS available
+      setOrbState("idle");
+      setSubtitle("");
+      setIsSpeaking(false);
     }
   };
 
@@ -148,10 +192,10 @@ export default function Conduit() {
   const handleStopVoice = () => {
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      setOrbState("idle");
-      setSubtitle("");
-      setIsSpeaking(false);
     }
+    setOrbState("idle");
+    setSubtitle("");
+    setIsSpeaking(false);
   };
 
   const handleSendMessage = async () => {
@@ -201,7 +245,7 @@ export default function Conduit() {
       }
       
       // Speak ORIEL's response
-      speakText(result.response);
+      await speakText(result.response);
     } catch (error) {
       console.error("Chat error:", error);
       setOrbState("idle");
