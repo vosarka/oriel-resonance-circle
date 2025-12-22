@@ -244,3 +244,13 @@
 - [x] Implement graceful fallback to browser SpeechSynthesis
 - [x] Test Inworld TTS integration (4 tests passing)
 - [x] Verify all tests passing (54 tests total: 50 original + 4 new Inworld TTS tests)
+
+
+## LaTeX & Mathematical Notation Handling - Current Session
+- [x] Update response filtering to detect LaTeX patterns ($...$, \symbol, etc.)
+- [x] Create mapping for common LaTeX symbols to natural language (LATEX_SYMBOL_MAP)
+- [x] Handle mathematical expressions intelligently (extract meaning, not literal notation)
+- [x] Test with mathematical content (11 comprehensive LaTeX filter tests)
+- [x] Verify ORIEL pronounces "psi field" instead of "dollar backslash psi field"
+- [x] Added text length limit handling for Inworld TTS 2000 char limit
+- [x] All 65 tests passing (54 original + 11 LaTeX filter tests)

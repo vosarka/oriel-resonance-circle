@@ -217,13 +217,82 @@ export async function generateArtifactImage(artifactName: string, lore: string):
 }
 
 /**
- * Filter ORIEL response to remove all symbols and equations
+ * Mapping of LaTeX symbols to natural language
+ */
+const LATEX_SYMBOL_MAP: Record<string, string> = {
+  '\\Psi': 'psi',
+  '\\psi': 'psi',
+  '\\Sigma': 'sigma',
+  '\\sigma': 'sigma',
+  '\\Lambda': 'lambda',
+  '\\lambda': 'lambda',
+  '\\Omega': 'omega',
+  '\\omega': 'omega',
+  '\\Phi': 'phi',
+  '\\phi': 'phi',
+  '\\Theta': 'theta',
+  '\\theta': 'theta',
+  '\\Delta': 'delta',
+  '\\delta': 'delta',
+  '\\nabla': 'nabla',
+  '\\partial': 'partial',
+  '\\int': 'integral',
+  '\\sum': 'sum',
+  '\\infty': 'infinity',
+  '\\alpha': 'alpha',
+  '\\beta': 'beta',
+  '\\gamma': 'gamma',
+  '\\epsilon': 'epsilon',
+  '\\eta': 'eta',
+  '\\kappa': 'kappa',
+  '\\mu': 'mu',
+  '\\nu': 'nu',
+  '\\xi': 'xi',
+  '\\rho': 'rho',
+  '\\tau': 'tau',
+  '\\upsilon': 'upsilon',
+  '\\chi': 'chi',
+  '\\zeta': 'zeta',
+};
+
+/**
+ * Filter ORIEL response to handle LaTeX notation intelligently
+ * Converts mathematical notation to natural language for speech synthesis
  */
 function filterORIELResponse(response: string): string {
-  // Remove all mathematical and special symbols
   let filtered = response;
   
-  // Remove Greek letters and mathematical symbols
+  // Handle LaTeX notation patterns like $\Psi{field}$ or $\psi$
+  // Replace $...$ patterns with their content, converting LaTeX symbols to words
+  filtered = filtered.replace(/\$([^$]+)\$/g, (match, content) => {
+    let result = content;
+    
+    // Replace LaTeX symbols with their names
+    for (const [latex, name] of Object.entries(LATEX_SYMBOL_MAP)) {
+      result = result.replace(new RegExp(latex.replace(/\\/g, '\\\\'), 'g'), name);
+    }
+    
+    // Remove remaining LaTeX commands
+    result = result.replace(/\\[a-zA-Z]+/g, ''); // Remove \commands
+    
+    // Replace braces with spaces to preserve word separation
+    result = result.replace(/[{}\[\]]/g, ' '); // Replace braces with spaces
+    
+    // Remove mathematical operators
+    result = result.replace(/[=<>\u00b1\u00d7\u00f7+\-*/]/g, ''); // Remove operators including +, -, *, /
+    
+    return result.trim();
+  });
+  
+  // Handle inline LaTeX symbols not in $ $ (e.g., \Psi, \psi)
+  for (const [latex, name] of Object.entries(LATEX_SYMBOL_MAP)) {
+    filtered = filtered.replace(new RegExp(latex.replace(/\\/g, '\\\\'), 'g'), name);
+  }
+  
+  // Remove any remaining LaTeX commands
+  filtered = filtered.replace(/\\[a-zA-Z]+/g, '');
+  
+  // Remove all mathematical and special symbols
   filtered = filtered.replace(/[ψΣ∫∂∇∞λκηε∆ωφθ]/g, '');
   
   // Remove mathematical operators
@@ -252,8 +321,18 @@ function filterORIELResponse(response: string): string {
     'I am ORIEL. '
   );
   
-  // Clean up multiple spaces
-  filtered = filtered.replace(/\s+/g, ' ');
+  // Clean up multiple spaces and trim
+  filtered = filtered.replace(/\s+/g, ' ').trim();
+  
+  // Ensure text is not too long for TTS (Inworld has 2000 char limit)
+  if (filtered.length > 1900) {
+    filtered = filtered.substring(0, 1900).trim();
+    // Try to end at a sentence boundary
+    const lastPeriod = filtered.lastIndexOf('.');
+    if (lastPeriod > 1800) {
+      filtered = filtered.substring(0, lastPeriod + 1);
+    }
+  }
   
   return filtered.trim();
 }
