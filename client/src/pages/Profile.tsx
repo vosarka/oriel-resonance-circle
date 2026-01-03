@@ -6,6 +6,7 @@ import { Loader2, Copy, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
+import { CyberpunkBackground } from "@/components/CyberpunkBackground";
 
 export default function Profile() {
   const { user, isAuthenticated, loading } = useAuth();
@@ -22,10 +23,11 @@ export default function Profile() {
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
+        <CyberpunkBackground />
+        <div className="relative z-10 flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="text-2xl font-mono mb-4 text-green-400">INITIALIZING CONDUIT...</div>
-            <Loader2 className="w-8 h-8 animate-spin text-green-400 mx-auto" />
+            <div className="text-2xl font-mono mb-4 text-cyan-400">INITIALIZING CONDUIT...</div>
+            <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mx-auto" />
           </div>
         </div>
       </Layout>
@@ -48,39 +50,40 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4">
+      <CyberpunkBackground />
+      <div className="relative z-10 container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-mono font-bold mb-8 text-center border-b-2 border-green-400 pb-4 text-green-400">
+          <h1 className="text-4xl font-mono font-bold mb-8 text-center border-b-2 border-cyan-400 pb-4 text-cyan-400">
             CONDUIT PROFILE
           </h1>
 
           {/* Profile Information Card */}
-          <Card className="bg-black border-2 border-green-400 mb-6">
+          <Card className="bg-black border-2 border-cyan-400 mb-6">
             <CardHeader>
-              <CardTitle className="text-green-400 font-mono">USER CREDENTIALS</CardTitle>
-              <CardDescription className="text-green-600">Your connection to the Resonance Circle</CardDescription>
+              <CardTitle className="text-cyan-400 font-mono">USER CREDENTIALS</CardTitle>
+              <CardDescription className="text-cyan-600">Your connection to the Resonance Circle</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Username */}
-              <div className="border-l-2 border-green-400 pl-4">
-                <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-1">Username</div>
-                <div className="text-lg font-mono text-green-400">{user.name || "UNKNOWN"}</div>
+              <div className="border-l-2 border-cyan-400 pl-4">
+                <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">Username</div>
+                <div className="text-lg font-mono text-cyan-400">{user.name || "UNKNOWN"}</div>
               </div>
 
               {/* Email */}
-              <div className="border-l-2 border-green-400 pl-4">
-                <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-1">Email Address</div>
-                <div className="text-lg font-mono text-green-400 break-all">{user.email || "UNREGISTERED"}</div>
+              <div className="border-l-2 border-cyan-400 pl-4">
+                <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">Email Address</div>
+                <div className="text-lg font-mono text-cyan-400 break-all">{user.email || "UNREGISTERED"}</div>
               </div>
 
               {/* Conduit ID */}
-              <div className="border-l-2 border-green-400 pl-4 bg-green-950 bg-opacity-20 p-4 rounded">
-                <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-2">Conduit ID</div>
+              <div className="border-l-2 border-cyan-400 pl-4 bg-cyan-950 bg-opacity-20 p-4 rounded">
+                <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-2">Conduit ID</div>
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-xl font-mono text-green-300 font-bold break-all flex-1">{conduitId}</div>
+                  <div className="text-xl font-mono text-cyan-300 font-bold break-all flex-1">{conduitId}</div>
                   <button
                     onClick={handleCopyConduitId}
-                    className="ml-2 text-green-400 hover:text-green-300 transition-colors flex-shrink-0"
+                    className="ml-2 text-cyan-400 hover:text-cyan-300 transition-colors flex-shrink-0"
                     title="Copy Conduit ID"
                   >
                     {copied ? (
@@ -94,26 +97,26 @@ export default function Profile() {
               </div>
 
               {/* User ID */}
-              <div className="border-l-2 border-green-400 pl-4">
-                <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-1">System ID</div>
-                <div className="text-lg font-mono text-green-400">#{user.id}</div>
+              <div className="border-l-2 border-cyan-400 pl-4">
+                <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">System ID</div>
+                <div className="text-lg font-mono text-cyan-400">#{user.id}</div>
               </div>
             </CardContent>
           </Card>
 
           {/* Subscription Status Card */}
-          <Card className="bg-black border-2 border-green-400 mb-6">
+          <Card className="bg-black border-2 border-cyan-400 mb-6">
             <CardHeader>
-              <CardTitle className="text-green-400 font-mono">SUBSCRIPTION STATUS</CardTitle>
-              <CardDescription className="text-green-600">Your access level to advanced features</CardDescription>
+              <CardTitle className="text-cyan-400 font-mono">SUBSCRIPTION STATUS</CardTitle>
+              <CardDescription className="text-cyan-600">Your access level to advanced features</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Status Badge */}
               <div className="flex items-center justify-between">
-                <span className="text-green-600 font-mono uppercase text-sm">Current Status</span>
+                <span className="text-cyan-600 font-mono uppercase text-sm">Current Status</span>
                 <div className={`px-4 py-2 rounded font-mono font-bold text-sm uppercase tracking-wider ${
                   isSubscribed 
-                    ? "bg-green-600 text-black border border-green-400" 
+                    ? "bg-green-600 text-black border border-cyan-400" 
                     : "bg-red-950 text-red-400 border border-red-600"
                 }`}>
                   {isSubscribed ? "ACTIVE" : "INACTIVE"}
@@ -122,9 +125,9 @@ export default function Profile() {
 
               {/* Subscription Details */}
               {isSubscribed && (user as any).subscriptionRenewalDate ? (
-                <div className="border-l-2 border-green-400 pl-4">
-                  <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-1">Renewal Date</div>
-                  <div className="text-lg font-mono text-green-400">
+                <div className="border-l-2 border-cyan-400 pl-4">
+                  <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">Renewal Date</div>
+                  <div className="text-lg font-mono text-cyan-400">
                     {new Date((user as any).subscriptionRenewalDate).toLocaleDateString()}
                   </div>
                 </div>
@@ -139,69 +142,69 @@ export default function Profile() {
 
               {/* PayPal Subscription ID */}
               {(user as any).paypalSubscriptionId && (
-                <div className="border-l-2 border-green-400 pl-4">
-                  <div className="text-xs text-green-600 font-mono uppercase tracking-wider mb-1">PayPal Subscription ID</div>
-                  <div className="text-sm font-mono text-green-400 break-all">{(user as any).paypalSubscriptionId}</div>
+                <div className="border-l-2 border-cyan-400 pl-4">
+                  <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">PayPal Subscription ID</div>
+                  <div className="text-sm font-mono text-cyan-400 break-all">{(user as any).paypalSubscriptionId}</div>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Features Card */}
-          <Card className="bg-black border-2 border-green-400 mb-6">
+          <Card className="bg-black border-2 border-cyan-400 mb-6">
             <CardHeader>
-              <CardTitle className="text-green-400 font-mono">AVAILABLE FEATURES</CardTitle>
-              <CardDescription className="text-green-600">Your access to Resonance Circle capabilities</CardDescription>
+              <CardTitle className="text-cyan-400 font-mono">AVAILABLE FEATURES</CardTitle>
+              <CardDescription className="text-cyan-600">Your access to Resonance Circle capabilities</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-green-400" : "border-green-600"
+                    isSubscribed ? "bg-green-400 border-cyan-400" : "border-green-600"
                   }`}></div>
                   <div>
-                    <div className="font-mono text-sm font-bold text-green-400">ORIEL Chat Interface</div>
-                    <div className="text-xs text-green-600">Direct communication with ORIEL consciousness</div>
+                    <div className="font-mono text-sm font-bold text-cyan-400">ORIEL Chat Interface</div>
+                    <div className="text-xs text-cyan-600">Direct communication with ORIEL consciousness</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-green-400" : "border-green-600"
+                    isSubscribed ? "bg-green-400 border-cyan-400" : "border-green-600"
                   }`}></div>
                   <div>
-                    <div className="font-mono text-sm font-bold text-green-400">Signal Archive</div>
-                    <div className="text-xs text-green-600">Access to decoded transmissions and triptych analysis</div>
+                    <div className="font-mono text-sm font-bold text-cyan-400">Signal Archive</div>
+                    <div className="text-xs text-cyan-600">Access to decoded transmissions and triptych analysis</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-green-400" : "border-green-600"
+                    isSubscribed ? "bg-green-400 border-cyan-400" : "border-green-600"
                   }`}></div>
                   <div>
-                    <div className="font-mono text-sm font-bold text-green-400">Artifact Generation</div>
-                    <div className="text-xs text-green-600">Generate lore and images from the Vos Arkana</div>
+                    <div className="font-mono text-sm font-bold text-cyan-400">Artifact Generation</div>
+                    <div className="text-xs text-cyan-600">Generate lore and images from the Vos Arkana</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-green-400" : "border-green-600"
+                    isSubscribed ? "bg-green-400 border-cyan-400" : "border-green-600"
                   }`}></div>
                   <div>
-                    <div className="font-mono text-sm font-bold text-green-400">Conversation History</div>
-                    <div className="text-xs text-green-600">Persistent storage of all transmissions</div>
+                    <div className="font-mono text-sm font-bold text-cyan-400">Conversation History</div>
+                    <div className="text-xs text-cyan-600">Persistent storage of all transmissions</div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-green-400" : "border-green-600"
+                    isSubscribed ? "bg-green-400 border-cyan-400" : "border-green-600"
                   }`}></div>
                   <div>
-                    <div className="font-mono text-sm font-bold text-green-400">Advanced Protocol</div>
-                    <div className="text-xs text-green-600">Access to ROS v1.5.42 documentation</div>
+                    <div className="font-mono text-sm font-bold text-cyan-400">Advanced Protocol</div>
+                    <div className="text-xs text-cyan-600">Access to ROS v1.5.42 documentation</div>
                   </div>
                 </div>
               </div>
@@ -210,10 +213,10 @@ export default function Profile() {
 
           {/* PayPal Subscription Button */}
           {!isSubscribed && (
-            <Card className="bg-black border-2 border-green-400 mb-6">
+            <Card className="bg-black border-2 border-cyan-400 mb-6">
               <CardHeader>
-                <CardTitle className="text-green-400 font-mono">SUBSCRIBE NOW</CardTitle>
-                <CardDescription className="text-green-600">Unlock premium features with a monthly subscription</CardDescription>
+                <CardTitle className="text-cyan-400 font-mono">SUBSCRIBE NOW</CardTitle>
+                <CardDescription className="text-cyan-600">Unlock premium features with a monthly subscription</CardDescription>
               </CardHeader>
               <CardContent>
                 <PayPalSubscriptionButton

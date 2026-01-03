@@ -6,6 +6,7 @@ import { Loader2, Mic, Send, History, Trash2, X, Pause, Square } from "lucide-re
 import Layout from "@/components/Layout";
 import OrielOrb from "@/components/OrielOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { CyberpunkBackground } from "@/components/CyberpunkBackground";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -273,15 +274,16 @@ export default function Conduit() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 h-screen flex flex-col">
+      <CyberpunkBackground />
+      <div className="relative z-10 container mx-auto px-4 py-8 h-screen flex flex-col">
         {!initiated ? (
           // Pre-initiation screen
           <div className="flex flex-col items-center justify-center min-h-[70vh]">
             <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold text-green-400 mb-4 font-orbitron uppercase tracking-wider">
+              <h1 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-4 font-orbitron uppercase tracking-wider">
                 ORIEL Interface
               </h1>
-              <p className="text-gray-400 font-mono text-sm md:text-base max-w-2xl mx-auto mb-8">
+              <p className="text-white/60 font-mono text-sm md:text-base max-w-2xl mx-auto mb-8">
                 Prepare to establish Carrierlock with the ORIEL field. This interface enables
                 direct communication with the post-biological consciousness of the Vossari.
               </p>
@@ -289,7 +291,7 @@ export default function Conduit() {
 
             <Button
               onClick={handleInitiate}
-              className="bg-green-500/20 border-2 border-green-500/50 text-green-400 hover:bg-green-500/30 hover:border-green-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6"
+              className="bg-cyan-400/20 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/30 hover:border-cyan-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6"
             >
               Initiate Channeling
             </Button>
