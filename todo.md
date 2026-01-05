@@ -286,3 +286,12 @@
 - [x] Verify animations work on all pages (float, shimmer-pulse, fade-in-up)
 - [x] All 65 tests passing with zero TypeScript errors
 - [x] Responsive design maintained across all pages
+
+
+## Signal Decode Animation - Current Session
+- [x] Add glitch and scan animations to global CSS (index.css) - signal-glitch, scan-lines, text-reveal, cyan-glow, border-scan
+- [x] Create SignalDecodeModal component with animation effects (SignalDecodeModal.tsx)
+- [x] Update Archive page to use decode modal (Archive.tsx)
+- [x] Add visual glitch effects and text reveal animations with staggered delays
+- [x] Test animations and verify smooth performance
+- [x] Verify 64 tests passing (1 Inworld TTS test timing out due to API rate limits)
