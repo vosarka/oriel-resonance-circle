@@ -295,3 +295,12 @@
 - [x] Add visual glitch effects and text reveal animations with staggered delays
 - [x] Test animations and verify smooth performance
 - [x] Verify 64 tests passing (1 Inworld TTS test timing out due to API rate limits)
+
+
+## Psi Logo Integration - Current Session
+- [x] Save Psi logo to project assets (client/public/psi-logo.png)
+- [x] Update CyberpunkBackground component to include centered Psi logo
+- [x] Add rotation and glow animations to the logo (rotating rings, cyan glow, float animation)
+- [x] Test logo appearance on all pages (Home and Archive verified)
+- [x] Verify logo scales responsively on mobile (w-32 h-32) and desktop (md:w-40 md:h-40)
+- [x] All 64 tests passing with zero TypeScript errors

@@ -20,6 +20,27 @@ export function CyberpunkBackground() {
           </svg>
         </div>
         
+        {/* Centered Psi Logo with Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5">
+          <div className="relative w-32 h-32 md:w-40 md:h-40">
+            {/* Outer rotating ring with cyan glow */}
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/30 animate-spin-slow-60" />
+            
+            {/* Middle rotating ring (slower) */}
+            <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-spin-slower" />
+            
+            {/* Inner glow effect */}
+            <div className="absolute inset-4 rounded-full bg-gradient-to-r from-cyan-400/10 to-transparent blur-lg" />
+            
+            {/* Psi Logo Image */}
+            <img
+              src="/psi-logo.png"
+              alt="Psi Logo"
+              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_20px_rgba(0,206,209,0.4)] animate-float"
+            />
+          </div>
+        </div>
+        
         {/* Sacred Grid Pattern with Shimmer */}
         <div className="absolute inset-0 animate-shimmer-pulse [mask-image:radial-gradient(circle_at_center,black_30%,transparent_100%)]">
           <svg height="100%" width="100%">
