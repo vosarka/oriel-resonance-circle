@@ -7,6 +7,7 @@ import * as db from "./db";
 import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { generateInworldTTS, audioToDataUrl } from "./inworld-tts";
+import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 
 export const appRouter = router({
   system: systemRouter,
@@ -202,6 +203,84 @@ export const appRouter = router({
           return {
             success: false,
             error: "Failed to generate speech. Client should fall back to browser TTS.",
+          };
+        }
+      }),
+
+    // Vossari Resonance Codex - Mode A: Diagnostic Reading
+    diagnosticReading: publicProcedure
+      .input(z.object({
+        mentalNoise: z.number().min(0).max(10),
+        bodyTension: z.number().min(0).max(10),
+        emotionalTurbulence: z.number().min(0).max(10),
+        breathCompletion: z.union([z.literal(0), z.literal(1)]),
+        primeCodonSet: z.array(z.string()).optional(),
+        fullCodonStack: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const carrierlockState = {
+            mentalNoise: input.mentalNoise,
+            bodyTension: input.bodyTension,
+            emotionalTurbulence: input.emotionalTurbulence,
+            breathCompletion: input.breathCompletion as 0 | 1,
+          };
+
+          const result = await performDiagnosticReading(
+            carrierlockState,
+            input.primeCodonSet || [],
+            input.fullCodonStack || []
+          );
+
+          return {
+            success: true,
+            data: result,
+          };
+        } catch (error) {
+          console.error("Diagnostic reading error:", error);
+          return {
+            success: false,
+            error: "Failed to perform diagnostic reading",
+          };
+        }
+      }),
+
+    // Vossari Resonance Codex - Mode B: Evolutionary Assistance
+    evolutionaryAssistance: publicProcedure
+      .input(z.object({
+        mentalNoise: z.number().min(0).max(10),
+        bodyTension: z.number().min(0).max(10),
+        emotionalTurbulence: z.number().min(0).max(10),
+        breathCompletion: z.union([z.literal(0), z.literal(1)]),
+        userRequest: z.string(),
+        primeCodonSet: z.array(z.string()).optional(),
+        fullCodonStack: z.array(z.string()).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const carrierlockState = {
+            mentalNoise: input.mentalNoise,
+            bodyTension: input.bodyTension,
+            emotionalTurbulence: input.emotionalTurbulence,
+            breathCompletion: input.breathCompletion as 0 | 1,
+          };
+
+          const result = await performEvolutionaryAssistance(
+            carrierlockState,
+            input.userRequest,
+            input.primeCodonSet || [],
+            input.fullCodonStack || []
+          );
+
+          return {
+            success: true,
+            data: result,
+          };
+        } catch (error) {
+          console.error("Evolutionary assistance error:", error);
+          return {
+            success: false,
+            error: "Failed to perform evolutionary assistance",
           };
         }
       }),
