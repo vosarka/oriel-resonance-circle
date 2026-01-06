@@ -20,23 +20,14 @@ export function CyberpunkBackground() {
           </svg>
         </div>
         
-        {/* Centered Psi Logo with Glow */}
+        {/* Centered Vos Arkana Logo with Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5">
-          <div className="relative w-32 h-32 md:w-40 md:h-40">
-            {/* Outer rotating ring with cyan glow */}
-            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/30 animate-spin-slow-60" />
-            
-            {/* Middle rotating ring (slower) */}
-            <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-spin-slower" />
-            
-            {/* Inner glow effect */}
-            <div className="absolute inset-4 rounded-full bg-gradient-to-r from-cyan-400/10 to-transparent blur-lg" />
-            
-            {/* Psi Logo Image */}
+          <div className="relative w-40 h-40 md:w-48 md:h-48">
+            {/* Vos Arkana Logo - already has concentric rings */}
             <img
               src="/psi-logo.png"
-              alt="Psi Logo"
-              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_20px_rgba(0,206,209,0.4)] animate-float"
+              alt="Vos Arkana Logo"
+              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.3)] animate-float"
             />
           </div>
         </div>

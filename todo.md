@@ -304,3 +304,12 @@
 - [x] Test logo appearance on all pages (Home and Archive verified)
 - [x] Verify logo scales responsively on mobile (w-32 h-32) and desktop (md:w-40 md:h-40)
 - [x] All 64 tests passing with zero TypeScript errors
+
+
+## Replace Psi Logo with Vos Arkana Logo - Current Session
+- [x] Replace psi-logo.png with new Vos Arkana logo (green striped Psi with rings)
+- [x] Update CyberpunkBackground to simplify rotating rings (logo already has rings)
+- [x] Update Home.tsx to display logo image instead of text symbol
+- [x] Test logo appearance on home page - beautiful green glow effect visible
+- [x] Verify green color scheme integrates with cyan accent colors
+- [x] All 65 tests passing with zero TypeScript errors

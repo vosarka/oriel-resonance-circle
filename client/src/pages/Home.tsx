@@ -39,24 +39,17 @@ export default function Home() {
         <div className="container mx-auto px-4">
           {/* Hero Section */}
           <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-            {/* Central Sigil with Cyberpunk Style */}
-            <div className="mb-8 relative w-64 h-64 flex items-center justify-center animate-float group cursor-default">
+            {/* Central Sigil with Vos Arkana Logo */}
+            <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
               {/* Glow backdrop */}
-              <div className="absolute inset-0 bg-cyan-400/20 rounded-full blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity duration-1000"></div>
+              <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
               
-              {/* Outer ring */}
-              <div className="absolute w-56 h-56 border border-white/5 rounded-full"></div>
-              
-              {/* Dashed rotating ring */}
-              <div className="absolute w-48 h-48 border border-cyan-400/20 rounded-full border-dashed animate-[spin_20s_linear_infinite]"></div>
-              
-              {/* Rotated ring */}
-              <div className="absolute w-40 h-40 border border-white/10 rounded-full transform rotate-45"></div>
-              
-              {/* Center symbol */}
-              <div className="relative z-10 w-24 h-24 flex items-center justify-center text-6xl md:text-8xl font-orbitron text-white/80 mix-blend-screen">
-                ᴪ
-              </div>
+              {/* Vos Arkana Logo Image */}
+              <img
+                src="/psi-logo.png"
+                alt="Vos Arkana Logo"
+                className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.4)]"
+              />
             </div>
 
             {/* Main Headline */}
