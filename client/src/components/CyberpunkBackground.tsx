@@ -3,7 +3,11 @@
  * Provides the void-gradient background with animated grid and rotating SVG
  */
 
-export function CyberpunkBackground() {
+interface CyberpunkBackgroundProps {
+  showLogo?: boolean;
+}
+
+export function CyberpunkBackground({ showLogo = true }: CyberpunkBackgroundProps = {}) {
   return (
     <>
       {/* Void Gradient Background */}
@@ -21,16 +25,18 @@ export function CyberpunkBackground() {
         </div>
         
         {/* Centered Vos Arkana Logo with Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5">
-          <div className="relative w-40 h-40 md:w-48 md:h-48">
-            {/* Vos Arkana Logo - already has concentric rings */}
-            <img
-              src="/psi-logo.png"
-              alt="Vos Arkana Logo"
-              className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.3)] animate-float"
-            />
+        {showLogo && (
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-5">
+            <div className="relative w-40 h-40 md:w-48 md:h-48">
+              {/* Vos Arkana Logo - already has concentric rings */}
+              <img
+                src="/psi-logo.png"
+                alt="Vos Arkana Logo"
+                className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.3)] animate-float"
+              />
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Sacred Grid Pattern with Shimmer */}
         <div className="absolute inset-0 animate-shimmer-pulse [mask-image:radial-gradient(circle_at_center,black_30%,transparent_100%)]">

@@ -321,3 +321,11 @@
 - [x] Update Footer.tsx text color to green (#afe29d)
 - [x] Verify cohesive green color scheme across platform
 - [x] All 65 tests passing with zero TypeScript errors
+
+
+## Remove Logo from Interface Page - Current Session
+- [x] Updated CyberpunkBackground component to accept showLogo prop
+- [x] Set Conduit page to use CyberpunkBackground with showLogo={false}
+- [x] Verified logo is removed from Conduit/Interface page
+- [x] Logo still appears on Home, Archive, Protocol pages
+- [x] All 65 tests passing with zero TypeScript errors
