@@ -329,3 +329,11 @@
 - [x] Verified logo is removed from Conduit/Interface page
 - [x] Logo still appears on Home, Archive, Protocol pages
 - [x] All 65 tests passing with zero TypeScript errors
+
+
+## Add Rotating Rings Around Logo - Current Session
+- [x] Add rotating ring animations to index.css (rotate-ring-1 30s, rotate-ring-2 45s)
+- [x] Update Home.tsx to include two thin rotating circles around logo
+- [x] Test rotating rings on home page - beautiful layered effect visible
+- [x] Verify smooth animation performance - rings rotate smoothly at different speeds
+- [x] 64 tests passing (1 Inworld TTS test timing out due to API rate limits)

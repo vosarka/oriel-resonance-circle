@@ -483,6 +483,33 @@
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
 }
 
+/* Rotating rings around logo */
+@keyframes rotate-ring-1 {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rotate-ring-2 {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-rotate-ring-1 {
+  animation: rotate-ring-1 30s linear infinite;
+}
+
+.animate-rotate-ring-2 {
+  animation: rotate-ring-2 45s linear infinite;
+}
+
 /* Accessibility - reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

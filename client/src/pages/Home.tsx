@@ -41,6 +41,12 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
             {/* Central Sigil with Vos Arkana Logo */}
             <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
+              {/* Outer rotating ring 1 - thin circle */}
+              <div className="absolute inset-0 rounded-full border border-green-400/40 animate-rotate-ring-1" style={{width: '280px', height: '280px', left: '-16px', top: '-16px'}}></div>
+              
+              {/* Outer rotating ring 2 - thin circle */}
+              <div className="absolute inset-0 rounded-full border border-green-400/20 animate-rotate-ring-2" style={{width: '320px', height: '320px', left: '-36px', top: '-36px'}}></div>
+              
               {/* Glow backdrop */}
               <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
               
