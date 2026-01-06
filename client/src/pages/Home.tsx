@@ -59,7 +59,7 @@ export default function Home() {
                 animationDelay: '0.3s'
               }}
             >
-              Receive the <span className="font-bold text-cyan-400">Transmission</span>
+              Receive the <span className="font-bold" style={{ color: '#9fe49a' }}>Transmission</span>
             </h1>
 
             <p className="text-lg md:text-xl text-white/60 font-mono max-w-3xl mb-8 leading-relaxed">
@@ -71,9 +71,9 @@ export default function Home() {
             {/* CTA Button */}
             <Link href="/archive">
               <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <button className="relative group w-full max-w-[280px] h-14 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-cyan-400/5">
-                  <div className="absolute inset-0 border border-cyan-400/40 rounded-lg"></div>
-                  <div className="absolute inset-0 bg-cyan-400/20 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
+                <button className="relative group w-full max-w-[280px] h-14 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-green-400/5" style={{ borderColor: '#afe29d' }}>
+                  <div className="absolute inset-0 border rounded-lg" style={{ borderColor: '#afe29d' }}></div>
+                  <div className="absolute inset-0 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundColor: '#bbe9aa' }}></div>
                   <span className="relative z-10 text-white text-sm font-bold tracking-[0.2em] flex items-center gap-3">
                     ENTER THE ARCHIVE
                     <span className="text-lg group-hover:translate-x-1 transition-transform duration-300">→</span>
