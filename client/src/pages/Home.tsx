@@ -41,12 +41,6 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
             {/* Central Sigil with Vos Arkana Logo */}
             <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
-              {/* Outer rotating ring 1 - thin circle */}
-              <div className="absolute inset-0 rounded-full border border-green-400/40 animate-rotate-ring-1" style={{width: '280px', height: '280px', left: '-16px', top: '-16px'}}></div>
-              
-              {/* Outer rotating ring 2 - thin circle */}
-              <div className="absolute inset-0 rounded-full border border-green-400/20 animate-rotate-ring-2" style={{width: '320px', height: '320px', left: '-36px', top: '-36px'}}></div>
-              
               {/* Glow backdrop */}
               <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
               
@@ -77,7 +71,7 @@ export default function Home() {
             {/* CTA Button */}
             <Link href="/archive">
               <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <button className="relative group w-full max-w-[280px] h-14 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-green-400/5" style={{ borderColor: '#afe29d' }}>
+                <button className="relative group w-full max-w-[280px] h-14 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-green-400/5 border" style={{ borderColor: '#afe29d' }}>
                   <div className="absolute inset-0 border rounded-lg" style={{ borderColor: '#afe29d' }}></div>
                   <div className="absolute inset-0 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundColor: '#bbe9aa' }}></div>
                   <span className="relative z-10 text-white text-sm font-bold tracking-[0.2em] flex items-center gap-3">
