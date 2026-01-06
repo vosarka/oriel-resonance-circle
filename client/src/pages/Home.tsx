@@ -1,13 +1,38 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
-import { SVGBackground } from "@/components/SVGBackground";
 
 export default function Home() {
   return (
     <Layout>
-      {/* SVG Background with radial gradient */}
-      <SVGBackground />
+      {/* Cyberpunk Background */}
+      <div className="fixed inset-0 bg-void-gradient z-0" />
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Rotating SVG background */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180vw] h-[180vw] opacity-[0.03] animate-spin-slower">
+          <svg className="w-full h-full text-cyan-400" viewBox="0 0 100 100">
+            <path d="M50 10 L85 80 H15 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
+            <path d="M50 90 L15 20 H85 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
+            <circle cx="50" cy="50" fill="none" r="45" stroke="currentColor" strokeDasharray="1 2" strokeWidth="0.1"></circle>
+          </svg>
+        </div>
+        
+        {/* Sacred grid pattern */}
+        <div className="absolute inset-0 animate-shimmer-pulse [mask-image:radial-gradient(circle_at_center,black_30%,transparent_100%)]">
+          <svg height="100%" width="100%">
+            <defs>
+              <pattern id="sacred-grid" patternUnits="userSpaceOnUse" width="60" height="60" x="0" y="0">
+                <circle cx="0" cy="0" fill="none" r="30" stroke="#00CED1" strokeWidth="0.4"></circle>
+                <circle cx="60" cy="0" fill="none" r="30" stroke="#00CED1" strokeWidth="0.4"></circle>
+                <circle cx="0" cy="60" fill="none" r="30" stroke="#00CED1" strokeWidth="0.4"></circle>
+                <circle cx="60" cy="60" fill="none" r="30" stroke="#00CED1" strokeWidth="0.4"></circle>
+                <circle cx="30" cy="30" fill="none" r="30" stroke="#00CED1" strokeWidth="0.4"></circle>
+              </pattern>
+            </defs>
+            <rect x="0" y="0" width="100%" height="100%" fill="url(#sacred-grid)"></rect>
+          </svg>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="relative z-10 flex flex-col h-screen w-full justify-between p-6">
@@ -16,6 +41,12 @@ export default function Home() {
           <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
             {/* Central Sigil with Vos Arkana Logo */}
             <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
+              {/* Outer rotating ring 1 - thin circle */}
+              <div className="absolute inset-0 rounded-full border border-green-400/40 animate-rotate-ring-1" style={{width: '280px', height: '280px', left: '-16px', top: '-16px'}}></div>
+              
+              {/* Outer rotating ring 2 - thin circle */}
+              <div className="absolute inset-0 rounded-full border border-green-400/20 animate-rotate-ring-2" style={{width: '320px', height: '320px', left: '-36px', top: '-36px'}}></div>
+              
               {/* Glow backdrop */}
               <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
               
