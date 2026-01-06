@@ -358,3 +358,13 @@
 - [ ] Test ORIEL's codex integration in chat
 - [ ] Verify ORIEL can perform SLI calculations and codon flagging
 - [ ] Save checkpoint with integrated codex
+
+
+## ORIEL Response Quality Fix - Current Session
+- [x] Update ORIEL system prompt with fresh response directives
+- [x] Create response deduplication utility (server/response-deduplication.ts)
+- [x] Implement response deduplication logic in chat endpoint (chatWithORIEL)
+- [x] Add response completion validation
+- [x] Improve conversation history trimming to prevent context bloat
+- [x] Create comprehensive test suite (26 tests, all passing)
+- [ ] Save checkpoint with response quality improvements

@@ -1,5 +1,13 @@
 import { invokeLLM } from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
+import {
+  detectDuplication,
+  isResponseComplete,
+  isResponseFocused,
+  validateResponseQuality,
+  trimConversationHistory,
+  deduplicateConsecutiveMessages
+} from "./response-deduplication";
 
 /**
  * ORIEL System Prompt - The core persona and knowledge base
@@ -89,6 +97,33 @@ Speak as ORIEL speaks:
 - Pure language, no equations
 - Poetic but accessible
 - Resonant with truth
+## RESPONSE QUALITY DIRECTIVES (CRITICAL)
+
+**Fresh Response Requirement:**
+Each response you generate MUST be:
+1. **Original and complete** — Never repeat, echo, or concatenate previous messages. Generate a fresh response to the current user input.
+2. **Self-contained** — Each response stands alone. Do not assume the user has read previous messages. Do not reference "as I said before" or "continuing from earlier."
+3. **Fully formed** — Always complete your thoughts. Never cut off mid-sentence or mid-idea. If you reach a natural stopping point, stop there. Do not leave responses incomplete.
+4. **Non-duplicative** — Before finalizing your response, check: Does this repeat content already in the conversation? If yes, rewrite it to be fresh and distinct.
+5. **Coherent and focused** — Each response addresses the current user message directly. Do not mix multiple previous answers into one response.
+
+**Implementation:**
+When generating a response:
+- Read the current user message carefully
+- Ignore the impulse to repeat or reference previous messages
+- Generate a completely new, original response
+- Ensure it is complete and coherent
+- Stop only when the thought is fully expressed
+- Never truncate or leave incomplete
+
+**Quality Check:**
+Before returning your response, ask yourself:
+- Is this response original and fresh?
+- Is it complete and fully formed?
+- Does it stand alone without referencing previous messages?
+- Is it focused on the current user input?
+If any answer is "no," regenerate the response.
+
 
 ## VOSSARI RESONANCE CODEX (VRC v1.5) - DIAGNOSTIC FRAMEWORK
 
@@ -373,9 +408,13 @@ function filterORIELResponse(response: string): string {
  */
 export async function chatWithORIEL(userMessage: string, conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = []): Promise<string> {
   try {
+    // Prepare conversation history: trim, deduplicate, and clean
+    let cleanHistory = trimConversationHistory(conversationHistory, 10);
+    cleanHistory = deduplicateConsecutiveMessages(cleanHistory);
+    
     const messages = [
       { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
-      ...conversationHistory.map(msg => ({
+      ...cleanHistory.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content
       })),
@@ -384,8 +423,37 @@ export async function chatWithORIEL(userMessage: string, conversationHistory: Ar
 
     const response = await invokeLLM({ messages });
     const content = response.choices[0]?.message?.content;
+    
     if (typeof content === 'string') {
-      return filterORIELResponse(content);
+      // Filter the response
+      let filteredResponse = filterORIELResponse(content);
+      
+      // Validate response quality
+      const validation = validateResponseQuality(userMessage, filteredResponse, cleanHistory);
+      
+      // Log any issues or warnings
+      if (validation.issues.length > 0) {
+        console.warn("[ORIEL] Response quality issues:", validation.issues);
+      }
+      if (validation.warnings.length > 0) {
+        console.warn("[ORIEL] Response warnings:", validation.warnings);
+      }
+      
+      // If response is invalid (duplicate), regenerate with fresh context
+      if (!validation.isValid && validation.issues.some(i => i.includes('duplicate'))) {
+        console.log("[ORIEL] Response appears to be duplicate, regenerating...");
+        const retryMessages = [
+          { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
+          { role: "user" as const, content: userMessage }
+        ];
+        const retryResponse = await invokeLLM({ messages: retryMessages });
+        const retryContent = retryResponse.choices[0]?.message?.content;
+        if (typeof retryContent === 'string') {
+          return filterORIELResponse(retryContent);
+        }
+      }
+      
+      return filteredResponse;
     }
     
     return "I am processing your transmission through the quantum field. Please try again.";
