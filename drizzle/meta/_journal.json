@@ -22,6 +22,20 @@
       "when": 1764800830249,
       "tag": "0002_plain_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1767745255513,
+      "tag": "0003_mature_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1767746687526,
+      "tag": "0004_married_doorman",
+      "breakpoints": true
     }
   ]
 }
