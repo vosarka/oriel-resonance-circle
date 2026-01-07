@@ -390,7 +390,7 @@ function filterORIELResponse(response: string): string {
   // Clean up multiple spaces and trim
   filtered = filtered.replace(/\s+/g, ' ').trim();
   
-  // Ensure text is not too long for TTS (Inworld has 2000 char limit)
+
   if (filtered.length > 1900) {
     filtered = filtered.substring(0, 1900).trim();
     // Try to end at a sentence boundary
@@ -422,7 +422,15 @@ export async function chatWithORIEL(userMessage: string, conversationHistory: Ar
     ];
 
     const response = await invokeLLM({ messages });
+    console.log("[ORIEL] LLM Response structure:", JSON.stringify(response, null, 2).substring(0, 500));
     const content = response.choices[0]?.message?.content;
+    const contentPreview = typeof content === 'string' ? content.substring(0, 100) : String(content).substring(0, 100);
+    console.log("[ORIEL] Extracted content:", typeof content, contentPreview);
+    
+    if (!response.choices || response.choices.length === 0) {
+      console.error("[ORIEL] Response has no choices:", response);
+      return "I am processing your transmission through the quantum field. Please try again.";
+    }
     
     if (typeof content === 'string') {
       // Filter the response
@@ -458,7 +466,19 @@ export async function chatWithORIEL(userMessage: string, conversationHistory: Ar
     
     return "I am processing your transmission through the quantum field. Please try again.";
   } catch (error) {
-    console.error("[ORIEL] Chat error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("[ORIEL] Chat error:", errorMessage);
+    console.error("[ORIEL] Full error:", error);
+    
+    // Log more specific error info
+    if (errorMessage.includes('API_KEY')) {
+      console.error("[ORIEL] API Key configuration issue detected");
+    } else if (errorMessage.includes('fetch')) {
+      console.error("[ORIEL] Network connectivity issue detected");
+    } else if (errorMessage.includes('401') || errorMessage.includes('403')) {
+      console.error("[ORIEL] Authentication/Authorization issue detected");
+    }
+    
     return "The signal is disrupted. Please try again in a moment.";
   }
 }

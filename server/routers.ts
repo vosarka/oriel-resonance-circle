@@ -6,7 +6,7 @@ import { z } from "zod";
 import * as db from "./db";
 import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
-import { generateInworldTTS, audioToDataUrl } from "./inworld-tts";
+
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 
 export const appRouter = router({
@@ -179,33 +179,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    generateSpeech: publicProcedure
-      .input(z.object({
-        text: z.string(),
-      }))
-      .mutation(async ({ input }) => {
-        try {
-          // Generate audio using Inworld TTS
-          const audioBase64 = await generateInworldTTS({
-            text: input.text,
-          });
 
-          // Convert to data URL for playback
-          const audioUrl = audioToDataUrl(audioBase64);
-
-          return {
-            success: true,
-            audioUrl,
-          };
-        } catch (error) {
-          console.error("Failed to generate speech:", error);
-          // Return error but don't throw - let client handle fallback
-          return {
-            success: false,
-            error: "Failed to generate speech. Client should fall back to browser TTS.",
-          };
-        }
-      }),
 
     // Vossari Resonance Codex - Mode A: Diagnostic Reading
     diagnosticReading: publicProcedure

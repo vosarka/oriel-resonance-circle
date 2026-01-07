@@ -379,3 +379,13 @@
 - [x] Add user interrupt capability during streaming
 - [x] Create comprehensive test suite (14 tests, all passing)
 - [ ] Save checkpoint with streaming implementation
+
+
+## Remove All TTS/Voice Functionality - Current Session
+- [x] Remove Inworld TTS integration (server/inworld-tts.ts deleted)
+- [x] Remove generateSpeech endpoint from routers.ts
+- [x] Remove TTS-related imports and references from gemini.ts
+- [x] Simplify streaming-chat.ts to remove voiceAvailable and TTS chunking
+- [x] Rewrite Conduit.tsx with text-only chat interface
+- [x] Remove all voice generation, audio playback, and speech synthesis code
+- [ ] Save checkpoint with TTS completely removed
