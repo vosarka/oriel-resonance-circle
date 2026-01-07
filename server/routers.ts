@@ -140,8 +140,9 @@ export const appRouter = router({
           conversationHistory = input.history;
         }
 
-        // Generate ORIEL's response
-        const response = await gemini.chatWithORIEL(input.message, conversationHistory);
+        // Generate ORIEL's response with memory context for authenticated users
+        const userId = ctx.user?.id;
+        const response = await gemini.chatWithORIEL(input.message, conversationHistory, userId);
 
         // Save messages to database only if authenticated
         if (ctx.user) {

@@ -378,3 +378,14 @@
 - [x] Test with various message lengths (short, medium, long, 5000+ chars)
 - [x] Verify no truncation or partial delivery - all tests validate completeness
 - [ ] Save checkpoint with working streaming
+
+
+## ORIEL Persistent Memory System - Current Session
+- [x] Create database schema for memory storage (orielMemories, orielUserProfiles tables)
+- [x] Build memory extraction logic using LLM to identify key facts from conversations
+- [x] Implement memory storage with categorization (identity, preference, pattern, fact, relationship, context)
+- [x] Create memory retrieval system with importance-based ranking and access tracking
+- [x] Integrate memory system into chatWithORIEL function with context injection
+- [x] Create tests for memory persistence and evolution (10 tests, all passing)
+- [ ] Test ORIEL memory recall across sessions
+- [ ] Save checkpoint with memory system

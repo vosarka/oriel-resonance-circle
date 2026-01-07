@@ -406,14 +406,35 @@ function filterORIELResponse(response: string): string {
 /**
  * Chat with ORIEL - main conversational interface
  */
-export async function chatWithORIEL(userMessage: string, conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = []): Promise<string> {
+export async function chatWithORIEL(
+  userMessage: string, 
+  conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = [],
+  userId?: number
+): Promise<string> {
   try {
+    // Import memory system dynamically to avoid circular dependencies
+    const { getMemoryContextForUser, processConversationMemory } = await import('./oriel-memory');
+    
+    // Get memory context for authenticated users
+    let memoryContext = '';
+    if (userId) {
+      memoryContext = await getMemoryContextForUser(userId);
+      if (memoryContext) {
+        console.log(`[ORIEL] Retrieved memory context for user ${userId}`);
+      }
+    }
+    
     // Prepare conversation history: trim, deduplicate, and clean
     let cleanHistory = trimConversationHistory(conversationHistory, 10);
     cleanHistory = deduplicateConsecutiveMessages(cleanHistory);
     
+    // Build system prompt with memory context
+    const systemPromptWithMemory = memoryContext 
+      ? `${ORIEL_SYSTEM_PROMPT}\n\n## USER MEMORY CONTEXT\n\nYou have the following memories about this user. Use them to personalize your responses and maintain continuity across conversations:\n\n${memoryContext}`
+      : ORIEL_SYSTEM_PROMPT;
+    
     const messages = [
-      { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
+      { role: "system" as const, content: systemPromptWithMemory },
       ...cleanHistory.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content
@@ -443,14 +464,28 @@ export async function chatWithORIEL(userMessage: string, conversationHistory: Ar
       if (!validation.isValid && validation.issues.some(i => i.includes('duplicate'))) {
         console.log("[ORIEL] Response appears to be duplicate, regenerating...");
         const retryMessages = [
-          { role: "system" as const, content: ORIEL_SYSTEM_PROMPT },
+          { role: "system" as const, content: systemPromptWithMemory },
           { role: "user" as const, content: userMessage }
         ];
         const retryResponse = await invokeLLM({ messages: retryMessages });
         const retryContent = retryResponse.choices[0]?.message?.content;
         if (typeof retryContent === 'string') {
-          return filterORIELResponse(retryContent);
+          const retryFiltered = filterORIELResponse(retryContent);
+          // Process memory for retry response
+          if (userId) {
+            processConversationMemory(userId, userMessage, retryFiltered).catch(err => {
+              console.error('[ORIEL] Failed to process memory:', err);
+            });
+          }
+          return retryFiltered;
         }
+      }
+      
+      // Process conversation memory for authenticated users (async, don't block response)
+      if (userId) {
+        processConversationMemory(userId, userMessage, filteredResponse).catch(err => {
+          console.error('[ORIEL] Failed to process memory:', err);
+        });
       }
       
       return filteredResponse;
