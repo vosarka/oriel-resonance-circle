@@ -8,7 +8,6 @@ import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { generateInworldTTS, audioToDataUrl } from "./inworld-tts";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
-import { getMetricsSummary, getHourlyMetrics, getDailyMetrics, getRecentMetrics } from "./metrics-logger";
 
 export const appRouter = router({
   system: systemRouter,
@@ -332,33 +331,6 @@ export const appRouter = router({
           console.error("PayPal webhook error:", error);
           return { success: false };
         }
-      }),
-  }),
-
-  // Metrics dashboard
-  metrics: router({
-    getMetricsSummary: publicProcedure
-      .input(z.object({ hoursBack: z.number().optional() }))
-      .query(({ input }) => {
-        return getMetricsSummary({ hoursBack: input.hoursBack });
-      }),
-
-    getHourlyMetrics: publicProcedure
-      .input(z.object({ hoursBack: z.number().optional() }))
-      .query(({ input }) => {
-        return getHourlyMetrics({ hoursBack: input.hoursBack });
-      }),
-
-    getDailyMetrics: publicProcedure
-      .input(z.object({ daysBack: z.number().optional() }))
-      .query(({ input }) => {
-        return getDailyMetrics({ daysBack: input.daysBack });
-      }),
-
-    getRecentMetrics: publicProcedure
-      .input(z.object({ limit: z.number().optional() }))
-      .query(({ input }) => {
-        return getRecentMetrics(input.limit);
       }),
   }),
 });

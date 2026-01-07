@@ -1,7 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import Layout from "@/components/Layout";
-import { TimesTablesOrb } from "@/components/TimesTablesOrb";
 
 export default function Home() {
   return (
@@ -40,14 +39,16 @@ export default function Home() {
         <div className="container mx-auto px-4">
           {/* Hero Section */}
           <div className="flex flex-col items-center justify-center min-h-[80vh] text-center">
-            {/* Central Sigil with Times Tables Geometry */}
-            <div className="mb-8 relative flex items-center justify-center animate-float group cursor-default">
-              <TimesTablesOrb 
-                size={280}
-                multiplier={1}
-                speed={0.008}
-                points={160}
-                className="drop-shadow-[0_0_30px_rgba(144,238,144,0.4)]"
+            {/* Central Sigil with Vos Arkana Logo */}
+            <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
+              {/* Glow backdrop */}
+              <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
+              
+              {/* Vos Arkana Logo Image */}
+              <img
+                src="/psi-logo.png"
+                alt="Vos Arkana Logo"
+                className="relative z-10 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.4)]"
               />
             </div>
 
