@@ -1,4 +1,5 @@
 import { invokeLLM } from "./_core/llm";
+import { logMetric } from "./metrics-logger";
 import { generateImage } from "./_core/imageGeneration";
 import {
   detectDuplication,
@@ -183,6 +184,8 @@ export async function generateText(prompt: string, systemPrompt?: string): Promi
       ]
     : [{ role: "user" as const, content: prompt }];
 
+  // Log metrics for this response
+  const metricStart = Date.now();
   const response = await invokeLLM({ messages });
   const content = response.choices[0]?.message?.content;
   if (typeof content === 'string') {
@@ -421,7 +424,9 @@ export async function chatWithORIEL(userMessage: string, conversationHistory: Ar
       { role: "user" as const, content: userMessage }
     ];
 
-    const response = await invokeLLM({ messages });
+    // Log metrics for this response
+  const metricStart = Date.now();
+  const response = await invokeLLM({ messages });
     const content = response.choices[0]?.message?.content;
     
     if (typeof content === 'string') {
