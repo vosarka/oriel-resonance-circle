@@ -8,6 +8,7 @@ import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateElevenLabsSpeech, audioToDataUrl } from "./elevenlabs-tts";
+import { generateChunkedSpeech } from "./elevenlabs-chunked";
 
 export const appRouter = router({
   system: systemRouter,
@@ -186,17 +187,20 @@ export const appRouter = router({
       }))
       .mutation(async ({ input }) => {
         try {
-          const audioBase64 = await generateElevenLabsSpeech(input.text);
+          console.log("[generateSpeech] Starting TTS generation for text:", input.text.substring(0, 100), `(${input.text.length} chars)`);
+          const audioBase64 = await generateChunkedSpeech(input.text);
+          console.log("[generateSpeech] Audio generated successfully, size:", audioBase64.length);
           const audioUrl = audioToDataUrl(audioBase64);
           return {
             success: true,
             audioUrl,
           };
         } catch (error) {
-          console.error("Failed to generate speech:", error);
+          const errorMsg = error instanceof Error ? error.message : String(error);
+          console.error("[generateSpeech] Failed to generate speech:", errorMsg);
           return {
             success: false,
-            error: "Failed to generate speech. Client should fall back to browser TTS.",
+            error: errorMsg,
           };
         }
       }),

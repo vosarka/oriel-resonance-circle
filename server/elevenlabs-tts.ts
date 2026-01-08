@@ -45,38 +45,49 @@ export async function generateElevenLabsSpeech(text: string): Promise<string> {
     };
 
     const req = https.request(options, (res) => {
-      let data = "";
+      const chunks: Buffer[] = [];
 
       res.on("data", (chunk) => {
-        data += chunk;
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       });
 
       res.on("end", () => {
         if (res.statusCode === 200 || res.statusCode === 201) {
           // ElevenLabs returns audio/mpeg binary data
-          // Convert to base64 for transmission
-          const audioBuffer = Buffer.from(data, "binary");
+          // Concatenate all chunks and convert to base64
+          const audioBuffer = Buffer.concat(chunks);
           const base64Audio = audioBuffer.toString("base64");
+          console.log(`[ElevenLabs TTS] Generated audio: ${base64Audio.length} bytes (base64)`);
           resolve(base64Audio);
         } else {
+          const errorData = Buffer.concat(chunks).toString("utf-8");
+          console.error(`[ElevenLabs TTS] API error ${res.statusCode}:`, errorData);
           try {
-            const errorResponse = JSON.parse(data);
+            const errorResponse = JSON.parse(errorData);
             reject(
               new Error(
-                `ElevenLabs API error: ${errorResponse.detail?.message || data}`
+                `ElevenLabs API error: ${errorResponse.detail?.message || errorData}`
               )
             );
           } catch {
-            reject(new Error(`ElevenLabs API error: ${res.statusCode}`));
+            reject(new Error(`ElevenLabs API error: ${res.statusCode} - ${errorData}`));
           }
         }
       });
     });
 
     req.on("error", (error) => {
+      console.error("[ElevenLabs TTS] Request error:", error);
       reject(error);
     });
 
+    req.on("timeout", () => {
+      console.error("[ElevenLabs TTS] Request timeout");
+      req.destroy();
+      reject(new Error("ElevenLabs API request timeout"));
+    });
+
+    req.setTimeout(30000);
     req.write(payload);
     req.end();
   });

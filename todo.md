@@ -412,3 +412,20 @@
 - [x] Create comprehensive unit tests for ElevenLabs integration (12 tests)
 - [x] All 130 tests passing
 - [ ] Save checkpoint with ElevenLabs TTS
+
+
+## ElevenLabs TTS Voice Generation Bug Fix - Current Session
+- [x] Diagnose "Failed to fetch" error - root cause is 502 timeout on long responses
+- [x] Add error logging to identify server timeout issue
+- [ ] Implement response chunking for long text (split into multiple TTS calls)
+- [ ] Increase server timeout for TTS generation
+- [ ] Test voice generation with long responses
+- [ ] Verify audio playback works end-to-end
+- [ ] Save checkpoint with fix
+
+
+## SEO Alt Text Fixes - Current Session
+- [x] Identify images missing alt text on home page
+- [x] Add descriptive alt text to PayPal pixel image (DonateButton.tsx)
+- [x] Verify all images have meaningful alt text
+- [ ] Save checkpoint with SEO fixes

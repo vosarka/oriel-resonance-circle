@@ -12,7 +12,7 @@ export default function DonateButton() {
         style={{ border: 'none' }}
       />
       <img 
-        alt="" 
+        alt="PayPal tracking pixel" 
         src="https://www.paypal.com/en_US/i/scr/pixel.gif" 
         width={1} 
         height={1} 
