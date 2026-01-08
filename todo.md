@@ -400,3 +400,15 @@
 - [x] Update latex-filter.test.ts to verify no truncation
 - [x] All 118 tests passing
 - [ ] Save checkpoint with fix
+
+
+## ElevenLabs TTS Integration - Current Session
+- [x] Request ElevenLabs API key and voice ID from user
+- [x] Create elevenlabs-tts.ts server implementation (uses eleven_turbo_v2_5 model)
+- [x] Create tRPC endpoint for text-to-speech generation (oriel.generateSpeech)
+- [x] Integrate ElevenLabs TTS into Conduit interface
+- [x] Add voice playback with audio controls (pause/resume/stop)
+- [x] Add volume control slider for voice playback
+- [x] Create comprehensive unit tests for ElevenLabs integration (12 tests)
+- [x] All 130 tests passing
+- [ ] Save checkpoint with ElevenLabs TTS

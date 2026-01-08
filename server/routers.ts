@@ -7,6 +7,7 @@ import * as db from "./db";
 import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
+import { generateElevenLabsSpeech, audioToDataUrl } from "./elevenlabs-tts";
 
 export const appRouter = router({
   system: systemRouter,
@@ -178,6 +179,27 @@ export const appRouter = router({
       await db.clearChatHistory(ctx.user.id);
       return { success: true };
     }),
+
+    generateSpeech: publicProcedure
+      .input(z.object({
+        text: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const audioBase64 = await generateElevenLabsSpeech(input.text);
+          const audioUrl = audioToDataUrl(audioBase64);
+          return {
+            success: true,
+            audioUrl,
+          };
+        } catch (error) {
+          console.error("Failed to generate speech:", error);
+          return {
+            success: false,
+            error: "Failed to generate speech. Client should fall back to browser TTS.",
+          };
+        }
+      }),
 
     // Vossari Resonance Codex - Mode A: Diagnostic Reading
     diagnosticReading: publicProcedure
