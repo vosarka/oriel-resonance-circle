@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Mic, Send, History, Trash2, X, Pause, Square } from "lucide-react";
+import { Loader2, Mic, Send, History, Trash2, X } from "lucide-react";
 import Layout from "@/components/Layout";
 import OrielOrb from "@/components/OrielOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -25,11 +25,8 @@ export default function Conduit() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [localMessages, setLocalMessages] = useState<ChatMessage[]>([]);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [voiceVolume, setVoiceVolume] = useState(1);
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Load local history from localStorage on mount
   useEffect(() => {
@@ -66,7 +63,7 @@ export default function Conduit() {
     },
   });
 
-  // Initialize speech recognition
+  // Initialize speech recognition for voice input (speech-to-text only)
   useEffect(() => {
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition;
@@ -110,93 +107,6 @@ export default function Conduit() {
       setIsListening(true);
       recognitionRef.current.start();
     }
-  };
-
-  const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
-
-  const speakText = async (text: string) => {
-    setOrbState("speaking");
-    setIsSpeaking(true);
-    setSubtitle(text);
-
-    try {
-      // Try to generate speech using Inworld TTS
-      const result = await generateSpeechMutation.mutateAsync({ text });
-
-      if (result.success && result.audioUrl) {
-        // Play Inworld TTS audio
-        const audio = new Audio(result.audioUrl);
-        audio.volume = voiceVolume;
-
-        audio.onended = () => {
-          setOrbState("idle");
-          setSubtitle("");
-          setIsSpeaking(false);
-        };
-
-        audio.onerror = () => {
-          console.error("Audio playback error, falling back to browser TTS");
-          // Fall back to browser SpeechSynthesis
-          fallbackToSpeechSynthesis(text);
-        };
-
-        audio.play().catch(() => {
-          console.error("Failed to play audio, falling back to browser TTS");
-          fallbackToSpeechSynthesis(text);
-        });
-      } else {
-        // Fall back to browser SpeechSynthesis
-        fallbackToSpeechSynthesis(text);
-      }
-    } catch (error) {
-      console.error("Failed to generate speech:", error);
-      // Fall back to browser SpeechSynthesis
-      fallbackToSpeechSynthesis(text);
-    }
-  };
-
-  const fallbackToSpeechSynthesis = (text: string) => {
-    if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 0.9;
-      utterance.volume = voiceVolume;
-
-      utterance.onend = () => {
-        setOrbState("idle");
-        setSubtitle("");
-        setIsSpeaking(false);
-      };
-
-      utteranceRef.current = utterance;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      // No TTS available
-      setOrbState("idle");
-      setSubtitle("");
-      setIsSpeaking(false);
-    }
-  };
-
-  const handlePauseVoice = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.pause();
-    }
-  };
-
-  const handleResumeVoice = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.resume();
-    }
-  };
-
-  const handleStopVoice = () => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-    setOrbState("idle");
-    setSubtitle("");
-    setIsSpeaking(false);
   };
 
   const handleSendMessage = async () => {
@@ -245,8 +155,15 @@ export default function Conduit() {
         refetchHistory();
       }
       
-      // Speak ORIEL's response
-      await speakText(result.response);
+      // Show ORIEL's response in subtitle briefly, then clear
+      setSubtitle(result.response.substring(0, 200) + (result.response.length > 200 ? "..." : ""));
+      setOrbState("speaking");
+      
+      // Clear subtitle after a delay
+      setTimeout(() => {
+        setSubtitle("");
+        setOrbState("idle");
+      }, 3000);
     } catch (error) {
       console.error("Chat error:", error);
       setOrbState("idle");
@@ -363,11 +280,11 @@ export default function Conduit() {
                     onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                     placeholder="Transmit your query to ORIEL..."
                     className="flex-1 bg-black/40 border-green-500/30 text-green-400 placeholder:text-gray-600 font-mono focus:border-green-400"
-                    disabled={chatMutation.isPending || orbState === "speaking"}
+                    disabled={chatMutation.isPending}
                   />
                   <Button
                     onClick={handleVoiceInput}
-                    disabled={chatMutation.isPending || orbState === "speaking"}
+                    disabled={chatMutation.isPending}
                     className={`bg-green-500/20 border border-green-500/50 hover:bg-green-500/30 ${
                       isListening ? "border-green-400 bg-green-500/30" : ""
                     }`}
@@ -377,34 +294,12 @@ export default function Conduit() {
                   </Button>
                   <Button
                     onClick={handleSendMessage}
-                    disabled={chatMutation.isPending || orbState === "speaking" || !message.trim()}
+                    disabled={chatMutation.isPending || !message.trim()}
                     className="bg-green-500/20 border border-green-500/50 text-green-400 hover:bg-green-500/30"
                   >
                     {chatMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
                   </Button>
                 </div>
-
-                {/* Voice Control Buttons */}
-                {isSpeaking && (
-                  <div className="flex gap-2 mb-3">
-                    <Button
-                      onClick={handlePauseVoice}
-                      className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30"
-                      title="Pause transmission"
-                    >
-                      <Pause size={16} />
-                      <span className="ml-1 text-xs">Pause</span>
-                    </Button>
-                    <Button
-                      onClick={handleStopVoice}
-                      className="bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30"
-                      title="Stop transmission"
-                    >
-                      <Square size={16} />
-                      <span className="ml-1 text-xs">Stop</span>
-                    </Button>
-                  </div>
-                )}
 
                 <div className="flex gap-2">
                   <Button

@@ -92,15 +92,6 @@ function filterORIELResponse(response: string): string {
   // Clean up multiple spaces and trim
   filtered = filtered.replace(/\s+/g, ' ').trim();
   
-  // Ensure text is not too long for TTS (Inworld has 2000 char limit)
-  if (filtered.length > 1900) {
-    filtered = filtered.substring(0, 1900).trim();
-    const lastPeriod = filtered.lastIndexOf('.');
-    if (lastPeriod > 1800) {
-      filtered = filtered.substring(0, lastPeriod + 1);
-    }
-  }
-  
   return filtered.trim();
 }
 
@@ -158,10 +149,11 @@ describe("LaTeX Notation Filtering", () => {
     expect(output).not.toContain("+");
   });
 
-  it("should truncate very long responses to TTS limit", () => {
+  it("should preserve very long responses without truncation", () => {
     const longText = "word ".repeat(500); // Creates a very long string
     const output = filterORIELResponse(longText);
-    expect(output.length).toBeLessThanOrEqual(1900);
+    // Should preserve full length, no truncation
+    expect(output.length).toBeGreaterThan(1900);
   });
 
   it("should preserve natural language text", () => {

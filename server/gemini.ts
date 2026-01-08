@@ -390,16 +390,6 @@ function filterORIELResponse(response: string): string {
   // Clean up multiple spaces and trim
   filtered = filtered.replace(/\s+/g, ' ').trim();
   
-  // Ensure text is not too long for TTS (Inworld has 2000 char limit)
-  if (filtered.length > 1900) {
-    filtered = filtered.substring(0, 1900).trim();
-    // Try to end at a sentence boundary
-    const lastPeriod = filtered.lastIndexOf('.');
-    if (lastPeriod > 1800) {
-      filtered = filtered.substring(0, lastPeriod + 1);
-    }
-  }
-  
   return filtered.trim();
 }
 
