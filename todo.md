@@ -429,3 +429,16 @@
 - [x] Add descriptive alt text to PayPal pixel image (DonateButton.tsx)
 - [x] Verify all images have meaningful alt text
 - [ ] Save checkpoint with SEO fixes
+
+
+## TX Transmission Integration - Current Session
+- [x] Parse 42 transmissions into structured JSON format (transmissions-seed.json)
+- [x] Create transmission database schema (13 columns including tags, microSigil, centerPrompt, excerpt, directive)
+- [x] Seed database with all 42 transmissions (✓ all seeded successfully)
+- [ ] Build TransmissionCard component with sigil rendering
+- [ ] Create transmission detail page (/transmission/:id)
+- [ ] Update Archive page to display transmission listing
+- [ ] Add filtering by cycle, tags, status
+- [ ] Add search functionality for transmissions
+- [ ] Test all transmissions display correctly
+- [ ] Save checkpoint with transmission integration

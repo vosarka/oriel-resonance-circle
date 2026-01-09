@@ -43,6 +43,13 @@
       "when": 1767803771531,
       "tag": "0005_fantastic_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1767972993097,
+      "tag": "0006_aromatic_vindicator",
+      "breakpoints": true
     }
   ]
 }

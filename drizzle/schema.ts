@@ -138,3 +138,26 @@ export const orielUserProfiles = mysqlTable("orielUserProfiles", {
 
 export type OrielUserProfile = typeof orielUserProfiles.$inferSelect;
 export type InsertOrielUserProfile = typeof orielUserProfiles.$inferInsert;
+
+/**
+ * TX Transmissions - Core archive entries for Vos Arkana
+ * Each transmission is a foundational teaching in the FOUNDATION ARC
+ */
+export const transmissions = mysqlTable("transmissions", {
+  id: int("id").autoincrement().primaryKey(),
+  txId: varchar("txId", { length: 64 }).notNull().unique(),
+  txNumber: int("txNumber").notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  tags: text("tags").notNull(),
+  microSigil: varchar("microSigil", { length: 64 }).notNull(),
+  centerPrompt: text("centerPrompt").notNull(),
+  excerpt: text("excerpt").notNull(),
+  directive: text("directive").notNull(),
+  cycle: varchar("cycle", { length: 64 }).default("FOUNDATION ARC").notNull(),
+  status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Mythic"]).default("Confirmed").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Transmission = typeof transmissions.$inferSelect;
+export type InsertTransmission = typeof transmissions.$inferInsert;
