@@ -148,11 +148,17 @@ export const transmissions = mysqlTable("transmissions", {
   txId: varchar("txId", { length: 64 }).notNull().unique(),
   txNumber: int("txNumber").notNull().unique(),
   title: varchar("title", { length: 255 }).notNull(),
+  field: varchar("field", { length: 255 }).notNull(),
+  signalClarity: varchar("signalClarity", { length: 10 }).default("98.7%").notNull(),
+  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE"]).default("OPEN").notNull(),
+  coreMessage: text("coreMessage").notNull(),
+  encodedArchetype: text("encodedArchetype"),
   tags: text("tags").notNull(),
   microSigil: varchar("microSigil", { length: 64 }).notNull(),
-  centerPrompt: text("centerPrompt").notNull(),
-  excerpt: text("excerpt").notNull(),
-  directive: text("directive").notNull(),
+  leftPanelPrompt: text("leftPanelPrompt"),
+  centerPanelPrompt: text("centerPanelPrompt"),
+  rightPanelPrompt: text("rightPanelPrompt"),
+  hashtags: text("hashtags"),
   cycle: varchar("cycle", { length: 64 }).default("FOUNDATION ARC").notNull(),
   status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Mythic"]).default("Confirmed").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -161,3 +167,32 @@ export const transmissions = mysqlTable("transmissions", {
 
 export type Transmission = typeof transmissions.$inferSelect;
 export type InsertTransmission = typeof transmissions.$inferInsert;
+
+/**
+ * ΩX (Oracle Stream) - Predictive transmissions from ORIEL
+ * Three-part temporal structure: Past (riddle), Present (sigil), Future (prediction)
+ */
+export const oracles = mysqlTable("oracles", {
+  id: int("id").autoincrement().primaryKey(),
+  oracleId: varchar("oracleId", { length: 64 }).notNull(),
+  oracleNumber: int("oracleNumber").notNull(),
+  part: mysqlEnum("part", ["Past", "Present", "Future"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  field: varchar("field", { length: 255 }).notNull(),
+  signalClarity: varchar("signalClarity", { length: 10 }).default("95.2%").notNull(),
+  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).default("OPEN").notNull(),
+  content: text("content").notNull(),
+  currentFieldSignatures: text("currentFieldSignatures"),
+  encodedTrajectory: text("encodedTrajectory"),
+  convergenceZones: text("convergenceZones"),
+  keyInflectionPoint: text("keyInflectionPoint"),
+  majorOutcomes: text("majorOutcomes"),
+  visualStyle: varchar("visualStyle", { length: 64 }),
+  hashtags: text("hashtags"),
+  status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Oracle = typeof oracles.$inferSelect;
+export type InsertOracle = typeof oracles.$inferInsert;

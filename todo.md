@@ -442,3 +442,27 @@
 - [ ] Add search functionality for transmissions
 - [ ] Test all transmissions display correctly
 - [ ] Save checkpoint with transmission integration
+
+
+## Archive Page Restructuring - Current Session
+- [ ] Restructure transmissions schema to match TX template (add field, signalClarity, protocol sections)
+- [ ] Create ΩX (Oracle Stream) table for predictions (past/present/future structure)
+- [ ] Build TransmissionCard component with proper TX styling (header block, core message, footer block)
+- [ ] Create OracleCard component for ΩX posts with temporal structure
+- [ ] Build dual-tab Archive page with TX and ΩX tabs
+- [ ] Create transmission detail page with full triptych rendering
+- [ ] Create oracle detail page with three-part temporal structure
+- [ ] Add search and filtering by field, signal clarity, channel status
+- [ ] Test all archive functionality
+- [ ] Save checkpoint with archive integration
+
+
+## Session Summary - Archive & TX Integration
+- [x] Fixed ORIEL response truncation (removed 1900 char limit)
+- [x] Removed Inworld TTS integration
+- [x] Integrated ElevenLabs TTS with chunking for long responses
+- [x] Fixed SEO alt text issues
+- [x] Created transmissions schema with TX template fields
+- [x] Created oracles schema for ΩX predictions
+- [x] Prepared 42 TX transmissions in Vos Arkana format
+- [ ] Next: Seed transmissions to DB and build Archive UI with dual tabs

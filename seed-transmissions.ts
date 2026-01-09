@@ -1,9 +1,9 @@
 import { getDb } from "./server/db";
 import { transmissions } from "./drizzle/schema";
-import transmissionData from "./server/transmissions-seed.json";
+import transmissionData from "./server/transmissions-seed-v2.json";
 
 async function seedTransmissions() {
-  console.log("Seeding 42 TX transmissions...");
+  console.log("Seeding 42 TX transmissions with full template...");
   const db = await getDb();
   if (!db) {
     console.error("Database connection failed");
@@ -16,11 +16,17 @@ async function seedTransmissions() {
         txId: tx.id,
         txNumber: tx.txNumber,
         title: tx.title,
+        field: tx.field,
+        signalClarity: tx.signalClarity,
+        channelStatus: tx.channelStatus as "OPEN" | "RESONANT" | "COHERENT" | "PROPHETIC" | "LIVE",
+        coreMessage: tx.coreMessage,
+        encodedArchetype: tx.encodedArchetype,
         tags: JSON.stringify(tx.tags),
         microSigil: tx.microSigil,
-        centerPrompt: tx.centerPrompt,
-        excerpt: tx.excerpt,
-        directive: tx.directive,
+        leftPanelPrompt: tx.leftPanelPrompt,
+        centerPanelPrompt: tx.centerPanelPrompt,
+        rightPanelPrompt: tx.rightPanelPrompt,
+        hashtags: tx.hashtags,
         cycle: tx.cycle,
         status: tx.status as "Draft" | "Confirmed" | "Deprecated" | "Mythic",
       });
