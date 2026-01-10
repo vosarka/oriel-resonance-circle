@@ -1,0 +1,31 @@
+{
+  "query": "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE();",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user wNC9iRD8C1xiHd7.root --database FcrG9xDq3HfnDm7AEi3SdN --execute SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE();",
+  "rows": [
+    {
+      "TABLE_NAME": "__drizzle_migrations"
+    },
+    {
+      "TABLE_NAME": "users"
+    },
+    {
+      "TABLE_NAME": "artifacts"
+    },
+    {
+      "TABLE_NAME": "chatMessages"
+    },
+    {
+      "TABLE_NAME": "signals"
+    },
+    {
+      "TABLE_NAME": "orielMemories"
+    },
+    {
+      "TABLE_NAME": "orielUserProfiles"
+    }
+  ],
+  "messages": [],
+  "stdout": "TABLE_NAME\n__drizzle_migrations\nusers\nartifacts\nchatMessages\nsignals\norielMemories\norielUserProfiles\n",
+  "stderr": "",
+  "execution_time_ms": 64
+}

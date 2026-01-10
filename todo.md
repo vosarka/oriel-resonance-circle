@@ -466,3 +466,16 @@
 - [x] Created oracles schema for ΩX predictions
 - [x] Prepared 42 TX transmissions in Vos Arkana format
 - [ ] Next: Seed transmissions to DB and build Archive UI with dual tabs
+
+
+## Archive UI Implementation - Current Session
+- [x] Created TransmissionCard component with TX styling (micro-sigils, signal clarity, channel status)
+- [x] Created OracleCard component with ΩX styling (past/present/future parts, temporal structure)
+- [x] Built dual-tab Archive page with TX and ΩX tabs
+- [x] Implemented search functionality for both TX and ΩX
+- [x] Added filtering by field and status for TX transmissions
+- [x] Created Archive component tests (all passing)
+- [x] Mock data integrated for 5 TX transmissions and 3 ΩX oracle streams
+- [ ] Connect to database and seed real transmissions
+- [ ] Create transmission detail pages with triptych rendering
+- [ ] Create oracle detail pages with temporal structure
