@@ -182,12 +182,12 @@ export default function Archive() {
 
               {/* Filter Controls */}
               <div className="flex flex-wrap gap-3">
-                <Select value={filterField || ""} onValueChange={(v) => setFilterField(v || null)}>
+                <Select value={filterField || "__all__"} onValueChange={(v) => setFilterField(v === "__all__" ? null : v)}>
                   <SelectTrigger className="w-[200px] bg-green-950/20 border-green-900/50 text-green-100">
                     <SelectValue placeholder="Filter by field..." />
                   </SelectTrigger>
                   <SelectContent className="bg-green-950 border-green-900">
-                    <SelectItem value="">All Fields</SelectItem>
+                    <SelectItem value="__all__">All Fields</SelectItem>
                     {uniqueFields.map((field) => (
                       <SelectItem key={field} value={field}>
                         {field}
@@ -196,12 +196,12 @@ export default function Archive() {
                   </SelectContent>
                 </Select>
 
-                <Select value={filterStatus || ""} onValueChange={(v) => setFilterStatus(v || null)}>
+                <Select value={filterStatus || "__all__"} onValueChange={(v) => setFilterStatus(v === "__all__" ? null : v)}>
                   <SelectTrigger className="w-[150px] bg-green-950/20 border-green-900/50 text-green-100">
                     <SelectValue placeholder="Filter by status..." />
                   </SelectTrigger>
                   <SelectContent className="bg-green-950 border-green-900">
-                    <SelectItem value="">All Status</SelectItem>
+                    <SelectItem value="__all__">All Status</SelectItem>
                     {uniqueStatuses.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
