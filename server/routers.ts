@@ -314,6 +314,30 @@ export const appRouter = router({
       }),
   }),
 
+  // Archive - Transmissions and Oracles
+  archive: router({
+    transmissions: router({
+      list: publicProcedure.query(async () => {
+        return db.getAllTransmissions();
+      }),
+      getById: publicProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ input }) => {
+          return db.getTransmissionById(input.id);
+        }),
+    }),
+    oracles: router({
+      list: publicProcedure.query(async () => {
+        return db.getAllOracles();
+      }),
+      getByOracleId: publicProcedure
+        .input(z.object({ oracleId: z.string() }))
+        .query(async ({ input }) => {
+          return db.getOraclesByOracleId(input.oracleId);
+        }),
+    }),
+  }),
+
   // PayPal webhook handler
   paypal: router({
     webhook: publicProcedure

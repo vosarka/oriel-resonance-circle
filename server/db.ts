@@ -1,6 +1,6 @@
 import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -16,6 +16,51 @@ export async function getDb() {
     }
   }
   return _db;
+}
+
+export async function getAllTransmissions() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(transmissions);
+  } catch (error) {
+    console.error("[Database] Failed to fetch transmissions:", error);
+    return [];
+  }
+}
+
+export async function getTransmissionById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.select().from(transmissions).where(eq(transmissions.id, id)).limit(1);
+    return result[0] || null;
+  } catch (error) {
+    console.error("[Database] Failed to fetch transmission:", error);
+    return null;
+  }
+}
+
+export async function getAllOracles() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(oracles).orderBy(oracles.oracleNumber);
+  } catch (error) {
+    console.error("[Database] Failed to fetch oracles:", error);
+    return [];
+  }
+}
+
+export async function getOraclesByOracleId(oracleId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(oracles).where(eq(oracles.oracleId, oracleId));
+  } catch (error) {
+    console.error("[Database] Failed to fetch oracle:", error);
+    return [];
+  }
 }
 
 export async function upsertUser(user: InsertUser): Promise<void> {

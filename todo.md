@@ -479,3 +479,14 @@
 - [ ] Connect to database and seed real transmissions
 - [ ] Create transmission detail pages with triptych rendering
 - [ ] Create oracle detail pages with temporal structure
+
+
+## Archive Database Connection - Current Session
+- [x] Verify transmissions and oracles tables exist in database (created via SQL)
+- [x] Create tRPC procedures for transmissions.list and oracles.list (in archive router)
+- [x] Seed database with 5 TX transmissions (seeded successfully)
+- [x] Seed database with 3 ΩX oracle streams (seeded successfully)
+- [x] Update Archive page to use tRPC queries instead of mock data
+- [x] Add loading states and error handling (Loader2 spinners)
+- [x] Test filtering and search with real data (working)
+- [ ] Save checkpoint with database integration
