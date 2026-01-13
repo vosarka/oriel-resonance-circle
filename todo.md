@@ -489,4 +489,14 @@
 - [x] Update Archive page to use tRPC queries instead of mock data
 - [x] Add loading states and error handling (Loader2 spinners)
 - [x] Test filtering and search with real data (working)
-- [ ] Save checkpoint with database integration
+- [x] Save checkpoint with database integration
+
+## Transmission Detail Page - Current Session
+- [x] Create TransmissionDetail.tsx component with triptych layout
+- [x] Add /transmission/:id route to App.tsx
+- [x] Implement loading and error states
+- [x] Display transmission metadata, core message, and encoded archetype
+- [x] Show tags and hashtags
+- [x] Add back navigation and bookmark/share buttons
+- [x] All 126 core tests passing
+- [ ] Save checkpoint with transmission detail page
