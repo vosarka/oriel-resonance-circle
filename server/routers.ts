@@ -336,6 +336,37 @@ export const appRouter = router({
           return db.getOraclesByOracleId(input.oracleId);
         }),
     }),
+    bookmarks: router({
+      add: protectedProcedure
+        .input(z.object({ transmissionId: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("User not authenticated");
+          await db.addBookmark(ctx.user.id, input.transmissionId);
+          return { success: true };
+        }),
+      remove: protectedProcedure
+        .input(z.object({ transmissionId: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("User not authenticated");
+          await db.removeBookmark(ctx.user.id, input.transmissionId);
+          return { success: true };
+        }),
+      list: protectedProcedure.query(async ({ ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        return db.getUserBookmarks(ctx.user.id);
+      }),
+      isBookmarked: protectedProcedure
+        .input(z.object({ transmissionId: z.number() }))
+        .query(async ({ input, ctx }) => {
+          if (!ctx.user) return false;
+          return db.isTransmissionBookmarked(ctx.user.id, input.transmissionId);
+        }),
+      getCount: publicProcedure
+        .input(z.object({ transmissionId: z.number() }))
+        .query(async ({ input }) => {
+          return db.getTransmissionBookmarkCount(input.transmissionId);
+        }),
+    }),
   }),
 
   // PayPal webhook handler

@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, Bookmark, Share2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 
 const channelStatusColors: Record<string, string> = {
@@ -25,12 +27,42 @@ const statusColors: Record<string, string> = {
 export default function TransmissionDetail() {
   const params = useParams();
   const [, navigate] = useLocation();
+  const { user } = useAuth();
   const txId = params.id ? parseInt(params.id) : null;
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const { data: transmission, isLoading } = trpc.archive.transmissions.getById.useQuery(
     { id: txId || 0 },
     { enabled: !!txId }
   );
+
+  // Check if transmission is bookmarked
+  const { data: bookmarkStatus } = trpc.archive.bookmarks.isBookmarked.useQuery(
+    { transmissionId: txId || 0 },
+    { enabled: !!user && !!txId }
+  );
+
+  // Bookmark mutations
+  const addBookmarkMutation = trpc.archive.bookmarks.add.useMutation({
+    onSuccess: () => setIsBookmarked(true),
+  });
+
+  const removeBookmarkMutation = trpc.archive.bookmarks.remove.useMutation({
+    onSuccess: () => setIsBookmarked(false),
+  });
+
+  const handleBookmarkClick = () => {
+    if (!user) {
+      window.location.href = `/auth/login?redirect=/transmission/${txId}`;
+      return;
+    }
+
+    if (bookmarkStatus) {
+      removeBookmarkMutation.mutate({ transmissionId: txId || 0 });
+    } else {
+      addBookmarkMutation.mutate({ transmissionId: txId || 0 });
+    }
+  };
 
   if (!txId) {
     return (
@@ -85,8 +117,16 @@ export default function TransmissionDetail() {
             Back to Archive
           </Button>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="border-green-900/50 text-green-100 hover:bg-green-950/30">
-              <Bookmark className="w-4 h-4" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBookmarkClick}
+              disabled={addBookmarkMutation.isPending || removeBookmarkMutation.isPending}
+              className={`border-green-900/50 hover:bg-green-950/30 ${
+                bookmarkStatus ? "bg-amber-950/30 text-amber-400" : "text-green-100"
+              }`}
+            >
+              <Bookmark className="w-4 h-4" fill={bookmarkStatus ? "currentColor" : "none"} />
             </Button>
             <Button variant="outline" size="sm" className="border-green-900/50 text-green-100 hover:bg-green-950/30">
               <Share2 className="w-4 h-4" />

@@ -500,3 +500,23 @@
 - [x] Add back navigation and bookmark/share buttons
 - [x] All 126 core tests passing
 - [ ] Save checkpoint with transmission detail page
+
+
+## User Bookmarking Feature - Current Session
+- [ ] Create bookmarks table in database schema
+- [ ] Add tRPC procedures for bookmark operations (create, delete, list)
+- [ ] Update TransmissionCard to show bookmark status
+- [ ] Update TransmissionDetail page with bookmark functionality
+- [ ] Add bookmark count display on transmission cards
+- [ ] Test bookmarking functionality end-to-end
+- [ ] Save checkpoint with bookmarking feature
+
+
+## User Bookmarking Feature - COMPLETED
+- [x] Create bookmarks table in database schema
+- [x] Add tRPC procedures for bookmark operations (create, delete, list, isBookmarked, getCount)
+- [x] Update TransmissionCard to show bookmark status with filled/unfilled icon
+- [x] Update TransmissionDetail page with bookmark functionality
+- [x] Add bookmark count display on transmission cards (shows total bookmarks)
+- [x] Test bookmarking functionality end-to-end (126 tests passing)
+- [x] Save checkpoint with bookmarking feature

@@ -1,6 +1,6 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -241,4 +241,67 @@ export async function updateUserConduitId(userId: number, conduitId: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ conduitId }).where(eq(users.id, userId));
+}
+
+
+// Bookmark queries
+export async function addBookmark(userId: number, transmissionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.insert(bookmarks).values({ userId, transmissionId });
+  } catch (error) {
+    console.error("[Database] Failed to add bookmark:", error);
+    throw error;
+  }
+}
+
+export async function removeBookmark(userId: number, transmissionId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.delete(bookmarks).where(
+      and(eq(bookmarks.userId, userId), eq(bookmarks.transmissionId, transmissionId))
+    );
+  } catch (error) {
+    console.error("[Database] Failed to remove bookmark:", error);
+    throw error;
+  }
+}
+
+export async function getUserBookmarks(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(bookmarks).where(eq(bookmarks.userId, userId));
+  } catch (error) {
+    console.error("[Database] Failed to fetch user bookmarks:", error);
+    return [];
+  }
+}
+
+export async function isTransmissionBookmarked(userId: number, transmissionId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const result = await db.select().from(bookmarks).where(
+      and(eq(bookmarks.userId, userId), eq(bookmarks.transmissionId, transmissionId))
+    ).limit(1);
+    return result.length > 0;
+  } catch (error) {
+    console.error("[Database] Failed to check bookmark:", error);
+    return false;
+  }
+}
+
+export async function getTransmissionBookmarkCount(transmissionId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const result = await db.select().from(bookmarks).where(eq(bookmarks.transmissionId, transmissionId));
+    return result.length;
+  } catch (error) {
+    console.error("[Database] Failed to get bookmark count:", error);
+    return 0;
+  }
 }

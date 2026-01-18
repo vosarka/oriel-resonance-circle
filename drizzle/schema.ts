@@ -196,3 +196,18 @@ export const oracles = mysqlTable("oracles", {
 
 export type Oracle = typeof oracles.$inferSelect;
 export type InsertOracle = typeof oracles.$inferInsert;
+
+
+/**
+ * User Bookmarks - Track which transmissions users have bookmarked
+ * Used for personalization and user engagement tracking
+ */
+export const bookmarks = mysqlTable("bookmarks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  transmissionId: int("transmissionId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Bookmark = typeof bookmarks.$inferSelect;
+export type InsertBookmark = typeof bookmarks.$inferInsert;

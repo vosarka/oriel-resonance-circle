@@ -1,9 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Bookmark } from "lucide-react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 export interface TransmissionCardProps {
-  id: string;
+  id: number;
   txNumber: number;
   title: string;
   field: string;
@@ -44,6 +51,46 @@ export function TransmissionCard({
   cycle,
   status,
 }: TransmissionCardProps) {
+  const { user } = useAuth();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  
+  // Check if transmission is bookmarked
+  const { data: bookmarkStatus } = trpc.archive.bookmarks.isBookmarked.useQuery(
+    { transmissionId: id },
+    { enabled: !!user }
+  );
+
+  // Get bookmark count
+  const { data: bookmarkCount = 0 } = trpc.archive.bookmarks.getCount.useQuery({
+    transmissionId: id,
+  });
+
+  // Bookmark mutations
+  const addBookmarkMutation = trpc.archive.bookmarks.add.useMutation({
+    onSuccess: () => setIsBookmarked(true),
+  });
+
+  const removeBookmarkMutation = trpc.archive.bookmarks.remove.useMutation({
+    onSuccess: () => setIsBookmarked(false),
+  });
+
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      // Redirect to login
+      window.location.href = `/auth/login?redirect=/transmission/${id}`;
+      return;
+    }
+
+    if (bookmarkStatus) {
+      removeBookmarkMutation.mutate({ transmissionId: id });
+    } else {
+      addBookmarkMutation.mutate({ transmissionId: id });
+    }
+  };
+
   return (
     <Link href={`/transmission/${id}`}>
       <Card className="h-full hover:border-green-500/50 transition-colors cursor-pointer bg-black/40 border-green-900/30">
@@ -57,9 +104,20 @@ export function TransmissionCard({
               <CardTitle className="text-lg text-green-100 line-clamp-2">{title}</CardTitle>
               <CardDescription className="text-green-700/70 text-xs mt-1">{field}</CardDescription>
             </div>
-            <Badge variant="outline" className={statusColors[status]}>
-              {status}
-            </Badge>
+            <div className="flex flex-col gap-2 items-end">
+              <Badge variant="outline" className={statusColors[status]}>
+                {status}
+              </Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBookmarkClick}
+                className={`h-8 w-8 p-0 ${bookmarkStatus ? "text-amber-400" : "text-green-600 hover:text-amber-400"}`}
+                disabled={addBookmarkMutation.isPending || removeBookmarkMutation.isPending}
+              >
+                <Bookmark className="h-4 w-4" fill={bookmarkStatus ? "currentColor" : "none"} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
@@ -99,7 +157,7 @@ export function TransmissionCard({
           {/* Cycle & Footer */}
           <div className="pt-2 border-t border-green-900/30 text-xs text-green-600 flex justify-between">
             <span>{cycle}</span>
-            <span className="text-green-500">→ Receive</span>
+            <span className="text-green-500">{bookmarkCount} bookmarks</span>
           </div>
         </CardContent>
       </Card>
