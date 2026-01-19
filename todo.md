@@ -520,3 +520,12 @@
 - [x] Add bookmark count display on transmission cards (shows total bookmarks)
 - [x] Test bookmarking functionality end-to-end (126 tests passing)
 - [x] Save checkpoint with bookmarking feature
+
+
+## Update Archive with 20 Canonical TX Transmissions - Current Session
+- [x] Parse all 20 TX transmissions from Transmissions.md
+- [x] Clear existing transmissions from database
+- [x] Seed database with 20 canonical TX transmissions (TX-001 through TX-020)
+- [x] Update transmission schema channelStatus enum to include all values
+- [x] Verify transmissions display correctly in archive
+- [ ] Save checkpoint with updated archive

@@ -1,0 +1,13 @@
+{
+  "query": "SELECT COUNT(*) as count FROM transmissions; SELECT id, txNumber, title FROM transmissions ORDER BY txNumber LIMIT 25;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user wNC9iRD8C1xiHd7.root --database FcrG9xDq3HfnDm7AEi3SdN --execute SELECT COUNT(*) as count FROM transmissions; SELECT id, txNumber, title FROM transmissions ORDER BY txNumber LIMIT 25;",
+  "rows": [
+    {
+      "count": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "count\n0\n",
+  "stderr": "",
+  "execution_time_ms": 448
+}

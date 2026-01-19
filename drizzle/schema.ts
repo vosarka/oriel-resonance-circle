@@ -150,7 +150,7 @@ export const transmissions = mysqlTable("transmissions", {
   title: varchar("title", { length: 255 }).notNull(),
   field: varchar("field", { length: 255 }).notNull(),
   signalClarity: varchar("signalClarity", { length: 10 }).default("98.7%").notNull(),
-  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE"]).default("OPEN").notNull(),
+  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).default("OPEN").notNull(),
   coreMessage: text("coreMessage").notNull(),
   encodedArchetype: text("encodedArchetype"),
   tags: text("tags").notNull(),

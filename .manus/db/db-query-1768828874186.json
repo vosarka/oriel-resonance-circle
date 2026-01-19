@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE transmissions MODIFY COLUMN channelStatus ENUM('OPEN', 'RESONANT', 'COHERENT', 'PROPHETIC', 'LIVE', 'STABLE', 'HIGH COHERENCE', 'MAXIMUM COHERENCE', 'CRITICAL / STABLE') DEFAULT 'OPEN' NOT NULL;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user wNC9iRD8C1xiHd7.root --database FcrG9xDq3HfnDm7AEi3SdN --execute ALTER TABLE transmissions MODIFY COLUMN channelStatus ENUM('OPEN', 'RESONANT', 'COHERENT', 'PROPHETIC', 'LIVE', 'STABLE', 'HIGH COHERENCE', 'MAXIMUM COHERENCE', 'CRITICAL / STABLE') DEFAULT 'OPEN' NOT NULL;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 505
+}

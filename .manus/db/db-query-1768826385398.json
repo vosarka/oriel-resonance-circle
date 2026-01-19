@@ -1,0 +1,162 @@
+{
+  "query": "DESCRIBE transmissions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user wNC9iRD8C1xiHd7.root --database FcrG9xDq3HfnDm7AEi3SdN --execute DESCRIBE transmissions;",
+  "rows": [
+    {
+      "Field": "id",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "PRI",
+      "Default": "NULL",
+      "Extra": "auto_increment"
+    },
+    {
+      "Field": "txId",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "txNumber",
+      "Type": "int(11)",
+      "Null": "NO",
+      "Key": "UNI",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "title",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "field",
+      "Type": "varchar(255)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "signalClarity",
+      "Type": "varchar(10)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "98.7%",
+      "Extra": ""
+    },
+    {
+      "Field": "channelStatus",
+      "Type": "enum('OPEN','RESONANT','COHERENT','PROPHETIC','LIVE')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "OPEN",
+      "Extra": ""
+    },
+    {
+      "Field": "coreMessage",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "encodedArchetype",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "tags",
+      "Type": "text",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "microSigil",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "leftPanelPrompt",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "centerPanelPrompt",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "rightPanelPrompt",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "hashtags",
+      "Type": "text",
+      "Null": "YES",
+      "Key": "",
+      "Default": "NULL",
+      "Extra": ""
+    },
+    {
+      "Field": "cycle",
+      "Type": "varchar(64)",
+      "Null": "NO",
+      "Key": "",
+      "Default": "FOUNDATION ARC",
+      "Extra": ""
+    },
+    {
+      "Field": "status",
+      "Type": "enum('Draft','Confirmed','Deprecated','Mythic')",
+      "Null": "NO",
+      "Key": "",
+      "Default": "Confirmed",
+      "Extra": ""
+    },
+    {
+      "Field": "createdAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": ""
+    },
+    {
+      "Field": "updatedAt",
+      "Type": "timestamp",
+      "Null": "YES",
+      "Key": "",
+      "Default": "CURRENT_TIMESTAMP",
+      "Extra": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP"
+    }
+  ],
+  "messages": [],
+  "stdout": "Field\tType\tNull\tKey\tDefault\tExtra\nid\tint(11)\tNO\tPRI\tNULL\tauto_increment\ntxId\tvarchar(64)\tNO\tUNI\tNULL\t\ntxNumber\tint(11)\tNO\tUNI\tNULL\t\ntitle\tvarchar(255)\tNO\t\tNULL\t\nfield\tvarchar(255)\tNO\t\tNULL\t\nsignalClarity\tvarchar(10)\tNO\t\t98.7%\t\nchannelStatus\tenum('OPEN','RESONANT','COHERENT','PROPHETIC','LIVE')\tNO\t\tOPEN\t\ncoreMessage\ttext\tNO\t\tNULL\t\nencodedArchetype\ttext\tYES\t\tNULL\t\ntags\ttext\tNO\t\tNULL\t\nmicroSigil\tvarchar(64)\tNO\t\tNULL\t\nleftPanelPrompt\ttext\tYES\t\tNULL\t\ncenterPanelPrompt\ttext\tYES\t\tNULL\t\nrightPanelPrompt\ttext\tYES\t\tNULL\t\nhashtags\ttext\tYES\t\tNULL\t\ncycle\tvarchar(64)\tNO\t\tFOUNDATION ARC\t\nstatus\tenum('Draft','Confirmed','Deprecated','Mythic')\tNO\t\tConfirmed\t\ncreatedAt\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\t\nupdatedAt\ttimestamp\tYES\t\tCURRENT_TIMESTAMP\tDEFAULT_GENERATED on update CURRENT_TIMESTAMP\n",
+  "stderr": "",
+  "execution_time_ms": 361
+}
