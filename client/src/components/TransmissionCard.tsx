@@ -1,7 +1,6 @@
-"use client";
+import { Link } from "wouter";
 
 import { useState } from "react";
-import { Link } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,10 +17,11 @@ export interface TransmissionCardProps {
   signalClarity: string;
   channelStatus: "OPEN" | "RESONANT" | "COHERENT" | "PROPHETIC" | "LIVE";
   coreMessage: string;
-  microSigil: string;
+  microSigil?: string;
   tags: string[];
-  cycle: string;
+  cycle?: string;
   status: "Draft" | "Confirmed" | "Deprecated" | "Mythic";
+  bookmarkCount?: number;
 }
 
 const channelStatusColors: Record<string, string> = {
@@ -51,28 +51,28 @@ export function TransmissionCard({
   tags,
   cycle,
   status,
+  bookmarkCount,
 }: TransmissionCardProps) {
   const { user } = useAuth();
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  
+  const [localBookmarkCount, setLocalBookmarkCount] = useState(bookmarkCount || 0);
+
   // Check if transmission is bookmarked
-  const { data: bookmarkStatus } = trpc.archive.bookmarks.isBookmarked.useQuery(
+  const { data: isBookmarked } = trpc.archive.bookmarks.isBookmarked.useQuery(
     { transmissionId: id },
     { enabled: !!user }
   );
 
-  // Get bookmark count
-  const { data: bookmarkCount = 0 } = trpc.archive.bookmarks.getCount.useQuery({
-    transmissionId: id,
-  });
-
   // Bookmark mutations
   const addBookmarkMutation = trpc.archive.bookmarks.add.useMutation({
-    onSuccess: () => setIsBookmarked(true),
+    onSuccess: () => {
+      setLocalBookmarkCount((prev) => prev + 1);
+    },
   });
 
   const removeBookmarkMutation = trpc.archive.bookmarks.remove.useMutation({
-    onSuccess: () => setIsBookmarked(false),
+    onSuccess: () => {
+      setLocalBookmarkCount((prev) => Math.max(0, prev - 1));
+    },
   });
 
   const handleBookmarkClick = (e: React.MouseEvent) => {
@@ -85,7 +85,7 @@ export function TransmissionCard({
       return;
     }
 
-    if (bookmarkStatus) {
+    if (isBookmarked) {
       removeBookmarkMutation.mutate({ transmissionId: id });
     } else {
       addBookmarkMutation.mutate({ transmissionId: id });
@@ -94,18 +94,25 @@ export function TransmissionCard({
 
   return (
     <Link href={`/transmission/${id}`}>
-      <Card className="h-full hover:border-green-500/50 transition-colors cursor-pointer bg-black/40 border-green-900/30">
+      <Card className="h-full hover:border-green-400/50 hover:shadow-[0_0_30px_rgba(144,238,144,0.2)] transition-all duration-300 cursor-pointer bg-black/60 backdrop-blur-sm border-green-400/30 group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl text-green-400">{microSigil}</span>
-                <span className="text-xs text-green-500 font-mono">TX-{String(txNumber).padStart(3, "0")}</span>
+                <span className="text-2xl drop-shadow-[0_0_10px_rgba(144,238,144,0.5)] group-hover:drop-shadow-[0_0_20px_rgba(144,238,144,0.8)] transition-all" style={{ color: '#9fe49a' }}>
+                  {microSigil || "◈"}
+                </span>
+                <span className="text-xs font-mono" style={{ color: '#9fe49a' }}>TX-{String(txNumber).padStart(3, "0")}</span>
+                <Badge variant="outline" className={`text-xs ${channelStatusColors[channelStatus]}`}>
+                  {channelStatus}
+                </Badge>
               </div>
-              <CardTitle className="text-lg text-green-100 line-clamp-2">{title}</CardTitle>
-              <CardDescription className="text-green-700/70 text-xs mt-1">{field}</CardDescription>
+              <CardTitle className="text-lg text-white line-clamp-2 group-hover:text-white/90 transition-colors font-orbitron uppercase tracking-wide">
+                {title}
+              </CardTitle>
+              <CardDescription className="text-white/50 text-xs mt-1 font-mono">{field}</CardDescription>
             </div>
-            <div className="flex flex-col gap-2 items-end">
+            <div className="flex flex-col items-end gap-2">
               <Badge variant="outline" className={statusColors[status]}>
                 {status}
               </Badge>
@@ -113,10 +120,12 @@ export function TransmissionCard({
                 variant="ghost"
                 size="sm"
                 onClick={handleBookmarkClick}
-                className={`h-8 w-8 p-0 ${bookmarkStatus ? "text-amber-400" : "text-green-600 hover:text-amber-400"}`}
                 disabled={addBookmarkMutation.isPending || removeBookmarkMutation.isPending}
+                className={`h-8 w-8 p-0 hover:bg-amber-400/10 ${
+                  isBookmarked ? "text-amber-400" : "text-white/40 hover:text-white/60"
+                }`}
               >
-                <Bookmark className="h-4 w-4" fill={bookmarkStatus ? "currentColor" : "none"} />
+                <Bookmark className="w-4 h-4" fill={isBookmarked ? "currentColor" : "none"} />
               </Button>
             </div>
           </div>
@@ -126,39 +135,40 @@ export function TransmissionCard({
           {/* Signal Metadata */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <span className="text-green-600">Signal:</span>
-              <span className="text-green-400 font-mono">{signalClarity}</span>
+              <span className="text-cyan-400/60 font-mono">Signal:</span>
+              <span className="text-cyan-400 font-mono">{signalClarity}</span>
             </div>
-            <Badge variant="outline" className={`text-xs ${channelStatusColors[channelStatus]}`}>
-              {channelStatus}
-            </Badge>
+            {cycle && (
+              <span className="text-cyan-400/60 font-mono">{cycle}</span>
+            )}
           </div>
 
           {/* Core Message Preview */}
-          <p className="text-sm text-green-200/80 line-clamp-3 leading-relaxed italic">
-            "{coreMessage}"
+          <p className="text-sm text-white/70 line-clamp-3 leading-relaxed italic font-mono">
+            {coreMessage}
           </p>
 
           {/* Tags */}
           {tags && tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs bg-green-950 text-green-300 border-green-800">
+              {tags.slice(0, 3).map((tag, index) => (
+                <Badge key={index} variant="outline" className="text-xs bg-green-400/10 border-green-400/50 text-green-200 font-mono">
                   {tag}
                 </Badge>
               ))}
               {tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs bg-green-950 text-green-400 border-green-800">
-                  +{tags.length - 3}
-                </Badge>
+                <span className="text-xs text-white/40 font-mono">+{tags.length - 3}</span>
               )}
             </div>
           )}
 
-          {/* Cycle & Footer */}
-          <div className="pt-2 border-t border-green-900/30 text-xs text-green-600 flex justify-between">
-            <span>{cycle}</span>
-            <span className="text-green-500">{bookmarkCount} bookmarks</span>
+          {/* Footer */}
+          <div className="pt-2 border-t border-green-400/20 text-xs text-white/40 flex justify-between items-center font-mono">
+            <span className="flex items-center gap-1">
+              <Bookmark className="w-3 h-3" />
+              {localBookmarkCount}
+            </span>
+            <span className="text-green-400 group-hover:translate-x-1 transition-transform duration-300">→ Access</span>
           </div>
         </CardContent>
       </Card>

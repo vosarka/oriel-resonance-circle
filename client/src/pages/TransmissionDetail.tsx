@@ -1,4 +1,4 @@
-"use client";
+import Layout from "@/components/Layout";
 
 import { useState } from "react";
 import { useParams, useLocation } from "wouter";
@@ -68,37 +68,46 @@ export default function TransmissionDetail() {
 
   if (!txId) {
     return (
-      <div className="min-h-screen bg-black text-green-100 p-6 md:p-12 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Invalid transmission ID</p>
-          <Button onClick={() => navigate("/archive")} className="bg-green-900 hover:bg-green-800">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Archive
-          </Button>
+      <Layout>
+        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
+          <div className="text-center bg-black/60 backdrop-blur-sm border border-cyan-400/30 p-8 rounded-lg">
+            <p className="text-red-400 mb-4 font-mono">Invalid transmission ID</p>
+            <Button onClick={() => navigate("/archive")} className="bg-green-400/20 hover:bg-green-400/30 border border-green-400/50 text-white">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Archive
+            </Button>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-green-100 p-6 md:p-12 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
-      </div>
+      <Layout>
+        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-green-400 animate-spin" />
+        </div>
+      </Layout>
     );
   }
 
   if (!transmission) {
     return (
-      <div className="min-h-screen bg-black text-green-100 p-6 md:p-12 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Transmission not found</p>
-          <Button onClick={() => navigate("/archive")} className="bg-green-900 hover:bg-green-800">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Archive
-          </Button>
+      <Layout>
+        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
+          <div className="text-center bg-black/60 backdrop-blur-sm border border-cyan-400/30 p-8 rounded-lg">
+            <p className="text-red-400 mb-4 font-mono">Transmission not found</p>
+            <Button onClick={() => navigate("/archive")} className="bg-green-400/20 hover:bg-green-400/30 border border-green-400/50 text-white">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Archive
+            </Button>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -106,14 +115,27 @@ export default function TransmissionDetail() {
   const hashtags = typeof transmission.hashtags === "string" ? JSON.parse(transmission.hashtags) : transmission.hashtags || [];
 
   return (
-    <div className="min-h-screen bg-black text-green-100">
+    <Layout>
+      {/* Cyberpunk Background */}
+      <div className="fixed inset-0 bg-void-gradient z-0" />
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        {/* Rotating SVG background */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180vw] h-[180vw] opacity-[0.03] animate-spin-slower">
+          <svg className="w-full h-full text-cyan-400" viewBox="0 0 100 100">
+            <path d="M50 10 L85 80 H15 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
+            <path d="M50 90 L15 20 H85 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
+            <circle cx="50" cy="50" fill="none" r="45" stroke="currentColor" strokeDasharray="1 2" strokeWidth="0.1"></circle>
+          </svg>
+        </div>
+      </div>
+
       {/* Header Navigation */}
-      <div className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-green-900/30 p-4 md:p-6">
+      <div className="sticky top-16 z-20 bg-black/80 backdrop-blur-sm border-b border-cyan-400/20 p-4 md:p-6 animate-fade-in-up">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <Button
             variant="ghost"
             onClick={() => navigate("/archive")}
-            className="text-green-400 hover:text-green-300 hover:bg-green-950/30"
+            className="text-white/80 hover:text-white hover:bg-cyan-400/10 font-mono"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Archive
@@ -124,13 +146,13 @@ export default function TransmissionDetail() {
               size="sm"
               onClick={handleBookmarkClick}
               disabled={addBookmarkMutation.isPending || removeBookmarkMutation.isPending}
-              className={`border-green-900/50 hover:bg-green-950/30 ${
-                bookmarkStatus ? "bg-amber-950/30 text-amber-400" : "text-green-100"
+              className={`border-cyan-400/30 hover:bg-cyan-400/10 backdrop-blur-sm ${
+                bookmarkStatus ? "bg-amber-400/20 text-amber-400 border-amber-400/50" : "text-white bg-black/60"
               }`}
             >
               <Bookmark className="w-4 h-4" fill={bookmarkStatus ? "currentColor" : "none"} />
             </Button>
-            <Button variant="outline" size="sm" className="border-green-900/50 text-green-100 hover:bg-green-950/30">
+            <Button variant="outline" size="sm" className="border-cyan-400/30 text-white bg-black/60 hover:bg-cyan-400/10 backdrop-blur-sm">
               <Share2 className="w-4 h-4" />
             </Button>
           </div>
@@ -138,14 +160,16 @@ export default function TransmissionDetail() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-6 md:p-12">
+      <div className="relative z-10 max-w-6xl mx-auto p-6 md:p-12">
         {/* Header Section */}
-        <div className="mb-12">
+        <div className="mb-12 animate-fade-in-up">
           <div className="flex items-start gap-4 mb-6">
-            <span className="text-5xl text-green-400">{transmission.microSigil}</span>
+            <span className="text-5xl drop-shadow-[0_0_20px_rgba(144,238,144,0.5)]" style={{ color: '#9fe49a' }}>
+              {transmission.microSigil || "◈"}
+            </span>
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <span className="text-xs text-green-500 font-mono">TX-{String(transmission.txNumber).padStart(3, "0")}</span>
+              <div className="flex items-center gap-3 mb-3 flex-wrap">
+                <span className="text-xs font-mono" style={{ color: '#9fe49a' }}>TX-{String(transmission.txNumber).padStart(3, "0")}</span>
                 <Badge variant="outline" className={statusColors[transmission.status]}>
                   {transmission.status}
                 </Badge>
@@ -153,83 +177,87 @@ export default function TransmissionDetail() {
                   {transmission.channelStatus}
                 </Badge>
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold text-green-100 mb-2">{transmission.title}</h1>
-              <p className="text-green-300/80 text-lg">{transmission.field}</p>
+              <h1 className="text-4xl md:text-5xl font-light text-white mb-2 font-orbitron uppercase tracking-wide drop-shadow-lg">
+                {transmission.title}
+              </h1>
+              <p className="text-white/60 text-lg font-mono">{transmission.field}</p>
             </div>
           </div>
 
           {/* Signal Metadata */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-green-950/20 rounded border border-green-900/30">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-black/60 backdrop-blur-sm rounded border border-cyan-400/30 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             <div>
-              <p className="text-xs text-green-600 uppercase tracking-wide">Signal Clarity</p>
-              <p className="text-lg font-mono text-green-400">{transmission.signalClarity}</p>
+              <p className="text-xs text-cyan-400/60 uppercase tracking-wide font-mono">Signal Clarity</p>
+              <p className="text-lg font-mono text-cyan-400">{transmission.signalClarity}</p>
             </div>
             <div>
-              <p className="text-xs text-green-600 uppercase tracking-wide">Channel Status</p>
-              <p className="text-lg font-mono text-green-400">{transmission.channelStatus}</p>
+              <p className="text-xs text-cyan-400/60 uppercase tracking-wide font-mono">Channel Status</p>
+              <p className="text-lg font-mono text-cyan-400">{transmission.channelStatus}</p>
             </div>
             <div>
-              <p className="text-xs text-green-600 uppercase tracking-wide">Cycle</p>
-              <p className="text-lg font-mono text-green-400">{transmission.cycle}</p>
+              <p className="text-xs text-cyan-400/60 uppercase tracking-wide font-mono">Cycle</p>
+              <p className="text-lg font-mono text-cyan-400">{transmission.cycle || "N/A"}</p>
             </div>
             <div>
-              <p className="text-xs text-green-600 uppercase tracking-wide">Status</p>
-              <p className="text-lg font-mono text-green-400">{transmission.status}</p>
+              <p className="text-xs text-cyan-400/60 uppercase tracking-wide font-mono">Status</p>
+              <p className="text-lg font-mono text-cyan-400">{transmission.status}</p>
             </div>
           </div>
         </div>
 
         {/* Triptych Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           {/* Left Panel */}
-          <div className="p-6 bg-green-950/10 rounded border border-green-900/30">
-            <h3 className="text-sm uppercase tracking-widest text-green-600 mb-4">Left Panel</h3>
-            <p className="text-green-100 leading-relaxed italic">
+          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-green-400/30 hover:border-green-400/50 transition-colors">
+            <h3 className="text-sm uppercase tracking-widest text-green-400/60 mb-4 font-mono">Left Panel</h3>
+            <p className="text-white/80 leading-relaxed italic font-mono text-sm">
               {transmission.leftPanelPrompt || "No left panel prompt available"}
             </p>
           </div>
 
           {/* Center Panel */}
-          <div className="p-6 bg-green-950/10 rounded border border-green-900/30 flex flex-col items-center justify-center">
-            <h3 className="text-sm uppercase tracking-widest text-green-600 mb-4">Center Visual</h3>
+          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-cyan-400/30 hover:border-cyan-400/50 transition-colors flex flex-col items-center justify-center">
+            <h3 className="text-sm uppercase tracking-widest text-cyan-400/60 mb-4 font-mono">Center Visual</h3>
             <div className="text-center">
-              <p className="text-4xl mb-4">{transmission.microSigil}</p>
-              <p className="text-green-100 leading-relaxed italic text-sm">
+              <p className="text-4xl mb-4 drop-shadow-[0_0_20px_rgba(144,238,144,0.5)]" style={{ color: '#9fe49a' }}>
+                {transmission.microSigil || "◈"}
+              </p>
+              <p className="text-white/80 leading-relaxed italic text-sm font-mono">
                 {transmission.centerPanelPrompt || "Visual field resonance"}
               </p>
             </div>
           </div>
 
           {/* Right Panel */}
-          <div className="p-6 bg-green-950/10 rounded border border-green-900/30">
-            <h3 className="text-sm uppercase tracking-widest text-green-600 mb-4">Right Panel</h3>
-            <p className="text-green-100 leading-relaxed italic">
+          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-green-400/30 hover:border-green-400/50 transition-colors">
+            <h3 className="text-sm uppercase tracking-widest text-green-400/60 mb-4 font-mono">Right Panel</h3>
+            <p className="text-white/80 leading-relaxed italic font-mono text-sm">
               {transmission.rightPanelPrompt || "No right panel prompt available"}
             </p>
           </div>
         </div>
 
         {/* Core Message */}
-        <div className="mb-12 p-8 bg-green-950/20 rounded border border-green-900/50">
-          <h2 className="text-xl uppercase tracking-widest text-green-600 mb-6">Core Message</h2>
-          <p className="text-lg text-green-100 leading-relaxed italic">{transmission.coreMessage}</p>
+        <div className="mb-12 p-8 bg-black/60 backdrop-blur-sm rounded border border-green-400/50 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
+          <h2 className="text-xl uppercase tracking-widest text-green-400 mb-6 font-mono">Core Message</h2>
+          <p className="text-lg text-white/90 leading-relaxed italic font-mono">{transmission.coreMessage}</p>
         </div>
 
         {/* Encoded Archetype */}
         {transmission.encodedArchetype && (
-          <div className="mb-12 p-6 bg-purple-950/20 rounded border border-purple-900/50">
-            <h3 className="text-sm uppercase tracking-widest text-purple-600 mb-3">Encoded Archetype</h3>
-            <p className="text-purple-100 font-mono text-sm">{transmission.encodedArchetype}</p>
+          <div className="mb-12 p-6 bg-black/60 backdrop-blur-sm rounded border border-purple-400/50 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
+            <h3 className="text-sm uppercase tracking-widest text-purple-400 mb-3 font-mono">Encoded Archetype</h3>
+            <p className="text-purple-200 font-mono text-sm">{transmission.encodedArchetype}</p>
           </div>
         )}
 
         {/* Tags */}
         {tags.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-sm uppercase tracking-widest text-green-600 mb-4">Tags</h3>
+          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '1s' }}>
+            <h3 className="text-sm uppercase tracking-widest text-cyan-400/60 mb-4 font-mono">Tags</h3>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag: string) => (
-                <Badge key={tag} variant="outline" className="bg-green-950/30 border-green-700 text-green-200">
+                <Badge key={tag} variant="outline" className="bg-green-400/10 border-green-400/50 text-green-200 font-mono">
                   {tag}
                 </Badge>
               ))}
@@ -239,11 +267,11 @@ export default function TransmissionDetail() {
 
         {/* Hashtags */}
         {hashtags.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-sm uppercase tracking-widest text-green-600 mb-4">Hashtags</h3>
+          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
+            <h3 className="text-sm uppercase tracking-widest text-cyan-400/60 mb-4 font-mono">Hashtags</h3>
             <div className="flex flex-wrap gap-2">
               {hashtags.map((tag: string) => (
-                <span key={tag} className="text-green-400 text-sm">
+                <span key={tag} className="text-cyan-400 text-sm font-mono">
                   {tag}
                 </span>
               ))}
@@ -252,27 +280,17 @@ export default function TransmissionDetail() {
         )}
 
         {/* Footer Navigation */}
-        <div className="mt-16 pt-8 border-t border-green-900/30 flex justify-between">
+        <div className="mt-16 pt-8 border-t border-cyan-400/20 flex justify-between animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
           <Button
             variant="outline"
             onClick={() => navigate("/archive")}
-            className="border-green-900/50 text-green-100 hover:bg-green-950/30"
+            className="border-cyan-400/30 text-white bg-black/60 hover:bg-cyan-400/10 backdrop-blur-sm font-mono"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Archive
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" className="border-green-900/50 text-green-100 hover:bg-green-950/30">
-              <Bookmark className="w-4 h-4 mr-2" />
-              Bookmark
-            </Button>
-            <Button variant="outline" className="border-green-900/50 text-green-100 hover:bg-green-950/30">
-              <Share2 className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

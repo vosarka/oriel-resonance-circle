@@ -3,16 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 
 export interface OracleCardProps {
-  id: string;
-  oracleId: string;
-  oracleNumber: number;
-  part: "Past" | "Present" | "Future";
+  id: number;
+  oxNumber: number;
   title: string;
   field: string;
-  signalClarity: string;
-  channelStatus: "OPEN" | "RESONANT" | "PROPHETIC" | "LIVE";
+  temporalDirection: "Past" | "Present" | "Future";
   content: string;
-  visualStyle?: string;
+  hashtags: string[];
   status: "Draft" | "Confirmed" | "Deprecated" | "Prophetic";
 }
 
@@ -28,13 +25,6 @@ const partSymbols: Record<string, string> = {
   Future: "▲",
 };
 
-const channelStatusColors: Record<string, string> = {
-  OPEN: "bg-green-900/30 text-green-300 border-green-700",
-  RESONANT: "bg-blue-900/30 text-blue-300 border-blue-700",
-  PROPHETIC: "bg-purple-900/30 text-purple-300 border-purple-700",
-  LIVE: "bg-red-900/30 text-red-300 border-red-700",
-};
-
 const statusColors: Record<string, string> = {
   Draft: "bg-gray-700 text-gray-100",
   Confirmed: "bg-green-700 text-green-100",
@@ -44,32 +34,29 @@ const statusColors: Record<string, string> = {
 
 export function OracleCard({
   id,
-  oracleId,
-  oracleNumber,
-  part,
+  oxNumber,
   title,
   field,
-  signalClarity,
-  channelStatus,
+  temporalDirection,
   content,
-  visualStyle,
+  hashtags,
   status,
 }: OracleCardProps) {
   return (
-    <Link href={`/oracle/${oracleId}/${part.toLowerCase()}`}>
-      <Card className="h-full hover:border-purple-500/50 transition-colors cursor-pointer bg-black/40 border-purple-900/30">
+    <Link href={`/oracle/${id}`}>
+      <Card className="h-full hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] transition-all duration-300 cursor-pointer bg-black/60 backdrop-blur-sm border-purple-400/30 group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl">{partSymbols[part]}</span>
-                <span className="text-xs text-purple-500 font-mono">OX-{String(oracleNumber).padStart(3, "0")}.{part[0]}</span>
-                <Badge variant="outline" className={`text-xs ${partColors[part]}`}>
-                  {part}
+                <span className="text-2xl text-purple-400 group-hover:text-purple-300 transition-colors">{partSymbols[temporalDirection]}</span>
+                <span className="text-xs text-purple-400 font-mono">ΩX-{String(oxNumber).padStart(3, "0")}.{temporalDirection[0]}</span>
+                <Badge variant="outline" className={`text-xs ${partColors[temporalDirection]}`}>
+                  {temporalDirection}
                 </Badge>
               </div>
-              <CardTitle className="text-lg text-purple-100 line-clamp-2">{title}</CardTitle>
-              <CardDescription className="text-purple-700/70 text-xs mt-1">{field}</CardDescription>
+              <CardTitle className="text-lg text-purple-100 line-clamp-2 group-hover:text-white transition-colors">{title}</CardTitle>
+              <CardDescription className="text-purple-400/70 text-xs mt-1">{field}</CardDescription>
             </div>
             <Badge variant="outline" className={statusColors[status]}>
               {status}
@@ -78,33 +65,26 @@ export function OracleCard({
         </CardHeader>
 
         <CardContent className="space-y-3">
-          {/* Signal Metadata */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="text-purple-600">Signal:</span>
-              <span className="text-purple-400 font-mono">{signalClarity}</span>
-            </div>
-            <Badge variant="outline" className={`text-xs ${channelStatusColors[channelStatus]}`}>
-              {channelStatus}
-            </Badge>
-          </div>
-
           {/* Oracle Content Preview */}
           <p className="text-sm text-purple-200/80 line-clamp-3 leading-relaxed italic">
             "{content}"
           </p>
 
-          {/* Visual Style */}
-          {visualStyle && (
-            <div className="text-xs text-purple-600 bg-purple-950/30 px-2 py-1 rounded border border-purple-900/30">
-              Style: {visualStyle}
+          {/* Hashtags */}
+          {hashtags && hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {hashtags.slice(0, 3).map((tag, index) => (
+                <span key={index} className="text-xs text-purple-400/60 font-mono">
+                  #{tag}
+                </span>
+              ))}
             </div>
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-purple-900/30 text-xs text-purple-600 flex justify-between">
-            <span className="text-purple-500">Temporal Transmission</span>
-            <span className="text-purple-500">→ Receive</span>
+          <div className="pt-2 border-t border-purple-400/20 text-xs text-purple-400 flex justify-between">
+            <span className="text-purple-400/60">Temporal Transmission</span>
+            <span className="text-purple-400 group-hover:translate-x-1 transition-transform duration-300">→ Receive</span>
           </div>
         </CardContent>
       </Card>
