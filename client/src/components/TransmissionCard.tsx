@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Bookmark } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 export interface TransmissionCardProps {
   id: number;
@@ -79,8 +80,8 @@ export function TransmissionCard({
     e.stopPropagation();
 
     if (!user) {
-      // Redirect to login
-      window.location.href = `/auth/login?redirect=/transmission/${id}`;
+      // Redirect to Manus OAuth login
+      window.location.href = getLoginUrl();
       return;
     }
 

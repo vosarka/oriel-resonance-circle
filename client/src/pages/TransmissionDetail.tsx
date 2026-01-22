@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, ArrowLeft, Bookmark, Share2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { getLoginUrl } from "@/const";
 
 
 const channelStatusColors: Record<string, string> = {
@@ -53,7 +54,8 @@ export default function TransmissionDetail() {
 
   const handleBookmarkClick = () => {
     if (!user) {
-      window.location.href = `/auth/login?redirect=/transmission/${txId}`;
+      // Redirect to Manus OAuth login
+      window.location.href = getLoginUrl();
       return;
     }
 
