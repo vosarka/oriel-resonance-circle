@@ -54,6 +54,19 @@ export default function Conduit() {
     retry: false,
   });
   
+  // Sync localMessages with dbHistory when authenticated user loads their history
+  useEffect(() => {
+    if (isAuthenticated && dbHistory && dbHistory.length > 0) {
+      // Convert dbHistory (with Date timestamps) to ChatMessage format (with number timestamps)
+      const convertedHistory = dbHistory.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : msg.timestamp,
+      }));
+      setLocalMessages(convertedHistory);
+    }
+  }, [isAuthenticated, dbHistory]);
+  
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
       console.error("Chat error:", error);
@@ -274,7 +287,9 @@ export default function Conduit() {
     }
   };
 
-  const displayMessages = isAuthenticated && dbHistory ? dbHistory : localMessages;
+  // Always show localMessages for immediate updates, fall back to dbHistory only if localMessages is empty
+  // This ensures authenticated users see their messages immediately while the database refetch completes
+  const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory ? dbHistory : []);
 
   return (
     <Layout>

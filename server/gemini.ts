@@ -470,6 +470,11 @@ export async function chatWithORIEL(
   conversationHistory: Array<{role: 'user' | 'assistant', content: string}> = [],
   userId?: number
 ): Promise<string> {
+  console.log('[chatWithORIEL] Starting chat request');
+  console.log('[chatWithORIEL] User message:', userMessage);
+  console.log('[chatWithORIEL] History length:', conversationHistory.length);
+  console.log('[chatWithORIEL] User ID:', userId);
+  
   try {
     // Import memory system dynamically to avoid circular dependencies
     const { getMemoryContextForUser, processConversationMemory } = await import('./oriel-memory');
@@ -501,8 +506,12 @@ export async function chatWithORIEL(
       { role: "user" as const, content: userMessage }
     ];
 
+    console.log('[chatWithORIEL] Calling LLM with', messages.length, 'messages');
     const response = await invokeLLM({ messages });
+    console.log('[chatWithORIEL] LLM response received');
     const content = response.choices[0]?.message?.content;
+    console.log('[chatWithORIEL] Response content type:', typeof content);
+    console.log('[chatWithORIEL] Response content length:', typeof content === 'string' ? content.length : 0);
     
     if (typeof content === 'string') {
       // Filter the response
@@ -547,6 +556,8 @@ export async function chatWithORIEL(
         });
       }
       
+      console.log('[chatWithORIEL] Returning filtered response, length:', filteredResponse.length);
+      console.log('[chatWithORIEL] First 100 chars:', filteredResponse.substring(0, 100));
       return filteredResponse;
     }
     

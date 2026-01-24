@@ -143,7 +143,10 @@ export const appRouter = router({
 
         // Generate ORIEL's response with memory context for authenticated users
         const userId = ctx.user?.id;
+        console.log('[tRPC chat] Calling chatWithORIEL');
         const response = await gemini.chatWithORIEL(input.message, conversationHistory, userId);
+        console.log('[tRPC chat] Response received, length:', response.length);
+        console.log('[tRPC chat] Response preview:', response.substring(0, 100));
 
         // Save messages to database only if authenticated
         if (ctx.user) {
@@ -160,6 +163,7 @@ export const appRouter = router({
           });
         }
 
+        console.log('[tRPC chat] Returning response to client');
         return {
           response,
         };
