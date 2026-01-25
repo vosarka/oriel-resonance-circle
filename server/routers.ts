@@ -373,6 +373,82 @@ export const appRouter = router({
     }),
   }),
 
+  // Vossari Resonance Codex router
+  codex: router({
+    // Browse all 64 Root Codons
+    getRootCodons: publicProcedure.query(async () => {
+      const { ROOT_CODONS } = await import("./vossari-codex-knowledge");
+      return Object.entries(ROOT_CODONS).map(([id, codon]: [string, any]) => ({
+        id,
+        name: codon.name,
+        title: codon.title,
+        essence: codon.essence,
+        shadow: codon.shadow,
+        gift: codon.gift,
+        crown: codon.crown,
+        domain: codon.domain,
+      }));
+    }),
+
+    // Get detailed info for a single codon
+    getCodonDetails: publicProcedure
+      .input(z.object({ id: z.string() }))
+      .query(async ({ input }) => {
+        const { ROOT_CODONS } = await import("./vossari-codex-knowledge");
+        const codon = ROOT_CODONS[input.id as keyof typeof ROOT_CODONS];
+        if (!codon) throw new Error("Codon not found");
+        return { id: input.id, ...codon };
+      }),
+
+    // Save Carrierlock state and generate diagnostic reading
+    saveCarrierlock: protectedProcedure
+      .input(z.object({
+        mentalNoise: z.number().min(0).max(10),
+        bodyTension: z.number().min(0).max(10),
+        emotionalTurbulence: z.number().min(0).max(10),
+        breathCompletion: z.boolean(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        const result = await db.saveCarrierlockState(ctx.user.id, input);
+        return result;
+      }),
+
+    // Save diagnostic reading
+    saveReading: protectedProcedure
+      .input(z.object({
+        carrierlockId: z.number(),
+        readingText: z.string(),
+        flaggedCodons: z.array(z.string()),
+        sliScores: z.record(z.string(), z.number()),
+        activeFacets: z.record(z.string(), z.string()),
+        confidenceLevels: z.record(z.string(), z.number()),
+        microCorrection: z.string().optional(),
+        correctionFacet: z.enum(["A", "B", "C", "D"]).optional(),
+        falsifier: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        const result = await db.saveCodonReading(ctx.user.id, input);
+        return result;
+      }),
+
+    // Get reading history for current user
+    getReadingHistory: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("User not authenticated");
+      return db.getUserReadingHistory(ctx.user.id);
+    }),
+
+    // Mark micro-correction as completed
+    markCorrectionComplete: protectedProcedure
+      .input(z.object({ readingId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        await db.markCorrectionCompleted(input.readingId);
+        return { success: true };
+      }),
+  }),
+
   // PayPal webhook handler
   paypal: router({
     webhook: publicProcedure

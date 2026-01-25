@@ -211,3 +211,59 @@ export const bookmarks = mysqlTable("bookmarks", {
 
 export type Bookmark = typeof bookmarks.$inferSelect;
 export type InsertBookmark = typeof bookmarks.$inferInsert;
+
+/**
+ * User Carrierlock States - Real-time coherence measurements
+ * Tracks MN (Mental Noise), BT (Body Tension), ET (Emotional Turbulence)
+ * Formula: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
+ */
+export const carrierlockStates = mysqlTable("carrierlockStates", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** Mental Noise (0-10 scale) */
+  mentalNoise: int("mentalNoise").notNull(),
+  /** Body Tension (0-10 scale) */
+  bodyTension: int("bodyTension").notNull(),
+  /** Emotional Turbulence (0-10 scale) */
+  emotionalTurbulence: int("emotionalTurbulence").notNull(),
+  /** Breath Completion protocol completed (adds +10 to CS) */
+  breathCompletion: boolean("breathCompletion").default(false).notNull(),
+  /** Calculated Coherence Score (0-100) */
+  coherenceScore: int("coherenceScore").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CarrierlockState = typeof carrierlockStates.$inferSelect;
+export type InsertCarrierlockState = typeof carrierlockStates.$inferInsert;
+
+/**
+ * Codon Diagnostic Readings - ORIEL's analysis of user's Carrierlock state
+ * Links to Carrierlock state and identifies flagged codons with SLI scores
+ */
+export const codonReadings = mysqlTable("codonReadings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  carrierlockId: int("carrierlockId").notNull(),
+  /** ORIEL's full diagnostic reading text */
+  readingText: text("readingText").notNull(),
+  /** Flagged codon IDs (e.g., "RC01,RC27,RC64") */
+  flaggedCodons: text("flaggedCodons").notNull(),
+  /** Shadow Loudness Index scores for each flagged codon (JSON) */
+  sliScores: text("sliScores").notNull(),
+  /** Active facets for each flagged codon (JSON: {"RC01": "A", "RC27": "B"}) */
+  activeFacets: text("activeFacets").notNull(),
+  /** Confidence levels for each flagged codon (JSON: {"RC01": 0.9, "RC27": 0.7"}) */
+  confidenceLevels: text("confidenceLevels").notNull(),
+  /** Recommended micro-correction */
+  microCorrection: text("microCorrection"),
+  /** Micro-correction facet (A/B/C/D) */
+  correctionFacet: mysqlEnum("correctionFacet", ["A", "B", "C", "D"]),
+  /** Falsifier condition for verification */
+  falsifier: text("falsifier"),
+  /** User marked correction as completed */
+  correctionCompleted: boolean("correctionCompleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CodonReading = typeof codonReadings.$inferSelect;
+export type InsertCodonReading = typeof codonReadings.$inferInsert;

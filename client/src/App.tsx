@@ -11,6 +11,9 @@ import TransmissionDetail from "./pages/TransmissionDetail";
 import Artifacts from "./pages/Artifacts";
 import Conduit from "./pages/Conduit";
 import Protocol from "./pages/Protocol";
+import Codex from "./pages/Codex";
+import CodonDetail from "./pages/CodonDetail";
+import Carrierlock from "./pages/Carrierlock";
 
 function Router() {
   return (
@@ -21,6 +24,9 @@ function Router() {
       <Route path={"/artifacts"} component={Artifacts} />
       <Route path={"/protocol"} component={Protocol} />
       <Route path={"/conduit"} component={Conduit} />
+      <Route path={"/codex"} component={Codex} />
+      <Route path={"/codex/:id"} component={CodonDetail} />
+      <Route path={"/carrierlock"} component={Carrierlock} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

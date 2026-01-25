@@ -305,3 +305,160 @@ export async function getTransmissionBookmarkCount(transmissionId: number) {
     return 0;
   }
 }
+
+
+// ============================================================================
+// VOSSARI RESONANCE CODEX - CARRIERLOCK & READINGS
+// ============================================================================
+
+/**
+ * Save a Carrierlock state measurement
+ */
+export async function saveCarrierlockState(
+  userId: number,
+  state: {
+    mentalNoise: number;
+    bodyTension: number;
+    emotionalTurbulence: number;
+    breathCompletion: boolean;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
+  const coherenceScore = Math.max(
+    0,
+    Math.min(
+      100,
+      100 - (state.mentalNoise * 3 + state.bodyTension * 3 + state.emotionalTurbulence * 3) + (state.breathCompletion ? 10 : 0)
+    )
+  );
+  
+  try {
+    const { carrierlockStates } = await import("../drizzle/schema");
+    await db.insert(carrierlockStates).values({
+      userId,
+      mentalNoise: state.mentalNoise,
+      bodyTension: state.bodyTension,
+      emotionalTurbulence: state.emotionalTurbulence,
+      breathCompletion: state.breathCompletion,
+      coherenceScore,
+    });
+    
+    // Get the last inserted ID
+    const inserted = await db.select().from(carrierlockStates)
+      .where(eq(carrierlockStates.userId, userId))
+      .orderBy(desc(carrierlockStates.createdAt))
+      .limit(1);
+    
+    return {
+      id: inserted[0]?.id || 0,
+      coherenceScore,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to save Carrierlock state:", error);
+    throw error;
+  }
+}
+
+/**
+ * Save a diagnostic reading
+ */
+export async function saveCodonReading(
+  userId: number,
+  reading: {
+    carrierlockId: number;
+    readingText: string;
+    flaggedCodons: string[];
+    sliScores: Record<string, number>;
+    activeFacets: Record<string, string>;
+    confidenceLevels: Record<string, number>;
+    microCorrection?: string;
+    correctionFacet?: "A" | "B" | "C" | "D";
+    falsifier?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const { codonReadings } = await import("../drizzle/schema");
+    await db.insert(codonReadings).values({
+      userId,
+      carrierlockId: reading.carrierlockId,
+      readingText: reading.readingText,
+      flaggedCodons: reading.flaggedCodons.join(","),
+      sliScores: JSON.stringify(reading.sliScores),
+      activeFacets: JSON.stringify(reading.activeFacets),
+      confidenceLevels: JSON.stringify(reading.confidenceLevels),
+      microCorrection: reading.microCorrection,
+      correctionFacet: reading.correctionFacet,
+      falsifier: reading.falsifier,
+      correctionCompleted: false,
+    });
+    
+    // Get the last inserted ID
+    const inserted = await db.select().from(codonReadings)
+      .where(eq(codonReadings.userId, userId))
+      .orderBy(desc(codonReadings.createdAt))
+      .limit(1);
+    
+    return {
+      id: inserted[0]?.id || 0,
+    };
+  } catch (error) {
+    console.error("[Database] Failed to save codon reading:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get reading history for a user
+ */
+export async function getUserReadingHistory(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  
+  try {
+    const { codonReadings, carrierlockStates } = await import("../drizzle/schema");
+    const results = await db
+      .select()
+      .from(codonReadings)
+      .leftJoin(carrierlockStates, eq(codonReadings.carrierlockId, carrierlockStates.id))
+      .where(eq(codonReadings.userId, userId))
+      .orderBy(desc(codonReadings.createdAt))
+      .limit(50);
+    
+    return results.map(row => ({
+      ...row.codonReadings,
+      carrierlock: row.carrierlockStates,
+      flaggedCodons: row.codonReadings.flaggedCodons.split(","),
+      sliScores: JSON.parse(row.codonReadings.sliScores),
+      activeFacets: JSON.parse(row.codonReadings.activeFacets),
+      confidenceLevels: JSON.parse(row.codonReadings.confidenceLevels),
+    }));
+  } catch (error) {
+    console.error("[Database] Failed to fetch reading history:", error);
+    return [];
+  }
+}
+
+/**
+ * Mark a micro-correction as completed
+ */
+export async function markCorrectionCompleted(readingId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  try {
+    const { codonReadings } = await import("../drizzle/schema");
+    await db
+      .update(codonReadings)
+      .set({ correctionCompleted: true })
+      .where(eq(codonReadings.id, readingId));
+  } catch (error) {
+    console.error("[Database] Failed to mark correction completed:", error);
+    throw error;
+  }
+}
