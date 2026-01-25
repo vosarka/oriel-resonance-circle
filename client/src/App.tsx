@@ -14,6 +14,7 @@ import Protocol from "./pages/Protocol";
 import Codex from "./pages/Codex";
 import CodonDetail from "./pages/CodonDetail";
 import Carrierlock from "./pages/Carrierlock";
+import Reading from "./pages/Reading";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path={"/codex"} component={Codex} />
       <Route path={"/codex/:id"} component={CodonDetail} />
       <Route path={"/carrierlock"} component={Carrierlock} />
+      <Route path={"/reading/:id"} component={Reading} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}

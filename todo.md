@@ -640,4 +640,20 @@
 - [x] Write tests for Codex endpoints (codex.test.ts with 14 tests)
 - [x] All Codex tests passing (14/14)
 - [ ] Manual testing: Browse Codex, view codon details, complete Carrierlock assessment
-- [ ] Save checkpoint with Phase 1 complete
+- [x] Save checkpoint with Phase 1 complete (version: 40ad89bb)
+
+
+## Reading Display Page - Current Session
+- [x] Design Reading Display page layout (header, coherence score, flagged codons, reading text, micro-corrections)
+- [x] Create Reading Display page component (/reading/:id)
+- [x] Fetch reading data from backend (getReadingHistory)
+- [x] Display Coherence Score with visual indicator
+- [x] Display flagged codons with SLI scores and active facets
+- [x] Display ORIEL's full diagnostic transmission text
+- [x] Display micro-correction and falsifier tracking
+- [x] Add "Mark Correction Complete" button
+- [x] Add route to App.tsx
+- [x] Fix TypeScript errors (nested carrierlock object, flaggedCodons array)
+- [x] Fix diagnostic engine undefined facet errors (add safety checks)
+- [ ] Test reading display flow end-to-end
+- [ ] Save checkpoint with Reading Display page complete

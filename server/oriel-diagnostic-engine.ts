@@ -195,10 +195,21 @@ function calculateSLIForCodons(
  * Generates a micro-correction (≤15 minutes) for the flagged codon
  */
 function generateMicroCorrection(
-  sliResult: SLIResult,
+  sliResult: SLIResult | undefined,
   overactiveCenter: string,
   axisDominance: "Mind" | "Body" | "Emotion"
 ): MicroCorrection {
+  // Safety check: if no SLI result, return default correction
+  if (!sliResult) {
+    return {
+      codon: "RC01",
+      facet: "A",
+      duration: "3 minutes",
+      instruction: "Take three deep breaths and observe your current state without judgment.",
+      rationale: "Baseline coherence restoration"
+    };
+  }
+
   const facetMap: Record<string, "A" | "B" | "C" | "D"> = {
     A: "A",
     B: "B",
@@ -290,7 +301,8 @@ function generateMicroCorrection(
 /**
  * Determines confidence level (0.4 / 0.7 / 0.9)
  */
-function determineConfidence(sliResult: SLIResult, coherenceScore: number): 0.4 | 0.7 | 0.9 {
+function determineConfidence(sliResult: SLIResult | undefined, coherenceScore: number): 0.4 | 0.7 | 0.9 {
+  if (!sliResult) return 0.4;
   if (sliResult.sli >= 1.8 && coherenceScore < 50) return 0.9;
   if (sliResult.sli >= 1.1 && coherenceScore < 70) return 0.7;
   return 0.4;
@@ -299,7 +311,11 @@ function determineConfidence(sliResult: SLIResult, coherenceScore: number): 0.4 
 /**
  * Generates a falsifier for the diagnostic reading
  */
-function generateFalsifier(sliResult: SLIResult): string {
+function generateFalsifier(sliResult: SLIResult | undefined): string {
+  if (!sliResult) {
+    return "If your state feels stable and coherent, this reading may not apply.";
+  }
+
   const falsifiers: Record<string, string> = {
     RC02: "If you naturally simplify and ship weekly, Loom is not primary.",
     RC03: "If you rest without guilt and stay consistent, Forge is not primary.",
