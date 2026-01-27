@@ -100,9 +100,24 @@ export default function Reading() {
   };
 
   const flaggedCodons = Array.isArray(reading.flaggedCodons) ? reading.flaggedCodons : [];
-  const sliScores = reading.sliScores ? JSON.parse(reading.sliScores) : {};
-  const activeFacets = reading.activeFacets ? JSON.parse(reading.activeFacets) : {};
-  const confidenceLevels = reading.confidenceLevels ? JSON.parse(reading.confidenceLevels) : {};
+  
+  // Safe JSON parse that handles both string and object types
+  const safeJsonParse = (value: unknown): Record<string, unknown> => {
+    if (!value) return {};
+    if (typeof value === 'object') return value as Record<string, unknown>;
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  };
+  
+  const sliScores = safeJsonParse(reading.sliScores);
+  const activeFacets = safeJsonParse(reading.activeFacets);
+  const confidenceLevels = safeJsonParse(reading.confidenceLevels);
 
   return (
     <div className="min-h-screen bg-black text-zinc-100">
@@ -177,9 +192,9 @@ export default function Reading() {
                 <CardContent>
                   <div className="space-y-4">
                     {flaggedCodons.map((codonId: string) => {
-                      const sli = sliScores[codonId] || 0;
-                      const facet = activeFacets[codonId] || "A";
-                      const confidence = confidenceLevels[codonId] || 0;
+                      const sli = (sliScores[codonId] as number) || 0;
+                      const facet = (activeFacets[codonId] as string) || "A";
+                      const confidence = (confidenceLevels[codonId] as number) || 0;
 
                       return (
                         <div

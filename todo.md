@@ -721,4 +721,18 @@
 - [x] Integrate into Carrierlock page before assessment
 - [x] Auto-check breath completion checkbox on protocol finish (handleBreathComplete)
 - [x] Test visual/audio synchronization (169/169 tests passing)
-- [ ] Save checkpoint
+- [x] Save checkpoint (version: adf6fa69)
+
+
+## Bug Fix: Static Signature Reading Not Available - Current Session
+- [x] Investigate reading page showing "reading not available"
+- [x] Identified root cause: readings were generated but not saved to database
+- [x] Fixed Carrierlock.tsx to call saveReading mutation after generating diagnostic
+- [x] Fixed redirect to use reading ID instead of carrierlock ID
+- [x] Added proper type definitions for DiagnosticData and FlaggedCodon
+- [x] Fixed JSON parsing in Reading.tsx to handle both string and object types
+- [x] Added performStaticSignatureReading function to diagnostic engine
+- [x] Static readings now properly calculate codons from birth date
+- [x] Tested end-to-end: birth date 1985-06-15 → RC29/RC61/RC45 codons
+- [x] All 168 tests passing (1 skipped due to ElevenLabs quota)
+- [ ] Save checkpoint with fix

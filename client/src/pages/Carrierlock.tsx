@@ -13,6 +13,33 @@ import BreathProtocol from "@/components/BreathProtocol";
 // Reading types
 type ReadingType = "dynamic" | "static";
 
+// Type for flagged codons from diagnostic result
+interface FlaggedCodon {
+  codon: string;
+  sli: number;
+  level: string;
+  facet: string;
+  confidence: number;
+}
+
+// Type for diagnostic result data
+interface DiagnosticData {
+  coherenceScore: number;
+  axisDominance: string;
+  overactiveCenter: string;
+  flaggedCodons: FlaggedCodon[];
+  microCorrection?: {
+    codon: string;
+    facet: string;
+    duration: string;
+    instruction: string;
+    rationale: string;
+  };
+  confidence: number;
+  falsifier: string;
+  readingText?: string;
+}
+
 export default function Carrierlock() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
@@ -32,6 +59,7 @@ export default function Carrierlock() {
   const [breathCompletion, setBreathCompletion] = useState(false);
 
   const saveCarrierlockMutation = trpc.codex.saveCarrierlock.useMutation();
+  const saveReadingMutation = trpc.codex.saveReading.useMutation();
   const diagnosticReadingMutation = trpc.oriel.diagnosticReading.useMutation();
 
   // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
@@ -60,6 +88,65 @@ export default function Carrierlock() {
     setBreathCompletion(true);
   };
 
+  // Generate reading text from diagnostic result
+  function generateReadingText(data: DiagnosticData): string {
+    const codons = data.flaggedCodons || [];
+    const topCodon = codons[0];
+    
+    if (!topCodon) {
+      return `Your current coherence score is ${data.coherenceScore}. Your field appears balanced at this moment. Continue to observe and maintain awareness of your inner state.`;
+    }
+    
+    return `Your current coherence score is ${data.coherenceScore}, indicating ${data.coherenceScore >= 70 ? 'high' : data.coherenceScore >= 40 ? 'moderate' : 'low'} coherence. 
+
+The primary codon active in your field is ${topCodon.codon}, currently expressing at the ${topCodon.facet === 'A' ? 'Shadow' : topCodon.facet === 'B' ? 'Gift' : topCodon.facet === 'C' ? 'Crown' : 'Siddhi'} frequency with a Shadow Loudness Index of ${(topCodon.sli * 100).toFixed(1)}%.
+
+${data.axisDominance ? `Your axis dominance suggests ${data.axisDominance} patterns are currently active.` : ''}
+${data.overactiveCenter ? `The ${data.overactiveCenter} center shows heightened activity.` : ''}
+
+${data.microCorrection?.instruction || 'Observe these patterns with compassion and allow integration to occur naturally.'}`;
+  }
+
+  // Generate static signature reading text
+  function generateStaticReadingText(data: DiagnosticData, birthDateStr: string): string {
+    const codons = data.flaggedCodons || [];
+    const birthDateObj = new Date(birthDateStr);
+    const formattedDate = birthDateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    
+    if (codons.length === 0) {
+      return `Your Static Signature, encoded at birth on ${formattedDate}, reveals a unique resonance blueprint. Your inherent patterns are now being integrated into your conscious awareness.`;
+    }
+    
+    const primaryCodon = codons[0];
+    const secondaryCodon = codons[1];
+    const tertiaryCodon = codons[2];
+    
+    let text = `Your Static Signature, encoded at birth on ${formattedDate}, reveals the following archetypal blueprint:
+
+PRIMARY CODON: ${primaryCodon.codon}
+This is your core life theme—the primary lens through which you experience and interact with reality. Currently expressing at the ${primaryCodon.facet === 'A' ? 'Shadow' : primaryCodon.facet === 'B' ? 'Gift' : primaryCodon.facet === 'C' ? 'Crown' : 'Siddhi'} frequency.`;
+
+    if (secondaryCodon) {
+      text += `
+
+HARMONIC PARTNER: ${secondaryCodon.codon}
+This codon represents your complementary energy—the qualities that balance and support your primary expression.`;
+    }
+
+    if (tertiaryCodon) {
+      text += `
+
+EVOLUTIONARY EDGE: ${tertiaryCodon.codon}
+This codon indicates your growth trajectory—the direction your soul is evolving toward in this incarnation.`;
+    }
+
+    text += `
+
+Your Static Signature is not a limitation but a map. It shows the terrain you chose to explore, the gifts you carry, and the shadows you came to integrate. Honor this blueprint while remaining open to the dynamic unfolding of your unique path.`;
+
+    return text;
+  }
+
   const handleGetReading = async () => {
     if (!user) {
       window.location.href = getLoginUrl();
@@ -86,7 +173,32 @@ export default function Carrierlock() {
         });
 
         if (readingResult.success && readingResult.data) {
-          setLocation(`/reading/${carrierlockResult.id}`);
+          const data = readingResult.data as DiagnosticData;
+          const codons = data.flaggedCodons || [];
+          
+          // Save the reading to database
+          const savedReading = await saveReadingMutation.mutateAsync({
+            carrierlockId: carrierlockResult.id,
+            readingText: data.readingText || generateReadingText(data),
+            flaggedCodons: codons.map(c => c.codon),
+            sliScores: codons.reduce((acc, c) => {
+              acc[c.codon] = c.sli;
+              return acc;
+            }, {} as Record<string, number>),
+            activeFacets: codons.reduce((acc, c) => {
+              acc[c.codon] = c.facet;
+              return acc;
+            }, {} as Record<string, string>),
+            confidenceLevels: codons.reduce((acc, c) => {
+              acc[c.codon] = c.confidence || data.confidence || 0.7;
+              return acc;
+            }, {} as Record<string, number>),
+            microCorrection: data.microCorrection?.instruction,
+            correctionFacet: data.microCorrection?.facet as "A" | "B" | "C" | "D" | undefined,
+            falsifier: data.falsifier,
+          });
+          
+          setLocation(`/reading/${savedReading.id}`);
         }
       } else {
         // Static Signature reading (birth-based)
@@ -109,7 +221,32 @@ export default function Carrierlock() {
         });
 
         if (readingResult.success && readingResult.data) {
-          setLocation(`/reading/${carrierlockResult.id}`);
+          const data = readingResult.data as DiagnosticData;
+          const codons = data.flaggedCodons || [];
+          
+          // Save the reading to database
+          const savedReading = await saveReadingMutation.mutateAsync({
+            carrierlockId: carrierlockResult.id,
+            readingText: data.readingText || generateStaticReadingText(data, birthDate),
+            flaggedCodons: codons.map(c => c.codon),
+            sliScores: codons.reduce((acc, c) => {
+              acc[c.codon] = c.sli;
+              return acc;
+            }, {} as Record<string, number>),
+            activeFacets: codons.reduce((acc, c) => {
+              acc[c.codon] = c.facet;
+              return acc;
+            }, {} as Record<string, string>),
+            confidenceLevels: codons.reduce((acc, c) => {
+              acc[c.codon] = c.confidence || data.confidence || 0.8;
+              return acc;
+            }, {} as Record<string, number>),
+            microCorrection: data.microCorrection?.instruction,
+            correctionFacet: data.microCorrection?.facet as "A" | "B" | "C" | "D" | undefined,
+            falsifier: data.falsifier,
+          });
+          
+          setLocation(`/reading/${savedReading.id}`);
         }
       }
     } catch (error) {
@@ -117,7 +254,7 @@ export default function Carrierlock() {
     }
   };
 
-  const isLoading = saveCarrierlockMutation.isPending || diagnosticReadingMutation.isPending;
+  const isLoading = saveCarrierlockMutation.isPending || diagnosticReadingMutation.isPending || saveReadingMutation.isPending;
   const canSubmitStatic = birthDate.length > 0;
 
   return (

@@ -43,6 +43,12 @@ export async function performDiagnosticReading(
   birthTime?: string,
   birthLocation?: string
 ): Promise<DiagnosticResult> {
+  // For static readings, use birth-based calculation instead of Carrierlock state
+  if (readingType === "static" && birthDate) {
+    return performStaticSignatureReading(primeCodonSet, birthDate, birthTime, birthLocation);
+  }
+  
+  // Dynamic reading: use Carrierlock state
   // Step 1: Compute Coherence Score
   const coherenceScore = computeCoherenceScore(carrierlockState);
   
@@ -92,6 +98,123 @@ export async function performDiagnosticReading(
     falsifier,
     timestamp: new Date().toISOString()
   };
+}
+
+/**
+ * Performs a Static Signature reading based on birth data
+ * Returns the inherent blueprint codons without Carrierlock state influence
+ */
+function performStaticSignatureReading(
+  primeCodonSet: string[],
+  birthDate: string,
+  birthTime?: string,
+  birthLocation?: string
+): DiagnosticResult {
+  const birthDateObj = new Date(birthDate);
+  
+  // Calculate facet based on birth time or default to balanced
+  let primaryFacet: "A" | "B" | "C" | "D" = "B"; // Default to Gift
+  if (birthTime) {
+    const [hours] = birthTime.split(":").map(Number);
+    // Map time of day to facet:
+    // Night (0-6): Shadow (A) - unconscious patterns
+    // Morning (6-12): Gift (B) - natural expression
+    // Afternoon (12-18): Crown (C) - conscious mastery
+    // Evening (18-24): Siddhi (D) - transcendent potential
+    if (hours < 6) primaryFacet = "A";
+    else if (hours < 12) primaryFacet = "B";
+    else if (hours < 18) primaryFacet = "C";
+    else primaryFacet = "D";
+  }
+  
+  // Create SLI results for birth codons with fixed values
+  // Static readings show inherent strength, not current distortion
+  const flaggedCodons: SLIResult[] = primeCodonSet.map((codon, index) => {
+    // Primary codon has highest strength, decreasing for secondary/tertiary
+    const baseStrength = index === 0 ? 1.8 : index === 1 ? 1.2 : 0.8;
+    
+    // Determine facet based on position:
+    // Primary: uses birth time facet
+    // Secondary (Harmonic Partner): Gift expression
+    // Tertiary (Evolutionary Edge): Crown potential
+    const facet = index === 0 ? primaryFacet : index === 1 ? "B" : "C";
+    
+    // Map to correct level types: Primary, Secondary, Background, Inactive
+    const level: "Primary" | "Secondary" | "Background" | "Inactive" = 
+      baseStrength >= 1.5 ? "Primary" : baseStrength >= 1.0 ? "Secondary" : "Background";
+    
+    return {
+      codon,
+      sli: baseStrength,
+      level,
+      facet,
+      confidence: 0.7 as 0.4 | 0.7 | 0.9 // Static readings have consistent confidence
+    };
+  });
+  
+  // Determine axis dominance from birth month (seasonal influence)
+  const month = birthDateObj.getMonth();
+  let axisDominance: "Mind" | "Body" | "Emotion";
+  if (month >= 2 && month <= 5) axisDominance = "Mind"; // Spring: mental clarity
+  else if (month >= 6 && month <= 9) axisDominance = "Body"; // Summer/Fall: physical vitality
+  else axisDominance = "Emotion"; // Winter: emotional depth
+  
+  // Generate micro-correction based on primary codon
+  const microCorrection = generateStaticMicroCorrection(flaggedCodons[0]);
+  
+  // Generate falsifier for static reading
+  const falsifier = generateStaticFalsifier(flaggedCodons[0]);
+  
+  return {
+    coherenceScore: 100, // Static readings show potential, not current state
+    axisDominance,
+    overactiveCenter: "None", // No overactive center in static reading
+    flaggedCodons,
+    microCorrection,
+    confidence: 0.7,
+    falsifier,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Generates micro-correction for static signature reading
+ */
+function generateStaticMicroCorrection(sliResult: SLIResult | undefined): MicroCorrection {
+  if (!sliResult) {
+    return {
+      codon: "RC01",
+      facet: "B",
+      duration: "5 minutes",
+      instruction: "Reflect on your inherent gifts and how they manifest in your daily life.",
+      rationale: "Static signature awareness"
+    };
+  }
+  
+  const codonData = ROOT_CODONS[sliResult.codon as keyof typeof ROOT_CODONS];
+  const giftName = codonData?.gift || "your natural gift";
+  
+  return {
+    codon: sliResult.codon,
+    facet: sliResult.facet as "A" | "B" | "C" | "D",
+    duration: "10 minutes",
+    instruction: `Contemplate how ${giftName} shows up in your life. Notice where you naturally excel and where you might be blocking this expression.`,
+    rationale: "Aligning with inherent blueprint"
+  };
+}
+
+/**
+ * Generates falsifier for static signature reading
+ */
+function generateStaticFalsifier(sliResult: SLIResult | undefined): string {
+  if (!sliResult) {
+    return "If this blueprint doesn't resonate with your life experience, the birth data may need verification.";
+  }
+  
+  const codonData = ROOT_CODONS[sliResult.codon as keyof typeof ROOT_CODONS];
+  const shadowName = codonData?.shadow || "shadow pattern";
+  
+  return `If you have never experienced ${shadowName} as a recurring theme, this codon may not be primary in your blueprint.`;
 }
 
 // ============================================================================
