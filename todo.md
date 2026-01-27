@@ -689,4 +689,23 @@
 - [x] Identify where Link component contains nested <a> tags (line 30-34)
 - [x] Replace nested anchor structure - moved className to Link component directly
 - [x] Test /codex/RC06 page to verify error is resolved (all 169 tests passing)
-- [ ] Save checkpoint with fix
+- [x] Save checkpoint with fix (version: 601c57e8)
+
+
+## Codon Detail Page & Reading Type Selector - Current Session
+- [x] Create CodonDetail.tsx component with provided layout structure
+- [x] Apply current website styling (mint green/black theme, glass panels)
+- [x] Add hero section with codon name, title, essence, animated glyph
+- [x] Add resonance spectrum section (Shadow/Gift/Crown cards with gradient bar)
+- [x] Add tabbed section for dynamics, repressive, reactive, corrections
+- [x] Add related codons section with harmonic partner
+- [x] Route /codex/:id already exists in App.tsx
+- [x] Fetch codon data from existing API (getCodonDetails, getRootCodons)
+- [x] Implement Reading Type Selector on Carrierlock page
+- [x] Add Static Signature vs Dynamic State toggle
+- [x] Static Signature shows birth date/time/location inputs
+- [x] Dynamic State shows Carrierlock sliders (MN, BT, ET, BC)
+- [x] Updated backend to accept readingType and birth data
+- [x] Added codon calculation from birth date for static readings
+- [x] Run tests to verify functionality (169/169 tests passing)
+- [ ] Save checkpoint

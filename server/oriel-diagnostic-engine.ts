@@ -29,11 +29,19 @@ import {
 /**
  * Performs a complete diagnostic reading using Carrierlock state
  * Returns top 1-3 codons by Shadow Loudness Index + one micro-correction
+ * 
+ * Supports two reading types:
+ * - "dynamic": Current moment assessment based on Carrierlock state
+ * - "static": Birth-based blueprint reading using birth data
  */
 export async function performDiagnosticReading(
   carrierlockState: CarrierlockState,
   primeCodonSet: string[] = [],
-  fullCodonStack: string[] = []
+  fullCodonStack: string[] = [],
+  readingType: "dynamic" | "static" = "dynamic",
+  birthDate?: string,
+  birthTime?: string,
+  birthLocation?: string
 ): Promise<DiagnosticResult> {
   // Step 1: Compute Coherence Score
   const coherenceScore = computeCoherenceScore(carrierlockState);

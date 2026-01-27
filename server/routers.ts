@@ -218,6 +218,11 @@ export const appRouter = router({
         breathCompletion: z.union([z.literal(0), z.literal(1)]),
         primeCodonSet: z.array(z.string()).optional(),
         fullCodonStack: z.array(z.string()).optional(),
+        // New fields for reading type selection
+        readingType: z.enum(["dynamic", "static"]).optional().default("dynamic"),
+        birthDate: z.string().optional(),
+        birthTime: z.string().optional(),
+        birthLocation: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -228,10 +233,43 @@ export const appRouter = router({
             breathCompletion: input.breathCompletion as 0 | 1,
           };
 
+          // For static readings, we'll calculate codons from birth date
+          let primeCodonSet = input.primeCodonSet || [];
+          let fullCodonStack = input.fullCodonStack || [];
+          
+          if (input.readingType === "static" && input.birthDate) {
+            // Calculate static signature codons from birth date
+            const birthDateObj = new Date(input.birthDate);
+            const dayOfYear = Math.floor((birthDateObj.getTime() - new Date(birthDateObj.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+            
+            // Map day of year to codon (64 codons, ~5.7 days per codon)
+            const primaryCodon = Math.floor((dayOfYear / 365) * 64) + 1;
+            const secondaryCodon = ((primaryCodon + 31) % 64) + 1; // Harmonic partner offset
+            const tertiaryCodon = ((primaryCodon + 15) % 64) + 1; // Quarter offset
+            
+            primeCodonSet = [
+              `RC${String(primaryCodon).padStart(2, "0")}`,
+              `RC${String(secondaryCodon).padStart(2, "0")}`,
+              `RC${String(tertiaryCodon).padStart(2, "0")}`
+            ];
+            
+            // Full stack includes more codons based on birth time if available
+            fullCodonStack = [...primeCodonSet];
+            if (input.birthTime) {
+              const [hours] = input.birthTime.split(":").map(Number);
+              const timeCodon = Math.floor((hours / 24) * 64) + 1;
+              fullCodonStack.push(`RC${String(timeCodon).padStart(2, "0")}`);
+            }
+          }
+
           const result = await performDiagnosticReading(
             carrierlockState,
-            input.primeCodonSet || [],
-            input.fullCodonStack || []
+            primeCodonSet,
+            fullCodonStack,
+            input.readingType,
+            input.birthDate,
+            input.birthTime,
+            input.birthLocation
           );
 
           return {
