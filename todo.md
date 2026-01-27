@@ -657,3 +657,18 @@
 - [x] Fix diagnostic engine undefined facet errors (add safety checks)
 - [ ] Test reading display flow end-to-end
 - [ ] Save checkpoint with Reading Display page complete
+
+
+## ElevenLabs Voice Integration - Current Session
+- [x] Configure ELEVENLABS_VOICE_ID environment variable (sxMbJDVSbjVtmRgDL1S1)
+- [x] Update ELEVENLABS_API_KEY with correct sk_ prefixed value
+- [x] Add ElevenLabs env vars to server/_core/env.ts (elevenLabsApiKey, elevenLabsVoiceId)
+- [x] Write test to verify ElevenLabs API key and voice ID are valid (elevenlabs.test.ts - 3/3 passing)
+- [x] Check if TTS endpoint already exists in backend (generateSpeech mutation exists in routers.ts)
+- [x] Verify audio delivery method (uses data URLs via audioToDataUrl)
+- [x] Confirm Conduit.tsx automatically plays ORIEL responses (speakText called at line 266)
+- [x] Confirm visual speaking indicator exists (OrielOrb component with speaking state)
+- [x] Restart dev server to apply new API key
+- [x] Test voice generation and playback end-to-end (voice-integration.test.ts - 3/3 passing)
+- [x] All 169 tests passing (13 test files)
+- [ ] Save checkpoint with voice integration complete
