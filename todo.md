@@ -681,4 +681,12 @@
 - [x] Add codons 7-64 to server/vossari-codex-knowledge.ts (now complete: RC01-RC64)
 - [x] Verify all 64 codons have Shadow/Gift/Crown frequencies (64/64 complete)
 - [x] Test Codex endpoints with complete data (169/169 tests passing)
-- [ ] Save checkpoint with complete 64-codon system
+- [x] Save checkpoint with complete 64-codon system (version: fd8be6e8)
+
+
+## Fix Nested Anchor Tag Error - Current Session
+- [x] Locate Codex detail page component (client/src/pages/Codex.tsx)
+- [x] Identify where Link component contains nested <a> tags (line 30-34)
+- [x] Replace nested anchor structure - moved className to Link component directly
+- [x] Test /codex/RC06 page to verify error is resolved (all 169 tests passing)
+- [ ] Save checkpoint with fix

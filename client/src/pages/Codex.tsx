@@ -27,10 +27,8 @@ export default function Codex() {
               </h1>
               <p className="text-zinc-400 mt-1">64 Root Codons · The Genetic Architecture of Consciousness</p>
             </div>
-            <Link href="/carrierlock">
-              <a className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-lg hover:border-cyan-400/50 transition-all">
-                Get Your Reading
-              </a>
+            <Link href="/carrierlock" className="px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-lg hover:border-cyan-400/50 transition-all">
+              Get Your Reading
             </Link>
           </div>
           
