@@ -708,4 +708,17 @@
 - [x] Updated backend to accept readingType and birth data
 - [x] Added codon calculation from birth date for static readings
 - [x] Run tests to verify functionality (169/169 tests passing)
+- [x] Save checkpoint (version: f080e8f0)
+
+
+## Guided Breath Protocol - Current Session
+- [x] Create BreathProtocol.tsx component with visual animations
+- [x] Design breathing circle animation (expand/contract with glow)
+- [x] Add phase indicators (Inhale/Hold/Exhale with colors)
+- [x] Implement 3-cycle counter with progress visualization
+- [x] Add audio cues using ElevenLabs TTS for ORIEL voice guidance
+- [x] Generate breath guidance audio prompts (start, inhale, hold, exhale, complete)
+- [x] Integrate into Carrierlock page before assessment
+- [x] Auto-check breath completion checkbox on protocol finish (handleBreathComplete)
+- [x] Test visual/audio synchronization (169/169 tests passing)
 - [ ] Save checkpoint

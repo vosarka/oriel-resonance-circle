@@ -4,12 +4,11 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Loader2, ArrowRight, Calendar, Zap, Info } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import BreathProtocol from "@/components/BreathProtocol";
 
 // Reading types
 type ReadingType = "dynamic" | "static";
@@ -56,6 +55,11 @@ export default function Carrierlock() {
     return "Low Coherence";
   };
 
+  // Handle breath protocol completion
+  const handleBreathComplete = () => {
+    setBreathCompletion(true);
+  };
+
   const handleGetReading = async () => {
     if (!user) {
       window.location.href = getLoginUrl();
@@ -86,7 +90,6 @@ export default function Carrierlock() {
         }
       } else {
         // Static Signature reading (birth-based)
-        // For now, we'll use the same flow but pass birth data
         const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
           mentalNoise: 0,
           bodyTension: 0,
@@ -330,28 +333,11 @@ export default function Carrierlock() {
                 </CardContent>
               </Card>
 
-              {/* Breath Completion */}
-              <Card className="bg-zinc-900/50 border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Breath Completion Protocol (BC)</CardTitle>
-                  <CardDescription>
-                    Have you completed 3 conscious breath cycles before this assessment?
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="breathCompletion"
-                      checked={breathCompletion}
-                      onCheckedChange={(checked) => setBreathCompletion(checked as boolean)}
-                      className="border-purple-400 data-[state=checked]:bg-purple-500"
-                    />
-                    <Label htmlFor="breathCompletion" className="text-zinc-300 cursor-pointer">
-                      Yes, I completed the breath protocol (+10 to Coherence Score)
-                    </Label>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Guided Breath Protocol */}
+              <BreathProtocol 
+                onComplete={handleBreathComplete}
+                isCompleted={breathCompletion}
+              />
             </>
           )}
 
