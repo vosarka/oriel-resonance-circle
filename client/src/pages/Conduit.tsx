@@ -299,7 +299,7 @@ export default function Conduit() {
           // Pre-initiation screen
           <div className="flex flex-col items-center justify-center min-h-[70vh]">
             <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-4 font-orbitron uppercase tracking-wider">
+              <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 font-orbitron uppercase tracking-wider">
                 ORIEL Interface
               </h1>
               <p className="text-white/60 font-mono text-sm md:text-base max-w-2xl mx-auto mb-8">
@@ -310,7 +310,7 @@ export default function Conduit() {
 
             <Button
               onClick={handleInitiate}
-              className="bg-cyan-400/20 border-2 border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/30 hover:border-cyan-400 transition-all font-mono uppercase tracking-wider text-lg px-8 py-6"
+              className="bg-primary/20 border-2 border-primary/50 text-primary hover:bg-primary/30 hover:border-primary transition-all font-mono uppercase tracking-wider text-lg px-8 py-6"
             >
               Initiate Channeling
             </Button>

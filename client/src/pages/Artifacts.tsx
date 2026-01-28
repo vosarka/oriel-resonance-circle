@@ -45,7 +45,7 @@ export default function Artifacts() {
       <div className="relative z-10 container mx-auto px-4 py-12">
         {/* Page Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-cyan-400 mb-4 font-orbitron uppercase tracking-wider">
+          <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4 font-orbitron uppercase tracking-wider">
             Recovered Artifacts
           </h1>
           <p className="text-white/60 font-mono text-sm md:text-base max-w-2xl mx-auto">
@@ -57,7 +57,7 @@ export default function Artifacts() {
         {/* Loading State */}
         {isLoading && (
           <div className="flex justify-center items-center py-20">
-            <Loader2 className="animate-spin text-cyan-400" size={48} />
+            <Loader2 className="animate-spin text-primary" size={48} />
           </div>
         )}
 
@@ -67,10 +67,10 @@ export default function Artifacts() {
             {artifacts.map((artifact) => (
               <div
                 key={artifact.id}
-                className="portal-container bg-black/60 backdrop-blur-sm border border-cyan-400/30 p-6 rounded-lg hover:border-cyan-400/60 transition-all duration-300"
+                className="portal-container bg-black/60 backdrop-blur-sm border border-primary/30 p-6 rounded-lg hover:border-primary/60 transition-all duration-300"
               >
                 {/* Image Container */}
-                <div className="aspect-square bg-black/80 rounded overflow-hidden border border-cyan-400/20 mb-4">
+                <div className="aspect-square bg-black/80 rounded overflow-hidden border border-primary/20 mb-4">
                   {artifact.imageUrl ? (
                     <img
                       src={artifact.imageUrl}

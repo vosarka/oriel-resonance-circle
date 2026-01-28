@@ -452,6 +452,17 @@
   animation: border-scan 2s ease-in-out infinite;
 }
 
+/* Glass panel utility for unified design */
+.glass-panel {
+  background: rgba(10, 16, 18, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(159, 228, 154, 0.2);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px currentColor;
+}
+
 /* Line clamp utilities */
 .line-clamp-4 {
   display: -webkit-box;

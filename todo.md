@@ -757,4 +757,18 @@
 - [x] Add Primary Patterns section with codon cards (SLI scores, resonance status)
 - [x] Add Micro-Correction and Falsifier sections
 - [x] Test all pages and verify styling consistency (167/169 tests passing, 2 failed due to ElevenLabs quota)
+- [x] Save checkpoint (version: 3bc8816e)
+
+
+## Unified Design System - Current Session
+- [x] Audit all pages: Home, Codex, CodonDetail, Archive, Carrierlock, Reading, Conduit, Protocol
+- [x] Identify style inconsistencies: Codex uses cyan/purple, needs mint green (#9fe49a) primary
+- [x] Define unified design tokens: primary oklch(0.68 0.12 150), glass-panel, glow-text utilities
+- [x] Create reusable styled components: .glass-panel, .glow-text in index.css
+- [x] Create BackgroundPattern component with Psi symbol and sacred grid
+- [x] Add BackgroundPattern to Layout component for all pages
+- [x] Apply unified styling to Codex page (mint green, glass panels)
+- [x] Apply unified styling to all other inconsistent pages (replaced cyan-400/300/600 with primary)
+- [x] Test visual consistency across all pages (162/169 tests passing, 7 failed due to ElevenLabs quota)
+- [x] Verified background pattern appears on all pages
 - [ ] Save checkpoint

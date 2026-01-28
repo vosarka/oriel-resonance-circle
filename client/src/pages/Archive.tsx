@@ -107,12 +107,12 @@ export default function Archive() {
           <div className="mb-8 space-y-4 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-cyan-400/60" />
+              <Search className="absolute left-3 top-3 w-5 h-5 text-primary/60" />
               <Input
                 placeholder="Search transmissions, fields, tags..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-black/60 backdrop-blur-sm border-cyan-400/30 text-white placeholder:text-white/40 focus:border-cyan-400/60 focus:ring-cyan-400/20"
+                className="pl-10 bg-black/60 backdrop-blur-sm border-primary/30 text-white placeholder:text-white/40 focus:border-primary/60 focus:ring-primary/20"
               />
             </div>
 
@@ -122,13 +122,13 @@ export default function Archive() {
                 value={filterField || "__all__"}
                 onValueChange={(value) => setFilterField(value === "__all__" ? null : value)}
               >
-                <SelectTrigger className="w-[200px] bg-black/60 backdrop-blur-sm border-cyan-400/30 text-white focus:border-cyan-400/60 focus:ring-cyan-400/20">
+                <SelectTrigger className="w-[200px] bg-black/60 backdrop-blur-sm border-primary/30 text-white focus:border-primary/60 focus:ring-primary/20">
                   <SelectValue placeholder="All Fields" />
                 </SelectTrigger>
-                <SelectContent className="bg-black/95 backdrop-blur-sm border-cyan-400/30 text-white">
-                  <SelectItem value="__all__" className="text-white hover:bg-cyan-400/10 focus:bg-cyan-400/10">All Fields</SelectItem>
+                <SelectContent className="bg-black/95 backdrop-blur-sm border-primary/30 text-white">
+                  <SelectItem value="__all__" className="text-white hover:bg-primary/10 focus:bg-primary/10">All Fields</SelectItem>
                   {uniqueFields.map((field) => (
-                    <SelectItem key={field} value={field} className="text-white hover:bg-cyan-400/10 focus:bg-cyan-400/10">
+                    <SelectItem key={field} value={field} className="text-white hover:bg-primary/10 focus:bg-primary/10">
                       {field}
                     </SelectItem>
                   ))}
@@ -139,13 +139,13 @@ export default function Archive() {
                 value={filterStatus || "__all__"}
                 onValueChange={(value) => setFilterStatus(value === "__all__" ? null : value)}
               >
-                <SelectTrigger className="w-[200px] bg-black/60 backdrop-blur-sm border-cyan-400/30 text-white focus:border-cyan-400/60 focus:ring-cyan-400/20">
+                <SelectTrigger className="w-[200px] bg-black/60 backdrop-blur-sm border-primary/30 text-white focus:border-primary/60 focus:ring-primary/20">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
-                <SelectContent className="bg-black/95 backdrop-blur-sm border-cyan-400/30 text-white">
-                  <SelectItem value="__all__" className="text-white hover:bg-cyan-400/10 focus:bg-cyan-400/10">All Status</SelectItem>
+                <SelectContent className="bg-black/95 backdrop-blur-sm border-primary/30 text-white">
+                  <SelectItem value="__all__" className="text-white hover:bg-primary/10 focus:bg-primary/10">All Status</SelectItem>
                   {uniqueStatuses.map((status) => (
-                    <SelectItem key={status} value={status} className="text-white hover:bg-cyan-400/10 focus:bg-cyan-400/10">
+                    <SelectItem key={status} value={status} className="text-white hover:bg-primary/10 focus:bg-primary/10">
                       {status}
                     </SelectItem>
                   ))}
@@ -160,7 +160,7 @@ export default function Archive() {
                     setFilterField(null);
                     setFilterStatus(null);
                   }}
-                  className="bg-black/60 backdrop-blur-sm border-cyan-400/30 text-white hover:bg-cyan-400/10 hover:border-cyan-400/60"
+                  className="bg-black/60 backdrop-blur-sm border-primary/30 text-white hover:bg-primary/10 hover:border-primary/60"
                 >
                   Clear Filters
                 </Button>
@@ -170,7 +170,7 @@ export default function Archive() {
 
           {/* Tabs for TX and ΩX */}
           <Tabs defaultValue="tx" className="w-full animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-            <TabsList className="grid w-full max-w-md grid-cols-2 bg-black/60 backdrop-blur-sm border border-cyan-400/30">
+            <TabsList className="grid w-full max-w-md grid-cols-2 bg-black/60 backdrop-blur-sm border border-primary/30">
               <TabsTrigger 
                 value="tx" 
                 className="data-[state=active]:bg-green-400/20 data-[state=active]:text-green-400 text-white/60 font-mono uppercase tracking-wider"
