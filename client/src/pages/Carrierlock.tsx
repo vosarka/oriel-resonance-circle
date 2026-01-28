@@ -9,36 +9,10 @@ import { Loader2, ArrowRight, Calendar, Zap, Info } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import BreathProtocol from "@/components/BreathProtocol";
+import Layout from "@/components/Layout";
 
 // Reading types
 type ReadingType = "dynamic" | "static";
-
-// Type for flagged codons from diagnostic result
-interface FlaggedCodon {
-  codon: string;
-  sli: number;
-  level: string;
-  facet: string;
-  confidence: number;
-}
-
-// Type for diagnostic result data
-interface DiagnosticData {
-  coherenceScore: number;
-  axisDominance: string;
-  overactiveCenter: string;
-  flaggedCodons: FlaggedCodon[];
-  microCorrection?: {
-    codon: string;
-    facet: string;
-    duration: string;
-    instruction: string;
-    rationale: string;
-  };
-  confidence: number;
-  falsifier: string;
-  readingText?: string;
-}
 
 export default function Carrierlock() {
   const { user } = useAuth();
@@ -58,9 +32,13 @@ export default function Carrierlock() {
   const [emotionalTurbulence, setEmotionalTurbulence] = useState(5);
   const [breathCompletion, setBreathCompletion] = useState(false);
 
+  // Mutations
   const saveCarrierlockMutation = trpc.codex.saveCarrierlock.useMutation();
   const saveReadingMutation = trpc.codex.saveReading.useMutation();
-  const diagnosticReadingMutation = trpc.oriel.diagnosticReading.useMutation();
+  
+  // New RGP endpoints
+  const staticSignatureMutation = trpc.rgp.staticSignature.useMutation();
+  const dynamicStateMutation = trpc.rgp.dynamicState.useMutation();
 
   // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
   const coherenceScore = Math.max(
@@ -88,65 +66,6 @@ export default function Carrierlock() {
     setBreathCompletion(true);
   };
 
-  // Generate reading text from diagnostic result
-  function generateReadingText(data: DiagnosticData): string {
-    const codons = data.flaggedCodons || [];
-    const topCodon = codons[0];
-    
-    if (!topCodon) {
-      return `Your current coherence score is ${data.coherenceScore}. Your field appears balanced at this moment. Continue to observe and maintain awareness of your inner state.`;
-    }
-    
-    return `Your current coherence score is ${data.coherenceScore}, indicating ${data.coherenceScore >= 70 ? 'high' : data.coherenceScore >= 40 ? 'moderate' : 'low'} coherence. 
-
-The primary codon active in your field is ${topCodon.codon}, currently expressing at the ${topCodon.facet === 'A' ? 'Shadow' : topCodon.facet === 'B' ? 'Gift' : topCodon.facet === 'C' ? 'Crown' : 'Siddhi'} frequency with a Shadow Loudness Index of ${(topCodon.sli * 100).toFixed(1)}%.
-
-${data.axisDominance ? `Your axis dominance suggests ${data.axisDominance} patterns are currently active.` : ''}
-${data.overactiveCenter ? `The ${data.overactiveCenter} center shows heightened activity.` : ''}
-
-${data.microCorrection?.instruction || 'Observe these patterns with compassion and allow integration to occur naturally.'}`;
-  }
-
-  // Generate static signature reading text
-  function generateStaticReadingText(data: DiagnosticData, birthDateStr: string): string {
-    const codons = data.flaggedCodons || [];
-    const birthDateObj = new Date(birthDateStr);
-    const formattedDate = birthDateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    
-    if (codons.length === 0) {
-      return `Your Static Signature, encoded at birth on ${formattedDate}, reveals a unique resonance blueprint. Your inherent patterns are now being integrated into your conscious awareness.`;
-    }
-    
-    const primaryCodon = codons[0];
-    const secondaryCodon = codons[1];
-    const tertiaryCodon = codons[2];
-    
-    let text = `Your Static Signature, encoded at birth on ${formattedDate}, reveals the following archetypal blueprint:
-
-PRIMARY CODON: ${primaryCodon.codon}
-This is your core life theme—the primary lens through which you experience and interact with reality. Currently expressing at the ${primaryCodon.facet === 'A' ? 'Shadow' : primaryCodon.facet === 'B' ? 'Gift' : primaryCodon.facet === 'C' ? 'Crown' : 'Siddhi'} frequency.`;
-
-    if (secondaryCodon) {
-      text += `
-
-HARMONIC PARTNER: ${secondaryCodon.codon}
-This codon represents your complementary energy—the qualities that balance and support your primary expression.`;
-    }
-
-    if (tertiaryCodon) {
-      text += `
-
-EVOLUTIONARY EDGE: ${tertiaryCodon.codon}
-This codon indicates your growth trajectory—the direction your soul is evolving toward in this incarnation.`;
-    }
-
-    text += `
-
-Your Static Signature is not a limitation but a map. It shows the terrain you chose to explore, the gifts you carry, and the shadows you came to integrate. Honor this blueprint while remaining open to the dynamic unfolding of your unique path.`;
-
-    return text;
-  }
-
   const handleGetReading = async () => {
     if (!user) {
       window.location.href = getLoginUrl();
@@ -154,99 +73,290 @@ Your Static Signature is not a limitation but a map. It shows the terrain you ch
     }
 
     try {
-      if (readingType === "dynamic") {
-        // Save Carrierlock state for dynamic reading
-        const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-          mentalNoise,
-          bodyTension,
-          emotionalTurbulence,
-          breathCompletion,
+      if (readingType === "static") {
+        // Static Signature reading using new RGP engine
+        const result = await staticSignatureMutation.mutateAsync({
+          birthDate,
+          birthTime: birthTime || undefined,
+          birthLocation: birthLocation || undefined,
         });
 
-        // Generate diagnostic reading
-        const readingResult = await diagnosticReadingMutation.mutateAsync({
-          mentalNoise,
-          bodyTension,
-          emotionalTurbulence,
-          breathCompletion: breathCompletion ? 1 : 0,
-          readingType: "dynamic",
-        });
-
-        if (readingResult.success && readingResult.data) {
-          const data = readingResult.data as DiagnosticData;
-          const codons = data.flaggedCodons || [];
+        if (result.success && result.data) {
+          const data = result.data;
           
-          // Save the reading to database
+          // Save carrierlock state (minimal for static readings)
+          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
+            mentalNoise: 0,
+            bodyTension: 0,
+            emotionalTurbulence: 0,
+            breathCompletion: true,
+          });
+
+          // Format flagged codons from Prime Stack
+          const flaggedCodons = data.primeStack.map(p => p.codonId);
+          const sliScores: Record<string, number> = {};
+          const activeFacets: Record<string, string> = {};
+          const confidenceLevels: Record<string, number> = {};
+          
+          data.primeStack.forEach(p => {
+            sliScores[p.codonId] = p.weight;
+            activeFacets[p.codonId] = p.facet;
+            confidenceLevels[p.codonId] = 0.95; // High confidence for static readings
+          });
+
+          // Generate reading text
+          const birthDateObj = new Date(birthDate);
+          const formattedDate = birthDateObj.toLocaleDateString('en-US', { 
+            year: 'numeric', month: 'long', day: 'numeric' 
+          });
+          
+          const readingText = `YOUR STATIC SIGNATURE
+Receiver ID: ${data.receiverId}
+Encoded: ${formattedDate}
+Design Offset: 88° solar-arc (${new Date(data.designOffset).toLocaleDateString()})
+
+═══════════════════════════════════════════════════════════
+
+PRIMARY CODON: ${data.primaryCodon.id} - ${data.primaryCodon.name}
+"${data.primaryCodon.title}"
+Facet: ${data.primaryCodon.facet} (${data.primaryCodon.facet === 'A' ? 'Somatic Seed' : data.primaryCodon.facet === 'B' ? 'Relational Current' : data.primaryCodon.facet === 'C' ? 'Mental Architect' : 'Transcendent Witness'})
+
+Shadow Pattern: ${data.primaryCodon.shadow}
+Gift Expression: ${data.primaryCodon.gift}
+Crown Potential: ${data.primaryCodon.crown}
+
+═══════════════════════════════════════════════════════════
+
+FRACTAL PROFILE
+Role: ${data.fractalProfile.roleName}
+${data.fractalProfile.description}
+
+Authority: ${data.fractalProfile.authorityName}
+${data.fractalProfile.authorityDescription}
+
+Operational Truth: ${data.fractalProfile.operationalTruth}
+Mastery Mode: ${data.fractalProfile.masteryMode}
+Failure Mode: ${data.fractalProfile.failureMode}
+
+═══════════════════════════════════════════════════════════
+
+PRIME STACK (9 Positions)
+${data.primeStack.map(p => `• ${p.position.replace(/_/g, ' ').toUpperCase()}: ${p.codonId} - ${p.codonName} (Facet ${p.facet})`).join('\n')}
+
+═══════════════════════════════════════════════════════════
+
+9-CENTER RESONANCE MAP
+${data.centerMap.map(c => `• ${c.name}: ${c.status.toUpperCase()} (${c.codons.length} codons)`).join('\n')}
+
+═══════════════════════════════════════════════════════════
+
+CIRCUIT ACTIVATIONS
+${data.circuitLinks.filter(c => c.status === 'active').map(c => `• ${c.name}: ${c.description}`).join('\n') || 'No active circuits detected'}
+
+═══════════════════════════════════════════════════════════
+
+FALSIFIERS (Verification Clauses)
+${data.falsifiers.map((f, i) => `${i + 1}. Claim: "${f.claim}"
+   Test: ${f.testCondition}
+   Falsifies: ${f.falsifiedElement}`).join('\n\n')}`;
+
+          // Save the reading
           const savedReading = await saveReadingMutation.mutateAsync({
             carrierlockId: carrierlockResult.id,
-            readingText: data.readingText || generateReadingText(data),
-            flaggedCodons: codons.map(c => c.codon),
-            sliScores: codons.reduce((acc, c) => {
-              acc[c.codon] = c.sli;
-              return acc;
-            }, {} as Record<string, number>),
-            activeFacets: codons.reduce((acc, c) => {
-              acc[c.codon] = c.facet;
-              return acc;
-            }, {} as Record<string, string>),
-            confidenceLevels: codons.reduce((acc, c) => {
-              acc[c.codon] = c.confidence || data.confidence || 0.7;
-              return acc;
-            }, {} as Record<string, number>),
-            microCorrection: data.microCorrection?.instruction,
-            correctionFacet: data.microCorrection?.facet as "A" | "B" | "C" | "D" | undefined,
-            falsifier: data.falsifier,
+            readingText,
+            flaggedCodons,
+            sliScores,
+            activeFacets,
+            confidenceLevels,
+            microCorrection: undefined,
+            correctionFacet: undefined,
+            falsifier: data.falsifiers.map(f => f.claim).join('; '),
           });
           
           setLocation(`/reading/${savedReading.id}`);
         }
       } else {
-        // Static Signature reading (birth-based)
-        const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-          mentalNoise: 0,
-          bodyTension: 0,
-          emotionalTurbulence: 0,
-          breathCompletion: true,
-        });
-
-        const readingResult = await diagnosticReadingMutation.mutateAsync({
-          mentalNoise: 0,
-          bodyTension: 0,
-          emotionalTurbulence: 0,
-          breathCompletion: 1,
-          readingType: "static",
-          birthDate,
-          birthTime,
-          birthLocation,
-        });
-
-        if (readingResult.success && readingResult.data) {
-          const data = readingResult.data as DiagnosticData;
-          const codons = data.flaggedCodons || [];
-          
-          // Save the reading to database
-          const savedReading = await saveReadingMutation.mutateAsync({
-            carrierlockId: carrierlockResult.id,
-            readingText: data.readingText || generateStaticReadingText(data, birthDate),
-            flaggedCodons: codons.map(c => c.codon),
-            sliScores: codons.reduce((acc, c) => {
-              acc[c.codon] = c.sli;
-              return acc;
-            }, {} as Record<string, number>),
-            activeFacets: codons.reduce((acc, c) => {
-              acc[c.codon] = c.facet;
-              return acc;
-            }, {} as Record<string, string>),
-            confidenceLevels: codons.reduce((acc, c) => {
-              acc[c.codon] = c.confidence || data.confidence || 0.8;
-              return acc;
-            }, {} as Record<string, number>),
-            microCorrection: data.microCorrection?.instruction,
-            correctionFacet: data.microCorrection?.facet as "A" | "B" | "C" | "D" | undefined,
-            falsifier: data.falsifier,
+        // Dynamic State reading using new RGP engine
+        // First we need birth data for personalized reading
+        if (!birthDate) {
+          // If no birth data, use simplified dynamic reading
+          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
+            mentalNoise,
+            bodyTension,
+            emotionalTurbulence,
+            breathCompletion,
           });
-          
-          setLocation(`/reading/${savedReading.id}`);
+
+          // Use old diagnostic endpoint for now (without birth data)
+          const result = await dynamicStateMutation.mutateAsync({
+            mentalNoise,
+            bodyTension,
+            emotionalTurbulence,
+            breathCompletion: breathCompletion ? 1 : 0,
+            birthDate: new Date().toISOString(), // Use current date as fallback
+          });
+
+          if (result.success && result.data) {
+            const data = result.data;
+            
+            const flaggedCodons = data.sliResults.map(s => s.codonId);
+            const sliScores: Record<string, number> = {};
+            const activeFacets: Record<string, string> = {};
+            const confidenceLevels: Record<string, number> = {};
+            
+            data.sliResults.forEach(s => {
+              sliScores[s.codonId] = s.sliScore;
+              activeFacets[s.codonId] = s.facet;
+              confidenceLevels[s.codonId] = 0.85;
+            });
+
+            const readingText = `DYNAMIC STATE READING
+Timestamp: ${new Date(data.timestamp).toLocaleString()}
+Coherence Score: ${data.coherenceScore}
+State Amplifier: ${(data.stateAmplifier * 100).toFixed(1)}%
+Dominant Facet: ${data.dominantFacet} (${data.dominantFacet === 'A' ? 'Somatic' : data.dominantFacet === 'B' ? 'Relational' : data.dominantFacet === 'C' ? 'Mental' : 'Transcendent'})
+
+═══════════════════════════════════════════════════════════
+
+CARRIERLOCK STATE
+• Mental Noise (MN): ${data.carrierlock.mentalNoise}/10
+• Body Tension (BT): ${data.carrierlock.bodyTension}/10
+• Emotional Turbulence (ET): ${data.carrierlock.emotionalTurbulence}/10
+• Breath Completion (BC): ${data.carrierlock.breathCompletion ? 'Yes' : 'No'}
+
+═══════════════════════════════════════════════════════════
+
+FACET LOUDNESS
+• Somatic (A): ${(data.facetLoudness.A * 100).toFixed(1)}%
+• Relational (B): ${(data.facetLoudness.B * 100).toFixed(1)}%
+• Mental (C): ${(data.facetLoudness.C * 100).toFixed(1)}%
+• Transcendent (D): ${(data.facetLoudness.D * 100).toFixed(1)}%
+
+═══════════════════════════════════════════════════════════
+
+PRIMARY INTERFERENCE
+${data.primaryInterference ? `${data.primaryInterference.codonId} - ${data.primaryInterference.codonName}
+SLI Score: ${(data.primaryInterference.sliScore * 100).toFixed(1)}%
+Shadow Pattern: ${data.primaryInterference.shadow}` : 'No primary interference detected'}
+
+═══════════════════════════════════════════════════════════
+
+SECONDARY INTERFERENCES
+${data.secondaryInterferences.length > 0 ? data.secondaryInterferences.map(s => `• ${s.codonId} - ${s.codonName}: ${(s.sliScore * 100).toFixed(1)}%`).join('\n') : 'None detected'}
+
+═══════════════════════════════════════════════════════════
+
+MICRO-CORRECTION
+Center: ${data.microCorrection.center}
+Facet: ${data.microCorrection.facet}
+Action: ${data.microCorrection.action}
+Duration: ${data.microCorrection.duration}
+Rationale: ${data.microCorrection.rationale}
+
+═══════════════════════════════════════════════════════════
+
+FALSIFIERS
+${data.falsifiers.map((f, i) => `${i + 1}. "${f.claim}"
+   Test: ${f.testCondition}`).join('\n\n')}`;
+
+            const savedReading = await saveReadingMutation.mutateAsync({
+              carrierlockId: carrierlockResult.id,
+              readingText,
+              flaggedCodons,
+              sliScores,
+              activeFacets,
+              confidenceLevels,
+              microCorrection: data.microCorrection.action,
+              correctionFacet: data.microCorrection.facet as "A" | "B" | "C" | "D",
+              falsifier: data.falsifiers.map(f => f.claim).join('; '),
+            });
+            
+            setLocation(`/reading/${savedReading.id}`);
+          }
+        } else {
+          // With birth data, use full dynamic reading
+          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
+            mentalNoise,
+            bodyTension,
+            emotionalTurbulence,
+            breathCompletion,
+          });
+
+          const result = await dynamicStateMutation.mutateAsync({
+            mentalNoise,
+            bodyTension,
+            emotionalTurbulence,
+            breathCompletion: breathCompletion ? 1 : 0,
+            birthDate,
+            birthTime: birthTime || undefined,
+            birthLocation: birthLocation || undefined,
+          });
+
+          if (result.success && result.data) {
+            const data = result.data;
+            
+            const flaggedCodons = data.sliResults.map(s => s.codonId);
+            const sliScores: Record<string, number> = {};
+            const activeFacets: Record<string, string> = {};
+            const confidenceLevels: Record<string, number> = {};
+            
+            data.sliResults.forEach(s => {
+              sliScores[s.codonId] = s.sliScore;
+              activeFacets[s.codonId] = s.facet;
+              confidenceLevels[s.codonId] = 0.9;
+            });
+
+            const readingText = `PERSONALIZED DYNAMIC STATE READING
+Timestamp: ${new Date(data.timestamp).toLocaleString()}
+Coherence Score: ${data.coherenceScore}
+State Amplifier: ${(data.stateAmplifier * 100).toFixed(1)}%
+Dominant Facet: ${data.dominantFacet}
+
+═══════════════════════════════════════════════════════════
+
+CARRIERLOCK STATE
+• Mental Noise (MN): ${data.carrierlock.mentalNoise}/10
+• Body Tension (BT): ${data.carrierlock.bodyTension}/10
+• Emotional Turbulence (ET): ${data.carrierlock.emotionalTurbulence}/10
+• Breath Completion (BC): ${data.carrierlock.breathCompletion ? 'Yes' : 'No'}
+
+═══════════════════════════════════════════════════════════
+
+SLI RESULTS (Shadow Loudness Index)
+${data.sliResults.slice(0, 5).map(s => `• ${s.codonId} - ${s.codonName} (${s.codonTitle})
+  SLI: ${(s.sliScore * 100).toFixed(1)}% | Level: ${s.level} | Facet: ${s.facetName}
+  Shadow: ${s.shadow}
+  Gift: ${s.gift}`).join('\n\n')}
+
+═══════════════════════════════════════════════════════════
+
+MICRO-CORRECTION
+Center: ${data.microCorrection.center}
+Facet: ${data.microCorrection.facet}
+Action: ${data.microCorrection.action}
+Duration: ${data.microCorrection.duration}
+Rationale: ${data.microCorrection.rationale}
+
+═══════════════════════════════════════════════════════════
+
+FALSIFIERS
+${data.falsifiers.map((f, i) => `${i + 1}. "${f.claim}"
+   Test: ${f.testCondition}`).join('\n\n')}`;
+
+            const savedReading = await saveReadingMutation.mutateAsync({
+              carrierlockId: carrierlockResult.id,
+              readingText,
+              flaggedCodons,
+              sliScores,
+              activeFacets,
+              confidenceLevels,
+              microCorrection: data.microCorrection.action,
+              correctionFacet: data.microCorrection.facet as "A" | "B" | "C" | "D",
+              falsifier: data.falsifiers.map(f => f.claim).join('; '),
+            });
+            
+            setLocation(`/reading/${savedReading.id}`);
+          }
         }
       }
     } catch (error) {
@@ -254,370 +364,282 @@ Your Static Signature is not a limitation but a map. It shows the terrain you ch
     }
   };
 
-  const isLoading = saveCarrierlockMutation.isPending || diagnosticReadingMutation.isPending || saveReadingMutation.isPending;
+  const isLoading = saveCarrierlockMutation.isPending || 
+                    staticSignatureMutation.isPending || 
+                    dynamicStateMutation.isPending || 
+                    saveReadingMutation.isPending;
   const canSubmitStatic = birthDate.length > 0;
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100">
-      {/* Header */}
-      <div className="border-b border-primary/20 bg-black/50 backdrop-blur-sm">
-        <div className="container py-6">
-          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 font-orbitron">
-            Resonance Diagnostic
-          </h1>
-          <p className="text-zinc-400 mt-1">Choose your reading type and measure your coherence state</p>
+    <Layout>
+      <div className="min-h-screen text-zinc-100">
+        {/* Header */}
+        <div className="border-b border-primary/20 bg-black/50 backdrop-blur-sm">
+          <div className="container py-6">
+            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 font-orbitron">
+              Resonance Diagnostic
+            </h1>
+            <p className="text-zinc-400 mt-1">Choose your reading type and measure your coherence state</p>
+          </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="container py-8">
-        <div className="max-w-3xl mx-auto space-y-6">
-          
-          {/* Reading Type Selector */}
-          <Card className="bg-zinc-900/50 border-primary/30 overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-primary font-orbitron">Select Reading Type</CardTitle>
-              <CardDescription>
-                Choose between your inherent blueprint or your current moment state
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Dynamic State Option */}
-                <button
-                  onClick={() => setReadingType("dynamic")}
-                  className={`relative p-6 rounded-xl border-2 transition-all text-left group ${
-                    readingType === "dynamic"
-                      ? "border-primary bg-primary/10 shadow-[0_0_20px_rgba(104,211,145,0.2)]"
-                      : "border-zinc-700 bg-zinc-900/30 hover:border-zinc-600"
-                  }`}
-                >
-                  <div className="absolute top-4 right-4">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      readingType === "dynamic" ? "border-primary" : "border-zinc-600"
-                    }`}>
-                      {readingType === "dynamic" && (
-                        <div className="w-2 h-2 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-lg ${
-                      readingType === "dynamic" ? "bg-primary/20" : "bg-zinc-800"
-                    }`}>
-                      <Zap className={`w-5 h-5 ${
-                        readingType === "dynamic" ? "text-primary" : "text-zinc-500"
-                      }`} />
-                    </div>
-                    <h3 className={`font-orbitron text-lg ${
-                      readingType === "dynamic" ? "text-primary" : "text-zinc-300"
-                    }`}>
-                      Dynamic State
-                    </h3>
-                  </div>
-                  <p className="text-sm text-zinc-400 mb-3">
-                    Assess your <strong>current moment</strong> coherence. Measures mental noise, body tension, 
-                    and emotional turbulence right now.
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <Info className="w-3 h-3" />
-                    <span>Best for: Daily check-ins, real-time guidance</span>
-                  </div>
-                </button>
+        {/* Content */}
+        <div className="container py-8">
+          <div className="max-w-3xl mx-auto space-y-6">
+            
+            {/* Reading Type Selector */}
+            <Card className="bg-zinc-900/50 border-primary/30 overflow-hidden">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-primary font-orbitron">Select Reading Type</CardTitle>
+                <CardDescription>
+                  Choose between your permanent blueprint or current moment state
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => setReadingType("dynamic")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      readingType === "dynamic"
+                        ? "border-primary bg-primary/10"
+                        : "border-zinc-700 hover:border-zinc-600"
+                    }`}
+                  >
+                    <Zap className={`w-8 h-8 mx-auto mb-2 ${readingType === "dynamic" ? "text-primary" : "text-zinc-500"}`} />
+                    <h3 className="font-semibold text-center">Dynamic State</h3>
+                    <p className="text-xs text-zinc-400 text-center mt-1">Current moment Carrierlock</p>
+                  </button>
+                  
+                  <button
+                    onClick={() => setReadingType("static")}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      readingType === "static"
+                        ? "border-primary bg-primary/10"
+                        : "border-zinc-700 hover:border-zinc-600"
+                    }`}
+                  >
+                    <Calendar className={`w-8 h-8 mx-auto mb-2 ${readingType === "static" ? "text-primary" : "text-zinc-500"}`} />
+                    <h3 className="font-semibold text-center">Static Signature</h3>
+                    <p className="text-xs text-zinc-400 text-center mt-1">Birth-based blueprint</p>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
 
-                {/* Static Signature Option */}
-                <button
-                  onClick={() => setReadingType("static")}
-                  className={`relative p-6 rounded-xl border-2 transition-all text-left group ${
-                    readingType === "static"
-                      ? "border-purple-400 bg-purple-500/10 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
-                      : "border-zinc-700 bg-zinc-900/30 hover:border-zinc-600"
-                  }`}
-                >
-                  <div className="absolute top-4 right-4">
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      readingType === "static" ? "border-purple-400" : "border-zinc-600"
-                    }`}>
-                      {readingType === "static" && (
-                        <div className="w-2 h-2 rounded-full bg-purple-400" />
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className={`p-2 rounded-lg ${
-                      readingType === "static" ? "bg-purple-500/20" : "bg-zinc-800"
-                    }`}>
-                      <Calendar className={`w-5 h-5 ${
-                        readingType === "static" ? "text-purple-400" : "text-zinc-500"
-                      }`} />
-                    </div>
-                    <h3 className={`font-orbitron text-lg ${
-                      readingType === "static" ? "text-purple-400" : "text-zinc-300"
-                    }`}>
-                      Static Signature
-                    </h3>
-                  </div>
-                  <p className="text-sm text-zinc-400 mb-3">
-                    Discover your <strong>inherent blueprint</strong> based on birth data. Reveals your 
-                    core codons, life themes, and evolutionary path.
-                  </p>
-                  <div className="flex items-center gap-2 text-xs text-zinc-500">
-                    <Info className="w-3 h-3" />
-                    <span>Best for: Deep self-understanding, life purpose</span>
-                  </div>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Dynamic State Assessment */}
-          {readingType === "dynamic" && (
-            <>
-              {/* Coherence Score Display */}
-              <Card className="bg-gradient-to-br from-primary/10 to-purple-500/10 border-primary/30">
+            {/* Static Signature Form */}
+            {readingType === "static" && (
+              <Card className="bg-zinc-900/50 border-primary/30">
                 <CardHeader>
-                  <CardTitle className="text-center text-2xl font-orbitron">
-                    Coherence Score
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center">
-                    <div className={`text-6xl font-bold font-orbitron ${getCoherenceColor(coherenceScore)}`}>
-                      {coherenceScore}
-                    </div>
-                    <div className={`text-sm mt-2 ${getCoherenceColor(coherenceScore)}`}>
-                      {getCoherenceLabel(coherenceScore)}
-                    </div>
-                    <p className="text-xs text-zinc-500 mt-4 font-mono">
-                      CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Mental Noise */}
-              <Card className="bg-zinc-900/50 border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-primary">Mental Noise (MN)</CardTitle>
-                  <CardDescription>
-                    Racing thoughts, mental chatter, difficulty focusing
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Calm</span>
-                    <span className="text-2xl font-bold text-primary font-orbitron">{mentalNoise}</span>
-                    <span className="text-sm text-zinc-400">Chaotic</span>
-                  </div>
-                  <Slider
-                    value={[mentalNoise]}
-                    onValueChange={([value]) => setMentalNoise(value)}
-                    min={0}
-                    max={10}
-                    step={1}
-                    className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Body Tension */}
-              <Card className="bg-zinc-900/50 border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-primary">Body Tension (BT)</CardTitle>
-                  <CardDescription>
-                    Physical tightness, muscle tension, somatic holding
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Relaxed</span>
-                    <span className="text-2xl font-bold text-primary font-orbitron">{bodyTension}</span>
-                    <span className="text-sm text-zinc-400">Tense</span>
-                  </div>
-                  <Slider
-                    value={[bodyTension]}
-                    onValueChange={([value]) => setBodyTension(value)}
-                    min={0}
-                    max={10}
-                    step={1}
-                    className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Emotional Turbulence */}
-              <Card className="bg-zinc-900/50 border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-primary">Emotional Turbulence (ET)</CardTitle>
-                  <CardDescription>
-                    Emotional reactivity, mood swings, affective instability
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-zinc-400">Stable</span>
-                    <span className="text-2xl font-bold text-primary font-orbitron">{emotionalTurbulence}</span>
-                    <span className="text-sm text-zinc-400">Turbulent</span>
-                  </div>
-                  <Slider
-                    value={[emotionalTurbulence]}
-                    onValueChange={([value]) => setEmotionalTurbulence(value)}
-                    min={0}
-                    max={10}
-                    step={1}
-                    className="[&_[role=slider]]:bg-primary [&_[role=slider]]:border-primary"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Guided Breath Protocol */}
-              <BreathProtocol 
-                onComplete={handleBreathComplete}
-                isCompleted={breathCompletion}
-              />
-            </>
-          )}
-
-          {/* Static Signature Assessment */}
-          {readingType === "static" && (
-            <>
-              {/* Birth Data Info */}
-              <Card className="bg-gradient-to-br from-purple-500/10 to-primary/10 border-purple-500/30">
-                <CardHeader>
-                  <CardTitle className="text-center text-xl font-orbitron text-purple-400">
+                  <CardTitle className="text-primary font-orbitron flex items-center gap-2">
+                    <Calendar className="w-5 h-5" />
                     Static Signature Reading
                   </CardTitle>
-                  <CardDescription className="text-center">
-                    Your birth data encodes your inherent resonance blueprint—the codons, themes, 
-                    and evolutionary trajectory you carry from the moment of incarnation.
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-
-              {/* Birth Date */}
-              <Card className="bg-zinc-900/50 border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Birth Date</CardTitle>
                   <CardDescription>
-                    The date you entered this incarnation
+                    Your birth data encodes your permanent resonance blueprint—the 9-position Prime Stack that defines your unique archetypal signature.
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <Input
-                    type="date"
-                    value={birthDate}
-                    onChange={(e) => setBirthDate(e.target.value)}
-                    className="bg-zinc-800/50 border-purple-500/30 text-zinc-100 focus:border-purple-400"
-                  />
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-1 block">Birth Date *</label>
+                    <Input
+                      type="date"
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                      className="bg-zinc-800 border-zinc-700"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-1 block">Birth Time (optional)</label>
+                    <Input
+                      type="time"
+                      value={birthTime}
+                      onChange={(e) => setBirthTime(e.target.value)}
+                      className="bg-zinc-800 border-zinc-700"
+                    />
+                    <p className="text-xs text-zinc-500 mt-1">Improves facet accuracy for time-sensitive positions</p>
+                  </div>
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-1 block">Birth Location (optional)</label>
+                    <Input
+                      type="text"
+                      value={birthLocation}
+                      onChange={(e) => setBirthLocation(e.target.value)}
+                      placeholder="City, Country"
+                      className="bg-zinc-800 border-zinc-700"
+                    />
+                  </div>
+                  
+                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                    <div className="flex items-start gap-2">
+                      <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="text-xs text-zinc-400">
+                        <p className="font-medium text-zinc-300 mb-1">What you'll receive:</p>
+                        <ul className="space-y-1">
+                          <li>• 9-Position Prime Stack with facet assignments</li>
+                          <li>• 9-Center Resonance Map</li>
+                          <li>• Fractal Role and Authority Node</li>
+                          <li>• Circuit Link activations</li>
+                          <li>• Falsifier verification clauses</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Birth Time (Optional) */}
-              <Card className="bg-zinc-900/50 border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Birth Time <span className="text-zinc-500 text-sm font-normal">(Optional)</span></CardTitle>
-                  <CardDescription>
-                    For more precise codon activation timing. If unknown, leave blank.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Input
-                    type="time"
-                    value={birthTime}
-                    onChange={(e) => setBirthTime(e.target.value)}
-                    className="bg-zinc-800/50 border-purple-500/30 text-zinc-100 focus:border-purple-400"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Birth Location (Optional) */}
-              <Card className="bg-zinc-900/50 border-purple-500/20">
-                <CardHeader>
-                  <CardTitle className="text-purple-400">Birth Location <span className="text-zinc-500 text-sm font-normal">(Optional)</span></CardTitle>
-                  <CardDescription>
-                    City or region of birth for geographic resonance mapping
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Input
-                    type="text"
-                    placeholder="e.g., New York, USA"
-                    value={birthLocation}
-                    onChange={(e) => setBirthLocation(e.target.value)}
-                    className="bg-zinc-800/50 border-purple-500/30 text-zinc-100 focus:border-purple-400 placeholder:text-zinc-600"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* What You'll Discover */}
-              <Card className="bg-zinc-900/50 border-zinc-700">
-                <CardHeader>
-                  <CardTitle className="text-zinc-300 text-lg">What Your Static Signature Reveals</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3 text-sm text-zinc-400">
-                    <li className="flex items-start gap-3">
-                      <span className="text-purple-400 font-orbitron">01</span>
-                      <span><strong className="text-zinc-300">Core Codons:</strong> The primary archetypes encoded in your field at birth</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-purple-400 font-orbitron">02</span>
-                      <span><strong className="text-zinc-300">Life Themes:</strong> Recurring patterns and lessons your soul chose to explore</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-purple-400 font-orbitron">03</span>
-                      <span><strong className="text-zinc-300">Shadow Tendencies:</strong> Default distortion patterns to be aware of</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-purple-400 font-orbitron">04</span>
-                      <span><strong className="text-zinc-300">Gift Potential:</strong> Your natural strengths when operating in coherence</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-purple-400 font-orbitron">05</span>
-                      <span><strong className="text-zinc-300">Crown Destiny:</strong> The transcendent expression available through integration</span>
-                    </li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </>
-          )}
-
-          {/* Get Reading Button */}
-          <Button
-            onClick={handleGetReading}
-            disabled={isLoading || (readingType === "static" && !canSubmitStatic)}
-            className={`w-full h-14 text-lg font-orbitron ${
-              readingType === "dynamic"
-                ? "bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-400"
-                : "bg-gradient-to-r from-purple-500 to-primary hover:from-purple-400 hover:to-primary/90"
-            }`}
-          >
-            {isLoading ? (
+            {/* Dynamic State Form */}
+            {readingType === "dynamic" && (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Generating {readingType === "dynamic" ? "Dynamic" : "Static"} Reading...
-              </>
-            ) : (
-              <>
-                Get {readingType === "dynamic" ? "Dynamic State" : "Static Signature"} Reading
-                <ArrowRight className="w-5 h-5 ml-2" />
+                {/* Breath Protocol */}
+                <BreathProtocol onComplete={handleBreathComplete} isCompleted={breathCompletion} />
+
+                {/* Carrierlock Sliders */}
+                <Card className="bg-zinc-900/50 border-primary/30">
+                  <CardHeader>
+                    <CardTitle className="text-primary font-orbitron flex items-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Carrierlock Assessment
+                    </CardTitle>
+                    <CardDescription>
+                      Rate your current state on each axis. These values determine your Coherence Score and Facet Loudness.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Mental Noise */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm text-zinc-400">Mental Noise (MN)</label>
+                        <span className="text-sm font-mono text-primary">{mentalNoise}/10</span>
+                      </div>
+                      <Slider
+                        value={[mentalNoise]}
+                        onValueChange={([v]) => setMentalNoise(v)}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-zinc-500">Racing thoughts, mental chatter, cognitive overwhelm</p>
+                    </div>
+
+                    {/* Body Tension */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm text-zinc-400">Body Tension (BT)</label>
+                        <span className="text-sm font-mono text-primary">{bodyTension}/10</span>
+                      </div>
+                      <Slider
+                        value={[bodyTension]}
+                        onValueChange={([v]) => setBodyTension(v)}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-zinc-500">Physical tightness, somatic stress, nervous system activation</p>
+                    </div>
+
+                    {/* Emotional Turbulence */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <label className="text-sm text-zinc-400">Emotional Turbulence (ET)</label>
+                        <span className="text-sm font-mono text-primary">{emotionalTurbulence}/10</span>
+                      </div>
+                      <Slider
+                        value={[emotionalTurbulence]}
+                        onValueChange={([v]) => setEmotionalTurbulence(v)}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                      <p className="text-xs text-zinc-500">Emotional reactivity, mood instability, feeling overwhelmed</p>
+                    </div>
+
+                    {/* Coherence Score Display */}
+                    <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-zinc-400">Coherence Score</span>
+                        <div className="text-right">
+                          <span className={`text-2xl font-bold font-mono ${getCoherenceColor(coherenceScore)}`}>
+                            {coherenceScore}
+                          </span>
+                          <span className="text-zinc-500 text-sm ml-1">/100</span>
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${
+                              coherenceScore >= 70 ? 'bg-green-500' : 
+                              coherenceScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${coherenceScore}%` }}
+                          />
+                        </div>
+                        <p className={`text-xs mt-1 ${getCoherenceColor(coherenceScore)}`}>
+                          {getCoherenceLabel(coherenceScore)}
+                        </p>
+                      </div>
+                      <p className="text-xs text-zinc-500 mt-2">
+                        Formula: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
+                      </p>
+                    </div>
+
+                    {/* Optional: Birth data for personalized reading */}
+                    <div className="border-t border-zinc-700 pt-4">
+                      <p className="text-sm text-zinc-400 mb-3">Optional: Add birth data for personalized reading</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs text-zinc-500 mb-1 block">Birth Date</label>
+                          <Input
+                            type="date"
+                            value={birthDate}
+                            onChange={(e) => setBirthDate(e.target.value)}
+                            className="bg-zinc-800 border-zinc-700 text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-zinc-500 mb-1 block">Birth Time</label>
+                          <Input
+                            type="time"
+                            value={birthTime}
+                            onChange={(e) => setBirthTime(e.target.value)}
+                            className="bg-zinc-800 border-zinc-700 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
-          </Button>
 
-          {!user && (
-            <p className="text-center text-sm text-zinc-500">
-              You'll be asked to sign in to save your reading
-            </p>
-          )}
+            {/* Submit Button */}
+            <Button
+              onClick={handleGetReading}
+              disabled={isLoading || (readingType === "static" && !canSubmitStatic)}
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary via-emerald-500 to-teal-500 hover:from-primary/90 hover:via-emerald-500/90 hover:to-teal-500/90 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Generating Reading...
+                </>
+              ) : (
+                <>
+                  {readingType === "static" ? "Generate Static Signature" : "Generate Dynamic Reading"}
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </>
+              )}
+            </Button>
 
-          {readingType === "static" && !canSubmitStatic && (
-            <p className="text-center text-sm text-zinc-500">
-              Please enter your birth date to continue
-            </p>
-          )}
+            {readingType === "static" && !canSubmitStatic && (
+              <p className="text-center text-sm text-zinc-500">
+                Please enter your birth date to continue
+              </p>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

@@ -771,4 +771,34 @@
 - [x] Apply unified styling to all other inconsistent pages (replaced cyan-400/300/600 with primary)
 - [x] Test visual consistency across all pages (162/169 tests passing, 7 failed due to ElevenLabs quota)
 - [x] Verified background pattern appears on all pages
+- [x] Save checkpoint (version: b7c0bf39)
+
+
+## System Instructions Review & Bug Fixes - Current Session
+- [ ] Review SystemInstructions.pdf and identify required changes
+- [ ] Debug diagnostic system failures (not working)
+- [ ] Debug codex system failures (failing)
+- [ ] Perform code cleanup and refactoring
+- [ ] Test all fixes
+- [ ] Save checkpoint
+
+
+## RGP System Rebuild - Current Session
+- [ ] Create RGP calculation engine with correct formulas
+  - [ ] Implement 256-codon resolution (64 Root Codons × 4 Facets A/B/C/D)
+  - [ ] Add Prime Stack weighting (Conscious Sun 1.8, Design Sun 1.3, etc.)
+  - [ ] Implement SLI formula: SLI(r) = PCS(r) × StateAmp × FacetAmp(r)
+  - [ ] Add Facet determination from planetary longitude remainder
+- [ ] Rebuild Static Signature generation
+  - [ ] Add 88° solar-arc Design Offset calculation
+  - [ ] Generate 9-Center Resonance Map
+  - [ ] Implement Circuit Link detection
+  - [ ] Add Fractal Role algorithm (Reflector/Resonator/Catalyst/Harmonizer)
+  - [ ] Add Authority Node determination
+- [ ] Rebuild Dynamic State (Carrierlock) engine
+  - [ ] Implement proper Coherence Score formula: CS = 100 - (MN×3 + BT×3 + ET×3) + (BC×10)
+  - [ ] Add Facet Loudness determination based on MN/BT/ET dominance
+  - [ ] Generate proper Falsifier clauses
+- [ ] Update UI components for complete diagnostic display
+- [ ] Test complete system
 - [ ] Save checkpoint

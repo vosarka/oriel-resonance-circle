@@ -9,9 +9,11 @@ import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateElevenLabsSpeech, audioToDataUrl } from "./elevenlabs-tts";
 import { generateChunkedSpeech } from "./elevenlabs-chunked";
+import { rgpRouter } from "./rgp-router";
 
 export const appRouter = router({
   system: systemRouter,
+  rgp: rgpRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
