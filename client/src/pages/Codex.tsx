@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
+import Layout from "@/components/Layout";
 
 export default function Codex() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -16,6 +17,7 @@ export default function Codex() {
   );
 
   return (
+    <Layout>
     <div className="min-h-screen bg-black text-zinc-100">
       {/* Header */}
       <div className="border-b border-cyan-500/20 bg-black/50 backdrop-blur-sm sticky top-0 z-10">
@@ -96,5 +98,6 @@ export default function Codex() {
         )}
       </div>
     </div>
+    </Layout>
   );
 }

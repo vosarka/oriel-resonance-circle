@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2, Moon, Diamond, Infinity, AlertTriangle, CheckCircle2, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import Layout from "@/components/Layout";
 
 // Tab types for the detail section
 type TabType = "dynamics" | "repressive" | "reactive" | "corrections";
@@ -36,14 +37,17 @@ export default function CodonDetail() {
 
   if (isLoading) {
     return (
+      <Layout>
       <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
+      </Layout>
     );
   }
 
   if (!codon) {
     return (
+      <Layout>
       <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
         <div className="text-center">
           <p className="text-zinc-400 mb-4">Codon not found</p>
@@ -55,14 +59,16 @@ export default function CodonDetail() {
           </Link>
         </div>
       </div>
+      </Layout>
     );
   }
 
   const codonNumber = codon.id.replace("RC", "");
   const relatedCodons = getRelatedCodons();
 
-  return (
-    <main className="relative min-h-screen bg-black text-zinc-100">
+   return (
+    <Layout>
+    <main className="min-h-screen bg-black text-zinc-100">
       {/* Background Decor */}
       <div 
         className="absolute inset-0 z-0 opacity-10" 
@@ -485,5 +491,6 @@ export default function CodonDetail() {
         </div>
       </footer>
     </main>
+    </Layout>
   );
 }

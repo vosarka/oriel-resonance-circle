@@ -735,4 +735,26 @@
 - [x] Static readings now properly calculate codons from birth date
 - [x] Tested end-to-end: birth date 1985-06-15 → RC29/RC61/RC45 codons
 - [x] All 168 tests passing (1 skipped due to ElevenLabs quota)
-- [ ] Save checkpoint with fix
+- [x] Save checkpoint with fix (version: a69103fe)
+
+
+## ORIEL Voice Consistency - Current Session
+- [ ] Check current voice implementation in Conduit chat
+- [ ] Check breath protocol voice implementation
+- [ ] Update Conduit to use same ElevenLabs voice as breath protocol
+- [ ] Test voice consistency across both features
+- [ ] Save checkpoint
+
+
+## Birth Time Facet Mapping, Navbar, Archive Styling, Reading Page Redesign - Current Session
+- [x] Implement Birth Time Facet Mapping for static readings (already implemented: Night/Morning/Afternoon/Evening → Shadow/Gift/Crown/Siddhi)
+- [x] Add birth time codon calculation to diagnostic engine (performStaticSignatureReading)
+- [x] Add navbar to Codex.tsx page (wrapped with Layout component)
+- [x] Add navbar to CodonDetail.tsx page (wrapped with Layout component)
+- [x] Update Archive.tsx with current website style (changed cyan to mint green #9fe49a)
+- [x] SignalDetail.tsx not found (no separate signal detail page)
+- [x] Redesign Reading.tsx with provided layout (glass panels, coherence badge, ORIEL transmission)
+- [x] Add Primary Patterns section with codon cards (SLI scores, resonance status)
+- [x] Add Micro-Correction and Falsifier sections
+- [x] Test all pages and verify styling consistency (167/169 tests passing, 2 failed due to ElevenLabs quota)
+- [ ] Save checkpoint
