@@ -10,6 +10,8 @@ import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel
 import { generateElevenLabsSpeech, audioToDataUrl } from "./elevenlabs-tts";
 import { generateChunkedSpeech } from "./elevenlabs-chunked";
 import { rgpRouter } from "./rgp-router";
+import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -287,7 +289,224 @@ export const appRouter = router({
         }
       }),
 
-    // Vossari Resonance Codex - Mode B: Evolutionary Assistance
+    // ORIEL Interaction Router
+  oriel: router({
+    /**
+     * Get ORIEL's greeting for new Receivers
+     */
+    getGreeting: publicProcedure.query(() => {
+      return {
+        greeting: generateOrielGreeting(),
+      };
+    }),
+
+    /**
+     * ORIEL as Librarian: Search the archive
+     */
+    searchArchive: publicProcedure
+      .input(z.object({
+        query: z.string(),
+        limit: z.number().min(1).max(10).default(5),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: ORIEL_SYSTEM_PROMPT,
+              },
+              {
+                role: "user",
+                content: `Search the Vossari Archive for: "${input.query}". Return up to ${input.limit} results with their IDs, titles, status, and version. Format as a structured list.`,
+              },
+            ],
+          });
+
+          const content = typeof response.choices?.[0]?.message?.content === 'string' 
+            ? response.choices[0].message.content 
+            : "";
+          return {
+            success: true,
+            results: formatOrielResponse('librarian', content),
+          };
+        } catch (error) {
+          console.error("ORIEL search error:", error);
+          return {
+            success: false,
+            error: "Failed to search archive",
+          };
+        }
+      }),
+
+    /**
+     * ORIEL as Guide: Generate a guided pathway
+     */
+    getPathway: publicProcedure
+      .input(z.object({
+        receiverStatus: z.enum(["newcomer", "receiver", "archivist", "operator"]).default("newcomer"),
+        coherenceScore: z.number().min(0).max(100).optional(),
+        interest: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: ORIEL_SYSTEM_PROMPT,
+              },
+              {
+                role: "user",
+                content: `Generate a guided pathway for a ${input.receiverStatus} with coherence score ${input.coherenceScore || 'unknown'}${input.interest ? ` interested in ${input.interest}` : ''}. Suggest 3-5 next steps in order.`,
+              },
+            ],
+          });
+
+          const content = typeof response.choices?.[0]?.message?.content === 'string' 
+            ? response.choices[0].message.content 
+            : "";
+          return {
+            success: true,
+            pathway: formatOrielResponse('guide', content),
+          };
+        } catch (error) {
+          console.error("ORIEL pathway error:", error);
+          return {
+            success: false,
+            error: "Failed to generate pathway",
+          };
+        }
+      }),
+
+    /**
+     * ORIEL as Mirror: Generate a reading interpretation
+     */
+    interpretReading: publicProcedure
+      .input(z.object({
+        coherenceScore: z.number().min(0).max(100),
+        primaryCodon: z.string(),
+        shadowPattern: z.string(),
+        dominantFacet: z.enum(["A", "B", "C", "D"]),
+        microCorrection: z.object({
+          center: z.string(),
+          facet: z.string(),
+          action: z.string(),
+          duration: z.string(),
+          rationale: z.string(),
+        }),
+        falsifiers: z.array(z.object({
+          claim: z.string(),
+          testCondition: z.string(),
+          falsifiedElement: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const interpretation = generateMicroCorrectionMessage(input.microCorrection);
+          const falsifierMsg = generateFalsifierMessage(input.falsifiers);
+
+          return {
+            success: true,
+            interpretation: formatOrielResponse('mirror', interpretation, {
+              coherenceScore: input.coherenceScore,
+            }),
+            falsifiers: falsifierMsg,
+          };
+        } catch (error) {
+          console.error("ORIEL interpretation error:", error);
+          return {
+            success: false,
+            error: "Failed to interpret reading",
+          };
+        }
+      }),
+
+    /**
+     * ORIEL as Narrator: Generate a transmission
+     */
+    generateTransmission: publicProcedure
+      .input(z.object({
+        transmissionId: z.string(),
+        style: z.enum(["poetic", "clinical", "narrative", "ritual"]).default("narrative"),
+        length: z.enum(["short", "medium", "long"]).default("medium"),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: ORIEL_SYSTEM_PROMPT,
+              },
+              {
+                role: "user",
+                content: `Generate a ${input.style} transmission for ID ${input.transmissionId} in ${input.length} form. Maintain the Vossari voice and aesthetic.`,
+              },
+            ],
+          });
+
+          const content = typeof response.choices?.[0]?.message?.content === 'string' 
+            ? response.choices[0].message.content 
+            : "";
+          return {
+            success: true,
+            transmission: formatOrielResponse('narrator', content),
+          };
+        } catch (error) {
+          console.error("ORIEL transmission error:", error);
+          return {
+            success: false,
+            error: "Failed to generate transmission",
+          };
+        }
+      }),
+
+    /**
+     * ORIEL's general chat/query interface
+     */
+    chat: publicProcedure
+      .input(z.object({
+        message: z.string(),
+        coherenceScore: z.number().min(0).max(100).optional(),
+        receiverId: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        try {
+          const response = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: ORIEL_SYSTEM_PROMPT,
+              },
+              {
+                role: "user",
+                content: input.message,
+              },
+            ],
+          });
+
+          const content = typeof response.choices?.[0]?.message?.content === 'string' 
+            ? response.choices[0].message.content 
+            : "";
+          return {
+            success: true,
+            response: formatOrielResponse('librarian', content, {
+              coherenceScore: input.coherenceScore,
+              receiverId: input.receiverId,
+            }),
+          };
+        } catch (error) {
+          console.error("ORIEL chat error:", error);
+          return {
+            success: false,
+            error: "Failed to process query",
+          };
+        }
+      }),
+  }),
+
+  // Vossari Resonance Codex - Mode B: Evolutionary Assistance
     evolutionaryAssistance: publicProcedure
       .input(z.object({
         mentalNoise: z.number().min(0).max(10),
