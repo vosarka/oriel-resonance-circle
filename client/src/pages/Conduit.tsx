@@ -195,25 +195,41 @@ export default function Conduit() {
 
   const handlePauseVoice = () => {
     if (audioRef.current) {
-      if (isPaused) {
-        audioRef.current.play();
-        setIsPaused(false);
-      } else {
-        audioRef.current.pause();
-        setIsPaused(true);
+      try {
+        if (isPaused) {
+          const playPromise = audioRef.current.play();
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error("Failed to resume audio:", error);
+            });
+          }
+          setIsPaused(false);
+        } else {
+          audioRef.current.pause();
+          setIsPaused(true);
+        }
+      } catch (error) {
+        console.error("Error in handlePauseVoice:", error);
       }
     }
   };
 
   const handleStopVoice = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+    try {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      setOrbState("idle");
+      setSubtitle("");
+      setIsSpeaking(false);
+      setIsPaused(false);
+    } catch (error) {
+      console.error("Error in handleStopVoice:", error);
     }
-    setOrbState("idle");
-    setSubtitle("");
-    setIsSpeaking(false);
-    setIsPaused(false);
   };
 
   const handleSendMessage = async () => {
@@ -419,8 +435,9 @@ export default function Conduit() {
                           audioRef.current.volume = parseFloat(e.target.value);
                         }
                       }}
-                      className="flex-1 h-2 bg-green-500/20 rounded"
+                      className="flex-1 h-2 bg-green-500/20 rounded cursor-pointer"
                     />
+                    <span className="text-xs text-green-400 w-8 text-right">{Math.round(voiceVolume * 100)}%</span>
                   </div>
                 )}
 
@@ -429,7 +446,8 @@ export default function Conduit() {
                   <div className="flex gap-2 mb-3">
                     <Button
                       onClick={handlePauseVoice}
-                      className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30"
+                      disabled={!isSpeaking}
+                      className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-400 hover:bg-yellow-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                       title={isPaused ? "Resume transmission" : "Pause transmission"}
                     >
                       {isPaused ? <Play size={16} /> : <Pause size={16} />}
@@ -437,7 +455,8 @@ export default function Conduit() {
                     </Button>
                     <Button
                       onClick={handleStopVoice}
-                      className="bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30"
+                      disabled={!isSpeaking}
+                      className="bg-red-500/20 border border-red-500/50 text-red-400 hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Stop transmission"
                     >
                       <Square size={16} />
