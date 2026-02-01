@@ -43,9 +43,25 @@ export default function Profile() {
   const isSubscribed = subscriptionStatus === "active";
 
   const handleCopyConduitId = () => {
-    navigator.clipboard.writeText(conduitId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(conduitId).catch(err => {
+          console.error("Failed to copy to clipboard:", err);
+        });
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = conduitId;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error("Error copying to clipboard:", error);
+    }
   };
 
   return (

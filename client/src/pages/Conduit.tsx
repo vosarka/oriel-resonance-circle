@@ -139,7 +139,7 @@ export default function Conduit() {
 
       if (result.success && result.audioUrl) {
         // Play ElevenLabs TTS audio
-        if (audioRef.current) {
+        if (audioRef.current && audioRef.current.parentNode) {
           audioRef.current.src = result.audioUrl;
           audioRef.current.volume = voiceVolume;
 
@@ -155,10 +155,12 @@ export default function Conduit() {
             fallbackToSpeechSynthesis(text);
           };
 
-          audioRef.current.play().catch(() => {
-            console.error("Failed to play audio, falling back to browser TTS");
+          audioRef.current.play().catch((error) => {
+            console.error("Failed to play audio:", error);
             fallbackToSpeechSynthesis(text);
           });
+        } else {
+          fallbackToSpeechSynthesis(text);
         }
       } else {
         // Fall back to browser SpeechSynthesis
@@ -194,7 +196,7 @@ export default function Conduit() {
   };
 
   const handlePauseVoice = () => {
-    if (audioRef.current) {
+    if (audioRef.current && audioRef.current.parentNode) {
       try {
         if (isPaused) {
           const playPromise = audioRef.current.play();
@@ -216,7 +218,7 @@ export default function Conduit() {
 
   const handleStopVoice = () => {
     try {
-      if (audioRef.current) {
+      if (audioRef.current && audioRef.current.parentNode) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
