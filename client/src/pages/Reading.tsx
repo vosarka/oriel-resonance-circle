@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
@@ -17,12 +18,15 @@ export default function Reading() {
     { enabled: !!user }
   );
 
-  const markCompleteMutation = trpc.codex.markCorrectionComplete.useMutation({
-    onSuccess: () => {
-      // Refetch history to update UI
-      trpc.useUtils().codex.getReadingHistory.invalidate();
-    },
-  });
+  const utils = trpc.useUtils();
+  const markCompleteMutation = trpc.codex.markCorrectionComplete.useMutation();
+  
+  // Invalidate history when mutation succeeds
+  useEffect(() => {
+    if (markCompleteMutation.isSuccess) {
+      utils.codex.getReadingHistory.invalidate();
+    }
+  }, [markCompleteMutation.isSuccess, utils.codex.getReadingHistory]);
 
   if (!user) {
     return (

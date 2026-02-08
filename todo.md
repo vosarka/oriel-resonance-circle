@@ -112,3 +112,12 @@
 3. Implement full Dynamic State reading with SLI calculations
 4. Add reading history and progression tracking
 5. Implement ORIEL chat interface for reading exploration
+
+## Bug Fixes
+
+### Reading Page Hook Violation (Fixed)
+- [x] Fixed invalid hook call error on Reading page
+- [x] Moved `trpc.useUtils()` to top level of component
+- [x] Replaced `onSuccess` callback with `useEffect` hook
+- [x] Properly invalidate reading history after mutation succeeds
+- [x] All TypeScript errors resolved
