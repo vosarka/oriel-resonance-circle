@@ -214,3 +214,36 @@
 4. Add aspects calculation (planetary angles)
 5. Add progressed chart calculations
 6. Add transits for future predictions
+
+
+## Reading Display Enhancement (In Progress)
+
+- [ ] Expand database schema to store complete RGP data (Prime Stack, 9-Centers, Fractal Role, etc.)
+- [ ] Update saveReading endpoint to store all RGP engine outputs
+- [ ] Create detailed reading display sections:
+  - [ ] Ephemeris Data section (planetary positions, zodiac signs)
+  - [ ] Prime Stack section (all 9 positions with detailed analysis)
+  - [ ] 9-Center Resonance Map (all centers with frequencies)
+  - [ ] Fractal Role & Authority Node (detailed explanation)
+  - [ ] Circuit Links (relationship patterns)
+  - [ ] Coherence Trajectory (evolution path)
+- [ ] Add interactive elements (expand/collapse sections, tooltips)
+- [ ] Create visual representations (charts, graphs for frequencies and coherence)
+- [ ] Add ORIEL's expanded transmission with deeper insights
+
+## Reading Display Enhancement (Completed)
+
+- [x] Created enhanced Reading page component with comprehensive details
+- [x] Implemented text parsing to extract all RGP data from readingText field
+- [x] Display sections: ORIEL Transmission, Fractal Profile, Coherence Status, Prime Stack, 9-Center Resonance Map, Circuit Links, Micro-Corrections
+- [x] Added interactive elements (collapsible sections with expand/collapse)
+- [x] Visual improvements (cards, badges, color coding)
+- [x] Responsive design (mobile and desktop)
+
+### Implementation Details:
+- Created parseReadingText() function to extract structured data from readingText
+- All sections are collapsible for better UX
+- Color-coded coherence status with visual progress bar
+- Responsive grid layouts for Prime Stack and 9-Centers
+- Proper TypeScript typing for parsed data
+- Zero database schema changes needed (uses existing readingText field)

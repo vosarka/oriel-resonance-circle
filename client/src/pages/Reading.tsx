@@ -1,18 +1,134 @@
-import { useEffect } from "react";
 import { Link, useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Activity, Waves, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Loader2, Activity, Waves, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Layout from "@/components/Layout";
+import { useState, useEffect } from "react";
 
-export default function Reading() {
+interface ParsedReading {
+  readingId: string;
+  encodedDate: string;
+  coherence: number;
+  fractalRole: string;
+  authorityNode: string;
+  primeStack: Array<{ position: number; codon: string; facet: string }>;
+  nineCenters: Array<{ center: string; name: string; codon: string }>;
+  circuitLinks: string[];
+  microCorrections: Array<{ number: string; type: string; instruction: string; falsifier: string }>;
+  coherenceTrajectory: { current: number; trend: string };
+  orielTransmission: string;
+}
+
+function parseReadingText(text: string): ParsedReading | null {
+  try {
+    const sections = text.split("═══════════════════════════════════════════════════════════");
+    
+    if (sections.length < 7) return null;
+
+    // Extract header info
+    const headerLines = sections[0].split("\n").filter(l => l.trim());
+    const readingId = headerLines.find(l => l.includes("Reading ID"))?.split(": ")[1] || "";
+    const encodedDate = headerLines.find(l => l.includes("Encoded"))?.split(": ")[1] || "";
+    const coherenceStr = headerLines.find(l => l.includes("Coherence"))?.split(": ")[1] || "0/100";
+    const coherence = parseInt(coherenceStr.split("/")[0]) || 0;
+
+    // Extract Fractal Profile
+    const fractalSection = sections[1].split("\n").filter(l => l.trim());
+    const fractalRole = fractalSection.find(l => l.includes("Role:"))?.split(": ")[1] || "";
+    const authorityNode = fractalSection.find(l => l.includes("Authority:"))?.split(": ")[1] || "";
+
+    // Extract Prime Stack
+    const primeStackLines = sections[2].split("\n").filter(l => l.includes("Position"));
+    const primeStack = primeStackLines.map(line => {
+      const match = line.match(/Position (\d+): (.+?) \((.+?)\) - Facet (.)/);
+      return {
+        position: parseInt(match?.[1] || "0"),
+        codon: match?.[3] || "",
+        facet: match?.[4] || "",
+      };
+    });
+
+    // Extract 9-Center Resonance Map
+    const nineCenterLines = sections[3].split("\n").filter(l => l.includes("Center"));
+    const nineCenters = nineCenterLines.map(line => {
+      const match = line.match(/Center (\d+): (.+?) \((.+?)\)/);
+      return {
+        center: match?.[1] || "",
+        name: match?.[2] || "",
+        codon: match?.[3] || "",
+      };
+    });
+
+    // Extract Circuit Links
+    const circuitLines = sections[4].split("\n").filter(l => l.includes("•"));
+    const circuitLinks = circuitLines.map(l => l.replace("• ", ""));
+
+    // Extract Micro-Corrections
+    const correctionLines = sections[5].split("\n").filter(l => l.trim());
+    const microCorrections: ParsedReading["microCorrections"] = [];
+    let currentCorrection: any = null;
+    correctionLines.forEach(line => {
+      if (/^\d+\./.test(line)) {
+        if (currentCorrection) microCorrections.push(currentCorrection);
+        const match = line.match(/^\d+\. (.+?): (.+)/);
+        currentCorrection = {
+          number: line.split(".")[0],
+          type: match?.[1] || "",
+          instruction: match?.[2] || "",
+          falsifier: "",
+        };
+      } else if (line.includes("Falsifier:")) {
+        if (currentCorrection) {
+          currentCorrection.falsifier = line.split(": ")[1];
+        }
+      }
+    });
+    if (currentCorrection) microCorrections.push(currentCorrection);
+
+    // Extract Coherence Trajectory
+    const trajectoryLines = sections[6].split("\n").filter(l => l.trim());
+    const currentStr = trajectoryLines.find(l => l.includes("Current:"))?.split(": ")[1] || "0/100";
+    const current = parseInt(currentStr.split("/")[0]) || 0;
+    const trend = trajectoryLines.find(l => l.includes("Trend:"))?.split(": ")[1] || "";
+
+    // Extract ORIEL Transmission
+    const orielTransmission = sections[7]?.split("ORIEL TRANSMISSION")[1]?.trim() || "";
+
+    return {
+      readingId,
+      encodedDate,
+      coherence,
+      fractalRole,
+      authorityNode,
+      primeStack,
+      nineCenters,
+      circuitLinks,
+      microCorrections,
+      coherenceTrajectory: { current, trend },
+      orielTransmission,
+    };
+  } catch (error) {
+    console.error("Error parsing reading text:", error);
+    return null;
+  }
+}
+
+export default function ReadingEnhanced() {
   const { user } = useAuth();
   const [, params] = useRoute("/reading/:id");
   const readingId = params?.id ? parseInt(params.id) : 0;
-  
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    primeStack: true,
+    nineCenters: true,
+    circuitLinks: false,
+    microCorrections: true,
+    trajectory: false,
+  });
+
   const { data: history, isLoading } = trpc.codex.getReadingHistory.useQuery(
     undefined,
     { enabled: !!user }
@@ -20,8 +136,7 @@ export default function Reading() {
 
   const utils = trpc.useUtils();
   const markCompleteMutation = trpc.codex.markCorrectionComplete.useMutation();
-  
-  // Invalidate history when mutation succeeds
+
   useEffect(() => {
     if (markCompleteMutation.isSuccess) {
       utils.codex.getReadingHistory.invalidate();
@@ -31,16 +146,16 @@ export default function Reading() {
   if (!user) {
     return (
       <Layout>
-      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-zinc-400 mb-4">Please sign in to view your readings</p>
-          <a href={getLoginUrl()}>
-            <Button className="bg-gradient-to-r from-primary to-purple-500">
-              Sign In
-            </Button>
-          </a>
+        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-zinc-400 mb-4">Please sign in to view your readings</p>
+            <a href={getLoginUrl()}>
+              <Button className="bg-gradient-to-r from-primary to-purple-500">
+                Sign In
+              </Button>
+            </a>
+          </div>
         </div>
-      </div>
       </Layout>
     );
   }
@@ -48,9 +163,9 @@ export default function Reading() {
   if (isLoading) {
     return (
       <Layout>
-      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
+        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
       </Layout>
     );
   }
@@ -60,302 +175,242 @@ export default function Reading() {
   if (!reading) {
     return (
       <Layout>
-      <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-zinc-400 mb-4">Reading not found</p>
-          <Link href="/carrierlock">
-            <Button variant="outline" className="border-primary/30">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Assessment
-            </Button>
-          </Link>
+        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-zinc-400 mb-4">Reading not found</p>
+            <Link href="/carrierlock">
+              <Button variant="outline" className="border-primary/30">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Assessment
+              </Button>
+            </Link>
+          </div>
         </div>
-      </div>
       </Layout>
     );
   }
 
-  const coherenceScore = reading.carrierlock?.coherenceScore || 0;
-  const readingDate = reading.createdAt ? new Date(reading.createdAt) : new Date();
-  
-  // Parse diagnostic data
-  const safeJsonParse = (value: any) => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    }
-    return value;
-  };
+  const parsed = parseReadingText(reading.readingText || "");
 
-  const sliScores = safeJsonParse(reading.sliScores) || {};
-  const activeFacets = safeJsonParse(reading.activeFacets) || {};
-  const confidenceLevels = safeJsonParse(reading.confidenceLevels) || {};
-  
-  // Get flagged codons from sliScores
-  const flaggedCodons = Object.entries(sliScores)
-    .map(([codon, sli]: [string, any]) => ({
-      codon,
-      sli: typeof sli === 'number' ? sli : 0,
-      facet: activeFacets[codon] || "B",
-      confidence: confidenceLevels[codon] || 0.7
-    }))
-    .filter(c => c.sli > 0)
-    .sort((a, b) => b.sli - a.sli)
-    .slice(0, 3);
-
-  const getCoherenceColor = (score: number) => {
-    if (score >= 70) return "text-emerald-400";
-    if (score >= 40) return "text-yellow-400";
-    return "text-red-400";
-  };
-
-  const getCoherenceRingColor = (score: number) => {
-    if (score >= 70) return "from-emerald-400 to-green-500";
-    if (score >= 40) return "from-yellow-400 to-orange-500";
-    return "from-red-400 to-red-600";
-  };
-
-  const getFacetColor = (facet: string) => {
-    switch (facet) {
-      case "A": return "bg-red-500/10 text-red-400 border-red-500/20";
-      case "B": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "C": return "bg-purple-500/10 text-purple-400 border-purple-500/20";
-      case "D": return "bg-primary/10 text-primary border-primary/20";
-      default: return "bg-zinc-500/10 text-zinc-400 border-zinc-500/20";
-    }
-  };
-
-  const getFacetLabel = (facet: string) => {
-    switch (facet) {
-      case "A": return "Shadow";
-      case "B": return "Gift";
-      case "C": return "Crown";
-      case "D": return "Siddhi";
-      default: return "Unknown";
-    }
-  };
-
-  const getResonanceStatus = (sli: number) => {
-    if (sli >= 7) return { label: "Resonant", color: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30" };
-    if (sli >= 4) return { label: "Neutral", color: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30" };
-    return { label: "Dissonant", color: "bg-red-500/20 text-red-300 border-red-500/30" };
-  };
-
-  const getSLIBarColor = (sli: number) => {
-    if (sli >= 7) return "bg-gradient-to-r from-primary to-emerald-400 shadow-[0_0_10px_rgba(159,228,154,0.5)]";
-    if (sli >= 4) return "bg-gradient-to-r from-yellow-400 to-orange-400";
-    return "bg-gradient-to-r from-orange-400 to-red-400";
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
+    }));
   };
 
   return (
     <Layout>
-    <div className="min-h-screen bg-black text-zinc-100">
-      {/* Main Layout */}
-      <div className="flex-1 px-4 md:px-10 lg:px-40 py-8 w-full max-w-[1440px] mx-auto flex flex-col gap-8">
-        
-        {/* Header Section: Title & Stats */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-[#9ab7bc] text-sm font-mono">
-              <span className="text-[16px]">📅</span>
-              <span>{readingDate.toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                year: 'numeric', 
-                hour: '2-digit', 
-                minute: '2-digit' 
-              })}</span>
-              <span className="mx-2 text-[#27373a]">|</span>
-              <span>ID: {reading.id}</span>
-            </div>
-            <h1 className="text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">
-              Diagnostic Reading
+      <div className="min-h-screen bg-black text-zinc-100 py-12 px-4">
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-4 mb-12">
+            <h1 className="text-5xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-200">
+              Your Static Signature
             </h1>
+            <p className="text-zinc-400">{parsed?.encodedDate}</p>
           </div>
-          
-          {/* Coherence Score Badge */}
-          <div className="glass-panel p-4 rounded-xl flex items-center gap-4 min-w-[200px]">
-            <div className={`relative size-12 rounded-full flex items-center justify-center p-[3px] bg-gradient-to-br ${getCoherenceRingColor(coherenceScore)}`}>
-              <div className="bg-black w-full h-full rounded-full flex items-center justify-center">
-                <Activity className="text-primary text-[20px]" />
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[#9ab7bc] text-xs font-medium uppercase tracking-wider">Coherence</span>
-              <span className={`text-2xl font-bold ${getCoherenceColor(coherenceScore)} glow-text`}>
-                {coherenceScore}%
-              </span>
-            </div>
-          </div>
-        </div>
 
-        {/* ORIEL Transmission Panel (Glassmorphism) */}
-        <div className="glass-panel rounded-xl p-8 md:p-12 border-t-2 border-t-primary/20 relative overflow-hidden">
-          {/* Decorative background hint */}
-          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
-          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-          
-          <div className="relative z-10 max-w-3xl">
-            <h2 className="text-4xl md:text-5xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-200 mb-8">
-              "I am ORIEL."
-            </h2>
-            <div className="space-y-6 text-lg md:text-xl font-serif text-indigo-100/90 leading-relaxed">
-              <p>{(reading as any).orielResponse || "The resonance pattern is being analyzed. Your diagnostic reading reveals the current state of your consciousness field."}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Primary Patterns Section */}
-        {flaggedCodons.length > 0 && (
-          <div>
-            <div className="flex items-center gap-2 mb-4 px-1">
-              <Waves className="text-primary" />
-              <h3 className="text-white text-xl font-bold tracking-tight">Primary Patterns Detected</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {flaggedCodons.map((codon, index) => {
-                const status = getResonanceStatus(codon.sli);
-                return (
-                  <div 
-                    key={codon.codon} 
-                    className="bg-[#0a1012] border border-[#27373a] rounded-lg p-6 hover:border-primary/50 transition-colors group"
-                  >
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className="size-12 rounded bg-primary/10 flex items-center justify-center text-primary border border-primary/20">
-                          <span className="text-2xl font-bold">{codon.codon.replace('RC', '')}</span>
-                        </div>
-                        <div>
-                          <p className="text-[#9ab7bc] text-xs font-bold uppercase tracking-wider mb-0.5">
-                            {codon.codon}
-                          </p>
-                          <h4 className="text-white text-xl font-bold">
-                            {index === 0 ? "Primary" : index === 1 ? "Secondary" : "Tertiary"}
-                          </h4>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`${status.color} px-2 py-1 rounded text-xs font-bold border`}>
-                          {status.label}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      {/* SLI Score Visualization */}
-                      <div>
-                        <div className="flex justify-between text-xs mb-1.5">
-                          <span className="text-gray-400">SLI Score</span>
-                          <span className="text-white font-mono">{codon.sli.toFixed(1)} / 10</span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[#27373a] rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full ${getSLIBarColor(codon.sli)}`}
-                            style={{ width: `${(codon.sli / 10) * 100}%` }}
-                          ></div>
-                        </div>
-                      </div>
-                      
-                      {/* Facets */}
-                      <div className="pt-2 border-t border-[#27373a] flex flex-wrap gap-2">
-                        <span className="text-xs text-gray-500 py-1">Active Facet:</span>
-                        <span className={`px-2 py-0.5 rounded text-xs font-mono border ${getFacetColor(codon.facet)}`}>
-                          {getFacetLabel(codon.facet)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Action & Analysis Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Micro-Correction Action */}
-          <div className="lg:col-span-1 bg-gradient-to-br from-primary/10 to-transparent border border-primary/30 rounded-lg p-6 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-primary mb-3">
-                <Waves className="w-5 h-5" />
-                <span className="text-sm font-bold uppercase tracking-wider">Micro-Correction</span>
-              </div>
-              <h3 className="text-white text-lg font-bold mb-2">
-                {reading.microCorrection || "Harmonic Realignment"}
-              </h3>
-              <p className="text-gray-400 text-sm mb-6">
-                Based on the ORIEL reading, a specific frequency pulse can assist in re-integrating the scattered facets.
+          {/* ORIEL Transmission */}
+          <Card className="bg-[#0a1012] border-primary/30">
+            <CardHeader>
+              <CardTitle className="text-2xl font-serif italic">I am ORIEL</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg font-serif text-indigo-100/90 leading-relaxed whitespace-pre-wrap">
+                {parsed?.orielTransmission || "The resonance pattern is being analyzed..."}
               </p>
-            </div>
-            <Button 
-              onClick={() => {
-                if (reading.id) {
-                  markCompleteMutation.mutate({ readingId: reading.id });
-                }
-              }}
-              disabled={reading.correctionCompleted || markCompleteMutation.isPending}
-              className="w-full group relative flex items-center justify-center gap-3 bg-primary hover:bg-primary/80 text-black font-bold py-3 px-4 rounded transition-all duration-300 overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]"></span>
-              <Waves className="w-5 h-5" />
-              <span>{reading.correctionCompleted ? "Completed" : "Mark as Complete"}</span>
-            </Button>
-          </div>
-          
-          {/* Falsifier Section */}
-          <div className="lg:col-span-2 bg-[#0a1012] border border-red-900/30 rounded-lg p-6 relative overflow-hidden">
-            {/* Abstract dark pattern background */}
-            <div 
-              className="absolute inset-0 opacity-20" 
-              style={{
-                backgroundImage: 'radial-gradient(#331111 1px, transparent 1px)',
-                backgroundSize: '20px 20px'
-              }}
-            ></div>
-            
-            <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center h-full">
-              <div className="flex-shrink-0 size-12 rounded-full bg-red-900/20 border border-red-500/20 flex items-center justify-center text-red-500">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <h4 className="text-red-400 text-sm font-bold uppercase tracking-wider mb-1">
-                  Falsifier Detected
-                </h4>
-                <h3 className="text-white text-xl font-bold mb-2">
-                  {reading.falsifier || "Resistance: Egoic Attachment to Outcome"}
-                </h3>
-                <p className="text-gray-500 text-sm max-w-xl">
-                  The analysis indicates a shadow pattern attempting to manipulate the diagnostic result. 
-                  The "Falsifier" archetype is active, suggesting you may be projecting desired answers 
-                  rather than allowing the quantum field to speak authentically.
-                </p>
-              </div>
-              <Link href={`/codex/${flaggedCodons[0]?.codon || 'RC01'}`}>
-                <Button 
-                  variant="ghost"
-                  className="flex-shrink-0 text-gray-400 hover:text-white text-sm font-medium underline underline-offset-4 decoration-gray-600 hover:decoration-white transition-all"
-                >
-                  View Shadow Report
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
+            </CardContent>
+          </Card>
 
-        {/* Back Button */}
-        <div className="flex justify-center mt-8">
-          <Link href="/carrierlock">
-            <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Assessment
-            </Button>
-          </Link>
+          {/* Fractal Profile */}
+          <Card className="bg-[#0a1012] border-primary/30">
+            <CardHeader>
+              <CardTitle>Fractal Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-zinc-400 text-sm mb-1">Role</p>
+                <p className="text-lg font-semibold text-primary">{parsed?.fractalRole}</p>
+              </div>
+              <div>
+                <p className="text-zinc-400 text-sm mb-1">Authority Node</p>
+                <p className="text-lg font-semibold text-primary">{parsed?.authorityNode}</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Coherence Score */}
+          <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/30">
+            <CardHeader>
+              <CardTitle>Coherence Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-400">Current Coherence</span>
+                <span className="text-3xl font-bold text-primary">{parsed?.coherence}/100</span>
+              </div>
+              <div className="w-full bg-zinc-800 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-primary to-purple-500 h-2 rounded-full transition-all"
+                  style={{ width: `${parsed?.coherence || 0}%` }}
+                />
+              </div>
+              <p className="text-sm text-zinc-400">Trend: {parsed?.coherenceTrajectory.trend}</p>
+            </CardContent>
+          </Card>
+
+          {/* Prime Stack */}
+          <Card className="bg-[#0a1012] border-primary/30">
+            <CardHeader
+              className="cursor-pointer hover:bg-primary/5 transition-colors"
+              onClick={() => toggleSection("primeStack")}
+            >
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Waves className="w-5 h-5" />
+                  Prime Stack (9 Positions)
+                </CardTitle>
+                {expandedSections.primeStack ? (
+                  <ChevronUp className="w-5 h-5" />
+                ) : (
+                  <ChevronDown className="w-5 h-5" />
+                )}
+              </div>
+            </CardHeader>
+            {expandedSections.primeStack && (
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {parsed?.primeStack.map((pos, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4"
+                    >
+                      <p className="text-xs text-zinc-500 mb-1">Position {pos.position}</p>
+                      <p className="text-lg font-bold text-primary mb-2">{pos.codon}</p>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
+                        Facet {pos.facet}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* 9-Center Resonance Map */}
+          <Card className="bg-[#0a1012] border-primary/30">
+            <CardHeader
+              className="cursor-pointer hover:bg-primary/5 transition-colors"
+              onClick={() => toggleSection("nineCenters")}
+            >
+              <div className="flex items-center justify-between">
+                <CardTitle>9-Center Resonance Map</CardTitle>
+                {expandedSections.nineCenters ? (
+                  <ChevronUp className="w-5 h-5" />
+                ) : (
+                  <ChevronDown className="w-5 h-5" />
+                )}
+              </div>
+            </CardHeader>
+            {expandedSections.nineCenters && (
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {parsed?.nineCenters.map((center, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4"
+                    >
+                      <p className="text-xs text-zinc-500 mb-1">Center {center.center}</p>
+                      <p className="text-lg font-bold text-primary mb-2">{center.name}</p>
+                      <p className="text-sm text-zinc-400">{center.codon}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            )}
+          </Card>
+
+          {/* Circuit Links */}
+          {parsed?.circuitLinks && parsed.circuitLinks.length > 0 && (
+            <Card className="bg-[#0a1012] border-primary/30">
+              <CardHeader
+                className="cursor-pointer hover:bg-primary/5 transition-colors"
+                onClick={() => toggleSection("circuitLinks")}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle>Circuit Links</CardTitle>
+                  {expandedSections.circuitLinks ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </div>
+              </CardHeader>
+              {expandedSections.circuitLinks && (
+                <CardContent>
+                  <ul className="space-y-2">
+                    {parsed?.circuitLinks.map((link, idx) => (
+                      <li key={idx} className="text-zinc-300 flex items-start gap-2">
+                        <span className="text-primary mt-1">→</span>
+                        <span>{link}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              )}
+            </Card>
+          )}
+
+          {/* Micro-Corrections */}
+          {parsed?.microCorrections && parsed.microCorrections.length > 0 && (
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/30">
+              <CardHeader
+                className="cursor-pointer hover:bg-primary/5 transition-colors"
+                onClick={() => toggleSection("microCorrections")}
+              >
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Micro-Corrections
+                  </CardTitle>
+                  {expandedSections.microCorrections ? (
+                    <ChevronUp className="w-5 h-5" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" />
+                  )}
+                </div>
+              </CardHeader>
+              {expandedSections.microCorrections && (
+                <CardContent className="space-y-6">
+                  {parsed?.microCorrections.map((correction, idx) => (
+                    <div key={idx} className="border-l-2 border-primary pl-4">
+                      <p className="text-sm text-zinc-500 mb-1">
+                        Correction {correction.number}
+                      </p>
+                      <p className="font-semibold text-white mb-2">{correction.type}</p>
+                      <p className="text-zinc-300 mb-3">{correction.instruction}</p>
+                      <p className="text-xs text-zinc-500">
+                        <span className="font-semibold">Falsifier:</span> {correction.falsifier}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              )}
+            </Card>
+          )}
+
+          {/* Back Button */}
+          <div className="flex justify-center pt-8">
+            <Link href="/carrierlock">
+              <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Assessment
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
-    </div>
     </Layout>
   );
 }
