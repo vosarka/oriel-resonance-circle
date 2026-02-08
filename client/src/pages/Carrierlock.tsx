@@ -314,9 +314,10 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
                       type="text"
                       value={birthLocation}
                       onChange={(e) => setBirthLocation(e.target.value)}
-                      placeholder="City, Country"
+                      placeholder="latitude,longitude,timezone (e.g., 40.7128,-74.0060,-5)"
                       className="bg-zinc-800 border-zinc-700"
                     />
+                    <p className="text-xs text-zinc-500 mt-1">Format: latitude (N/S), longitude (E/W), timezone offset (hours)</p>
                   </div>
                   
                   <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">

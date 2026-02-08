@@ -5,6 +5,7 @@ import {
   type StaticSignatureReading,
 } from './rgp-static-signature-engine';
 import { calculateCoherenceScore, type CarrierlockState } from './rgp-engine';
+import { calculateBirthChart, getAllPlanetPositions } from './ephemeris-service';
 
 export const rgpRouter = router({
   staticSignature: publicProcedure
@@ -20,14 +21,55 @@ export const rgpRouter = router({
         const birthDateObj = new Date(input.birthDate);
         const userId = input.userId || 'anonymous';
         
+        // Calculate real planetary positions using ephemeris
+        let birthChart = null;
+        let planetaryData = {
+          sun: 0,
+          moon: 0,
+          chiron: 0,
+        };
+        
+        if (input.birthTime && input.birthLocation) {
+          try {
+            // Parse birth location (format: "latitude,longitude,timezone")
+            const locationParts = input.birthLocation.split(',');
+            const latitude = parseFloat(locationParts[0]);
+            const longitude = parseFloat(locationParts[1]);
+            const timezone = locationParts[2] ? parseFloat(locationParts[2]) : 0;
+            
+            if (!isNaN(latitude) && !isNaN(longitude)) {
+              birthChart = await calculateBirthChart(
+                birthDateObj,
+                input.birthTime,
+                latitude,
+                longitude,
+                timezone
+              );
+              
+              // Extract planetary positions for RGP calculation
+              const planets = getAllPlanetPositions(birthChart);
+              const sunPos = planets.find(p => p.planet === 'Sun');
+              const moonPos = planets.find(p => p.planet === 'Moon');
+              const chironPos = planets.find(p => p.planet === 'Chiron');
+              
+              if (sunPos) planetaryData.sun = sunPos.longitude;
+              if (moonPos) planetaryData.moon = moonPos.longitude;
+              if (chironPos) planetaryData.chiron = chironPos.longitude;
+            }
+          } catch (error) {
+            console.error('[Ephemeris] Failed to calculate birth chart:', error);
+            // Fall back to placeholder values
+          }
+        }
+        
         const reading = await generateStaticSignature(
           userId,
           {
             birthDate: birthDateObj,
             birthTime: input.birthTime,
-            sun: 0,
-            moon: 0,
-            chiron: 0,
+            sun: planetaryData.sun,
+            moon: planetaryData.moon,
+            chiron: planetaryData.chiron,
           },
           input.coherenceScore
         );
@@ -49,6 +91,17 @@ export const rgpRouter = router({
             userId: reading.userId,
             birthDate: reading.birthChartData.birthDate?.toISOString(),
             birthTime: reading.birthChartData.birthTime,
+            birthLocation: input.birthLocation,
+            ephemerisData: birthChart ? {
+              jd: birthChart.jd,
+              planets: Object.values(birthChart.planets).map(p => ({
+                name: p.planet,
+                longitude: p.longitude,
+                latitude: p.latitude,
+                zodiacSign: p.zodiacSign,
+                zodiacDegree: p.zodiacDegree,
+              })),
+            } : null,
             primeStack: primeStackDetails,
             ninecenters: reading.ninecenters,
             fractalRole: reading.fractalRole,
