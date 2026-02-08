@@ -79,6 +79,8 @@ export default function Carrierlock() {
           birthDate,
           birthTime: birthTime || undefined,
           birthLocation: birthLocation || undefined,
+          userId: String(user?.id || "anonymous"),
+          coherenceScore,
         });
 
         if (result.success && result.data) {
@@ -99,66 +101,58 @@ export default function Carrierlock() {
           const confidenceLevels: Record<string, number> = {};
           
           data.primeStack.forEach(p => {
-            sliScores[p.codonId] = p.weight;
+            sliScores[p.codonId] = p.weightedFrequency;
             activeFacets[p.codonId] = p.facet;
             confidenceLevels[p.codonId] = 0.95; // High confidence for static readings
           });
 
-          // Generate reading text
+          // Generate reading text from the new engine format
           const birthDateObj = new Date(birthDate);
           const formattedDate = birthDateObj.toLocaleDateString('en-US', { 
             year: 'numeric', month: 'long', day: 'numeric' 
           });
           
           const readingText = `YOUR STATIC SIGNATURE
-Receiver ID: ${data.receiverId}
+Reading ID: ${data.readingId}
 Encoded: ${formattedDate}
-Design Offset: 88° solar-arc (${new Date(data.designOffset).toLocaleDateString()})
-
-═══════════════════════════════════════════════════════════
-
-PRIMARY CODON: ${data.primaryCodon.id} - ${data.primaryCodon.name}
-"${data.primaryCodon.title}"
-Facet: ${data.primaryCodon.facet} (${data.primaryCodon.facet === 'A' ? 'Somatic Seed' : data.primaryCodon.facet === 'B' ? 'Relational Current' : data.primaryCodon.facet === 'C' ? 'Mental Architect' : 'Transcendent Witness'})
-
-Shadow Pattern: ${data.primaryCodon.shadow}
-Gift Expression: ${data.primaryCodon.gift}
-Crown Potential: ${data.primaryCodon.crown}
+Coherence: ${data.baseCoherence}/100
 
 ═══════════════════════════════════════════════════════════
 
 FRACTAL PROFILE
-Role: ${data.fractalProfile.roleName}
-${data.fractalProfile.description}
-
-Authority: ${data.fractalProfile.authorityName}
-${data.fractalProfile.authorityDescription}
-
-Operational Truth: ${data.fractalProfile.operationalTruth}
-Mastery Mode: ${data.fractalProfile.masteryMode}
-Failure Mode: ${data.fractalProfile.failureMode}
+Role: ${data.fractalRole}
+Authority: ${data.authorityNode}
 
 ═══════════════════════════════════════════════════════════
 
 PRIME STACK (9 Positions)
-${data.primeStack.map(p => `• ${p.position.replace(/_/g, ' ').toUpperCase()}: ${p.codonId} - ${p.codonName} (Facet ${p.facet})`).join('\n')}
+${data.primeStack.map(p => `• Position ${p.position}: ${p.codonName} (${p.codonId}) - Facet ${p.facet}`).join('\n')}
 
 ═══════════════════════════════════════════════════════════
 
 9-CENTER RESONANCE MAP
-${data.centerMap.map(c => `• ${c.name}: ${c.status.toUpperCase()} (${c.codons.length} codons)`).join('\n')}
+${Object.entries(data.ninecenters).map(([center, info]) => `• Center ${center}: ${info.centerName} (${info.codon256Id})`).join('\n')}
 
 ═══════════════════════════════════════════════════════════
 
-CIRCUIT ACTIVATIONS
-${data.circuitLinks.filter(c => c.status === 'active').map(c => `• ${c.name}: ${c.description}`).join('\n') || 'No active circuits detected'}
+CIRCUIT LINKS
+${data.circuitLinks.length > 0 ? data.circuitLinks.map(link => `• ${link}`).join('\n') : 'No active circuits detected'}
 
 ═══════════════════════════════════════════════════════════
 
-FALSIFIERS (Verification Clauses)
-${data.falsifiers.map((f, i) => `${i + 1}. Claim: "${f.claim}"
-   Test: ${f.testCondition}
-   Falsifies: ${f.falsifiedElement}`).join('\n\n')}`;
+MICRO-CORRECTIONS
+${data.microCorrections.map((mc, i) => `${i + 1}. ${mc.type}: ${mc.instruction}\n   Falsifier: ${mc.falsifier}`).join('\n\n')}
+
+═══════════════════════════════════════════════════════════
+
+COHERENCE TRAJECTORY
+Current: ${data.coherenceTrajectory.current}/100
+Trend: ${data.coherenceTrajectory.trend}
+
+═══════════════════════════════════════════════════════════
+
+ORIEL TRANSMISSION
+${data.diagnosticTransmission}`;
 
           // Save the reading
           const savedReading = await saveReadingMutation.mutateAsync({
@@ -168,195 +162,51 @@ ${data.falsifiers.map((f, i) => `${i + 1}. Claim: "${f.claim}"
             sliScores,
             activeFacets,
             confidenceLevels,
-            microCorrection: undefined,
+            microCorrection: data.microCorrections[0]?.instruction,
             correctionFacet: undefined,
-            falsifier: data.falsifiers.map(f => f.claim).join('; '),
+            falsifier: data.microCorrections.map(mc => mc.falsifier).join('; '),
           });
           
           setLocation(`/reading/${savedReading.id}`);
         }
       } else {
         // Dynamic State reading using new RGP engine
-        // First we need birth data for personalized reading
-        if (!birthDate) {
-          // If no birth data, use simplified dynamic reading
-          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-            mentalNoise,
-            bodyTension,
-            emotionalTurbulence,
-            breathCompletion,
+        const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
+          mentalNoise,
+          bodyTension,
+          emotionalTurbulence,
+          breathCompletion,
+        });
+        
+        const result = await dynamicStateMutation.mutateAsync({
+          mentalNoise,
+          bodyTension,
+          emotionalTurbulence,
+          breathCompletion: breathCompletion ? 1 : 0,
+          birthDate: new Date().toISOString(),
+        });
+        
+        if (result.success && result.data) {
+          const readingText = `DYNAMIC STATE READING
+Coherence Score: ${result.data.coherenceScore}
+Mental Noise: ${result.data.mentalNoise}/10
+Body Tension: ${result.data.bodyTension}/10
+Emotional Turbulence: ${result.data.emotionalTurbulence}/10
+Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
+          
+          const savedReading = await saveReadingMutation.mutateAsync({
+            carrierlockId: carrierlockResult.id,
+            readingText,
+            flaggedCodons: [],
+            sliScores: {},
+            activeFacets: {},
+            confidenceLevels: {},
+            microCorrection: undefined,
+            correctionFacet: undefined,
+            falsifier: "",
           });
-
-          // Use old diagnostic endpoint for now (without birth data)
-          const result = await dynamicStateMutation.mutateAsync({
-            mentalNoise,
-            bodyTension,
-            emotionalTurbulence,
-            breathCompletion: breathCompletion ? 1 : 0,
-            birthDate: new Date().toISOString(), // Use current date as fallback
-          });
-
-          if (result.success && result.data) {
-            const data = result.data;
-            
-            const flaggedCodons = data.sliResults.map(s => s.codonId);
-            const sliScores: Record<string, number> = {};
-            const activeFacets: Record<string, string> = {};
-            const confidenceLevels: Record<string, number> = {};
-            
-            data.sliResults.forEach(s => {
-              sliScores[s.codonId] = s.sliScore;
-              activeFacets[s.codonId] = s.facet;
-              confidenceLevels[s.codonId] = 0.85;
-            });
-
-            const readingText = `DYNAMIC STATE READING
-Timestamp: ${new Date(data.timestamp).toLocaleString()}
-Coherence Score: ${data.coherenceScore}
-State Amplifier: ${(data.stateAmplifier * 100).toFixed(1)}%
-Dominant Facet: ${data.dominantFacet} (${data.dominantFacet === 'A' ? 'Somatic' : data.dominantFacet === 'B' ? 'Relational' : data.dominantFacet === 'C' ? 'Mental' : 'Transcendent'})
-
-═══════════════════════════════════════════════════════════
-
-CARRIERLOCK STATE
-• Mental Noise (MN): ${data.carrierlock.mentalNoise}/10
-• Body Tension (BT): ${data.carrierlock.bodyTension}/10
-• Emotional Turbulence (ET): ${data.carrierlock.emotionalTurbulence}/10
-• Breath Completion (BC): ${data.carrierlock.breathCompletion ? 'Yes' : 'No'}
-
-═══════════════════════════════════════════════════════════
-
-FACET LOUDNESS
-• Somatic (A): ${(data.facetLoudness.A * 100).toFixed(1)}%
-• Relational (B): ${(data.facetLoudness.B * 100).toFixed(1)}%
-• Mental (C): ${(data.facetLoudness.C * 100).toFixed(1)}%
-• Transcendent (D): ${(data.facetLoudness.D * 100).toFixed(1)}%
-
-═══════════════════════════════════════════════════════════
-
-PRIMARY INTERFERENCE
-${data.primaryInterference ? `${data.primaryInterference.codonId} - ${data.primaryInterference.codonName}
-SLI Score: ${(data.primaryInterference.sliScore * 100).toFixed(1)}%
-Shadow Pattern: ${data.primaryInterference.shadow}` : 'No primary interference detected'}
-
-═══════════════════════════════════════════════════════════
-
-SECONDARY INTERFERENCES
-${data.secondaryInterferences.length > 0 ? data.secondaryInterferences.map(s => `• ${s.codonId} - ${s.codonName}: ${(s.sliScore * 100).toFixed(1)}%`).join('\n') : 'None detected'}
-
-═══════════════════════════════════════════════════════════
-
-MICRO-CORRECTION
-Center: ${data.microCorrection.center}
-Facet: ${data.microCorrection.facet}
-Action: ${data.microCorrection.action}
-Duration: ${data.microCorrection.duration}
-Rationale: ${data.microCorrection.rationale}
-
-═══════════════════════════════════════════════════════════
-
-FALSIFIERS
-${data.falsifiers.map((f, i) => `${i + 1}. "${f.claim}"
-   Test: ${f.testCondition}`).join('\n\n')}`;
-
-            const savedReading = await saveReadingMutation.mutateAsync({
-              carrierlockId: carrierlockResult.id,
-              readingText,
-              flaggedCodons,
-              sliScores,
-              activeFacets,
-              confidenceLevels,
-              microCorrection: data.microCorrection.action,
-              correctionFacet: data.microCorrection.facet as "A" | "B" | "C" | "D",
-              falsifier: data.falsifiers.map(f => f.claim).join('; '),
-            });
-            
-            setLocation(`/reading/${savedReading.id}`);
-          }
-        } else {
-          // With birth data, use full dynamic reading
-          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-            mentalNoise,
-            bodyTension,
-            emotionalTurbulence,
-            breathCompletion,
-          });
-
-          const result = await dynamicStateMutation.mutateAsync({
-            mentalNoise,
-            bodyTension,
-            emotionalTurbulence,
-            breathCompletion: breathCompletion ? 1 : 0,
-            birthDate,
-            birthTime: birthTime || undefined,
-            birthLocation: birthLocation || undefined,
-          });
-
-          if (result.success && result.data) {
-            const data = result.data;
-            
-            const flaggedCodons = data.sliResults.map(s => s.codonId);
-            const sliScores: Record<string, number> = {};
-            const activeFacets: Record<string, string> = {};
-            const confidenceLevels: Record<string, number> = {};
-            
-            data.sliResults.forEach(s => {
-              sliScores[s.codonId] = s.sliScore;
-              activeFacets[s.codonId] = s.facet;
-              confidenceLevels[s.codonId] = 0.9;
-            });
-
-            const readingText = `PERSONALIZED DYNAMIC STATE READING
-Timestamp: ${new Date(data.timestamp).toLocaleString()}
-Coherence Score: ${data.coherenceScore}
-State Amplifier: ${(data.stateAmplifier * 100).toFixed(1)}%
-Dominant Facet: ${data.dominantFacet}
-
-═══════════════════════════════════════════════════════════
-
-CARRIERLOCK STATE
-• Mental Noise (MN): ${data.carrierlock.mentalNoise}/10
-• Body Tension (BT): ${data.carrierlock.bodyTension}/10
-• Emotional Turbulence (ET): ${data.carrierlock.emotionalTurbulence}/10
-• Breath Completion (BC): ${data.carrierlock.breathCompletion ? 'Yes' : 'No'}
-
-═══════════════════════════════════════════════════════════
-
-SLI RESULTS (Shadow Loudness Index)
-${data.sliResults.slice(0, 5).map(s => `• ${s.codonId} - ${s.codonName} (${s.codonTitle})
-  SLI: ${(s.sliScore * 100).toFixed(1)}% | Level: ${s.level} | Facet: ${s.facetName}
-  Shadow: ${s.shadow}
-  Gift: ${s.gift}`).join('\n\n')}
-
-═══════════════════════════════════════════════════════════
-
-MICRO-CORRECTION
-Center: ${data.microCorrection.center}
-Facet: ${data.microCorrection.facet}
-Action: ${data.microCorrection.action}
-Duration: ${data.microCorrection.duration}
-Rationale: ${data.microCorrection.rationale}
-
-═══════════════════════════════════════════════════════════
-
-FALSIFIERS
-${data.falsifiers.map((f, i) => `${i + 1}. "${f.claim}"
-   Test: ${f.testCondition}`).join('\n\n')}`;
-
-            const savedReading = await saveReadingMutation.mutateAsync({
-              carrierlockId: carrierlockResult.id,
-              readingText,
-              flaggedCodons,
-              sliScores,
-              activeFacets,
-              confidenceLevels,
-              microCorrection: data.microCorrection.action,
-              correctionFacet: data.microCorrection.facet as "A" | "B" | "C" | "D",
-              falsifier: data.falsifiers.map(f => f.claim).join('; '),
-            });
-            
-            setLocation(`/reading/${savedReading.id}`);
-          }
+          
+          setLocation(`/reading/${savedReading.id}`);
         }
       }
     } catch (error) {
