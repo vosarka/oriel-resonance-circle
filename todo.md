@@ -247,3 +247,18 @@
 - Responsive grid layouts for Prime Stack and 9-Centers
 - Proper TypeScript typing for parsed data
 - Zero database schema changes needed (uses existing readingText field)
+
+## Codex Integration (Completed)
+
+- [x] Made codon IDs in Prime Stack clickable links to Codex entries
+- [x] Made codon IDs in 9-Center Resonance Map clickable links
+- [x] Added hover effects (border color change, background transition)
+- [x] Links navigate to /codex/{codonId} for detailed lore
+- [x] Integrated with existing CodonDetail page component
+- [x] Maintains visual consistency with hover states and transitions
+
+### User Flow:
+1. User views their Static Signature reading
+2. Clicks on any codon ID in Prime Stack or 9-Centers
+3. Navigates to detailed Codex entry with full lore, dynamics, and related codons
+4. Can explore related codons and return to reading

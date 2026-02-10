@@ -282,16 +282,15 @@ export default function ReadingEnhanced() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {parsed?.primeStack.map((pos, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4"
-                    >
-                      <p className="text-xs text-zinc-500 mb-1">Position {pos.position}</p>
-                      <p className="text-lg font-bold text-primary mb-2">{pos.codon}</p>
-                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                        Facet {pos.facet}
-                      </Badge>
-                    </div>
+                    <Link key={idx} href={`/codex/${pos.codon}`}>
+                      <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4 hover:border-primary/50 hover:bg-zinc-900/70 transition-all cursor-pointer group">
+                        <p className="text-xs text-zinc-500 mb-1">Position {pos.position}</p>
+                        <p className="text-lg font-bold text-primary group-hover:text-primary/80 transition-colors mb-2">{pos.codon}</p>
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 group-hover:border-primary/50">
+                          Facet {pos.facet}
+                        </Badge>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </CardContent>
@@ -317,14 +316,13 @@ export default function ReadingEnhanced() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {parsed?.nineCenters.map((center, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4"
-                    >
-                      <p className="text-xs text-zinc-500 mb-1">Center {center.center}</p>
-                      <p className="text-lg font-bold text-primary mb-2">{center.name}</p>
-                      <p className="text-sm text-zinc-400">{center.codon}</p>
-                    </div>
+                    <Link key={idx} href={`/codex/${center.codon}`}>
+                      <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg p-4 hover:border-primary/50 hover:bg-zinc-900/70 transition-all cursor-pointer group">
+                        <p className="text-xs text-zinc-500 mb-1">Center {center.center}</p>
+                        <p className="text-lg font-bold text-primary group-hover:text-primary/80 transition-colors mb-2">{center.name}</p>
+                        <p className="text-sm text-zinc-400 group-hover:text-zinc-300 transition-colors">{center.codon}</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </CardContent>
