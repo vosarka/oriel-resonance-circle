@@ -164,8 +164,26 @@ export async function chatWithORIEL(
   userId?: number
 ) {
   try {
+    // Build complete system prompt with UMM context
+    let systemPrompt = ORIEL_SYSTEM_PROMPT;
+    
+    if (userId) {
+      try {
+        const { buildUMMContext } = await import('./oriel-umm');
+        const ummContext = await buildUMMContext(userId);
+        if (ummContext) {
+          systemPrompt = `${ORIEL_SYSTEM_PROMPT}
+
+${ummContext}`;
+        }
+      } catch (error) {
+        console.warn('[chatWithORIEL] Failed to load UMM context:', error);
+        // Continue with base prompt if UMM fails
+      }
+    }
+    
     const messages = [
-      { role: "system", content: ORIEL_SYSTEM_PROMPT },
+      { role: "system", content: systemPrompt },
       ...conversationHistory,
       { role: "user", content: userMessage }
     ];

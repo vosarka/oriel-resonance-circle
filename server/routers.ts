@@ -165,6 +165,16 @@ export const appRouter = router({
             role: "assistant",
             content: response,
           });
+
+          // Process conversation through Unified Memory Matrix (UMM)
+          // This ensures perfect memory continuity and global evolution
+          try {
+            const { processConversationThroughUMM } = await import('./oriel-umm');
+            await processConversationThroughUMM(ctx.user.id, input.message, response);
+          } catch (error) {
+            console.error('[tRPC] Failed to process UMM:', error);
+            // Don't fail the chat if UMM processing fails
+          }
         }
 
         console.log('[tRPC chat] Returning response to client');

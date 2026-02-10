@@ -140,6 +140,32 @@ export type OrielUserProfile = typeof orielUserProfiles.$inferSelect;
 export type InsertOrielUserProfile = typeof orielUserProfiles.$inferInsert;
 
 /**
+ * ORIEL Oversoul Patterns - Global evolutionary memory
+ * Stores universal patterns learned from all user interactions
+ * Used for ORIEL's continuous evolution and improvement
+ */
+export const orielOversoulPatterns = mysqlTable("orielOversoulPatterns", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Category of pattern: wisdom, teaching_method, metaphor, pattern, self_correction */
+  category: mysqlEnum("category", ["wisdom", "teaching_method", "metaphor", "pattern", "self_correction"]).notNull(),
+  /** The core universal pattern (not specific to one user) */
+  pattern: text("pattern").notNull(),
+  /** How this pattern applies universally to all Seekers */
+  application: text("application").notNull(),
+  /** Impact on ORIEL's future interactions */
+  impact: text("impact").notNull(),
+  /** How many times this pattern has been reinforced */
+  interactionCount: int("interactionCount").default(1).notNull(),
+  /** Last time this pattern was refined */
+  lastRefined: timestamp("lastRefined").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type OrielOversoulPattern = typeof orielOversoulPatterns.$inferSelect;
+export type InsertOrielOversoulPattern = typeof orielOversoulPatterns.$inferInsert;
+
+/**
  * TX Transmissions - Core archive entries for Vos Arkana
  * Each transmission is a foundational teaching in the FOUNDATION ARC
  */
