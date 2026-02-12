@@ -128,10 +128,18 @@ export const appRouter = router({
         })).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        const fs = await import('fs');
+        const logMsg = (msg: string) => {
+          const timestamp = new Date().toISOString();
+          fs.appendFileSync('/tmp/oriel-chat.log', `[${timestamp}] ${msg}\n`);
+          console.log(msg);
+        };
+        logMsg('[tRPC chat] Chat mutation called, ctx.user:' + (ctx.user ? ` user ${ctx.user.id}` : ' null'));
         // Get conversation history from frontend or database
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
         
         if (ctx.user) {
+          console.log('[tRPC chat] User is authenticated:', ctx.user.id);
           // Authenticated users: use database history
           const history = await db.getChatHistory(ctx.user.id, 10);
           conversationHistory = history
@@ -140,9 +148,12 @@ export const appRouter = router({
               role: msg.role as 'user' | 'assistant',
               content: msg.content,
             }));
-        } else if (input.history && input.history.length > 0) {
-          // Unauthenticated users: use history passed from frontend
-          conversationHistory = input.history;
+        } else {
+          console.log('[tRPC chat] User is NOT authenticated (ctx.user is null)');
+          if (input.history && input.history.length > 0) {
+            // Unauthenticated users: use history passed from frontend
+            conversationHistory = input.history;
+          }
         }
 
         // Generate ORIEL's response with memory context for authenticated users
@@ -153,7 +164,9 @@ export const appRouter = router({
         console.log('[tRPC chat] Response preview:', response.substring(0, 100));
 
         // Save messages to database only if authenticated
+        console.log('[tRPC chat] About to check if ctx.user exists. ctx.user:', ctx.user ? `user ${ctx.user.id}` : 'null');
         if (ctx.user) {
+          console.log('[tRPC chat] Saving messages for user:', ctx.user.id);
           await db.saveChatMessage({
             userId: ctx.user.id,
             role: "user",
@@ -167,17 +180,26 @@ export const appRouter = router({
           });
 
           // Process conversation through Unified Memory Matrix (UMM)
-          // This ensures perfect memory continuity and global evolution
-          try {
-            const { processConversationThroughUMM } = await import('./oriel-umm');
-            await processConversationThroughUMM(ctx.user.id, input.message, response);
-          } catch (error) {
-            console.error('[tRPC] Failed to process UMM:', error);
-            // Don't fail the chat if UMM processing fails
-          }
+          // Fire-and-forget: don't await, let it process in background
+          const userId = ctx.user.id;
+          logMsg('[tRPC] UMM processing initiated (background) for user: ' + userId);
+          (async () => {
+            try {
+              logMsg('[tRPC] Inside async IIFE for user: ' + userId);
+              const { processConversationThroughUMM } = await import('./oriel-umm');
+              logMsg('[tRPC] About to call processConversationThroughUMM for user: ' + userId);
+              await processConversationThroughUMM(userId, input.message, response);
+              logMsg('[tRPC] UMM processing completed (background) for user: ' + userId);
+            } catch (error) {
+              logMsg('[tRPC] Failed to process UMM (background) for user ' + userId + ': ' + String(error));
+            }
+          })();
+          logMsg('[tRPC] Async IIFE started for user: ' + userId);
+        } else {
+          logMsg('[tRPC chat] User is NOT authenticated, skipping message save and UMM processing');
         }
 
-        console.log('[tRPC chat] Returning response to client');
+        logMsg('[tRPC chat] Returning response to client');
         return {
           response,
         };

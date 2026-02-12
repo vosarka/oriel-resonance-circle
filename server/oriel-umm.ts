@@ -343,6 +343,7 @@ export async function processConversationThroughUMM(
   assistantResponse: string
 ): Promise<void> {
   try {
+    console.log(`[UMM] processConversationThroughUMM called for user ${userId}`);
     // Process Fractal Thread (individual memory)
     const { processConversationMemory } = await import('./oriel-memory');
     await processConversationMemory(userId, userMessage, assistantResponse);

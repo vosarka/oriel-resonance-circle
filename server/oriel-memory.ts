@@ -7,6 +7,18 @@ import { getDb } from './db';
 import { orielMemories, orielUserProfiles, type OrielMemory, type InsertOrielUserProfile, type OrielUserProfile } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
+import * as fs from 'fs';
+
+const LOG_FILE = '/tmp/oriel-memory.log';
+function logToFile(message: string) {
+  const timestamp = new Date().toISOString();
+  try {
+    fs.appendFileSync(LOG_FILE, `[${timestamp}] ${message}\n`);
+  } catch (e) {
+    // Ignore file write errors
+  }
+  console.log(message);
+}
 
 // Memory categories
 export type MemoryCategory = 'identity' | 'preference' | 'pattern' | 'fact' | 'relationship' | 'context';
@@ -38,10 +50,17 @@ export async function extractMemoriesFromConversation(
   existingMemories: string[]
 ): Promise<ExtractedMemory[]> {
   try {
+    logToFile('[Memory] extractMemoriesFromConversation called');
+    logToFile('[Memory] userMessage length: ' + userMessage.length);
+    logToFile('[Memory] assistantResponse length: ' + assistantResponse.length);
+    logToFile('[Memory] existingMemories count: ' + existingMemories.length);
+    
+    // Build context from existing memories, but keep it brief to avoid over-filtering
     const existingContext = existingMemories.length > 0
-      ? `\nExisting memories about this user:\n${existingMemories.join('\n')}`
+      ? `\nRecent memories about this user (for context only - still extract new updates):\n${existingMemories.slice(0, 5).join('\n')}`
       : '';
 
+    logToFile('[Memory] Calling invokeLLM for memory extraction...');
     const response = await invokeLLM({
       messages: [
         {
@@ -57,11 +76,12 @@ Categories:
 - context: Current situation or circumstances
 
 Rules:
-1. Only extract NEW information not already in existing memories
-2. Be concise - each memory should be 1-2 sentences max
-3. Focus on information that would be useful in future conversations
-4. Assign importance 1-10 (10 = critical identity info, 1 = minor detail)
-5. Return empty array if no new memorable information
+1. Extract NEW information AND updates to existing information
+2. Include changes in circumstances, mood, projects, or focus
+3. Be concise - each memory should be 1-2 sentences max
+4. Focus on information that would be useful in future conversations
+5. Assign importance 1-10 (10 = critical identity info, 1 = minor detail)
+6. Return empty array ONLY if conversation is purely repetitive with zero new content
 
 Respond with JSON array only:
 [{"category": "identity", "content": "User's name is X", "importance": 9}]
@@ -94,13 +114,34 @@ ${existingContext}`
       }
     });
 
+    logToFile('[Memory] LLM response received');
+    logToFile('[Memory] response.choices length: ' + response.choices?.length);
+    
     const content = response.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') return [];
+    logToFile('[Memory] Extracted content length: ' + content?.length);
+    
+    if (!content || typeof content !== 'string') {
+      logToFile('[Memory] ✗ No content from LLM response or content is not a string');
+      logToFile('[Memory] response: ' + JSON.stringify(response, null, 2).substring(0, 500));
+      return [];
+    }
 
-    const memories = JSON.parse(content) as ExtractedMemory[];
-    return memories.filter(m => m.content && m.content.length > 0);
+    try {
+      const memories = JSON.parse(content) as ExtractedMemory[];
+      const filtered = memories.filter(m => m.content && m.content.length > 0);
+      if (filtered.length > 0) {
+        logToFile(`[Memory] Extracted ${filtered.length} new memories from conversation`);
+      } else {
+        logToFile('[Memory] LLM returned empty array - no new memories to extract');
+      }
+      return filtered;
+    } catch (parseError) {
+      logToFile('[Memory] Failed to parse LLM response as JSON: ' + String(parseError));
+      logToFile('[Memory] Content was: ' + content);
+      return [];
+    }
   } catch (error) {
-    console.error('[Memory] Failed to extract memories:', error);
+    logToFile('[Memory] Failed to extract memories: ' + String(error));
     return [];
   }
 }
@@ -359,37 +400,51 @@ export async function processConversationMemory(
   assistantResponse: string
 ): Promise<void> {
   try {
+    logToFile(`[Memory] Starting memory processing for user ${userId}`);
+    
     // Get existing memories for context
     const existingMemories = await getRelevantMemories(userId, 20);
     const existingContent = existingMemories.map(m => m.content);
+    logToFile(`[Memory] Found ${existingMemories.length} existing memories`);
 
     // Extract new memories
+    logToFile(`[Memory] Extracting memories from conversation...`);
     const newMemories = await extractMemoriesFromConversation(
       userMessage,
       assistantResponse,
       existingContent
     );
+    logToFile(`[Memory] Extraction complete: ${newMemories.length} new memories`);
 
     // Store new memories
-    for (const memory of newMemories) {
-      await storeMemory(userId, memory);
+    if (newMemories.length > 0) {
+      logToFile(`[Memory] Storing ${newMemories.length} new memories...`);
+      for (const memory of newMemories) {
+        await storeMemory(userId, memory);
+      }
+      logToFile(`[Memory] All new memories stored`);
+    } else {
+      logToFile(`[Memory] No new memories to store`);
     }
 
     // Update profile if we have enough memories
     if (existingMemories.length + newMemories.length >= 3) {
+      logToFile(`[Memory] Updating user profile...`);
       const allMemories = await getRelevantMemories(userId, 30);
       const profileUpdates = await generateProfileSummary(userId, allMemories);
       if (Object.keys(profileUpdates).length > 0) {
         await updateUserProfile(userId, profileUpdates);
+        logToFile(`[Memory] Profile updated`);
       }
     } else {
       // Just increment interaction count
+      logToFile(`[Memory] Incrementing interaction count (not enough memories for profile update)`);
       await updateUserProfile(userId, {});
     }
 
-    console.log(`[Memory] Processed conversation for user ${userId}: ${newMemories.length} new memories`);
+    logToFile(`[Memory] ✓ Memory processing complete for user ${userId}: ${newMemories.length} new memories extracted`);
   } catch (error) {
-    console.error('[Memory] Failed to process conversation memory:', error);
+    logToFile('[Memory] ✗ Failed to process conversation memory: ' + String(error));
   }
 }
 
