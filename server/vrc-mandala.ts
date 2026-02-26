@@ -131,10 +131,10 @@ export const CODON_NAMES: Record<number, string> = {
  * 9-Center names used in the VRC / ROS system.
  */
 export type CenterName =
-  | 'Crown'
+  | 'Head'
   | 'Ajna'
   | 'Throat'
-  | 'G-Self'
+  | 'G-Center'
   | 'Heart'
   | 'Solar Plexus'
   | 'Sacral'
@@ -147,36 +147,37 @@ export type CenterName =
  * NOTE: Verify against VRC Bio-Circuitry diagram image when available.
  */
 export const CODON_CENTER_MAP: Record<number, CenterName> = {
-  // Crown (Head)
-  64: 'Crown', 61: 'Crown', 63: 'Crown',
+  // Head (Pressure)
+  64: 'Head', 61: 'Head', 63: 'Head',
 
-  // Ajna
+  // Ajna (Awareness)
   47: 'Ajna', 24: 'Ajna', 4: 'Ajna', 17: 'Ajna', 43: 'Ajna', 11: 'Ajna',
 
-  // Throat
+  // Throat (Manifestation) — gates 1, 7, 13 belong to G-Center per VRC channel data
   62: 'Throat', 23: 'Throat', 56: 'Throat', 35: 'Throat', 12: 'Throat',
   45: 'Throat', 16: 'Throat', 31: 'Throat',  8: 'Throat', 33: 'Throat',
-  20: 'Throat', 13: 'Throat',  7: 'Throat',  1: 'Throat',
+  20: 'Throat',
 
-  // G-Self
-  25: 'G-Self', 46: 'G-Self', 15: 'G-Self', 10: 'G-Self', 2: 'G-Self', 27: 'G-Self',
+  // G-Center (Identity) — gates 1, 7, 13 confirmed from channels 8-1, 31-7, 33-13
+  25: 'G-Center', 46: 'G-Center', 15: 'G-Center', 10: 'G-Center',
+   2: 'G-Center',  1: 'G-Center',  7: 'G-Center', 13: 'G-Center',
 
-  // Heart / Ego
+  // Heart / Ego (Motor)
   21: 'Heart', 40: 'Heart', 26: 'Heart', 51: 'Heart',
 
-  // Solar Plexus
+  // Solar Plexus (Motor/Awareness)
   36: 'Solar Plexus', 22: 'Solar Plexus', 37: 'Solar Plexus',
   49: 'Solar Plexus', 55: 'Solar Plexus', 30: 'Solar Plexus', 6: 'Solar Plexus',
 
-  // Sacral
-  34: 'Sacral', 5: 'Sacral', 14: 'Sacral', 29: 'Sacral',
+  // Sacral (Motor) — gate 27 confirmed from channel 50-27 (Spleen–Sacral)
+  34: 'Sacral', 5: 'Sacral', 14: 'Sacral', 29: 'Sacral', 27: 'Sacral',
   59: 'Sacral', 9: 'Sacral', 3: 'Sacral', 42: 'Sacral',
 
-  // Spleen
+  // Spleen (Awareness)
   48: 'Spleen', 57: 'Spleen', 44: 'Spleen', 50: 'Spleen',
   32: 'Spleen', 28: 'Spleen', 18: 'Spleen',
 
-  // Root
+  // Root (Pressure/Motor)
   58: 'Root', 38: 'Root', 54: 'Root', 53: 'Root',
   60: 'Root', 52: 'Root', 19: 'Root', 39: 'Root', 41: 'Root',
 };
@@ -187,40 +188,40 @@ export const CODON_CENTER_MAP: Record<number, CenterName> = {
  * NOTE: Verify against VRC Bio-Circuitry diagram image when available.
  */
 export const VRC_CHANNELS: readonly [number, number][] = [
-  // Crown–Ajna
+  // Head–Ajna
   [64, 47], [61, 24], [63,  4],
   // Ajna–Throat
   [17, 62], [43, 23], [11, 56],
-  // Throat–G-Self
+  // Throat–G-Center
   [31,  7], [ 8,  1], [33, 13], [20, 10],
   // Throat–Heart
   [45, 21],
   // Throat–Solar Plexus
   [35, 36], [12, 22],
   // Throat–Spleen
-  [16, 48],
+  [16, 48], [20, 57],
   // Throat–Sacral
   [20, 34],
-  // G-Self–Heart
+  // G-Center–Heart
   [25, 51],
-  // G-Self–Sacral
-  [ 2, 14], [15,  5], [46, 29],
-  // G-Self–Spleen
-  [27, 50],
+  // G-Center–Spleen
+  [10, 57],
+  // G-Center–Sacral
+  [ 2, 14], [15,  5], [46, 29], [10, 34],
   // Heart–Solar Plexus
   [40, 37],
   // Heart–Spleen
   [26, 44],
-  // Solar Plexus–Root
-  [30, 41], [49, 19], [55, 39],
-  // Solar Plexus–Sacral
-  [ 6, 59],
-  // Sacral–Spleen
-  [34, 57],
+  // Spleen–Sacral
+  [27, 50], [57, 34],
+  // Spleen–Root
+  [28, 38], [18, 58], [32, 54],
+  // Sacral–Solar Plexus
+  [59,  6],
   // Sacral–Root
   [ 9, 52], [ 3, 60], [42, 53],
-  // Root–Spleen
-  [38, 28], [54, 32], [58, 18],
+  // Root–Solar Plexus
+  [41, 30], [19, 49], [39, 55],
 ];
 
 // ─── Core mapping functions ──────────────────────────────────────────────────
@@ -316,7 +317,7 @@ export function evaluateCenters(channels: ChannelStatus[]): Record<CenterName, '
   }
 
   const ALL_CENTERS: CenterName[] = [
-    'Crown', 'Ajna', 'Throat', 'G-Self', 'Heart', 'Solar Plexus', 'Sacral', 'Spleen', 'Root',
+    'Head', 'Ajna', 'Throat', 'G-Center', 'Heart', 'Solar Plexus', 'Sacral', 'Spleen', 'Root',
   ];
   const result = {} as Record<CenterName, 'defined' | 'open'>;
   for (const center of ALL_CENTERS) {
@@ -367,7 +368,7 @@ export function determineAuthority(
   if (centers['Sacral'] === 'defined') return 'Sacral';
   if (centers['Spleen'] === 'defined') return 'Spleen';
   if (centers['Heart'] === 'defined') return 'Ego/Heart';
-  if (centers['G-Self'] === 'defined') return 'G-Center';
-  if (centers['Crown'] === 'defined' || centers['Ajna'] === 'defined') return 'None/Outer';
+  if (centers['G-Center'] === 'defined') return 'G-Center';
+  if (centers['Head'] === 'defined' || centers['Ajna'] === 'defined') return 'None/Outer';
   return 'Environment';
 }

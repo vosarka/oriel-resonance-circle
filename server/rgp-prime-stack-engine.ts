@@ -284,7 +284,7 @@ export function calculate9CenterMap(
 
   // Initialise all 9 centers
   const allCenters: CenterName[] = [
-    'Crown', 'Ajna', 'Throat', 'G-Self', 'Heart', 'Solar Plexus', 'Sacral', 'Spleen', 'Root',
+    'Head', 'Ajna', 'Throat', 'G-Center', 'Heart', 'Solar Plexus', 'Sacral', 'Spleen', 'Root',
   ];
   for (const c of allCenters) {
     result[c] = {

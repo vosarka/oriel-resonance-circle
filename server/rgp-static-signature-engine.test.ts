@@ -64,7 +64,7 @@ describe('Static Signature Generation Engine', () => {
       expect(reading.ninecenters).toBeDefined();
       expect(Object.keys(reading.ninecenters).length).toBe(9);
 
-      const validCenters = ['Crown','Ajna','Throat','G-Self','Heart','Solar Plexus','Sacral','Spleen','Root'];
+      const validCenters = ['Head','Ajna','Throat','G-Center','Heart','Solar Plexus','Sacral','Spleen','Root'];
       for (const [name, center] of Object.entries(reading.ninecenters)) {
         expect(validCenters).toContain(name);
         expect(center.centerName).toBeDefined();

@@ -138,7 +138,7 @@ describe('RGP Prime Stack Calculation Engine', () => {
     it('should include valid VRC center names', () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
-      const validCenters = ['Crown','Ajna','Throat','G-Self','Heart','Solar Plexus','Sacral','Spleen','Root'];
+      const validCenters = ['Head','Ajna','Throat','G-Center','Heart','Solar Plexus','Sacral','Spleen','Root'];
       for (const [name] of Object.entries(nineCenter)) {
         expect(validCenters).toContain(name);
       }
