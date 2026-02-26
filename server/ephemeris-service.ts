@@ -103,108 +103,160 @@ async function initEphemeris(): Promise<SwissEph> {
   if (swissEph) {
     return swissEph;
   }
-  
+
   swissEph = new SwissEph();
   await swissEph.initSwissEph();
   return swissEph;
 }
 
 /**
- * Calculate planetary positions for a given birth date and time
+ * Calculate all planetary positions for a given Julian Day number.
+ * Extracted as a helper so it can be called for both Conscious and Design charts.
+ */
+async function calcPlanetsAtJD(
+  jd: number,
+  se: SwissEph
+): Promise<Record<string, PlanetaryPosition>> {
+  const planetIds = [
+    PLANETS.SUN,
+    PLANETS.MOON,
+    PLANETS.MERCURY,
+    PLANETS.VENUS,
+    PLANETS.MARS,
+    PLANETS.JUPITER,
+    PLANETS.SATURN,
+    PLANETS.URANUS,
+    PLANETS.NEPTUNE,
+    PLANETS.PLUTO,
+    PLANETS.CHIRON,
+    PLANETS.NORTH_NODE, // True Node — VRC § 1 mandates True Node, not Mean Node
+  ];
+
+  const planets: Record<string, PlanetaryPosition> = {};
+
+  for (const planetId of planetIds) {
+    try {
+      const result = se.calc(jd, planetId, 0);
+      if (result && result.longitude !== undefined) {
+        const zodiac = getLongitudeToZodiac(result.longitude);
+        const planetName = PLANET_NAMES[planetId] || `Planet ${planetId}`;
+        planets[planetName] = {
+          planet: planetName,
+          planetId,
+          longitude: result.longitude,
+          latitude: result.latitude || 0,
+          distance: result.distance || 1,
+          speed: result.longitudeSpeed || 0,
+          zodiacSign: zodiac.sign,
+          zodiacDegree: zodiac.degree,
+        };
+      }
+    } catch (error) {
+      console.error(`Error calculating position for planet ${planetId}:`, error);
+    }
+  }
+
+  return planets;
+}
+
+/**
+ * Find the Julian Day (T_design) at which the Sun was exactly 88.0000° behind
+ * its position at T_birth, using the iterative Solar Arc method required by VRC § 2B.
+ *
+ * Formula:  λ_Sun(T_design) = (λ_Sun(T_birth) − 88.0°) mod 360
+ * Method:   Newton-Raphson iteration backward ~88-89 days.
+ * Precision: < 0.001° as mandated by VRC § 1.
+ *
+ * @param consciousJD       Julian Day of the birth moment (T_birth)
+ * @param consciousSunLon   Sun longitude at T_birth (degrees 0–360)
+ * @param se                Initialized Swiss Ephemeris instance
+ * @returns Julian Day of T_design
+ */
+async function findDesignJD(
+  consciousJD: number,
+  consciousSunLon: number,
+  se: SwissEph
+): Promise<number> {
+  const targetLon = ((consciousSunLon - 88.0) % 360 + 360) % 360;
+
+  // Initial estimate: approximately 88 days before birth
+  // (Sun moves ~0.9856°/day on average, so 88° ≈ 88–89 days)
+  let jd = consciousJD - 88.5;
+
+  const MAX_ITERATIONS = 50;
+  const TOLERANCE = 0.00001; // << 0.001° VRC requirement
+
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    const result = se.calc(jd, PLANETS.SUN, 0);
+    const currentLon: number = result.longitude;
+    const speed: number = result.longitudeSpeed || 0.9856; // degrees/day
+
+    // Shortest angular difference (handles 0°/360° wrap-around)
+    let diff = ((targetLon - currentLon) % 360 + 360) % 360;
+    if (diff > 180) diff -= 360;
+
+    if (Math.abs(diff) < TOLERANCE) break;
+
+    jd += diff / speed;
+  }
+
+  return jd;
+}
+
+/**
+ * Parse a birth date + time string into a UTC Date object.
+ * VRC § 1: all user inputs MUST be converted to UTC before calculation.
+ */
+function parseBirthDateTime(
+  birthDate: Date,
+  birthTime: string,
+  timezoneOffsetHours: number
+): Date {
+  const timeParts = birthTime.split(':');
+  const hours = parseInt(timeParts[0], 10);
+  const minutes = parseInt(timeParts[1], 10);
+  const seconds = parseInt(timeParts[2] || '0', 10);
+
+  // Apply timezone correction to get UTC
+  const utc = new Date(birthDate);
+  utc.setHours(hours - timezoneOffsetHours, minutes, seconds, 0);
+  return utc;
+}
+
+/**
+ * Calculate planetary positions for a given birth date and time (Conscious chart).
+ * VRC global config: geocentric, tropical zodiac, True Node.
  */
 export async function calculateBirthChart(
   birthDate: Date,
-  birthTime: string, // Format: "HH:MM" or "HH:MM:SS"
-  latitude: number, // Birth location latitude
-  longitude: number, // Birth location longitude
-  timezone: number = 0 // Timezone offset in hours
+  birthTime: string,     // Format: "HH:MM" or "HH:MM:SS"
+  latitude: number,      // Birth location latitude
+  longitude: number,     // Birth location longitude
+  timezone: number = 0   // Timezone offset in hours (VRC: convert to UTC)
 ): Promise<BirthChart> {
   try {
     const se = await initEphemeris();
-    
-    // Parse birth time
-    const timeParts = birthTime.split(':');
-    const hours = parseInt(timeParts[0], 10);
-    const minutes = parseInt(timeParts[1], 10);
-    const seconds = parseInt(timeParts[2] || '0', 10);
-    
-    // Create date with birth time (UTC)
-    const fullDate = new Date(birthDate);
-    fullDate.setHours(hours - timezone, minutes, seconds, 0);
-    
-    // Get date components
-    const year = fullDate.getUTCFullYear();
-    const month = fullDate.getUTCMonth() + 1;
-    const day = fullDate.getUTCDate();
-    const hour = fullDate.getUTCHours() + (fullDate.getUTCMinutes() / 60) + (fullDate.getUTCSeconds() / 3600);
-    
-    // Calculate Julian Day
+
+    const utcDate = parseBirthDateTime(birthDate, birthTime, timezone);
+
+    const year = utcDate.getUTCFullYear();
+    const month = utcDate.getUTCMonth() + 1;
+    const day = utcDate.getUTCDate();
+    const hour = utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600;
+
     const jd = se.julday(year, month, day, hour);
-    
-    // Calculate planetary positions
-    const planets: Record<string, PlanetaryPosition> = {};
-    
-    // Calculate positions for all major planets
-    const planetIds = [
-      PLANETS.SUN,
-      PLANETS.MOON,
-      PLANETS.MERCURY,
-      PLANETS.VENUS,
-      PLANETS.MARS,
-      PLANETS.JUPITER,
-      PLANETS.SATURN,
-      PLANETS.URANUS,
-      PLANETS.NEPTUNE,
-      PLANETS.PLUTO,
-      PLANETS.CHIRON,
-      PLANETS.NORTH_NODE,
-    ];
-    
-    for (const planetId of planetIds) {
-      try {
-        // Calculate position using Swiss Ephemeris
-        const result = se.calc(jd, planetId, 0);
-        
-        if (result && result.longitude !== undefined) {
-          const zodiac = getLongitudeToZodiac(result.longitude);
-          const planetName = PLANET_NAMES[planetId] || `Planet ${planetId}`;
-          
-          planets[planetName] = {
-            planet: planetName,
-            planetId,
-            longitude: result.longitude,
-            latitude: result.latitude || 0,
-            distance: result.distance || 1,
-            speed: result.longitudeSpeed || 0,
-            zodiacSign: zodiac.sign,
-            zodiacDegree: zodiac.degree,
-          };
-        }
-      } catch (error) {
-        console.error(`Error calculating position for planet ${planetId}:`, error);
-      }
-    }
-    
-    // Calculate house system (Placidus)
-    // Note: Swiss Ephemeris houses function returns a number (ARMC), not house cusps
-    // For now, we'll skip house calculation as it requires additional setup
-    let houses: HouseSystem | undefined;
-    try {
-      // The houses function in swisseph-wasm returns ARMC (Ascendant Right Ascension)
-      // Full house calculation would require additional ephemeris setup
-      // For now, create a placeholder house system
-      houses = {
-        system: 'Placidus',
-        houses: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
-        ascendant: 0,
-        midheaven: 0,
-      };
-    } catch (error) {
-      console.error('Error calculating houses:', error);
-    }
-    
+    const planets = await calcPlanetsAtJD(jd, se);
+
+    // VRC § 1: House System = None / Equal — the VRC relies on the Mandala (360°), not House cusps.
+    const houses: HouseSystem = {
+      system: 'None',
+      houses: Array.from({ length: 12 }, (_, i) => i * 30),
+      ascendant: 0,
+      midheaven: 0,
+    };
+
     return {
-      timestamp: fullDate.getTime(),
+      timestamp: utcDate.getTime(),
       jd,
       latitude,
       longitude,
@@ -216,6 +268,71 @@ export async function calculateBirthChart(
     console.error('Error calculating birth chart:', error);
     throw new Error(`Failed to calculate birth chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Calculate BOTH the Conscious chart (T_birth) and the Design chart (T_design)
+ * as required by the VRC Two-Timing Algorithm (§ 2).
+ *
+ * Step A — Conscious (Mind): planets at T_birth.
+ * Step B — Design (Body):    planets at T_design, where
+ *           T_design = moment the Sun was exactly 88.0000° behind its T_birth position.
+ *
+ * @returns { conscious, design } — two full BirthChart objects.
+ */
+export async function calculateBothCharts(
+  birthDate: Date,
+  birthTime: string,
+  latitude: number,
+  longitude: number,
+  timezone: number = 0
+): Promise<{ conscious: BirthChart; design: BirthChart }> {
+  const se = await initEphemeris();
+
+  const utcDate = parseBirthDateTime(birthDate, birthTime, timezone);
+  const year = utcDate.getUTCFullYear();
+  const month = utcDate.getUTCMonth() + 1;
+  const day = utcDate.getUTCDate();
+  const hour = utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600;
+
+  const consciousJD = se.julday(year, month, day, hour);
+
+  // Step A: Conscious chart
+  const consciousPlanets = await calcPlanetsAtJD(consciousJD, se);
+  const consciousSunLon = consciousPlanets['Sun']?.longitude ?? 0;
+
+  // Step B: Design chart — iterative Solar Arc search
+  const designJD = await findDesignJD(consciousJD, consciousSunLon, se);
+  const designPlanets = await calcPlanetsAtJD(designJD, se);
+
+  const noHouses: HouseSystem = {
+    system: 'None',
+    houses: Array.from({ length: 12 }, (_, i) => i * 30),
+    ascendant: 0,
+    midheaven: 0,
+  };
+
+  const conscious: BirthChart = {
+    timestamp: utcDate.getTime(),
+    jd: consciousJD,
+    latitude,
+    longitude,
+    timezone,
+    planets: consciousPlanets,
+    houses: noHouses,
+  };
+
+  const design: BirthChart = {
+    timestamp: utcDate.getTime() - Math.round((consciousJD - designJD) * 86400000),
+    jd: designJD,
+    latitude,
+    longitude,
+    timezone,
+    planets: designPlanets,
+    houses: noHouses,
+  };
+
+  return { conscious, design };
 }
 
 /**

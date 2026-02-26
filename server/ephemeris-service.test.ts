@@ -66,8 +66,9 @@ describe('Ephemeris Service', () => {
     });
 
     it('should calculate house system', async () => {
+      // VRC § 1: House System = None / Equal — the VRC uses the Mandala (360°), not House cusps.
       expect(birthChart.houses).toBeDefined();
-      expect(birthChart.houses.system).toBe('Placidus');
+      expect(birthChart.houses.system).toBe('None');
       expect(birthChart.houses.houses.length).toBe(12);
       expect(birthChart.houses.ascendant).toBeDefined();
       expect(birthChart.houses.midheaven).toBeDefined();
