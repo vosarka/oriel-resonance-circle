@@ -75,45 +75,28 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const values: InsertUser = {
-      openId: user.openId,
-    };
-    const updateSet: Record<string, unknown> = {};
+    const role = user.role ?? (user.openId === ENV.ownerOpenId ? 'admin' : undefined);
+    const now = new Date();
 
-    const textFields = ["name", "email", "loginMethod"] as const;
-    type TextField = (typeof textFields)[number];
+    // Build insert values — only include fields that were explicitly provided
+    const insertValues: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? now };
+    if (user.name !== undefined) insertValues.name = user.name ?? null;
+    if (user.email !== undefined) insertValues.email = user.email ?? null;
+    if (user.loginMethod !== undefined) insertValues.loginMethod = user.loginMethod ?? null;
+    if (user.passwordHash !== undefined) insertValues.passwordHash = user.passwordHash ?? null;
+    if (user.googleId !== undefined) insertValues.googleId = user.googleId ?? null;
+    if (role !== undefined) insertValues.role = role;
 
-    const assignNullable = (field: TextField) => {
-      const value = user[field];
-      if (value === undefined) return;
-      const normalized = value ?? null;
-      values[field] = normalized;
-      updateSet[field] = normalized;
-    };
+    // Build update set (same fields, minus openId)
+    const updateSet: Partial<typeof insertValues> = { lastSignedIn: insertValues.lastSignedIn };
+    if (user.name !== undefined) updateSet.name = insertValues.name;
+    if (user.email !== undefined) updateSet.email = insertValues.email;
+    if (user.loginMethod !== undefined) updateSet.loginMethod = insertValues.loginMethod;
+    if (user.passwordHash !== undefined) updateSet.passwordHash = insertValues.passwordHash;
+    if (user.googleId !== undefined) updateSet.googleId = insertValues.googleId;
+    if (role !== undefined) updateSet.role = insertValues.role;
 
-    textFields.forEach(assignNullable);
-
-    if (user.lastSignedIn !== undefined) {
-      values.lastSignedIn = user.lastSignedIn;
-      updateSet.lastSignedIn = user.lastSignedIn;
-    }
-    if (user.role !== undefined) {
-      values.role = user.role;
-      updateSet.role = user.role;
-    } else if (user.openId === ENV.ownerOpenId) {
-      values.role = 'admin';
-      updateSet.role = 'admin';
-    }
-
-    if (!values.lastSignedIn) {
-      values.lastSignedIn = new Date();
-    }
-
-    if (Object.keys(updateSet).length === 0) {
-      updateSet.lastSignedIn = new Date();
-    }
-
-    await db.insert(users).values(values).onDuplicateKeyUpdate({
+    await db.insert(users).values(insertValues).onDuplicateKeyUpdate({
       set: updateSet,
     });
   } catch (error) {
@@ -131,6 +114,39 @@ export async function getUserByOpenId(openId: string) {
 
   const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
 
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function setUserPasswordHash(openId: string, passwordHash: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ passwordHash }).where(eq(users.openId, openId));
+}
+
+export async function setUserGoogleId(openId: string, googleId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ googleId }).where(eq(users.openId, openId));
+}
+
+export async function getUserByGoogleId(googleId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 

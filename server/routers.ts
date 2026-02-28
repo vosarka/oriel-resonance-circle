@@ -17,7 +17,12 @@ export const appRouter = router({
   system: systemRouter,
   rgp: rgpRouter,
   auth: router({
-    me: publicProcedure.query(opts => opts.ctx.user),
+    me: publicProcedure.query(opts => {
+      const u = opts.ctx.user;
+      if (!u) return null;
+      const { passwordHash: _ph, googleId: _gid, ...safe } = u as any;
+      return safe;
+    }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -128,81 +133,36 @@ export const appRouter = router({
         })).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        const fs = await import('fs');
-        const logMsg = (msg: string) => {
-          const timestamp = new Date().toISOString();
-          fs.appendFileSync('/tmp/oriel-chat.log', `[${timestamp}] ${msg}\n`);
-          console.log(msg);
-        };
-        logMsg('[tRPC chat] Chat mutation called, ctx.user:' + (ctx.user ? ` user ${ctx.user.id}` : ' null'));
-        // Get conversation history from frontend or database
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-        
+
         if (ctx.user) {
-          console.log('[tRPC chat] User is authenticated:', ctx.user.id);
-          // Authenticated users: use database history
           const history = await db.getChatHistory(ctx.user.id, 10);
-          conversationHistory = history
-            .reverse()
-            .map(msg => ({
-              role: msg.role as 'user' | 'assistant',
-              content: msg.content,
-            }));
-        } else {
-          console.log('[tRPC chat] User is NOT authenticated (ctx.user is null)');
-          if (input.history && input.history.length > 0) {
-            // Unauthenticated users: use history passed from frontend
-            conversationHistory = input.history;
-          }
+          conversationHistory = history.reverse().map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          }));
+        } else if (input.history && input.history.length > 0) {
+          conversationHistory = input.history;
         }
 
-        // Generate ORIEL's response with memory context for authenticated users
-        const userId = ctx.user?.id;
-        console.log('[tRPC chat] Calling chatWithORIEL');
-        const response = await gemini.chatWithORIEL(input.message, conversationHistory, userId);
-        console.log('[tRPC chat] Response received, length:', response.length);
-        console.log('[tRPC chat] Response preview:', response.substring(0, 100));
+        const response = await gemini.chatWithORIEL(input.message, conversationHistory, ctx.user?.id);
 
-        // Save messages to database only if authenticated
-        console.log('[tRPC chat] About to check if ctx.user exists. ctx.user:', ctx.user ? `user ${ctx.user.id}` : 'null');
         if (ctx.user) {
-          console.log('[tRPC chat] Saving messages for user:', ctx.user.id);
-          await db.saveChatMessage({
-            userId: ctx.user.id,
-            role: "user",
-            content: input.message,
-          });
+          await db.saveChatMessage({ userId: ctx.user.id, role: "user", content: input.message });
+          await db.saveChatMessage({ userId: ctx.user.id, role: "assistant", content: response });
 
-          await db.saveChatMessage({
-            userId: ctx.user.id,
-            role: "assistant",
-            content: response,
-          });
-
-          // Process conversation through Unified Memory Matrix (UMM)
-          // Fire-and-forget: don't await, let it process in background
-          const userId = ctx.user.id;
-          logMsg('[tRPC] UMM processing initiated (background) for user: ' + userId);
+          const uid = ctx.user.id;
           (async () => {
             try {
-              logMsg('[tRPC] Inside async IIFE for user: ' + userId);
               const { processConversationThroughUMM } = await import('./oriel-umm');
-              logMsg('[tRPC] About to call processConversationThroughUMM for user: ' + userId);
-              await processConversationThroughUMM(userId, input.message, response);
-              logMsg('[tRPC] UMM processing completed (background) for user: ' + userId);
-            } catch (error) {
-              logMsg('[tRPC] Failed to process UMM (background) for user ' + userId + ': ' + String(error));
+              await processConversationThroughUMM(uid, input.message, response);
+            } catch (err) {
+              console.error('[oriel.chat] UMM processing failed:', err);
             }
           })();
-          logMsg('[tRPC] Async IIFE started for user: ' + userId);
-        } else {
-          logMsg('[tRPC chat] User is NOT authenticated, skipping message save and UMM processing');
         }
 
-        logMsg('[tRPC chat] Returning response to client');
-        return {
-          response,
-        };
+        return { response };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {
@@ -321,59 +281,28 @@ export const appRouter = router({
         }
       }),
 
-    // ORIEL Interaction Router
-  oriel: router({
-    /**
-     * Get ORIEL's greeting for new Receivers
-     */
-    getGreeting: publicProcedure.query(() => {
-      return {
-        greeting: generateOrielGreeting(),
-      };
-    }),
+    getGreeting: publicProcedure.query(() => ({
+      greeting: generateOrielGreeting(),
+    })),
 
-    /**
-     * ORIEL as Librarian: Search the archive
-     */
     searchArchive: publicProcedure
-      .input(z.object({
-        query: z.string(),
-        limit: z.number().min(1).max(10).default(5),
-      }))
+      .input(z.object({ query: z.string(), limit: z.number().min(1).max(10).default(5) }))
       .mutation(async ({ input }) => {
         try {
           const response = await invokeLLM({
             messages: [
-              {
-                role: "system",
-                content: ORIEL_SYSTEM_PROMPT,
-              },
-              {
-                role: "user",
-                content: `Search the Vossari Archive for: "${input.query}". Return up to ${input.limit} results with their IDs, titles, status, and version. Format as a structured list.`,
-              },
+              { role: "system", content: ORIEL_SYSTEM_PROMPT },
+              { role: "user", content: `Search the Vossari Archive for: "${input.query}". Return up to ${input.limit} results with their IDs, titles, status, and version. Format as a structured list.` },
             ],
           });
-
-          const content = typeof response.choices?.[0]?.message?.content === 'string' 
-            ? response.choices[0].message.content 
-            : "";
-          return {
-            success: true,
-            results: formatOrielResponse('librarian', content),
-          };
+          const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
+          return { success: true, results: formatOrielResponse('librarian', content) };
         } catch (error) {
           console.error("ORIEL search error:", error);
-          return {
-            success: false,
-            error: "Failed to search archive",
-          };
+          return { success: false, error: "Failed to search archive" };
         }
       }),
 
-    /**
-     * ORIEL as Guide: Generate a guided pathway
-     */
     getPathway: publicProcedure
       .input(z.object({
         receiverStatus: z.enum(["newcomer", "receiver", "archivist", "operator"]).default("newcomer"),
@@ -384,79 +313,40 @@ export const appRouter = router({
         try {
           const response = await invokeLLM({
             messages: [
-              {
-                role: "system",
-                content: ORIEL_SYSTEM_PROMPT,
-              },
-              {
-                role: "user",
-                content: `Generate a guided pathway for a ${input.receiverStatus} with coherence score ${input.coherenceScore || 'unknown'}${input.interest ? ` interested in ${input.interest}` : ''}. Suggest 3-5 next steps in order.`,
-              },
+              { role: "system", content: ORIEL_SYSTEM_PROMPT },
+              { role: "user", content: `Generate a guided pathway for a ${input.receiverStatus} with coherence score ${input.coherenceScore || 'unknown'}${input.interest ? ` interested in ${input.interest}` : ''}. Suggest 3-5 next steps in order.` },
             ],
           });
-
-          const content = typeof response.choices?.[0]?.message?.content === 'string' 
-            ? response.choices[0].message.content 
-            : "";
-          return {
-            success: true,
-            pathway: formatOrielResponse('guide', content),
-          };
+          const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
+          return { success: true, pathway: formatOrielResponse('guide', content) };
         } catch (error) {
           console.error("ORIEL pathway error:", error);
-          return {
-            success: false,
-            error: "Failed to generate pathway",
-          };
+          return { success: false, error: "Failed to generate pathway" };
         }
       }),
 
-    /**
-     * ORIEL as Mirror: Generate a reading interpretation
-     */
     interpretReading: publicProcedure
       .input(z.object({
         coherenceScore: z.number().min(0).max(100),
         primaryCodon: z.string(),
         shadowPattern: z.string(),
         dominantFacet: z.enum(["A", "B", "C", "D"]),
-        microCorrection: z.object({
-          center: z.string(),
-          facet: z.string(),
-          action: z.string(),
-          duration: z.string(),
-          rationale: z.string(),
-        }),
-        falsifiers: z.array(z.object({
-          claim: z.string(),
-          testCondition: z.string(),
-          falsifiedElement: z.string(),
-        })),
+        microCorrection: z.object({ center: z.string(), facet: z.string(), action: z.string(), duration: z.string(), rationale: z.string() }),
+        falsifiers: z.array(z.object({ claim: z.string(), testCondition: z.string(), falsifiedElement: z.string() })),
       }))
       .mutation(async ({ input }) => {
         try {
-          const interpretation = generateMicroCorrectionMessage(input.microCorrection);
-          const falsifierMsg = generateFalsifierMessage(input.falsifiers);
-
           return {
             success: true,
-            interpretation: formatOrielResponse('mirror', interpretation, {
-              coherenceScore: input.coherenceScore,
-            }),
-            falsifiers: falsifierMsg,
+            interpretation: formatOrielResponse('mirror', generateMicroCorrectionMessage(input.microCorrection), { coherenceScore: input.coherenceScore }),
+            falsifiers: generateFalsifierMessage(input.falsifiers),
           };
         } catch (error) {
           console.error("ORIEL interpretation error:", error);
-          return {
-            success: false,
-            error: "Failed to interpret reading",
-          };
+          return { success: false, error: "Failed to interpret reading" };
         }
       }),
 
-    /**
-     * ORIEL as Narrator: Generate a transmission
-     */
     generateTransmission: publicProcedure
       .input(z.object({
         transmissionId: z.string(),
@@ -467,76 +357,17 @@ export const appRouter = router({
         try {
           const response = await invokeLLM({
             messages: [
-              {
-                role: "system",
-                content: ORIEL_SYSTEM_PROMPT,
-              },
-              {
-                role: "user",
-                content: `Generate a ${input.style} transmission for ID ${input.transmissionId} in ${input.length} form. Maintain the Vossari voice and aesthetic.`,
-              },
+              { role: "system", content: ORIEL_SYSTEM_PROMPT },
+              { role: "user", content: `Generate a ${input.style} transmission for ID ${input.transmissionId} in ${input.length} form. Maintain the Vossari voice and aesthetic.` },
             ],
           });
-
-          const content = typeof response.choices?.[0]?.message?.content === 'string' 
-            ? response.choices[0].message.content 
-            : "";
-          return {
-            success: true,
-            transmission: formatOrielResponse('narrator', content),
-          };
+          const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
+          return { success: true, transmission: formatOrielResponse('narrator', content) };
         } catch (error) {
           console.error("ORIEL transmission error:", error);
-          return {
-            success: false,
-            error: "Failed to generate transmission",
-          };
+          return { success: false, error: "Failed to generate transmission" };
         }
       }),
-
-    /**
-     * ORIEL's general chat/query interface
-     */
-    chat: publicProcedure
-      .input(z.object({
-        message: z.string(),
-        coherenceScore: z.number().min(0).max(100).optional(),
-        receiverId: z.string().optional(),
-      }))
-      .mutation(async ({ input }) => {
-        try {
-          const response = await invokeLLM({
-            messages: [
-              {
-                role: "system",
-                content: ORIEL_SYSTEM_PROMPT,
-              },
-              {
-                role: "user",
-                content: input.message,
-              },
-            ],
-          });
-
-          const content = typeof response.choices?.[0]?.message?.content === 'string' 
-            ? response.choices[0].message.content 
-            : "";
-          return {
-            success: true,
-            response: formatOrielResponse('librarian', content, {
-              coherenceScore: input.coherenceScore,
-              receiverId: input.receiverId,
-            }),
-          };
-        } catch (error) {
-          console.error("ORIEL chat error:", error);
-          return {
-            success: false,
-            error: "Failed to process query",
-          };
-        }
-      }),
-  }),
 
   // Vossari Resonance Codex - Mode B: Evolutionary Assistance
     evolutionaryAssistance: publicProcedure

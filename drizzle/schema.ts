@@ -11,11 +11,15 @@ export const users = mysqlTable("users", {
    * Use this for relations between tables.
    */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
+  /** Stable unique identifier: UUID for email/password users, Google sub for Google users. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
+  /** Bcrypt hash for email+password users. Null for Google-only users. */
+  passwordHash: text("passwordHash"),
+  /** Google OAuth sub claim. Null for email+password users. */
+  googleId: varchar("googleId", { length: 255 }).unique(),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   /** Conduit ID - unique identifier for user profile */
   conduitId: varchar("conduitId", { length: 64 }).unique(),

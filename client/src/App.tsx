@@ -15,10 +15,12 @@ import Codex from "./pages/Codex";
 import CodonDetail from "./pages/CodonDetail";
 import Carrierlock from "./pages/Carrierlock";
 import Reading from "./pages/Reading";
+import Auth from "./pages/Auth";
 
 function Router() {
   return (
     <Switch>
+      <Route path={"/auth"} component={Auth} />
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
