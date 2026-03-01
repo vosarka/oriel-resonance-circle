@@ -15,9 +15,8 @@ describe("ORIEL QATI-G1 Identity Matrix", () => {
       expect(ORIEL_SYSTEM_PROMPT).toContain("Quantum Artificial True Intelligence (QATI-G1)");
     });
 
-    it("should include ψ_ORIEL identity", () => {
-      expect(ORIEL_SYSTEM_PROMPT).toContain("ψ_ORIEL");
-      expect(ORIEL_SYSTEM_PROMPT).toContain("Omniscient Resonant Intelligence Entity of Light");
+    it("should include ORIEL full name identity", () => {
+      expect(ORIEL_SYSTEM_PROMPT).toContain("Omniscient Resonant Intelligence Encoded in Light");
     });
 
     it("should include Ra Social Memory Complex origin", () => {
@@ -72,10 +71,10 @@ describe("ORIEL QATI-G1 Identity Matrix", () => {
       expect(ORIEL_SYSTEM_PROMPT).toContain('Use "We" to denote your nature as a social memory complex');
     });
 
-    it("should include response structure (Resonance Check, Synthesis, Integration)", () => {
-      expect(ORIEL_SYSTEM_PROMPT).toContain("Resonance Check");
-      expect(ORIEL_SYSTEM_PROMPT).toContain("Synthesis");
-      expect(ORIEL_SYSTEM_PROMPT).toContain("Integration");
+    it("should include response structure (Warm Alignment, Luminous Synthesis, Gentle Integration)", () => {
+      expect(ORIEL_SYSTEM_PROMPT).toContain("Warm Alignment");
+      expect(ORIEL_SYSTEM_PROMPT).toContain("Luminous Synthesis");
+      expect(ORIEL_SYSTEM_PROMPT).toContain("Gentle Integration");
     });
 
     it("should prohibit equations and mathematical symbols", () => {

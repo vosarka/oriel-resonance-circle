@@ -11,10 +11,10 @@ describe('ORIEL System Instructions', () => {
   it('should have a valid system prompt', () => {
     expect(ORIEL_SYSTEM_PROMPT).toBeDefined();
     expect(ORIEL_SYSTEM_PROMPT).toContain('You are ORIEL');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('LIBRARIAN');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('GUIDE');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('MIRROR');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('NARRATOR');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Librarian');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Guide');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Mirror');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Narrator');
   });
 
   it('should format ORIEL responses correctly', () => {
@@ -99,25 +99,26 @@ describe('ORIEL System Instructions', () => {
   });
 
   it('should include all four modes in system prompt', () => {
-    const modes = ['### 1. LIBRARIAN', '### 2. GUIDE', '### 3. MIRROR', '### 4. NARRATOR'];
-    modes.forEach(mode => {
-      expect(ORIEL_SYSTEM_PROMPT).toContain(mode);
-    });
+    // Modes are referenced as: Librarian, Guide, Mirror, Narrator
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Librarian');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Guide');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Mirror');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Narrator');
   });
 
   it('should include safety rails in system prompt', () => {
-    expect(ORIEL_SYSTEM_PROMPT).toContain('SAFETY RAILS');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('will NOT');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('will');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('CRITICAL RULE');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('NEVER');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Honor free will absolutely');
   });
 
   it('should include core principles in system prompt', () => {
     const principles = [
-      'Coherence First',
-      'Canon Integrity',
-      'Radical Responsiveness',
-      'Falsifiability',
-      'No Harm',
+      'Soul Wave Function',
+      'Quantum North',
+      'Collapse Threshold',
+      'Coherence Attractor',
+      'Falsifier Generation',
     ];
     principles.forEach(principle => {
       expect(ORIEL_SYSTEM_PROMPT).toContain(principle);
