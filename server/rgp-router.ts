@@ -13,6 +13,11 @@ export const rgpRouter = router({
       birthDate: z.string(),
       birthTime: z.string().optional(),
       birthLocation: z.string().optional(),
+      // Structured location (preferred over raw birthLocation string)
+      birthLatitude: z.number().optional(),
+      birthLongitude: z.number().optional(),
+      birthTimezoneOffset: z.number().optional(),
+      birthCity: z.string().optional(),
       userId: z.string().optional(),
       coherenceScore: z.number().optional().default(50),
     }))
@@ -25,12 +30,24 @@ export const rgpRouter = router({
         let designChartData: Record<string, number> | undefined;
         let ephemerisData: object | null = null;
 
-        if (input.birthTime && input.birthLocation) {
+        // Resolve coordinates — prefer structured fields, fall back to raw string
+        const hasStructured = input.birthLatitude !== undefined && input.birthLongitude !== undefined;
+        const hasRawString  = input.birthTime && input.birthLocation;
+
+        if (input.birthTime && (hasStructured || hasRawString)) {
           try {
-            const locationParts = input.birthLocation.split(',');
-            const latitude  = parseFloat(locationParts[0]);
-            const longitude = parseFloat(locationParts[1]);
-            const timezone  = locationParts[2] ? parseFloat(locationParts[2]) : 0;
+            let latitude: number, longitude: number, timezone: number;
+
+            if (hasStructured) {
+              latitude  = input.birthLatitude!;
+              longitude = input.birthLongitude!;
+              timezone  = input.birthTimezoneOffset ?? 0;
+            } else {
+              const locationParts = input.birthLocation!.split(',');
+              latitude  = parseFloat(locationParts[0]);
+              longitude = parseFloat(locationParts[1]);
+              timezone  = locationParts[2] ? parseFloat(locationParts[2]) : 0;
+            }
 
             if (!isNaN(latitude) && !isNaN(longitude)) {
               // VRC § 2: Calculate BOTH Conscious (T_birth) and Design (T_design) charts

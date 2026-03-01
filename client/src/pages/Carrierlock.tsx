@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Loader2, ArrowRight, Calendar, Zap, Info } from "lucide-react";
+import { Loader2, ArrowRight, Calendar, Zap, Info, MapPin, CheckCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import BreathProtocol from "@/components/BreathProtocol";
@@ -24,7 +24,15 @@ export default function Carrierlock() {
   // Static Signature fields (birth data)
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
-  const [birthLocation, setBirthLocation] = useState("");
+  const [birthCity, setBirthCity] = useState("");
+  const [resolveQuery, setResolveQuery] = useState("");
+  const [resolvedLocation, setResolvedLocation] = useState<{
+    displayName: string;
+    latitude: number;
+    longitude: number;
+    tzId: string;
+    offsetHours: number;
+  } | null>(null);
   
   // Dynamic State fields (current moment)
   const [mentalNoise, setMentalNoise] = useState(5);
@@ -39,6 +47,18 @@ export default function Carrierlock() {
   // New RGP endpoints
   const staticSignatureMutation = trpc.rgp.staticSignature.useMutation();
   const dynamicStateMutation = trpc.rgp.dynamicState.useMutation();
+
+  // Geocoding — fires only when resolveQuery is set (button click)
+  const geocodeQuery = trpc.geo.geocode.useQuery(
+    { city: resolveQuery },
+    { enabled: resolveQuery.length > 0 }
+  );
+
+  useEffect(() => {
+    if (geocodeQuery.data) {
+      setResolvedLocation(geocodeQuery.data);
+    }
+  }, [geocodeQuery.data]);
 
   // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
   const coherenceScore = Math.max(
@@ -78,7 +98,10 @@ export default function Carrierlock() {
         const result = await staticSignatureMutation.mutateAsync({
           birthDate,
           birthTime: birthTime || undefined,
-          birthLocation: birthLocation || undefined,
+          birthCity: resolvedLocation?.displayName || birthCity || undefined,
+          birthLatitude: resolvedLocation?.latitude,
+          birthLongitude: resolvedLocation?.longitude,
+          birthTimezoneOffset: resolvedLocation?.offsetHours,
           userId: String(user?.id || "anonymous"),
           coherenceScore,
         });
@@ -310,14 +333,61 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
                   </div>
                   <div>
                     <label className="text-sm text-zinc-400 mb-1 block">Birth Location (optional)</label>
-                    <Input
-                      type="text"
-                      value={birthLocation}
-                      onChange={(e) => setBirthLocation(e.target.value)}
-                      placeholder="latitude,longitude,timezone (e.g., 40.7128,-74.0060,-5)"
-                      className="bg-zinc-800 border-zinc-700"
-                    />
-                    <p className="text-xs text-zinc-500 mt-1">Format: latitude (N/S), longitude (E/W), timezone offset (hours)</p>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={birthCity}
+                        onChange={(e) => {
+                          setBirthCity(e.target.value);
+                          if (resolvedLocation) setResolvedLocation(null);
+                          if (resolveQuery) setResolveQuery("");
+                        }}
+                        placeholder="e.g. London, UK"
+                        className="bg-zinc-800 border-zinc-700 flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={!birthCity.trim() || geocodeQuery.isFetching}
+                        onClick={() => {
+                          setResolvedLocation(null);
+                          setResolveQuery(birthCity.trim());
+                        }}
+                        className="border-zinc-600 text-zinc-300 hover:text-white shrink-0"
+                      >
+                        {geocodeQuery.isFetching ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <MapPin className="w-4 h-4 mr-1" />
+                        )}
+                        {geocodeQuery.isFetching ? "Resolving…" : "Resolve"}
+                      </Button>
+                    </div>
+
+                    {/* Confirmed location chip */}
+                    {resolvedLocation && (
+                      <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-emerald-950/40 border border-emerald-800/50">
+                        <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
+                        <div className="text-xs text-emerald-300 leading-relaxed">
+                          <p className="font-medium">{resolvedLocation.displayName}</p>
+                          <p className="text-emerald-400/70 mt-0.5">
+                            {resolvedLocation.latitude.toFixed(4)}° · {resolvedLocation.longitude.toFixed(4)}° · {resolvedLocation.tzId} (UTC{resolvedLocation.offsetHours >= 0 ? "+" : ""}{resolvedLocation.offsetHours})
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Geocoding error */}
+                    {geocodeQuery.isError && (
+                      <p className="text-xs text-red-400 mt-1">
+                        Could not find that location. Try a more specific name (e.g. "Paris, France").
+                      </p>
+                    )}
+
+                    <p className="text-xs text-zinc-500 mt-1">
+                      Enter a city name and click Resolve to set coordinates automatically.
+                    </p>
                   </div>
                   
                   <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">

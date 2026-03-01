@@ -10,12 +10,24 @@ import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel
 import { generateElevenLabsSpeech, audioToDataUrl } from "./elevenlabs-tts";
 import { generateChunkedSpeech } from "./elevenlabs-chunked";
 import { rgpRouter } from "./rgp-router";
+import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
   system: systemRouter,
   rgp: rgpRouter,
+
+  geo: router({
+    geocode: publicProcedure
+      .input(z.object({ city: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const { displayName, latitude, longitude } = await geocodeCity(input.city);
+        const { tzId, offsetHours } = getTimezoneForCoords(latitude, longitude, new Date());
+        return { displayName, latitude, longitude, tzId, offsetHours };
+      }),
+  }),
+
   auth: router({
     me: publicProcedure.query(opts => {
       const u = opts.ctx.user;
