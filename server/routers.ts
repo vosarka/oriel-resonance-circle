@@ -619,7 +619,10 @@ export const appRouter = router({
       .input(z.object({ readingId: z.string() }))
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("User not authenticated");
-        return db.getStaticSignature(input.readingId);
+        const sig = await db.getStaticSignature(input.readingId);
+        if (!sig) return null;
+        if (sig.userId !== ctx.user.id) throw new Error("Unauthorized");
+        return sig;
       }),
 
     // Get a static signature by numeric ID
@@ -627,7 +630,10 @@ export const appRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("User not authenticated");
-        return db.getStaticSignatureById(input.id);
+        const sig = await db.getStaticSignatureById(input.id);
+        if (!sig) return null;
+        if (sig.userId !== ctx.user.id) throw new Error("Unauthorized");
+        return sig;
       }),
 
     // Get all static signatures for current user
