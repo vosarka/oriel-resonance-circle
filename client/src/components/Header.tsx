@@ -16,6 +16,7 @@ export default function Header() {
     { href: "/artifacts", label: "ARTIFACTS" },
     { href: "/protocol", label: "PROTOCOL" },
     { href: "/conduit", label: "INTERFACE" },
+    { href: "/readings", label: "READINGS" },
   ];
 
   const isActive = (href: string) => {

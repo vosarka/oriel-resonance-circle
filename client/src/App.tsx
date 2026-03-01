@@ -15,6 +15,7 @@ import Codex from "./pages/Codex";
 import CodonDetail from "./pages/CodonDetail";
 import Carrierlock from "./pages/Carrierlock";
 import Reading from "./pages/Reading";
+import Readings from "./pages/Readings";
 import StaticReading from "./pages/StaticReading";
 import Auth from "./pages/Auth";
 
@@ -31,6 +32,7 @@ function Router() {
       <Route path={"/codex"} component={Codex} />
       <Route path={"/codex/:id"} component={CodonDetail} />
       <Route path={"/carrierlock"} component={Carrierlock} />
+      <Route path={"/readings"} component={Readings} />
       <Route path={"/reading/static/:readingId"} component={StaticReading} />
       <Route path={"/reading/:id"} component={Reading} />
       <Route path={"/profile"} component={Profile} />
