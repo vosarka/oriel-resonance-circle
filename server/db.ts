@@ -1,6 +1,6 @@
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -477,4 +477,156 @@ export async function markCorrectionCompleted(readingId: number) {
     console.error("[Database] Failed to mark correction completed:", error);
     throw error;
   }
+}
+
+
+// ============================================================================
+// STATIC SIGNATURES - STRUCTURED RGP BIRTH-CHART STORAGE
+// ============================================================================
+
+/**
+ * Save a full static signature reading with structured RGP data
+ */
+export async function saveStaticSignature(
+  userId: number,
+  data: {
+    carrierlockId?: number;
+    readingId: string;
+    birthDate: string;
+    birthTime: string;
+    birthCity: string;
+    birthCountry: string;
+    latitude: number;
+    longitude: number;
+    timezoneId?: string;
+    timezoneOffset?: number;
+    primeStack?: unknown;
+    ninecenters?: unknown;
+    fractalRole?: string;
+    authorityNode?: string;
+    vrcType?: string;
+    vrcAuthority?: string;
+    circuitLinks?: unknown;
+    baseCoherence?: number;
+    coherenceTrajectory?: unknown;
+    microCorrections?: unknown;
+    ephemerisData?: unknown;
+    houses?: unknown;
+    diagnosticTransmission?: string;
+  }
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    await db.insert(staticSignatures).values({
+      userId,
+      carrierlockId: data.carrierlockId ?? null,
+      readingId: data.readingId,
+      birthDate: data.birthDate,
+      birthTime: data.birthTime,
+      birthCity: data.birthCity,
+      birthCountry: data.birthCountry,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      timezoneId: data.timezoneId ?? null,
+      timezoneOffset: data.timezoneOffset ?? null,
+      primeStack: data.primeStack ? JSON.stringify(data.primeStack) : null,
+      ninecenters: data.ninecenters ? JSON.stringify(data.ninecenters) : null,
+      fractalRole: data.fractalRole ?? null,
+      authorityNode: data.authorityNode ?? null,
+      vrcType: data.vrcType ?? null,
+      vrcAuthority: data.vrcAuthority ?? null,
+      circuitLinks: data.circuitLinks ? JSON.stringify(data.circuitLinks) : null,
+      baseCoherence: data.baseCoherence ?? null,
+      coherenceTrajectory: data.coherenceTrajectory ? JSON.stringify(data.coherenceTrajectory) : null,
+      microCorrections: data.microCorrections ? JSON.stringify(data.microCorrections) : null,
+      ephemerisData: data.ephemerisData ? JSON.stringify(data.ephemerisData) : null,
+      houses: data.houses ? JSON.stringify(data.houses) : null,
+      diagnosticTransmission: data.diagnosticTransmission ?? null,
+    });
+
+    const inserted = await db.select().from(staticSignatures)
+      .where(eq(staticSignatures.readingId, data.readingId))
+      .limit(1);
+
+    return { id: inserted[0]?.id || 0 };
+  } catch (error) {
+    console.error("[Database] Failed to save static signature:", error);
+    throw error;
+  }
+}
+
+/**
+ * Get a static signature by its reading ID
+ */
+export async function getStaticSignature(readingId: string) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.select().from(staticSignatures)
+      .where(eq(staticSignatures.readingId, readingId))
+      .limit(1);
+
+    if (!result[0]) return null;
+    return parseStaticSignatureRow(result[0]);
+  } catch (error) {
+    console.error("[Database] Failed to get static signature:", error);
+    return null;
+  }
+}
+
+/**
+ * Get a static signature by its numeric ID
+ */
+export async function getStaticSignatureById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.select().from(staticSignatures)
+      .where(eq(staticSignatures.id, id))
+      .limit(1);
+
+    if (!result[0]) return null;
+    return parseStaticSignatureRow(result[0]);
+  } catch (error) {
+    console.error("[Database] Failed to get static signature by ID:", error);
+    return null;
+  }
+}
+
+/**
+ * Get all static signatures for a user
+ */
+export async function getUserStaticSignatures(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+
+  try {
+    const results = await db.select().from(staticSignatures)
+      .where(eq(staticSignatures.userId, userId))
+      .orderBy(desc(staticSignatures.createdAt))
+      .limit(50);
+
+    return results.map(parseStaticSignatureRow);
+  } catch (error) {
+    console.error("[Database] Failed to get user static signatures:", error);
+    return [];
+  }
+}
+
+/** Parse JSON text columns back into objects */
+function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
+  return {
+    ...row,
+    primeStack: row.primeStack ? JSON.parse(row.primeStack) : null,
+    ninecenters: row.ninecenters ? JSON.parse(row.ninecenters) : null,
+    circuitLinks: row.circuitLinks ? JSON.parse(row.circuitLinks) : null,
+    coherenceTrajectory: row.coherenceTrajectory ? JSON.parse(row.coherenceTrajectory) : null,
+    microCorrections: row.microCorrections ? JSON.parse(row.microCorrections) : null,
+    ephemerisData: row.ephemerisData ? JSON.parse(row.ephemerisData) : null,
+    houses: row.houses ? JSON.parse(row.houses) : null,
+  };
 }

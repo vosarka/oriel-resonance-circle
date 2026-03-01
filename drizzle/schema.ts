@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+import { int, double, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -297,3 +297,51 @@ export const codonReadings = mysqlTable("codonReadings", {
 
 export type CodonReading = typeof codonReadings.$inferSelect;
 export type InsertCodonReading = typeof codonReadings.$inferInsert;
+
+/**
+ * Static Signatures - Structured storage for full RGP birth-chart readings
+ * Replaces the text-serialized approach in codonReadings for static data
+ */
+export const staticSignatures = mysqlTable("staticSignatures", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  carrierlockId: int("carrierlockId"),
+  /** Unique reading identifier: sig-{userId}-{timestamp} */
+  readingId: varchar("readingId", { length: 128 }).notNull().unique(),
+  // Birth data
+  birthDate: varchar("birthDate", { length: 32 }).notNull(),
+  birthTime: varchar("birthTime", { length: 32 }).notNull(),
+  birthCity: varchar("birthCity", { length: 255 }).notNull(),
+  birthCountry: varchar("birthCountry", { length: 255 }).notNull(),
+  // Resolved geolocation
+  latitude: double("latitude").notNull(),
+  longitude: double("longitude").notNull(),
+  timezoneId: varchar("timezoneId", { length: 128 }),
+  timezoneOffset: double("timezoneOffset"),
+  // RGP Engine Output (JSON columns stored as text)
+  /** Full 9-position Prime Stack array */
+  primeStack: text("primeStack"),
+  /** 9-Centers activation map */
+  ninecenters: text("ninecenters"),
+  fractalRole: varchar("fractalRole", { length: 128 }),
+  authorityNode: varchar("authorityNode", { length: 128 }),
+  vrcType: varchar("vrcType", { length: 128 }),
+  vrcAuthority: varchar("vrcAuthority", { length: 128 }),
+  /** Circuit activation links (JSON) */
+  circuitLinks: text("circuitLinks"),
+  baseCoherence: int("baseCoherence"),
+  /** Coherence trajectory data (JSON) */
+  coherenceTrajectory: text("coherenceTrajectory"),
+  /** Micro-correction recommendations (JSON) */
+  microCorrections: text("microCorrections"),
+  /** Raw planetary positions from ephemeris (JSON) */
+  ephemerisData: text("ephemerisData"),
+  /** House cusps, ASC, MC (JSON) */
+  houses: text("houses"),
+  /** ORIEL's diagnostic narration */
+  diagnosticTransmission: text("diagnosticTransmission"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StaticSignature = typeof staticSignatures.$inferSelect;
+export type InsertStaticSignature = typeof staticSignatures.$inferInsert;

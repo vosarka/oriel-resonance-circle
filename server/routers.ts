@@ -569,6 +569,60 @@ export const appRouter = router({
         await db.markCorrectionCompleted(input.readingId);
         return { success: true };
       }),
+
+    // Save a full static signature reading (structured RGP data)
+    saveStaticReading: protectedProcedure
+      .input(z.object({
+        carrierlockId: z.number().optional(),
+        readingId: z.string(),
+        birthDate: z.string(),
+        birthTime: z.string(),
+        birthCity: z.string(),
+        birthCountry: z.string(),
+        latitude: z.number(),
+        longitude: z.number(),
+        timezoneId: z.string().optional(),
+        timezoneOffset: z.number().optional(),
+        primeStack: z.unknown().optional(),
+        ninecenters: z.unknown().optional(),
+        fractalRole: z.string().optional(),
+        authorityNode: z.string().optional(),
+        vrcType: z.string().optional(),
+        vrcAuthority: z.string().optional(),
+        circuitLinks: z.unknown().optional(),
+        baseCoherence: z.number().optional(),
+        coherenceTrajectory: z.unknown().optional(),
+        microCorrections: z.unknown().optional(),
+        ephemerisData: z.unknown().optional(),
+        houses: z.unknown().optional(),
+        diagnosticTransmission: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        return db.saveStaticSignature(ctx.user.id, input);
+      }),
+
+    // Get a static signature by reading ID
+    getStaticReading: protectedProcedure
+      .input(z.object({ readingId: z.string() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        return db.getStaticSignature(input.readingId);
+      }),
+
+    // Get a static signature by numeric ID
+    getStaticReadingById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        return db.getStaticSignatureById(input.id);
+      }),
+
+    // Get all static signatures for current user
+    getStaticReadings: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("User not authenticated");
+      return db.getUserStaticSignatures(ctx.user.id);
+    }),
   }),
 
   // PayPal webhook handler
