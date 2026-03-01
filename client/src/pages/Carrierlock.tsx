@@ -43,7 +43,8 @@ export default function Carrierlock() {
   // Mutations
   const saveCarrierlockMutation = trpc.codex.saveCarrierlock.useMutation();
   const saveReadingMutation = trpc.codex.saveReading.useMutation();
-  
+  const saveStaticReadingMutation = trpc.codex.saveStaticReading.useMutation();
+
   // New RGP endpoints
   const staticSignatureMutation = trpc.rgp.staticSignature.useMutation();
   const dynamicStateMutation = trpc.rgp.dynamicState.useMutation();
@@ -108,89 +109,32 @@ export default function Carrierlock() {
 
         if (result.success && result.data) {
           const data = result.data;
-          
-          // Save carrierlock state (minimal for static readings)
-          const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-            mentalNoise: 0,
-            bodyTension: 0,
-            emotionalTurbulence: 0,
-            breathCompletion: true,
+
+          await saveStaticReadingMutation.mutateAsync({
+            readingId: data.readingId,
+            birthDate,
+            birthTime: birthTime || "",
+            birthCity: resolvedLocation?.displayName ?? birthCity ?? "",
+            birthCountry: "",
+            latitude: resolvedLocation?.latitude ?? 0,
+            longitude: resolvedLocation?.longitude ?? 0,
+            timezoneId: resolvedLocation?.tzId,
+            timezoneOffset: resolvedLocation?.offsetHours,
+            primeStack: data.primeStack,
+            ninecenters: data.ninecenters,
+            fractalRole: data.fractalRole,
+            authorityNode: data.authorityNode,
+            vrcType: data.vrcType,
+            vrcAuthority: data.vrcAuthority,
+            circuitLinks: data.circuitLinks,
+            baseCoherence: data.baseCoherence,
+            coherenceTrajectory: data.coherenceTrajectory,
+            microCorrections: data.microCorrections,
+            ephemerisData: data.ephemerisData,
+            diagnosticTransmission: data.diagnosticTransmission,
           });
 
-          // Format flagged codons from Prime Stack
-          const flaggedCodons = data.primeStack.map(p => p.codonId);
-          const sliScores: Record<string, number> = {};
-          const activeFacets: Record<string, string> = {};
-          const confidenceLevels: Record<string, number> = {};
-          
-          data.primeStack.forEach(p => {
-            sliScores[p.codonId] = p.weightedFrequency;
-            activeFacets[p.codonId] = p.facet;
-            confidenceLevels[p.codonId] = 0.95; // High confidence for static readings
-          });
-
-          // Generate reading text from the new engine format
-          const birthDateObj = new Date(birthDate);
-          const formattedDate = birthDateObj.toLocaleDateString('en-US', { 
-            year: 'numeric', month: 'long', day: 'numeric' 
-          });
-          
-          const readingText = `YOUR STATIC SIGNATURE
-Reading ID: ${data.readingId}
-Encoded: ${formattedDate}
-Coherence: ${data.baseCoherence}/100
-
-═══════════════════════════════════════════════════════════
-
-FRACTAL PROFILE
-Role: ${data.fractalRole}
-Authority: ${data.authorityNode}
-
-═══════════════════════════════════════════════════════════
-
-PRIME STACK (9 Positions)
-${data.primeStack.map(p => `• Position ${p.position}: ${p.codonName} (${p.codonId}) - Facet ${p.facet}`).join('\n')}
-
-═══════════════════════════════════════════════════════════
-
-9-CENTER RESONANCE MAP
-${Object.entries(data.ninecenters).map(([center, info]) => `• Center ${center}: ${info.centerName} (${info.codon256Id})`).join('\n')}
-
-═══════════════════════════════════════════════════════════
-
-CIRCUIT LINKS
-${data.circuitLinks.length > 0 ? data.circuitLinks.map(link => `• ${link}`).join('\n') : 'No active circuits detected'}
-
-═══════════════════════════════════════════════════════════
-
-MICRO-CORRECTIONS
-${data.microCorrections.map((mc, i) => `${i + 1}. ${mc.type}: ${mc.instruction}\n   Falsifier: ${mc.falsifier}`).join('\n\n')}
-
-═══════════════════════════════════════════════════════════
-
-COHERENCE TRAJECTORY
-Current: ${data.coherenceTrajectory.current}/100
-Trend: ${data.coherenceTrajectory.trend}
-
-═══════════════════════════════════════════════════════════
-
-ORIEL TRANSMISSION
-${data.diagnosticTransmission}`;
-
-          // Save the reading
-          const savedReading = await saveReadingMutation.mutateAsync({
-            carrierlockId: carrierlockResult.id,
-            readingText,
-            flaggedCodons,
-            sliScores,
-            activeFacets,
-            confidenceLevels,
-            microCorrection: data.microCorrections[0]?.instruction,
-            correctionFacet: undefined,
-            falsifier: data.microCorrections.map(mc => mc.falsifier).join('; '),
-          });
-          
-          setLocation(`/reading/${savedReading.id}`);
+          setLocation(`/reading/static/${data.readingId}`);
         }
       } else {
         // Dynamic State reading using new RGP engine
@@ -237,10 +181,11 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
     }
   };
 
-  const isLoading = saveCarrierlockMutation.isPending || 
-                    staticSignatureMutation.isPending || 
-                    dynamicStateMutation.isPending || 
-                    saveReadingMutation.isPending;
+  const isLoading = saveCarrierlockMutation.isPending ||
+                    staticSignatureMutation.isPending ||
+                    dynamicStateMutation.isPending ||
+                    saveReadingMutation.isPending ||
+                    saveStaticReadingMutation.isPending;
   const canSubmitStatic = birthDate.length > 0;
 
   return (
