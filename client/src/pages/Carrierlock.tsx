@@ -61,6 +61,8 @@ export default function Carrierlock() {
     }
   }, [geocodeQuery.data]);
 
+  const [readingError, setReadingError] = useState<string | null>(null);
+
   // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
   const coherenceScore = Math.max(
     0,
@@ -93,6 +95,8 @@ export default function Carrierlock() {
       return;
     }
 
+    setReadingError(null);
+
     try {
       if (readingType === "static") {
         // Static Signature reading using new RGP engine
@@ -106,6 +110,10 @@ export default function Carrierlock() {
           userId: String(user?.id || "anonymous"),
           coherenceScore,
         });
+
+        if (!result.success || !result.data) {
+          throw new Error((result as { error?: string }).error || "Static signature generation failed");
+        }
 
         if (result.success && result.data) {
           const data = result.data;
@@ -178,6 +186,7 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
       }
     } catch (error) {
       console.error("Failed to generate reading:", error);
+      setReadingError(error instanceof Error ? error.message : "Failed to generate reading. Please try again.");
     }
   };
 
@@ -477,6 +486,13 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
                   </CardContent>
                 </Card>
               </>
+            )}
+
+            {/* Error display */}
+            {readingError && (
+              <div className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+                {readingError}
+              </div>
             )}
 
             {/* Submit Button */}
