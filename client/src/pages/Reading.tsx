@@ -23,6 +23,26 @@ interface ParsedReading {
   orielTransmission: string;
 }
 
+interface ParsedDynamicReading {
+  coherenceScore: number;
+  mentalNoise: number;
+  bodyTension: number;
+  emotionalTurbulence: number;
+  breathCompletion: boolean;
+}
+
+function parseDynamicReading(text: string): ParsedDynamicReading | null {
+  if (!text.startsWith("DYNAMIC STATE READING")) return null;
+  const lines = text.split("\n");
+  const get = (key: string) => lines.find(l => l.startsWith(key + ":"))?.split(": ")[1]?.trim() ?? "";
+  const coherenceScore = parseInt(get("Coherence Score")) || 0;
+  const mentalNoise = parseInt(get("Mental Noise")) || 0;
+  const bodyTension = parseInt(get("Body Tension")) || 0;
+  const emotionalTurbulence = parseInt(get("Emotional Turbulence")) || 0;
+  const breathCompletion = get("Breath Completion") === "Yes";
+  return { coherenceScore, mentalNoise, bodyTension, emotionalTurbulence, breathCompletion };
+}
+
 function parseReadingText(text: string): ParsedReading | null {
   try {
     const sections = text.split("═══════════════════════════════════════════════════════════");
@@ -191,6 +211,96 @@ export default function ReadingEnhanced() {
   }
 
   const parsed = parseReadingText(reading.readingText || "");
+  const dynamicParsed = !parsed ? parseDynamicReading(reading.readingText || "") : null;
+
+  // Dynamic state reading — simple coherence view
+  if (dynamicParsed) {
+    const cs = dynamicParsed.coherenceScore;
+    const csColor = cs >= 80 ? "text-green-400" : cs >= 40 ? "text-yellow-400" : "text-red-400";
+    const csBar   = cs >= 80 ? "from-green-500 to-emerald-400" : cs >= 40 ? "from-yellow-500 to-amber-400" : "from-red-500 to-rose-400";
+    const csLabel = cs >= 80 ? "Resonance" : cs >= 40 ? "Flux" : "Entropy";
+    return (
+      <Layout>
+        <div className="min-h-screen bg-black text-zinc-100 py-12 px-4">
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="text-center space-y-2 mb-10">
+              <h1 className="text-4xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-200">
+                Dynamic State Reading
+              </h1>
+              <p className="text-zinc-500 text-sm font-mono">Carrierlock snapshot</p>
+            </div>
+
+            {/* Coherence Score */}
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Coherence Status
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Score</span>
+                  <span className={`text-4xl font-bold font-mono ${csColor}`}>
+                    {cs}<span className="text-zinc-500 text-xl">/100</span>
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-800 rounded-full h-3">
+                  <div
+                    className={`bg-gradient-to-r ${csBar} h-3 rounded-full transition-all`}
+                    style={{ width: `${cs}%` }}
+                  />
+                </div>
+                <p className={`text-sm font-semibold ${csColor}`}>{csLabel}</p>
+              </CardContent>
+            </Card>
+
+            {/* Slider Values */}
+            <Card className="bg-[#0a1012] border-primary/30">
+              <CardHeader>
+                <CardTitle>Carrierlock Axes</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  { label: "Mental Noise", value: dynamicParsed.mentalNoise },
+                  { label: "Body Tension", value: dynamicParsed.bodyTension },
+                  { label: "Emotional Turbulence", value: dynamicParsed.emotionalTurbulence },
+                ].map(({ label, value }) => (
+                  <div key={label}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-zinc-400">{label}</span>
+                      <span className="font-mono text-primary">{value}/10</span>
+                    </div>
+                    <div className="w-full bg-zinc-800 rounded-full h-1.5">
+                      <div
+                        className="bg-primary/60 h-1.5 rounded-full"
+                        style={{ width: `${value * 10}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between text-sm pt-2 border-t border-zinc-700">
+                  <span className="text-zinc-400">Breath Completion</span>
+                  <span className={`font-mono font-semibold ${dynamicParsed.breathCompletion ? "text-green-400" : "text-zinc-500"}`}>
+                    {dynamicParsed.breathCompletion ? "Yes" : "No"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-center pt-4">
+              <Link href="/carrierlock">
+                <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Assessment
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({

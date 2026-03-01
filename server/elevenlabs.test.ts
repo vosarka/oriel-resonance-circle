@@ -9,7 +9,7 @@ describe("ElevenLabs Configuration", () => {
 
   it("should have ELEVENLABS_VOICE_ID configured", () => {
     expect(ENV.elevenLabsVoiceId).toBeDefined();
-    expect(ENV.elevenLabsVoiceId).toBe("sxMbJDVSbjVtmRgDL1S1");
+    expect(ENV.elevenLabsVoiceId).toBe("W1pwneTUinymEQXciRbI");
   });
 
   it("should validate API key by fetching voice details", async () => {
