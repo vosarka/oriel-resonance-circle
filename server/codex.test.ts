@@ -1,6 +1,28 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { Context } from "./_core/context";
+
+// Mock DB functions that require a live MySQL connection
+vi.mock("./db", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./db")>();
+  return {
+    ...actual,
+    saveCarrierlockState: vi.fn(async (_userId: number, state: {
+      mentalNoise: number;
+      bodyTension: number;
+      emotionalTurbulence: number;
+      breathCompletion: boolean;
+    }) => {
+      const coherenceScore = Math.max(0, Math.min(100,
+        100 - (state.mentalNoise * 3 + state.bodyTension * 3 + state.emotionalTurbulence * 3)
+        + (state.breathCompletion ? 10 : 0)
+      ));
+      return { id: 1, coherenceScore };
+    }),
+    saveCodonReading: vi.fn(async () => ({ id: 1 })),
+    markCorrectionCompleted: vi.fn(async () => undefined),
+  };
+});
 
 describe("Codex Router", () => {
   // Mock context for authenticated user
