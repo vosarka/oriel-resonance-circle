@@ -1,0 +1,74 @@
+```json
+{
+  "meta": {
+    "system": "Vossari Resonance Codex",
+    "version": "1.0",
+    "description": "Immutable data arrays for the VRC Engine."
+  },
+  "planetary_inputs": [
+    { "id": "sun", "name": "Sun", "swiss_eph_id": 0 },
+    { "id": "moon", "name": "Moon", "swiss_eph_id": 1 },
+    { "id": "mercury", "name": "Mercury", "swiss_eph_id": 2 },
+    { "id": "venus", "name": "Venus", "swiss_eph_id": 3 },
+    { "id": "mars", "name": "Mars", "swiss_eph_id": 4 },
+    { "id": "jupiter", "name": "Jupiter", "swiss_eph_id": 5 },
+    { "id": "saturn", "name": "Saturn", "swiss_eph_id": 6 },
+    { "id": "uranus", "name": "Uranus", "swiss_eph_id": 7 },
+    { "id": "neptune", "name": "Neptune", "swiss_eph_id": 8 },
+    { "id": "pluto", "name": "Pluto", "swiss_eph_id": 9 },
+    { "id": "north_node", "name": "North Node", "swiss_eph_id": 11 },
+    { "id": "south_node", "name": "South Node", "swiss_eph_id": "CALCULATED (Opposite of NN)" },
+    { "id": "earth", "name": "Earth", "swiss_eph_id": "CALCULATED (Opposite of Sun)" }
+  ],
+  "centers": [
+    { "id": "HEAD", "name": "Head Center", "type": "Pressure" },
+    { "id": "AJNA", "name": "Ajna Center", "type": "Awareness" },
+    { "id": "THROAT", "name": "Throat Center", "type": "Manifestation" },
+    { "id": "G", "name": "G Center", "type": "Identity" },
+    { "id": "HEART", "name": "Heart Center", "type": "Motor" },
+    { "id": "SACRAL", "name": "Sacral Center", "type": "Motor" },
+    { "id": "SPLEEN", "name": "Spleen Center", "type": "Awareness" },
+    { "id": "SOLAR", "name": "Solar Plexus", "type": "Motor/Awareness" },
+    { "id": "ROOT", "name": "Root Center", "type": "Pressure/Motor" }
+  ],
+  "channels": [
+    { "id": "64-47", "name": "Abstraction", "gate_a": 64, "gate_b": 47, "connects": ["HEAD", "AJNA"] },
+    { "id": "61-24", "name": "Awareness", "gate_a": 61, "gate_b": 24, "connects": ["HEAD", "AJNA"] },
+    { "id": "63-4", "name": "Logic", "gate_a": 63, "gate_b": 4, "connects": ["HEAD", "AJNA"] },
+    { "id": "17-62", "name": "Acceptance", "gate_a": 17, "gate_b": 62, "connects": ["AJNA", "THROAT"] },
+    { "id": "43-23", "name": "Structuring", "gate_a": 43, "gate_b": 23, "connects": ["AJNA", "THROAT"] },
+    { "id": "11-56", "name": "Curiosity", "gate_a": 11, "gate_b": 56, "connects": ["AJNA", "THROAT"] },
+    { "id": "35-36", "name": "Transience", "gate_a": 35, "gate_b": 36, "connects": ["THROAT", "SOLAR"] },
+    { "id": "12-22", "name": "Openness", "gate_a": 12, "gate_b": 22, "connects": ["THROAT", "SOLAR"] },
+    { "id": "45-21", "name": "Money Line", "gate_a": 45, "gate_b": 21, "connects": ["THROAT", "HEART"] },
+    { "id": "33-13", "name": "The Prodigal", "gate_a": 33, "gate_b": 13, "connects": ["THROAT", "G"] },
+    { "id": "8-1", "name": "Inspiration", "gate_a": 8, "gate_b": 1, "connects": ["THROAT", "G"] },
+    { "id": "31-7", "name": "The Alpha", "gate_a": 31, "gate_b": 7, "connects": ["THROAT", "G"] },
+    { "id": "20-10", "name": "Awakening", "gate_a": 20, "gate_b": 10, "connects": ["THROAT", "G"] },
+    { "id": "20-57", "name": "The Brainwave", "gate_a": 20, "gate_b": 57, "connects": ["THROAT", "SPLEEN"] },
+    { "id": "20-34", "name": "Charisma", "gate_a": 20, "gate_b": 34, "connects": ["THROAT", "SACRAL"] },
+    { "id": "16-48", "name": "The Wave", "gate_a": 16, "gate_b": 48, "connects": ["THROAT", "SPLEEN"] },
+    { "id": "25-51", "name": "Initiation", "gate_a": 25, "gate_b": 51, "connects": ["G", "HEART"] },
+    { "id": "10-57", "name": "Perfect Form", "gate_a": 10, "gate_b": 57, "connects": ["G", "SPLEEN"] },
+    { "id": "10-34", "name": "Exploration", "gate_a": 10, "gate_b": 34, "connects": ["G", "SACRAL"] },
+    { "id": "15-5", "name": "Rhythm", "gate_a": 15, "gate_b": 5, "connects": ["G", "SACRAL"] },
+    { "id": "2-14", "name": "The Beat", "gate_a": 2, "gate_b": 14, "connects": ["G", "SACRAL"] },
+    { "id": "46-29", "name": "Discovery", "gate_a": 46, "gate_b": 29, "connects": ["G", "SACRAL"] },
+    { "id": "26-44", "name": "Surrender", "gate_a": 26, "gate_b": 44, "connects": ["HEART", "SPLEEN"] },
+    { "id": "40-37", "name": "Community", "gate_a": 40, "gate_b": 37, "connects": ["HEART", "SOLAR"] },
+    { "id": "57-34", "name": "Power", "gate_a": 57, "gate_b": 34, "connects": ["SPLEEN", "SACRAL"] },
+    { "id": "28-38", "name": "Struggle", "gate_a": 28, "gate_b": 38, "connects": ["SPLEEN", "ROOT"] },
+    { "id": "18-58", "name": "Judgment", "gate_a": 18, "gate_b": 58, "connects": ["SPLEEN", "ROOT"] },
+    { "id": "32-54", "name": "Transformation", "gate_a": 32, "gate_b": 54, "connects": ["SPLEEN", "ROOT"] },
+    { "id": "50-27", "name": "Preservation", "gate_a": 50, "gate_b": 27, "connects": ["SPLEEN", "SACRAL"] },
+    { "id": "59-6", "name": "Intimacy", "gate_a": 59, "gate_b": 6, "connects": ["SACRAL", "SOLAR"] },
+    { "id": "9-52", "name": "Concentration", "gate_a": 9, "gate_b": 52, "connects": ["SACRAL", "ROOT"] },
+    { "id": "3-60", "name": "Mutation", "gate_a": 3, "gate_b": 60, "connects": ["SACRAL", "ROOT"] },
+    { "id": "42-53", "name": "Maturation", "gate_a": 42, "gate_b": 53, "connects": ["SACRAL", "ROOT"] },
+    { "id": "19-49", "name": "Synthesis", "gate_a": 19, "gate_b": 49, "connects": ["ROOT", "SOLAR"] },
+    { "id": "39-55", "name": "Emoting", "gate_a": 39, "gate_b": 55, "connects": ["ROOT", "SOLAR"] },
+    { "id": "41-30", "name": "Recognition", "gate_a": 41, "gate_b": 30, "connects": ["ROOT", "SOLAR"] }
+  ]
+}
+```
+

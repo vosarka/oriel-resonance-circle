@@ -59,8 +59,8 @@ let _library: Map<number, CodonEntry> | null = null;
 function loadLibrary(): Map<number, CodonEntry> {
   if (_library) return _library;
 
-  // JSON lives at Vossari_Conduit-Hub/rgp/ — three levels above server/
-  const jsonPath = join(dirname(fileURLToPath(import.meta.url)), '../../../rgp/Vossari Codons 64x256facets.json');
+  // JSON is bundled in server/data/ (in-repo copy of rgp spec)
+  const jsonPath = join(dirname(fileURLToPath(import.meta.url)), 'data/vrc-codons.json');
 
   try {
     // Strip markdown code fences (```json ... ```) that may wrap the file content

@@ -54,7 +54,7 @@ function load(): EngineConstantsDoc {
 
   const jsonPath = join(
     dirname(fileURLToPath(import.meta.url)),
-    '../../../rgp/Vossari Resonance Codex Engine Constants.json',
+    'data/vrc-engine-constants.json',
   );
 
   try {
