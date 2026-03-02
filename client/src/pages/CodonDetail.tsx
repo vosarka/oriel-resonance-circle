@@ -8,50 +8,70 @@ import Layout from "@/components/Layout";
 // Tab types for the detail section
 type TabType = "dynamics" | "repressive" | "reactive" | "corrections";
 
-// ─── Hexagram SVG glyph ───────────────────────────────────────────────────────
-// Each of the 64 codons maps to a unique 6-line hexagram based on binary.
-// Bit 0 (LSB) = bottom line, bit 5 (MSB) = top line.
-// Solid line = 1, broken line = 0 (two half-lines with gap).
-function CodonHexagram({ codonNumber, className = "" }: { codonNumber: number; className?: string }) {
+// ─── Codon Glyph SVG ─────────────────────────────────────────────────────────
+// 6 circles arranged in a ring — one per bit of the codon's binary number.
+// Bit 0 (LSB) = top position, going clockwise.
+// Filled + glowing = bit 1.  Dim outline = bit 0.
+// Adjacent filled nodes are connected by a subtle line.
+function CodonGlyph({ codonNumber, className = "" }: { codonNumber: number; className?: string }) {
   const bits = Array.from({ length: 6 }, (_, i) => (codonNumber >> i) & 1);
-  // bits[0] = bottom line, bits[5] = top line → render top-to-bottom (bits[5] first)
-  const lines = [...bits].reverse();
 
-  const W = 72;
-  const LINE_H = 6;
-  const GAP_Y = 14; // vertical spacing between lines
-  const TOTAL_H = 5 * GAP_Y + LINE_H;
-  const BREAK_GAP = 10;
-  const halfW = (W - BREAK_GAP) / 2;
+  const cx = 50, cy = 50, orbitR = 34, dotR = 8;
+
+  const nodes = bits.map((bit, i) => {
+    const angle = (i * 60 - 90) * (Math.PI / 180);
+    return {
+      x: cx + orbitR * Math.cos(angle),
+      y: cy + orbitR * Math.sin(angle),
+      filled: bit === 1,
+    };
+  });
 
   return (
     <svg
-      width={W}
-      height={TOTAL_H}
-      viewBox={`0 0 ${W} ${TOTAL_H}`}
+      viewBox="0 0 100 100"
       className={className}
-      aria-label={`Codon ${codonNumber} hexagram`}
+      aria-label={`Codon ${codonNumber} glyph`}
     >
-      {lines.map((bit, idx) => {
-        const y = idx * GAP_Y;
-        if (bit === 1) {
-          return (
-            <rect
-              key={idx}
-              x={0} y={y}
-              width={W} height={LINE_H}
-              rx={2}
-              fill="currentColor"
-            />
-          );
-        }
+      {/* Outer orbit ring */}
+      <circle cx={cx} cy={cy} r={orbitR} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
+
+      {/* Lines connecting adjacent filled nodes */}
+      {nodes.map((node, i) => {
+        const next = nodes[(i + 1) % 6];
+        if (!node.filled || !next.filled) return null;
         return (
-          <g key={idx}>
-            <rect x={0} y={y} width={halfW} height={LINE_H} rx={2} fill="currentColor" />
-            <rect x={halfW + BREAK_GAP} y={y} width={halfW} height={LINE_H} rx={2} fill="currentColor" />
-          </g>
+          <line
+            key={`l${i}`}
+            x1={node.x} y1={node.y}
+            x2={next.x} y2={next.y}
+            stroke="currentColor"
+            strokeWidth="1"
+            strokeOpacity="0.35"
+          />
         );
       })}
+
+      {/* Center dot */}
+      <circle cx={cx} cy={cy} r={2.5} fill="currentColor" opacity="0.3" />
+
+      {/* 6 bit circles */}
+      {nodes.map((node, i) => (
+        <g key={`n${i}`}>
+          {node.filled && (
+            <circle cx={node.x} cy={node.y} r={dotR + 4} fill="currentColor" opacity="0.10" />
+          )}
+          <circle
+            cx={node.x}
+            cy={node.y}
+            r={dotR}
+            fill={node.filled ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth={node.filled ? 0 : 1.5}
+            opacity={node.filled ? 0.95 : 0.22}
+          />
+        </g>
+      ))}
     </svg>
   );
 }
@@ -179,9 +199,9 @@ export default function CodonDetail() {
               <div className="absolute inset-12 border border-primary/10 rounded-full" />
               {/* Main Glyph Symbol */}
               <div className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-3 p-8">
-                <CodonHexagram
+                <CodonGlyph
                   codonNumber={parseInt(codonNumber)}
-                  className="text-primary drop-shadow-[0_0_12px_rgba(104,211,145,0.7)] w-16 h-auto"
+                  className="text-primary drop-shadow-[0_0_18px_rgba(104,211,145,0.8)] w-28 h-28"
                 />
                 <div className="text-xl font-orbitron font-bold text-primary/60 tracking-widest">
                   RC{codonNumber}
