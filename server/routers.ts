@@ -548,7 +548,32 @@ export const appRouter = router({
         }
 
         const c = getCodonEntry(numericId);
-        if (!c) throw new Error("Codon not found");
+        
+        // Fallback: if codon library is unavailable, create a basic entry
+        const codon = c || {
+          id: numericId,
+          code: `RC${String(numericId).padStart(2, '0')}`,
+          name: `Codon ${numericId}`,
+          traditional_name: `Codon ${numericId}`,
+          binary: '000000',
+          chemical_marker: 'Unknown',
+          archetype_role: 'Unknown',
+          somatic_marker: 'Unknown',
+          frequency: {
+            shadow: 'Shadow aspect',
+            shadow_desc: 'The distorted expression of this codon',
+            gift: 'Gift aspect',
+            gift_desc: 'The healthy expression of this codon',
+            siddhi: 'Siddhi aspect',
+            siddhi_desc: 'The transcendent expression of this codon'
+          },
+          facets: {
+            A: { title: 'Somatic', degrees: '0-1.40625°', description: 'Physical anchor', shadow_manifestation: 'Physical distortion', micro_correction: 'Ground in the body', resonance_keys: [] },
+            B: { title: 'Relational', degrees: '1.40625-2.8125°', description: 'Interaction field', shadow_manifestation: 'Relational distortion', micro_correction: 'Connect authentically', resonance_keys: [] },
+            C: { title: 'Cognitive', degrees: '2.8125-4.21875°', description: 'Mental processing', shadow_manifestation: 'Mental distortion', micro_correction: 'Clarify thinking', resonance_keys: [] },
+            D: { title: 'Transpersonal', degrees: '4.21875-5.625°', description: 'Spirit/collective', shadow_manifestation: 'Spiritual distortion', micro_correction: 'Align with source', resonance_keys: [] }
+          }
+        };
 
         // Mandala position: slot index + degree range
         const slotIndex = VRC_MANDALA.indexOf(numericId);
@@ -563,23 +588,23 @@ export const appRouter = router({
 
         return {
           // Backwards-compat fields (CodonDetail still uses codon.id, codon.shadow, etc.)
-          id:     `RC${String(c.id).padStart(2, '0')}`,
-          name:   c.name,
-          title:  c.traditional_name,
-          essence: c.facets.A.description,
-          shadow: c.frequency.shadow,
-          gift:   c.frequency.gift,
-          crown:  c.frequency.siddhi,
-          domain: c.archetype_role,
+          id:     `RC${String(codon.id).padStart(2, '0')}`,
+          name:   codon.name,
+          title:  codon.traditional_name,
+          essence: codon.facets.A.description,
+          shadow: codon.frequency.shadow,
+          gift:   codon.frequency.gift,
+          crown:  codon.frequency.siddhi,
+          domain: codon.archetype_role,
           // Rich JSON fields
-          numericId:       c.id,
-          traditional_name: c.traditional_name,
-          binary:           c.binary,
-          chemical_marker:  c.chemical_marker,
-          archetype_role:   c.archetype_role,
-          somatic_marker:   c.somatic_marker,
-          frequency:        c.frequency,
-          facets:           c.facets,
+          numericId:       codon.id,
+          traditional_name: codon.traditional_name,
+          binary:           codon.binary,
+          chemical_marker:  codon.chemical_marker,
+          archetype_role:   codon.archetype_role,
+          somatic_marker:   codon.somatic_marker,
+          frequency:        codon.frequency,
+          facets:           codon.facets,
           // Derived
           channels,
           mandalaSlot:  slotIndex,
