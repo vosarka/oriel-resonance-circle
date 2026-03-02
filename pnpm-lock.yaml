@@ -152,7 +152,7 @@ importers:
         specifier: ^12.23.22
         version: 12.23.22(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       geo-tz:
-        specifier: '7'
+        specifier: ^7.0.7
         version: 7.0.7
       input-otp:
         specifier: ^1.4.2
