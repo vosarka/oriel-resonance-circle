@@ -8,6 +8,54 @@ import Layout from "@/components/Layout";
 // Tab types for the detail section
 type TabType = "dynamics" | "repressive" | "reactive" | "corrections";
 
+// ─── Hexagram SVG glyph ───────────────────────────────────────────────────────
+// Each of the 64 codons maps to a unique 6-line hexagram based on binary.
+// Bit 0 (LSB) = bottom line, bit 5 (MSB) = top line.
+// Solid line = 1, broken line = 0 (two half-lines with gap).
+function CodonHexagram({ codonNumber, className = "" }: { codonNumber: number; className?: string }) {
+  const bits = Array.from({ length: 6 }, (_, i) => (codonNumber >> i) & 1);
+  // bits[0] = bottom line, bits[5] = top line → render top-to-bottom (bits[5] first)
+  const lines = [...bits].reverse();
+
+  const W = 72;
+  const LINE_H = 6;
+  const GAP_Y = 14; // vertical spacing between lines
+  const TOTAL_H = 5 * GAP_Y + LINE_H;
+  const BREAK_GAP = 10;
+  const halfW = (W - BREAK_GAP) / 2;
+
+  return (
+    <svg
+      width={W}
+      height={TOTAL_H}
+      viewBox={`0 0 ${W} ${TOTAL_H}`}
+      className={className}
+      aria-label={`Codon ${codonNumber} hexagram`}
+    >
+      {lines.map((bit, idx) => {
+        const y = idx * GAP_Y;
+        if (bit === 1) {
+          return (
+            <rect
+              key={idx}
+              x={0} y={y}
+              width={W} height={LINE_H}
+              rx={2}
+              fill="currentColor"
+            />
+          );
+        }
+        return (
+          <g key={idx}>
+            <rect x={0} y={y} width={halfW} height={LINE_H} rx={2} fill="currentColor" />
+            <rect x={halfW + BREAK_GAP} y={y} width={halfW} height={LINE_H} rx={2} fill="currentColor" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 export default function CodonDetail() {
   const [, params] = useRoute("/codex/:id");
   const codonId = params?.id || "";
@@ -130,9 +178,13 @@ export default function CodonDetail() {
               <div className="absolute inset-4 border border-dashed border-primary/40 rounded-full animate-spin-slower" />
               <div className="absolute inset-12 border border-primary/10 rounded-full" />
               {/* Main Glyph Symbol */}
-              <div className="relative z-10 w-full h-full flex items-center justify-center p-8">
-                <div className="text-8xl font-orbitron font-bold text-primary drop-shadow-[0_0_15px_rgba(104,211,145,0.6)]">
-                  {codonNumber}
+              <div className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-3 p-8">
+                <CodonHexagram
+                  codonNumber={parseInt(codonNumber)}
+                  className="text-primary drop-shadow-[0_0_12px_rgba(104,211,145,0.7)] w-16 h-auto"
+                />
+                <div className="text-xl font-orbitron font-bold text-primary/60 tracking-widest">
+                  RC{codonNumber}
                 </div>
               </div>
             </div>

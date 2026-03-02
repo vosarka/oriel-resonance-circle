@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, AlertTriangle, Zap, Activity } from "lucide-react";
+import { ArrowLeft, Loader2, AlertTriangle, Zap, Activity, ChevronRight } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Layout from "@/components/Layout";
@@ -245,6 +245,35 @@ export default function DynamicReading() {
                     <p className="text-zinc-400 text-sm italic">{falsifier}</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Flagged Codons */}
+          {reading.flaggedCodons && reading.flaggedCodons.length > 0 && (
+            <Card className="bg-zinc-900/50 border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-zinc-400 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  Active Codons — tap to explore
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {reading.flaggedCodons.map((codonId: string) => (
+                    <Link
+                      key={codonId}
+                      href={`/codex/${codonId}`}
+                      className="group flex items-center justify-between bg-zinc-800/50 border border-primary/20 hover:border-primary/60 hover:bg-primary/5 rounded-lg px-4 py-3 transition-all"
+                    >
+                      <div>
+                        <p className="text-primary font-orbitron text-sm font-bold">{codonId}</p>
+                        <p className="text-zinc-500 text-xs mt-0.5">View in Codex</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-primary transition-colors" />
+                    </Link>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
