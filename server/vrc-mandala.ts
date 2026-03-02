@@ -198,15 +198,15 @@ export const VRC_CHANNELS: readonly [number, number][] = [
   // Throat–Solar Plexus
   [35, 36], [12, 22],
   // Throat–Spleen
-  [16, 48],
+  [16, 48], [20, 57],
   // Throat–Sacral
   [20, 34],
   // G-Self–Heart
   [25, 51],
   // G-Self–Sacral
-  [ 2, 14], [15,  5], [46, 29],
+  [ 2, 14], [15,  5], [46, 29], [10, 34],
   // G-Self–Spleen
-  [27, 50],
+  [27, 50], [10, 57],
   // Heart–Solar Plexus
   [40, 37],
   // Heart–Spleen
@@ -338,20 +338,49 @@ export type VrcAuthority =
   | 'Environment';
 
 /**
- * Determine VRC Type from defined centers (VRC § 7).
+ * Motor-to-Throat channel pairs (VRC § 5A — Catalyst determination).
+ * A Catalyst requires Sacral OPEN and at least one of these channels ACTIVE.
+ * Motors: Solar Plexus (gates 35→36, 12→22) and Heart/Ego (45→21).
+ */
+const MOTOR_TO_THROAT_CHANNELS: ReadonlyArray<readonly [number, number]> = [
+  [35, 36], // Transience   — Throat ↔ Solar Plexus
+  [12, 22], // Openness     — Throat ↔ Solar Plexus
+  [45, 21], // Money Line   — Throat ↔ Heart
+] as const;
+
+/**
+ * Determine VRC Type from defined centers (VRC § 5A).
  *
  *   Reflector  = all 9 centers open
  *   Resonator  = Sacral defined
- *   Catalyst   = Throat defined + Sacral open
- *   Harmonizer = Sacral open + Throat open (and not all open)
+ *   Catalyst   = Sacral open AND a motor center has an active channel to Throat
+ *   Harmonizer = everything else (includes Throat defined via non-motor path)
+ *
+ * Pass channelStatuses for spec-accurate Catalyst detection.
+ * Falls back to "Throat defined" heuristic when channelStatuses is omitted.
  */
 export function determineType(
-  centers: Record<CenterName, 'defined' | 'open'>
+  centers: Record<CenterName, 'defined' | 'open'>,
+  channelStatuses?: ChannelStatus[]
 ): VrcType {
   const allOpen = Object.values(centers).every(s => s === 'open');
   if (allOpen) return 'Reflector';
   if (centers['Sacral'] === 'defined') return 'Resonator';
-  if (centers['Throat'] === 'defined') return 'Catalyst';
+
+  // Catalyst: Sacral is open (confirmed above) + motor drives Throat
+  if (channelStatuses) {
+    const motorToThroatActive = channelStatuses.some(ch =>
+      ch.active &&
+      MOTOR_TO_THROAT_CHANNELS.some(
+        ([a, b]) => (ch.gateA === a && ch.gateB === b) || (ch.gateA === b && ch.gateB === a)
+      )
+    );
+    if (motorToThroatActive) return 'Catalyst';
+  } else if (centers['Throat'] === 'defined') {
+    // Legacy fallback when channel data is unavailable
+    return 'Catalyst';
+  }
+
   return 'Harmonizer';
 }
 

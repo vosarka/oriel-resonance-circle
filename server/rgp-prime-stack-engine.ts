@@ -40,6 +40,8 @@ import {
   PRIME_STACK_CONFIG,
 } from './rgp-256-codon-engine';
 
+import { getVossariName } from './vrc-codon-library';
+
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
 export interface PlanetaryPosition {
@@ -117,7 +119,8 @@ function resolvePosition(
   longitude: number,
   source: 'conscious' | 'design'
 ): PrimeStackCodon {
-  const { codon, codonName, facet, center } = longitudeToCodonFacet(longitude);
+  const { codon, facet, center } = longitudeToCodonFacet(longitude);
+  const codonName = getVossariName(codon);
   const facetLetter = facetNameToLetter(facet);
 
   // Base frequency: position of longitude within its codon's 5.625° arc, normalized to 0–100
@@ -217,7 +220,7 @@ export function calculatePrimeStack(
 
   const channelStatuses = evaluateChannels(definedGates);
   const centerStatuses  = evaluateCenters(channelStatuses);
-  const vrcType         = determineType(centerStatuses);
+  const vrcType         = determineType(centerStatuses, channelStatuses);
   const vrcAuthority    = determineAuthority(centerStatuses);
 
   // Legacy circuit links (kept for backwards-compatible API responses)

@@ -32,6 +32,8 @@ import {
   type SLIScore,
 } from './rgp-sli-micro-correction-engine';
 
+import { getFacetData, getFrequencyData } from './vrc-codon-library';
+
 // ─── Public interfaces ────────────────────────────────────────────────────────
 
 /** Minimal planetary data needed for one chart (conscious or design). */
@@ -194,14 +196,34 @@ export async function generateStaticSignature(
   }));
 
   const interferencePattern = analyzeInterferencePattern(sliScores);
-  const generatedCorrections = generateMicroCorrections(sliScores, interferencePattern);
 
-  const microCorrections: StaticSignatureReading['microCorrections'] = generatedCorrections.map(c => ({
-    type: c.actionType,
-    instruction: c.description,
-    falsifier: c.falsifiers[0] ?? 'No falsifier',
-    potentialOutcome: c.expectedOutcome,
-  }));
+  // Build micro-corrections from actual codon library content (top 3 weighted positions).
+  // Falls back to algorithmic generation only if the library is unavailable.
+  const microCorrections: StaticSignatureReading['microCorrections'] = [];
+
+  for (const pos of primeStack.slice(0, 3)) {
+    const facetData  = getFacetData(pos.codon, pos.facet);
+    const freqData   = getFrequencyData(pos.codon);
+    if (facetData && freqData) {
+      microCorrections.push({
+        type:             `${pos.name} — ${pos.codonName}`,
+        instruction:      facetData.micro_correction,
+        falsifier:        facetData.shadow_manifestation,
+        potentialOutcome: freqData.gift_desc,
+      });
+    }
+  }
+
+  if (microCorrections.length === 0) {
+    // Fallback: algorithmic corrections when codon library is not accessible
+    const generatedCorrections = generateMicroCorrections(sliScores, interferencePattern);
+    microCorrections.push(...generatedCorrections.map(c => ({
+      type:             c.actionType,
+      instruction:      c.description,
+      falsifier:        c.falsifiers[0] ?? 'No falsifier',
+      potentialOutcome: c.expectedOutcome,
+    })));
+  }
 
   // ── Coherence trajectory ────────────────────────────────────────────────────
   const trajectoryData = calculateCoherenceTrajectory(coherenceScore, sliScores, undefined);
