@@ -508,29 +508,85 @@ export const appRouter = router({
 
   // Vossari Resonance Codex router
   codex: router({
-    // Browse all 64 Root Codons
+    // Browse all 64 Root Codons — sourced from Vossari Codons 64x256facets.json
     getRootCodons: publicProcedure.query(async () => {
-      const { ROOT_CODONS } = await import("./vossari-codex-knowledge");
-      return Object.entries(ROOT_CODONS).map(([id, codon]: [string, any]) => ({
-        id,
-        name: codon.name,
-        title: codon.title,
-        essence: codon.essence,
-        shadow: codon.shadow,
-        gift: codon.gift,
-        crown: codon.crown,
-        domain: codon.domain,
-      }));
+      const { getCodonEntry } = await import("./vrc-codon-library");
+      const result = [];
+      for (let i = 1; i <= 64; i++) {
+        const c = getCodonEntry(i);
+        if (c) {
+          result.push({
+            id: `RC${String(i).padStart(2, '0')}`,
+            numericId: i,
+            name: c.name,
+            title: c.traditional_name,
+            essence: c.somatic_marker,
+            shadow: c.frequency.shadow,
+            gift: c.frequency.gift,
+            crown: c.frequency.siddhi,
+            domain: c.archetype_role,
+          });
+        }
+      }
+      return result;
     }),
 
-    // Get detailed info for a single codon
+    // Get full codon data — sourced from JSON + Engine Constants + Mandala position
+    // Accepts: "38", "RC38", "RC01", "38-A" (facet suffix stripped automatically)
     getCodonDetails: publicProcedure
       .input(z.object({ id: z.string() }))
       .query(async ({ input }) => {
-        const { ROOT_CODONS } = await import("./vossari-codex-knowledge");
-        const codon = ROOT_CODONS[input.id as keyof typeof ROOT_CODONS];
-        if (!codon) throw new Error("Codon not found");
-        return { id: input.id, ...codon };
+        const { getCodonEntry } = await import("./vrc-codon-library");
+        const { getChannelsForCodon } = await import("./vrc-engine-constants");
+        const { VRC_MANDALA, WHEEL_OFFSET, CODON_ARC } = await import("./vrc-mandala");
+
+        // Normalise: strip "RC" prefix and optional "-A"/"-B"/"-C"/"-D" facet suffix
+        const raw = input.id.replace(/^RC/i, '').replace(/-[A-Da-d]$/, '');
+        const numericId = parseInt(raw, 10);
+        if (isNaN(numericId) || numericId < 1 || numericId > 64) {
+          throw new Error("Codon not found");
+        }
+
+        const c = getCodonEntry(numericId);
+        if (!c) throw new Error("Codon not found");
+
+        // Mandala position: slot index + degree range
+        const slotIndex = VRC_MANDALA.indexOf(numericId);
+        const startDeg = (WHEEL_OFFSET + slotIndex * CODON_ARC) % 360;
+        const endDeg   = (startDeg + CODON_ARC) % 360;
+
+        // Pre-selected facet from URL suffix (e.g. "38-A" → "A")
+        const facetSuffix = input.id.match(/-([A-Da-d])$/)?.[1]?.toUpperCase() ?? null;
+
+        // Channels that include this codon
+        const channels = getChannelsForCodon(numericId);
+
+        return {
+          // Backwards-compat fields (CodonDetail still uses codon.id, codon.shadow, etc.)
+          id:     `RC${String(c.id).padStart(2, '0')}`,
+          name:   c.name,
+          title:  c.traditional_name,
+          essence: c.facets.A.description,
+          shadow: c.frequency.shadow,
+          gift:   c.frequency.gift,
+          crown:  c.frequency.siddhi,
+          domain: c.archetype_role,
+          // Rich JSON fields
+          numericId:       c.id,
+          traditional_name: c.traditional_name,
+          binary:           c.binary,
+          chemical_marker:  c.chemical_marker,
+          archetype_role:   c.archetype_role,
+          somatic_marker:   c.somatic_marker,
+          frequency:        c.frequency,
+          facets:           c.facets,
+          // Derived
+          channels,
+          mandalaSlot:  slotIndex,
+          startDegree:  +startDeg.toFixed(4),
+          endDegree:    +endDeg.toFixed(4),
+          initialFacet: facetSuffix,
+        };
       }),
 
     // Save Carrierlock state and generate diagnostic reading

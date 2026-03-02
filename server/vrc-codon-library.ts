@@ -14,7 +14,8 @@
  */
 
 import { readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 type FacetLetter = 'A' | 'B' | 'C' | 'D';
 
@@ -58,11 +59,14 @@ let _library: Map<number, CodonEntry> | null = null;
 function loadLibrary(): Map<number, CodonEntry> {
   if (_library) return _library;
 
-  // JSON lives two directories above the server CWD (code/oriel-resonance-circle/)
-  const jsonPath = join(process.cwd(), '../../rgp/Vossari Codons 64x256facets.json');
+  // JSON lives at Vossari_Conduit-Hub/rgp/ — three levels above server/
+  const jsonPath = join(dirname(fileURLToPath(import.meta.url)), '../../../rgp/Vossari Codons 64x256facets.json');
 
   try {
-    const raw = JSON.parse(readFileSync(jsonPath, 'utf-8')) as CodonEntry[];
+    // Strip markdown code fences (```json ... ```) that may wrap the file content
+    let text = readFileSync(jsonPath, 'utf-8');
+    text = text.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/, '');
+    const raw = JSON.parse(text) as CodonEntry[];
     _library = new Map(raw.map(entry => [entry.id, entry]));
   } catch (err) {
     console.error('[VRC] Failed to load codon library — micro-corrections and Vossari names will be unavailable.', err);
