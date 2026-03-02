@@ -145,30 +145,36 @@ export default function Carrierlock() {
           setLocation(`/reading/static/${data.readingId}`);
         }
       } else {
-        // Dynamic State reading using new RGP engine
+        // Dynamic State reading — save Carrierlock state then generate ORIEL transmission
         const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
           mentalNoise,
           bodyTension,
           emotionalTurbulence,
           breathCompletion,
         });
-        
+
         const result = await dynamicStateMutation.mutateAsync({
           mentalNoise,
           bodyTension,
           emotionalTurbulence,
           breathCompletion: breathCompletion ? 1 : 0,
           birthDate: new Date().toISOString(),
+          userId: user?.id ? String(user.id) : undefined,
         });
-        
+
         if (result.success && result.data) {
-          const readingText = `DYNAMIC STATE READING
-Coherence Score: ${result.data.coherenceScore}
-Mental Noise: ${result.data.mentalNoise}/10
-Body Tension: ${result.data.bodyTension}/10
-Emotional Turbulence: ${result.data.emotionalTurbulence}/10
-Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
-          
+          const data = result.data;
+
+          // Build a compact header so the reading page can parse the score/label
+          const readingText = [
+            `ORIEL Dynamic Reading — ${data.coherenceScore}/100 — ${data.coherenceLabel}`,
+            "",
+            data.orielTransmission,
+          ].join("\n");
+
+          // Extract the falsifier from the transmission (last paragraph that starts with "Falsifier:")
+          const falsifierMatch = data.orielTransmission.match(/falsifier[:\s]+(.+)/i);
+
           const savedReading = await saveReadingMutation.mutateAsync({
             carrierlockId: carrierlockResult.id,
             readingText,
@@ -176,12 +182,12 @@ Breath Completion: ${result.data.breathCompletion ? "Yes" : "No"}`;
             sliScores: {},
             activeFacets: {},
             confidenceLevels: {},
-            microCorrection: undefined,
+            microCorrection: data.collapsed ? undefined : undefined, // micro-correction is embedded in ORIEL text
             correctionFacet: undefined,
-            falsifier: "",
+            falsifier: falsifierMatch?.[1]?.trim() ?? "",
           });
-          
-          setLocation(`/reading/${savedReading.id}`);
+
+          setLocation(`/reading/dynamic/${savedReading.id}`);
         }
       }
     } catch (error) {

@@ -17,6 +17,7 @@ import Carrierlock from "./pages/Carrierlock";
 import Reading from "./pages/Reading";
 import Readings from "./pages/Readings";
 import StaticReading from "./pages/StaticReading";
+import DynamicReading from "./pages/DynamicReading";
 import Auth from "./pages/Auth";
 
 function Router() {
@@ -34,6 +35,7 @@ function Router() {
       <Route path={"/carrierlock"} component={Carrierlock} />
       <Route path={"/readings"} component={Readings} />
       <Route path={"/reading/static/:readingId"} component={StaticReading} />
+      <Route path={"/reading/dynamic/:id"} component={DynamicReading} />
       <Route path={"/reading/:id"} component={Reading} />
       <Route path={"/profile"} component={Profile} />
       <Route path={"/404"} component={NotFound} />

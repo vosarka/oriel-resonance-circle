@@ -461,6 +461,30 @@ export async function getUserReadingHistory(userId: number) {
 }
 
 /**
+ * Get a single codon reading by its numeric ID
+ */
+export async function getCodonReadingById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const { codonReadings } = await import('../drizzle/schema');
+    const result = await db.select().from(codonReadings).where(eq(codonReadings.id, id)).limit(1);
+    if (!result[0]) return null;
+    const row = result[0];
+    return {
+      ...row,
+      flaggedCodons:    row.flaggedCodons?.split(',').filter(Boolean) ?? [],
+      sliScores:        JSON.parse(row.sliScores        ?? '{}') as Record<string, number>,
+      activeFacets:     JSON.parse(row.activeFacets     ?? '{}') as Record<string, string>,
+      confidenceLevels: JSON.parse(row.confidenceLevels ?? '{}') as Record<string, number>,
+    };
+  } catch (error) {
+    console.error('[Database] Failed to fetch codon reading by ID:', error);
+    return null;
+  }
+}
+
+/**
  * Mark a micro-correction as completed
  */
 export async function markCorrectionCompleted(readingId: number) {

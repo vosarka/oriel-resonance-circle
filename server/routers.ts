@@ -641,6 +641,17 @@ export const appRouter = router({
       if (!ctx.user) throw new Error("User not authenticated");
       return db.getUserStaticSignatures(ctx.user.id);
     }),
+
+    // Get a single codon (dynamic) reading by ID
+    getCodonReading: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        const reading = await db.getCodonReadingById(input.id);
+        if (!reading) return null;
+        if (reading.userId !== ctx.user.id) throw new Error("Unauthorized");
+        return reading;
+      }),
   }),
 
   // PayPal webhook handler

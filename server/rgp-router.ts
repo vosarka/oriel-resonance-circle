@@ -171,6 +171,7 @@ export const rgpRouter = router({
       birthDate:            z.string(),
       birthTime:            z.string().optional(),
       birthLocation:        z.string().optional(),
+      userId:               z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
@@ -183,10 +184,65 @@ export const rgpRouter = router({
 
         const coherenceScore = calculateCoherenceScore(state);
 
+        // ── Personalise with user's static signature if available ─────────────
+        let vrcType: string | undefined;
+        let vrcAuthority: string | undefined;
+        let fractalRole: string | undefined;
+        let primeCodonName: string | undefined;
+        let primeCodonCenter: string | undefined;
+
+        if (input.userId) {
+          try {
+            const numericId = parseInt(input.userId, 10);
+            if (!isNaN(numericId)) {
+              const { getUserStaticSignatures } = await import('./db');
+              const sigs = await getUserStaticSignatures(numericId);
+              const latest = sigs[0];
+              if (latest) {
+                vrcType      = latest.vrcType     ?? undefined;
+                vrcAuthority = latest.vrcAuthority ?? undefined;
+                fractalRole  = latest.fractalRole  ?? undefined;
+                if (latest.primeStack) {
+                  try {
+                    const stack = Array.isArray(latest.primeStack)
+                      ? latest.primeStack
+                      : JSON.parse(String(latest.primeStack));
+                    const prime = Array.isArray(stack) ? stack[0] : null;
+                    if (prime) {
+                      primeCodonName   = prime.codonName ?? undefined;
+                      primeCodonCenter = prime.center    ?? undefined;
+                    }
+                  } catch { /* primeStack unreadable — skip personalisation */ }
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('[RGP] Could not load static signature for dynamic state:', err);
+          }
+        }
+
+        // ── Generate ORIEL transmission ───────────────────────────────────────
+        const { generateORIELDynamicTransmission } = await import('./oriel-dynamic-transmission');
+        const transmission = await generateORIELDynamicTransmission({
+          coherenceScore,
+          mentalNoise:         input.mentalNoise,
+          bodyTension:         input.bodyTension,
+          emotionalTurbulence: input.emotionalTurbulence,
+          breathCompletion:    input.breathCompletion === 1,
+          vrcType,
+          vrcAuthority,
+          fractalRole,
+          primeCodonName,
+          primeCodonCenter,
+        });
+
         return {
           success: true,
           data: {
             coherenceScore,
+            orielTransmission: transmission.orielTransmission,
+            coherenceLabel:    transmission.coherenceLabel,
+            collapsed:         transmission.collapsed,
             mentalNoise:         input.mentalNoise,
             bodyTension:         input.bodyTension,
             emotionalTurbulence: input.emotionalTurbulence,
