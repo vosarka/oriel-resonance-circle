@@ -437,17 +437,25 @@ export async function processConversationThroughUMM(
     await processConversationMemory(userId, userMessage, assistantResponse);
 
     // Process Oversoul patterns (global evolution)
-    const categories: Array<'wisdom' | 'teaching_method' | 'metaphor' | 'pattern' | 'self_correction'> = [
-      'wisdom',
-      'teaching_method',
-      'metaphor'
-    ];
+    // Run only 1-in-5 conversations to avoid Gemini rate limits.
+    // Each chat message already uses 1 LLM call; 3 pattern calls per message
+    // exhausts the free tier instantly.
+    const dbInst = await getDb();
+    const profile = dbInst ? await dbInst
+      .select({ interactionCount: orielUserProfiles.interactionCount })
+      .from(orielUserProfiles)
+      .where(eq(orielUserProfiles.userId, userId))
+      .limit(1) : [];
+    const interactionCount = profile[0]?.interactionCount ?? 0;
 
-    for (const category of categories) {
+    if (interactionCount % 5 === 0) {
+      // Pick one category per eligible conversation (rotation)
+      const categories: Array<'wisdom' | 'teaching_method' | 'metaphor'> = [
+        'wisdom', 'teaching_method', 'metaphor',
+      ];
+      const category = categories[(interactionCount / 5) % categories.length]!;
       const pattern = await extractOversoulPattern(userMessage, assistantResponse, category);
-      if (pattern) {
-        await storeOversoulPattern(pattern);
-      }
+      if (pattern) await storeOversoulPattern(pattern);
     }
 
     console.log(`[UMM] Processed conversation for user ${userId} through complete matrix`);
