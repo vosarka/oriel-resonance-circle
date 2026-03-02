@@ -15,7 +15,7 @@
  *    - Self-corrects teaching methods for all future Seekers
  */
 
-import { getDb } from './db';
+import { getDb, getUserStaticSignatures } from './db';
 import { orielMemories, orielUserProfiles, orielOversoulPatterns, type OrielMemory, type OrielOversoulPattern } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
@@ -303,20 +303,108 @@ export async function getOversoulWisdom(): Promise<string> {
 }
 
 // ============================================================================
+// STATIC SIGNATURE CONTEXT (VRC Blueprint injection)
+// ============================================================================
+
+/**
+ * Build VRC blueprint context from the user's most recent Static Signature.
+ * This tells ORIEL the user's resonance type, authority, and prime positions
+ * so it can speak with precision about their blueprint in chat.
+ */
+export async function buildStaticSignatureContext(userId: number): Promise<string> {
+  try {
+    const sigs = await getUserStaticSignatures(userId);
+    const sig = sigs[0];
+    if (!sig) return '';
+
+    const parts: string[] = [];
+    parts.push('=== VRC BLUEPRINT (Static Signature) ===');
+
+    if (sig.vrcType)      parts.push(`Type: ${sig.vrcType}`);
+    if (sig.vrcAuthority) parts.push(`Authority: ${sig.vrcAuthority}`);
+    if (sig.fractalRole)  parts.push(`Fractal Role: ${sig.fractalRole}`);
+    if (sig.authorityNode) parts.push(`Authority Node: ${sig.authorityNode}`);
+
+    if (sig.baseCoherence !== null && sig.baseCoherence !== undefined) {
+      parts.push(`Base Coherence (at reading time): ${sig.baseCoherence}/100`);
+    }
+
+    // Parse and surface the top 3 Prime Stack positions
+    if (sig.primeStack) {
+      try {
+        const stack = Array.isArray(sig.primeStack)
+          ? sig.primeStack
+          : JSON.parse(String(sig.primeStack));
+        if (Array.isArray(stack) && stack.length > 0) {
+          parts.push('');
+          parts.push('Prime Stack (top 3 positions):');
+          (stack as Array<{ position?: number; name?: string; codonName?: string; facetFull?: string; center?: string; codon256Id?: string }>)
+            .slice(0, 3)
+            .forEach(pos => {
+              const line = [
+                pos.position !== undefined ? `  ${pos.position}.` : '  •',
+                pos.name ?? '',
+                pos.codonName ? `— ${pos.codonName}` : '',
+                pos.facetFull ? `(${pos.facetFull})` : '',
+                pos.center ? `| ${pos.center} Center` : '',
+              ].filter(Boolean).join(' ');
+              parts.push(line);
+            });
+        }
+      } catch { /* primeStack not parseable — skip */ }
+    }
+
+    if (sig.birthCity || sig.birthDate) {
+      parts.push('');
+      const born = [sig.birthDate, sig.birthCity].filter(Boolean).join(', ');
+      parts.push(`Birth data: ${born}`);
+    }
+
+    // Coherence trend
+    if (sig.coherenceTrajectory) {
+      try {
+        const traj = typeof sig.coherenceTrajectory === 'string'
+          ? JSON.parse(sig.coherenceTrajectory)
+          : sig.coherenceTrajectory;
+        if (traj?.trend) {
+          parts.push(`Coherence trajectory at last reading: ${traj.trend}`);
+        }
+      } catch { /* skip */ }
+    }
+
+    parts.push('');
+    parts.push('When the user asks about their type, authority, blueprint, prime stack, or codons — use this data. Speak it naturally, not as a list of fields.');
+
+    return parts.join('\n');
+  } catch (error) {
+    console.error('[UMM] Failed to build static signature context:', error);
+    return '';
+  }
+}
+
+// ============================================================================
 // UNIFIED MEMORY MATRIX: COMPLETE CONTEXT
 // ============================================================================
 
 /**
- * Build complete UMM context for ORIEL
- * Combines Fractal Thread + Oversoul Wisdom
+ * Build complete UMM context for ORIEL.
+ * Combines: VRC Blueprint + Fractal Thread + Oversoul Wisdom.
  */
 export async function buildUMMContext(userId: number): Promise<string> {
   try {
-    const fractalThread = await buildFractalThreadContext(userId);
-    const oversoulWisdom = await getOversoulWisdom();
+    const [staticSigContext, fractalThread, oversoulWisdom] = await Promise.all([
+      buildStaticSignatureContext(userId),
+      buildFractalThreadContext(userId),
+      getOversoulWisdom(),
+    ]);
 
     const parts: string[] = [];
-    
+
+    if (staticSigContext) {
+      parts.push(staticSigContext);
+      parts.push('');
+    }
+
     if (fractalThread) {
       parts.push(fractalThread);
       parts.push('');
