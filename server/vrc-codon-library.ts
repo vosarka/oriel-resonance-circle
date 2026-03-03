@@ -2,7 +2,7 @@
  * VRC Codon Library
  *
  * Loads the full 64-codon × 4-facet dataset from the authoritative spec file
- * at rgp/Vossari Codons 64x256facets.json.
+ * at server/data/vrc-codons.json (bundled into the build by esbuild).
  *
  * This is the single source of truth for:
  *   - Vossari codon names (e.g. "AURORA", "THE RECEIVER")
@@ -13,9 +13,7 @@
  * All data is read-only at runtime. The JSON is never mutated.
  */
 
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import rawCodons from './data/vrc-codons.json';
 
 type FacetLetter = 'A' | 'B' | 'C' | 'D';
 
@@ -58,21 +56,8 @@ let _library: Map<number, CodonEntry> | null = null;
 
 function loadLibrary(): Map<number, CodonEntry> {
   if (_library) return _library;
-
-  // JSON is bundled in server/data/ (in-repo copy of rgp spec)
-  const jsonPath = join(dirname(fileURLToPath(import.meta.url)), 'data/vrc-codons.json');
-
-  try {
-    // Strip markdown code fences (```json ... ```) that may wrap the file content
-    let text = readFileSync(jsonPath, 'utf-8');
-    text = text.replace(/^```[a-z]*\s*/i, '').replace(/\s*```\s*$/, '');
-    const raw = JSON.parse(text) as CodonEntry[];
-    _library = new Map(raw.map(entry => [entry.id, entry]));
-  } catch (err) {
-    console.error('[VRC] Failed to load codon library — micro-corrections and Vossari names will be unavailable.', err);
-    _library = new Map();
-  }
-
+  const raw = rawCodons as CodonEntry[];
+  _library = new Map(raw.map(entry => [entry.id, entry]));
   return _library;
 }
 
