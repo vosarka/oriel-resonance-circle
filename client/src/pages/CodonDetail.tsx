@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
+import CodonGlyph from "@/components/CodonGlyph";
 
 // Facet letter → display name
 const FACET_LABELS: Record<string, string> = {
@@ -23,67 +24,6 @@ const FACET_COLORS: Record<string, { border: string; text: string; bg: string; p
   C: { border: "border-purple-500/40", text: "text-purple-300", bg: "bg-purple-500/5",  pill: "bg-purple-500/20 text-purple-300" },
   D: { border: "border-yellow-500/40", text: "text-yellow-300", bg: "bg-yellow-500/5",  pill: "bg-yellow-500/20 text-yellow-300" },
 };
-
-// ─── Codon Binary Glyph ───────────────────────────────────────────────────────
-// 6 circles in a ring — one per bit of the codon's binary string.
-// Position 0 = top, clockwise. Filled + glowing = "1".
-function CodonGlyph({
-  binary,
-  codonNumber,
-  className = "",
-}: {
-  binary?: string;
-  codonNumber: number;
-  className?: string;
-}) {
-  // Prefer binary string from JSON; fall back to numeric bit decomposition
-  const bits: number[] = binary
-    ? binary.split("").map(Number)
-    : Array.from({ length: 6 }, (_, i) => (codonNumber >> i) & 1);
-
-  const cx = 50, cy = 50, orbitR = 34, dotR = 8;
-
-  const nodes = bits.map((bit, i) => {
-    const angle = (i * 60 - 90) * (Math.PI / 180);
-    return {
-      x: cx + orbitR * Math.cos(angle),
-      y: cy + orbitR * Math.sin(angle),
-      filled: bit === 1,
-    };
-  });
-
-  return (
-    <svg viewBox="0 0 100 100" className={className} aria-label={`Codon ${codonNumber} glyph`}>
-      <circle cx={cx} cy={cy} r={orbitR} fill="none" stroke="currentColor" strokeOpacity="0.12" strokeWidth="1" />
-      {nodes.map((node, i) => {
-        const next = nodes[(i + 1) % 6];
-        if (!node.filled || !next.filled) return null;
-        return (
-          <line
-            key={`l${i}`}
-            x1={node.x} y1={node.y} x2={next.x} y2={next.y}
-            stroke="currentColor" strokeWidth="1" strokeOpacity="0.35"
-          />
-        );
-      })}
-      <circle cx={cx} cy={cy} r={2.5} fill="currentColor" opacity="0.3" />
-      {nodes.map((node, i) => (
-        <g key={`n${i}`}>
-          {node.filled && (
-            <circle cx={node.x} cy={node.y} r={dotR + 4} fill="currentColor" opacity="0.10" />
-          )}
-          <circle
-            cx={node.x} cy={node.y} r={dotR}
-            fill={node.filled ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth={node.filled ? 0 : 1.5}
-            opacity={node.filled ? 0.95 : 0.22}
-          />
-        </g>
-      ))}
-    </svg>
-  );
-}
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function CodonDetail() {

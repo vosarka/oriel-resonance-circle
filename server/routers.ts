@@ -525,6 +525,7 @@ export const appRouter = router({
             gift: c.frequency.gift,
             crown: c.frequency.siddhi,
             domain: c.archetype_role,
+            binary: c.binary,
           });
         }
       }
