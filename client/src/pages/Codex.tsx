@@ -123,8 +123,7 @@ export default function Codex() {
                       }}
                     >
                       <CodonGlyph
-                        binary={codon.binary}
-                        codonNumber={codon.numericId}
+                          codonNumber={codon.numericId}
                         isActivating={isActive}
                         className={[
                           "w-14 h-14 text-primary",

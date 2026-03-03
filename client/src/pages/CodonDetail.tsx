@@ -205,7 +205,6 @@ export default function CodonDetail() {
                 <div className="absolute inset-12 border border-primary/10 rounded-full" />
                 <div className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-3 p-8">
                   <CodonGlyph
-                    binary={codon.binary}
                     codonNumber={codonNumber}
                     className="text-primary drop-shadow-[0_0_18px_rgba(0,240,255,0.8)] w-28 h-28"
                   />

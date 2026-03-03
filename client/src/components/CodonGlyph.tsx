@@ -1,27 +1,44 @@
 /**
  * CodonGlyph — 6-node binary glyph rendered as an SVG.
  *
- * Each of the 6 nodes maps to one bit of the codon's binary string.
- * Node 0 = top, clockwise. Filled + glowing = bit "1".
+ * Binary encoding: I Ching hexagram lines 1–6 (bottom→top), char 0 = line 1.
+ * Each bit maps to a node on a hexagonal ring (node 0 = top, clockwise).
  *
- * isActivating: overrides all nodes to filled (used during navigation flash).
+ * The CODON_BINARY table is the authoritative client-side source so the
+ * glyph always renders correctly regardless of server response state.
+ *
+ * isActivating: overrides all nodes to filled (navigation flash effect).
  */
+
+// Authoritative binary lookup — I Ching hexagram encoding, keyed by codon ID 1–64
+const CODON_BINARY: Record<number, string> = {
+  1:"111111", 2:"000000", 3:"100010", 4:"010001", 5:"010111", 6:"111010",
+  7:"010000", 8:"010111", 9:"111011",10:"110111",11:"111000",12:"000111",
+ 13:"101111",14:"111101",15:"001000",16:"000100",17:"011001",18:"011001",
+ 19:"110000",20:"000011",21:"100101",22:"100101",23:"000001",24:"000001",
+ 25:"100111",26:"111001",27:"100001",28:"011110",29:"010010",30:"101101",
+ 31:"001110",32:"001110",33:"001111",34:"111100",35:"000101",36:"101000",
+ 37:"101011",38:"110101",39:"001010",40:"001010",41:"110001",42:"100011",
+ 43:"011111",44:"111110",45:"000110",46:"011000",47:"010110",48:"011010",
+ 49:"101110",50:"011101",51:"100100",52:"001001",53:"001011",54:"001101",
+ 55:"001101",56:"111100",57:"011011",58:"011011",59:"010011",60:"010011",
+ 61:"110011",62:"001100",63:"010101",64:"101010",
+};
+
 export default function CodonGlyph({
-  binary,
   codonNumber,
   isActivating = false,
   className = "",
 }: {
-  binary?: string;
   codonNumber: number;
   isActivating?: boolean;
   className?: string;
 }) {
+  const binary = CODON_BINARY[codonNumber] ?? "000000";
+
   const bits: number[] = isActivating
     ? [1, 1, 1, 1, 1, 1]
-    : binary
-      ? binary.split("").map(Number)
-      : Array.from({ length: 6 }, (_, i) => (codonNumber >> i) & 1);
+    : binary.split("").map(Number);
 
   const cx = 50, cy = 50, orbitR = 34, dotR = 8;
 
