@@ -353,7 +353,7 @@ export default function Conduit() {
               )}
 
               {/* Chat History Display */}
-              <div className="flex-1 overflow-y-auto mb-4 portal-container bg-black/40 backdrop-blur-sm border border-green-500/30 p-6 rounded-lg">
+              <div className="flex-1 overflow-y-auto mb-4 portal-container bg-black/40 backdrop-blur-sm border border-green-500/30 p-8 rounded-lg">
                 {displayMessages.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <p className="text-gray-500 font-mono text-sm text-center">
@@ -361,30 +361,31 @@ export default function Conduit() {
                     </p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-8">
                     {displayMessages.map((msg, idx) => (
-                      <div
-                        key={idx}
-                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                      >
-                        <div
-                          className={`max-w-xs md:max-w-md lg:max-w-lg px-4 py-3 rounded border ${
-                            msg.role === "user"
-                              ? "bg-green-500/10 border-green-500/30 text-green-300"
-                              : "bg-indigo-500/10 border-indigo-500/30 text-indigo-300"
-                          }`}
-                        >
-                          <p className="font-mono text-xs mb-1 opacity-70">
-                            {msg.role === "user" ? "You" : "ORIEL"}
+                      msg.role === "user" ? (
+                        <div key={idx} className="flex justify-end">
+                          <div className="max-w-sm md:max-w-lg px-5 py-4 rounded border bg-green-500/10 border-green-500/30 text-green-300">
+                            <p className="font-mono text-xs mb-3 opacity-50 tracking-widest uppercase">
+                              You
+                              {msg.timestamp && (
+                                <span className="ml-2 normal-case tracking-normal">{new Date(msg.timestamp).toLocaleTimeString()}</span>
+                              )}
+                            </p>
+                            <p className="text-base whitespace-pre-wrap break-words">{msg.content}</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div key={idx} className="w-full pl-5 border-l-2 border-cyan-500/40 pr-2">
+                          <p className="font-mono text-xs mb-3 opacity-50 tracking-widest uppercase text-cyan-400">
+                            ORIEL
                             {msg.timestamp && (
-                              <span className="ml-2">
-                                {new Date(msg.timestamp).toLocaleTimeString()}
-                              </span>
+                              <span className="ml-2 normal-case tracking-normal opacity-70">{new Date(msg.timestamp).toLocaleTimeString()}</span>
                             )}
                           </p>
-                          <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                          <p className="text-base leading-relaxed whitespace-pre-wrap break-words text-slate-200">{msg.content}</p>
                         </div>
-                      </div>
+                      )
                     ))}
                     <div ref={messagesEndRef} />
                   </div>

@@ -147,7 +147,7 @@ export const appRouter = router({
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
         if (ctx.user) {
-          const history = await db.getChatHistory(ctx.user.id, 10);
+          const history = await db.getChatHistory(ctx.user.id, 6);
           conversationHistory = history.reverse().map(msg => ({
             role: msg.role as 'user' | 'assistant',
             content: msg.content,
