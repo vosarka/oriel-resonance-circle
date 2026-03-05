@@ -328,7 +328,7 @@ export default function Conduit() {
 
       {!initiated ? (
         /* ========== PRE-INITIATION SCREEN ========== */
-        <div className="relative z-10 flex items-center justify-center" style={{ height: "calc(100vh - 64px)" }}>
+        <div className="relative z-10 flex items-center justify-center" style={{ height: "calc(100vh - 144px)" }}>
           <div className="flex flex-col lg:flex-row items-center gap-16 px-8 max-w-5xl w-full">
             {/* Pre-init orb preview */}
             <div className="w-64 h-64 lg:w-80 lg:h-80 flex-shrink-0">
@@ -379,7 +379,7 @@ export default function Conduit() {
         /* ========== MAIN INTERFACE: 33/67 SPLIT ========== */
         <div
           className="relative z-10 flex overflow-hidden"
-          style={{ height: "calc(100vh - 64px)" }}
+          style={{ height: "calc(100vh - 144px)" }}
         >
           {/* ===== LEFT PANEL: 33% — Living Orb ===== */}
           <div

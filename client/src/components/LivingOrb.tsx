@@ -368,18 +368,7 @@ export default function LivingOrb({ state = "idle", subtitle, analyserNode }: Li
                 </div>
             </div>
 
-            {subtitle && (
-                <div className="absolute bottom-20 left-4 right-4 flex justify-center pointer-events-none select-none z-10">
-                    <div
-                        className="max-w-[200px] text-center px-3 py-2 rounded"
-                        style={{ background: "rgba(0,0,0,0.55)", border: `1px solid ${stateColor[state]}22`, backdropFilter: "blur(10px)" }}
-                    >
-                        <p className="font-mono text-[9px] leading-relaxed italic" style={{ color: stateColor[state], opacity: 0.8 }}>
-                            {subtitle}
-                        </p>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 }
