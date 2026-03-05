@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square } from "lucide-react";
+import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip } from "lucide-react";
 import Layout from "@/components/Layout";
 import LivingOrb from "@/components/LivingOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -31,6 +31,8 @@ export default function Conduit() {
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
 
   // Web Audio API for audio-reactive orb
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -280,7 +282,11 @@ export default function Conduit() {
       const result = await chatMutation.mutateAsync({
         message: userMessage,
         history: !isAuthenticated ? localMessages : undefined,
+        fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
       });
+
+      // Clear attached files after sending
+      setAttachedFiles([]);
 
       const newAssistantMessage: ChatMessage = {
         role: "assistant",
@@ -641,6 +647,69 @@ export default function Conduit() {
                     </div>
                   )}
 
+                  {/* File chips row */}
+                  {attachedFiles.length > 0 && (
+                    <div className="flex gap-2 flex-wrap mb-2">
+                      {attachedFiles.map((file, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[10px]"
+                          style={{
+                            background: "rgba(0,188,212,0.08)",
+                            border: "1px solid rgba(0,188,212,0.25)",
+                            color: "rgba(0,229,255,0.8)",
+                          }}
+                        >
+                          <Paperclip size={10} />
+                          <span className="max-w-[120px] truncate">{file.name}</span>
+                          <button
+                            onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="ml-1 hover:opacity-100 opacity-60 transition-opacity"
+                            style={{ color: "rgba(0,229,255,0.7)" }}
+                          >
+                            <X size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.h,.yml,.yaml,.toml,.ini,.cfg,.log,.sql,.sh,.bat,.ps1,.env"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      const remaining = 2 - attachedFiles.length;
+                      const toAdd = files.slice(0, remaining);
+                      const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+
+                      toAdd.forEach(file => {
+                        if (file.size > MAX_SIZE) {
+                          alert(`File "${file.name}" exceeds the 50MB limit.`);
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const arrayBuffer = reader.result as ArrayBuffer;
+                          const base64 = btoa(
+                            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+                          );
+                          setAttachedFiles(prev => {
+                            if (prev.length >= 2) return prev;
+                            return [...prev, { name: file.name, data: base64 }];
+                          });
+                        };
+                        reader.readAsArrayBuffer(file);
+                      });
+
+                      e.target.value = "";
+                    }}
+                  />
+
                   {/* Main input row */}
                   <div className="flex gap-2 items-center">
                     <input
@@ -659,6 +728,22 @@ export default function Conduit() {
                       onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,229,255,0.5)")}
                       onBlur={(e) => (e.currentTarget.style.borderColor = message ? "rgba(0,229,255,0.4)" : "rgba(0,188,212,0.2)")}
                     />
+
+                    {/* File attach button */}
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={chatMutation.isPending || isSpeaking || attachedFiles.length >= 2}
+                      title={attachedFiles.length >= 2 ? "Max 2 files" : "Attach file"}
+                      className="p-3 rounded transition-all"
+                      style={{
+                        background: "rgba(0,188,212,0.06)",
+                        border: "1px solid rgba(0,188,212,0.2)",
+                        color: attachedFiles.length >= 2 ? "rgba(0,188,212,0.2)" : "rgba(0,188,212,0.5)",
+                        opacity: attachedFiles.length >= 2 ? 0.4 : 1,
+                      }}
+                    >
+                      <Paperclip size={16} />
+                    </button>
 
                     {/* Voice button */}
                     <button

@@ -48,7 +48,7 @@ export const appRouter = router({
     list: publicProcedure.query(async () => {
       return db.getAllSignals();
     }),
-    
+
     decodeTriptych: publicProcedure
       .input(z.object({
         signalId: z.string(),
@@ -142,6 +142,10 @@ export const appRouter = router({
           role: z.enum(['user', 'assistant']),
           content: z.string(),
         })).optional(),
+        fileContents: z.array(z.object({
+          name: z.string(),
+          data: z.string(), // base64-encoded file data
+        })).max(2).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -156,7 +160,21 @@ export const appRouter = router({
           conversationHistory = input.history;
         }
 
-        const response = await gemini.chatWithORIEL(input.message, conversationHistory, ctx.user?.id);
+        // Build the full message with file contents prepended as context
+        let fullMessage = input.message;
+        if (input.fileContents && input.fileContents.length > 0) {
+          const { extractTextFromFile } = await import('./file-parser');
+          const extractions = await Promise.all(
+            input.fileContents.map(async (f) => {
+              const text = await extractTextFromFile(f.name, f.data);
+              return `--- FILE: ${f.name} ---\n${text}\n--- END FILE ---`;
+            })
+          );
+          const fileBlocks = extractions.join('\n\n');
+          fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
+        }
+
+        const response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
 
         if (ctx.user) {
           await db.saveChatMessage({ userId: ctx.user.id, role: "user", content: input.message });
@@ -243,23 +261,23 @@ export const appRouter = router({
           // For static readings, we'll calculate codons from birth date
           let primeCodonSet = input.primeCodonSet || [];
           let fullCodonStack = input.fullCodonStack || [];
-          
+
           if (input.readingType === "static" && input.birthDate) {
             // Calculate static signature codons from birth date
             const birthDateObj = new Date(input.birthDate);
             const dayOfYear = Math.floor((birthDateObj.getTime() - new Date(birthDateObj.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-            
+
             // Map day of year to codon (64 codons, ~5.7 days per codon)
             const primaryCodon = Math.floor((dayOfYear / 365) * 64) + 1;
             const secondaryCodon = ((primaryCodon + 31) % 64) + 1; // Harmonic partner offset
             const tertiaryCodon = ((primaryCodon + 15) % 64) + 1; // Quarter offset
-            
+
             primeCodonSet = [
               `RC${String(primaryCodon).padStart(2, "0")}`,
               `RC${String(secondaryCodon).padStart(2, "0")}`,
               `RC${String(tertiaryCodon).padStart(2, "0")}`
             ];
-            
+
             // Full stack includes more codons based on birth time if available
             fullCodonStack = [...primeCodonSet];
             if (input.birthTime) {
@@ -380,7 +398,7 @@ export const appRouter = router({
         }
       }),
 
-  // Vossari Resonance Codex - Mode B: Evolutionary Assistance
+    // Vossari Resonance Codex - Mode B: Evolutionary Assistance
     evolutionaryAssistance: publicProcedure
       .input(z.object({
         mentalNoise: z.number().min(0).max(10),
@@ -549,7 +567,7 @@ export const appRouter = router({
         }
 
         const c = getCodonEntry(numericId);
-        
+
         // Fallback: if codon library is unavailable, create a basic entry
         const codon = c || {
           id: numericId,
@@ -579,7 +597,7 @@ export const appRouter = router({
         // Mandala position: slot index + degree range
         const slotIndex = VRC_MANDALA.indexOf(numericId);
         const startDeg = (WHEEL_OFFSET + slotIndex * CODON_ARC) % 360;
-        const endDeg   = (startDeg + CODON_ARC) % 360;
+        const endDeg = (startDeg + CODON_ARC) % 360;
 
         // Pre-selected facet from URL suffix (e.g. "38-A" → "A")
         const facetSuffix = input.id.match(/-([A-Da-d])$/)?.[1]?.toUpperCase() ?? null;
@@ -589,28 +607,28 @@ export const appRouter = router({
 
         return {
           // Backwards-compat fields (CodonDetail still uses codon.id, codon.shadow, etc.)
-          id:     `RC${String(codon.id).padStart(2, '0')}`,
-          name:   codon.name,
-          title:  codon.traditional_name,
+          id: `RC${String(codon.id).padStart(2, '0')}`,
+          name: codon.name,
+          title: codon.traditional_name,
           essence: codon.facets.A.description,
           shadow: codon.frequency.shadow,
-          gift:   codon.frequency.gift,
-          crown:  codon.frequency.siddhi,
+          gift: codon.frequency.gift,
+          crown: codon.frequency.siddhi,
           domain: codon.archetype_role,
           // Rich JSON fields
-          numericId:       codon.id,
+          numericId: codon.id,
           traditional_name: codon.traditional_name,
-          binary:           codon.binary,
-          chemical_marker:  codon.chemical_marker,
-          archetype_role:   codon.archetype_role,
-          somatic_marker:   codon.somatic_marker,
-          frequency:        codon.frequency,
-          facets:           codon.facets,
+          binary: codon.binary,
+          chemical_marker: codon.chemical_marker,
+          archetype_role: codon.archetype_role,
+          somatic_marker: codon.somatic_marker,
+          frequency: codon.frequency,
+          facets: codon.facets,
           // Derived
           channels,
-          mandalaSlot:  slotIndex,
-          startDegree:  +startDeg.toFixed(4),
-          endDegree:    +endDeg.toFixed(4),
+          mandalaSlot: slotIndex,
+          startDegree: +startDeg.toFixed(4),
+          endDegree: +endDeg.toFixed(4),
           initialFacet: facetSuffix,
         };
       }),
