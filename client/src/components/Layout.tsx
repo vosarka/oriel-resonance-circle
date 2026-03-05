@@ -5,22 +5,23 @@ import BackgroundPattern from "./BackgroundPattern";
 
 interface LayoutProps {
   children: ReactNode;
+  hideFooter?: boolean;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, hideFooter }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* Background Pattern */}
       <BackgroundPattern />
-      
+
       <Header />
-      
-      {/* Main content with padding for fixed header/footer */}
-      <main className="pt-16 pb-20 min-h-screen relative z-10">
+
+      {/* Main content with padding for fixed header */}
+      <main className={`pt-16 ${hideFooter ? "" : "pb-20"} min-h-screen relative z-10`}>
         {children}
       </main>
-      
-      <Footer />
+
+      {!hideFooter && <Footer />}
     </div>
   );
 }
