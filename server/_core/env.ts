@@ -10,6 +10,7 @@ export const ENV = {
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+  appBaseUrl: process.env.APP_BASE_URL ?? "",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? "",
 };

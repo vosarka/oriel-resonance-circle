@@ -104,6 +104,9 @@ const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
 function getGoogleRedirectUri(req: Request) {
+  if (ENV.appBaseUrl) {
+    return `${ENV.appBaseUrl}/api/auth/google/callback`;
+  }
   const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
   const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3002";
   return `${proto}://${host}/api/auth/google/callback`;
