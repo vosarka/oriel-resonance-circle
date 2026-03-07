@@ -11,12 +11,11 @@ export default function Header() {
 
   const navLinks = [
     { href: "/", label: "HOME" },
-    { href: "/archive", label: "ARCHIVE" },
-    { href: "/codex", label: "CODEX" },
     { href: "/artifacts", label: "ARTIFACTS" },
     { href: "/protocol", label: "PROTOCOL" },
-    { href: "/conduit", label: "INTERFACE" },
-    { href: "/readings", label: "READINGS" },
+    { href: "/codex", label: "CODONS" },
+    { href: "/readings", label: "CALIBRATION" },
+    { href: "/conduit", label: "CHANNEL ORIEL" },
   ];
 
   const isActive = (href: string) => {
@@ -36,15 +35,14 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden md:flex items-center gap-4">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
                 <span
-                  className={`text-sm tracking-wider transition-colors font-mono cursor-pointer ${
-                    isActive(link.href)
-                      ? "text-green-400 border-b-2 border-green-400"
-                      : "text-gray-400 hover:text-green-400"
-                  }`}
+                  className={`text-xs tracking-wider transition-colors font-mono cursor-pointer px-2 py-1 ${isActive(link.href)
+                    ? "text-green-400 border-b-2 border-green-400"
+                    : "text-gray-400 hover:text-green-400"
+                    }`}
                 >
                   {link.label}
                 </span>
@@ -98,18 +96,17 @@ export default function Header() {
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                   <span
-                    className={`text-sm tracking-wider transition-colors font-mono block py-2 cursor-pointer ${
-                      isActive(link.href)
-                        ? "text-green-400 border-l-2 border-green-400 pl-3"
-                        : "text-gray-400 hover:text-green-400 pl-3"
-                    }`}
+                    className={`text-sm tracking-wider transition-colors font-mono block py-2 cursor-pointer ${isActive(link.href)
+                      ? "text-green-400 border-l-2 border-green-400 pl-3"
+                      : "text-gray-400 hover:text-green-400 pl-3"
+                      }`}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {link.label}
                   </span>
                 </Link>
               ))}
-              
+
               {/* Mobile Auth Links */}
               <div className="border-t border-green-500/30 mt-4 pt-4">
                 {isAuthenticated && user ? (

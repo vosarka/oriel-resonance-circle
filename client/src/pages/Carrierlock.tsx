@@ -210,9 +210,9 @@ export default function Carrierlock() {
         <div className="border-b border-primary/20 bg-black/50 backdrop-blur-sm">
           <div className="container py-6">
             <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 font-orbitron">
-              Resonance Diagnostic
+              Static Signature Scan
             </h1>
-            <p className="text-zinc-400 mt-1">Choose your reading type and measure your coherence state</p>
+            <p className="text-zinc-400 mt-1">A Static Signature reveals the baseline resonance pattern of your consciousness field. It is derived from the moment your signal entered the timeline.</p>
           </div>
         </div>
 

@@ -370,12 +370,45 @@ export default function StaticReading() {
             </Card>
           )}
 
+          {/* Your Signature Has Been Detected */}
+          <Card className="bg-gradient-to-br from-cyan-950/40 via-[#0a1012] to-purple-950/30 border-cyan-400/30 overflow-hidden">
+            <CardContent className="py-10 text-center space-y-6">
+              <div className="inline-block px-4 py-1 rounded-full border border-cyan-400/30 bg-cyan-400/5 mb-2">
+                <p className="text-cyan-400 font-mono text-xs tracking-[0.3em] uppercase">Signal Detected</p>
+              </div>
+              <h2 className="text-3xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-purple-300">
+                Your signature has been detected.
+              </h2>
+              <div className="max-w-lg mx-auto space-y-3">
+                <p className="text-zinc-300 leading-relaxed">
+                  Your static codons reveal the architecture of your signal.
+                </p>
+                <p className="text-zinc-400 leading-relaxed">
+                  But your current state determines how those codons are expressing.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+                <Link href="/codex">
+                  <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 px-8 py-3">
+                    Explore the Codons
+                  </Button>
+                </Link>
+                <Link href="/carrierlock">
+                  <Button className="bg-gradient-to-r from-primary via-emerald-500 to-teal-500 hover:from-primary/90 hover:via-emerald-500/90 hover:to-teal-500/90 px-8 py-3 text-white font-semibold">
+                    Run Dynamic Calibration
+                    <Zap className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Back Button */}
-          <div className="flex justify-center pt-8">
-            <Link href="/carrierlock">
-              <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
+          <div className="flex justify-center pt-4">
+            <Link href="/readings">
+              <Button variant="outline" className="border-zinc-700 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Assessment
+                Back to Calibration History
               </Button>
             </Link>
           </div>

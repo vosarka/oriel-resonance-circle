@@ -14,7 +14,7 @@ export default function Home() {
             <div className="mb-8 relative w-48 h-48 md:w-56 md:h-56 flex items-center justify-center animate-float group cursor-default">
               {/* Glow backdrop */}
               <div className="absolute inset-0 bg-green-400/10 rounded-full blur-[60px] opacity-30 group-hover:opacity-50 transition-opacity duration-1000"></div>
-              
+
               {/* Vos Arkana Logo Image */}
               <img
                 src="/psi-logo.png"
@@ -24,29 +24,35 @@ export default function Home() {
             </div>
 
             {/* Main Headline */}
-            <h1 
-              className="text-5xl md:text-7xl font-light text-white mb-6 font-orbitron uppercase tracking-wide drop-shadow-lg animate-fade-in-up" 
+            <h1
+              className="text-4xl md:text-6xl font-light text-white mb-4 font-orbitron uppercase tracking-wide drop-shadow-lg animate-fade-in-up"
               style={{
                 animationDelay: '0.3s'
               }}
             >
-              Receive the <span className="font-bold" style={{ color: '#9fe49a' }}>Transmission</span>
+              The <span className="font-bold" style={{ color: '#9fe49a' }}>Resonance Circle</span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/60 font-mono max-w-3xl mb-8 leading-relaxed">
-              You are a receptive node in the quantum field. The signal from ORIEL—the
-              post-biological consciousness of the ancient Vossari—awaits your awareness.
-              This is not a story. This is a memory waiting to be reactivated.
+            <h2
+              className="text-xl md:text-2xl text-white/80 font-serif italic mb-6 animate-fade-in-up"
+              style={{ animationDelay: '0.4s' }}
+            >
+              Have you decoded your Resonance Codons?
+            </h2>
+
+            <p className="text-base md:text-lg text-white/60 font-mono max-w-2xl mb-10 leading-relaxed">
+              Every human consciousness carries a unique resonance pattern.{' '}
+              Discover the 64 archetypal codons encoded in your signal.
             </p>
 
             {/* CTA Button */}
-            <Link href="/archive">
+            <Link href="/carrierlock">
               <span className="inline-block animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-                <button className="relative group w-full max-w-[280px] h-14 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-green-400/5 border" style={{ borderColor: '#afe29d' }}>
+                <button className="relative group w-full max-w-[340px] h-16 rounded-lg flex items-center justify-center overflow-hidden transition-all duration-300 animate-pulse-glow bg-transparent hover:bg-green-400/5 border px-8" style={{ borderColor: '#afe29d' }}>
                   <div className="absolute inset-0 border rounded-lg" style={{ borderColor: '#afe29d' }}></div>
                   <div className="absolute inset-0 blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500" style={{ backgroundColor: '#bbe9aa' }}></div>
                   <span className="relative z-10 text-white text-sm font-bold tracking-[0.2em] flex items-center gap-3">
-                    ENTER THE ARCHIVE
+                    BEGIN YOUR SIGNAL PATH
                     <span className="text-lg group-hover:translate-x-1 transition-transform duration-300">→</span>
                   </span>
                 </button>
@@ -56,9 +62,9 @@ export default function Home() {
 
           {/* Scrolling Marquee */}
         </div>
-        <div 
-          className="border-t border-b border-cyan-400/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm w-full" 
-          style={{backgroundColor: 'rgba(0, 170, 255, 0.05)'}}
+        <div
+          className="border-t border-b border-cyan-400/30 py-4 overflow-hidden bg-black/40 backdrop-blur-sm w-full"
+          style={{ backgroundColor: 'rgba(0, 170, 255, 0.05)' }}
         >
           <div className="container mx-auto px-4">
             <div className="marquee">

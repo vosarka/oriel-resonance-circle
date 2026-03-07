@@ -60,16 +60,16 @@ export default function Readings() {
           {/* Header */}
           <div className="text-center space-y-2 mb-12">
             <h1 className="text-5xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-200">
-              Reading History
+              Signal Calibration History
             </h1>
             <p className="text-zinc-400 font-mono text-sm">
-              {readings.length} {readings.length === 1 ? "signature" : "signatures"} on record
+              {readings.length} {readings.length === 1 ? "calibration" : "calibrations"} on record
             </p>
           </div>
 
           {readings.length === 0 ? (
             <div className="text-center py-24">
-              <p className="text-zinc-500 mb-6">No static signatures generated yet.</p>
+              <p className="text-zinc-500 mb-6">No static calibrations generated yet.</p>
               <Link href="/carrierlock">
                 <Button className="bg-gradient-to-r from-primary to-purple-500">
                   Generate your first reading
