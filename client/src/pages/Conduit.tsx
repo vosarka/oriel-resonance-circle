@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip } from "lucide-react";
+import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip, Radio } from "lucide-react";
+import OrielVoiceMode from "@/components/OrielVoiceMode";
 import Layout from "@/components/Layout";
 import LivingOrb from "@/components/LivingOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -33,6 +34,7 @@ export default function Conduit() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
+  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
 
   // Web Audio API for audio-reactive orb
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -493,6 +495,17 @@ export default function Conduit() {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Voice mode button */}
+                <button
+                  onClick={() => setVoiceModeOpen(true)}
+                  title="Voice mode — speak directly to ORIEL"
+                  className="p-1.5 rounded transition-all"
+                  style={{ color: "rgba(0,188,212,0.4)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
+                >
+                  <Radio size={15} />
+                </button>
                 <button
                   onClick={() => setHistoryOpen(!historyOpen)}
                   title="Toggle history sidebar"
@@ -862,6 +875,11 @@ export default function Conduit() {
 
       {/* Hidden audio element for ElevenLabs TTS — crossOrigin needed for Web Audio API */}
       <audio ref={audioRef} crossOrigin="anonymous" />
+
+      {/* ORIEL Voice Mode overlay */}
+      {voiceModeOpen && (
+        <OrielVoiceMode onClose={() => setVoiceModeOpen(false)} />
+      )}
     </Layout>
   );
 }
