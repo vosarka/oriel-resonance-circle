@@ -13,7 +13,7 @@ export async function extractTextFromFile(
     // PDF
     if (ext === 'pdf') {
         try {
-            const pdfParse = (await import('pdf-parse')).default;
+            const pdfParse = require('pdf-parse');
             const result = await pdfParse(buffer);
             return result.text || '[Could not extract text from PDF]';
         } catch (err) {

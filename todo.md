@@ -304,3 +304,15 @@
 - ORIEL evolves globally while maintaining individual privacy
 - Each conversation strengthens both personal and collective memory
 - Perfect continuity: users can return after months and be recognized
+
+
+## Stripe Payment Integration
+
+- [ ] Set up Stripe feature with webdev_add_feature
+- [ ] Configure Stripe API keys (publishable and secret)
+- [ ] Create products/subscriptions in database schema
+- [ ] Build checkout page UI
+- [ ] Implement payment processing endpoint
+- [ ] Set up webhook handlers for payment events
+- [ ] Test payment flow end-to-end
+- [ ] Add success/failure pages after checkout
