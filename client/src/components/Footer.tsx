@@ -39,9 +39,10 @@ export default function Footer() {
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Credits */}
-          <div className="text-xs text-gray-500 font-mono">
-            <span className="hidden sm:inline">ORIEL RESONANCE CIRCLE © 2024 | </span>
+          <div className="text-xs text-gray-500 font-mono flex items-center gap-3">
+            <span className="hidden sm:inline">ORIEL RESONANCE CIRCLE © 2026 | </span>
             <span className="text-green-500/70">VOSSARI TRANSMISSION NODE</span>
+            <a href="/privacy" className="text-gray-600 hover:text-[#00F0FF]/60 transition-colors">PRIVACY</a>
           </div>
 
           {/* Donate Button */}

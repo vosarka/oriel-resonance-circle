@@ -19,11 +19,13 @@ import Readings from "./pages/Readings";
 import StaticReading from "./pages/StaticReading";
 import DynamicReading from "./pages/DynamicReading";
 import Auth from "./pages/Auth";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 function Router() {
   return (
     <Switch>
       <Route path={"/auth"} component={Auth} />
+      <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
