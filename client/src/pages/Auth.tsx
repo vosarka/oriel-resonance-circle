@@ -271,6 +271,7 @@ export default function Auth() {
   const urlError = new URLSearchParams(window.location.search).get("error");
   const errorMessages: Record<string, string> = {
     google_denied: "Google sign-in was cancelled.",
+    google_not_configured: "Google sign-in is not available. Use email and password below.",
     google_token_failed: "Could not complete Google sign-in. Please try again.",
     google_userinfo_failed: "Could not retrieve Google account info.",
     google_error: "Google sign-in failed. Please try again.",

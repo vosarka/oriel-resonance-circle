@@ -111,7 +111,7 @@ function getGoogleRedirectUri(req: Request) {
 
 async function handleGoogleStart(req: Request, res: Response) {
   if (!ENV.googleClientId) {
-    return res.status(503).json({ error: "Google OAuth is not configured." });
+    return res.redirect("/auth?error=google_not_configured");
   }
 
   const redirectUri = getGoogleRedirectUri(req);
