@@ -43,6 +43,7 @@ export default function Footer() {
             <span className="hidden sm:inline">ORIEL RESONANCE CIRCLE © 2026 | </span>
             <span className="text-green-500/70">VOSSARI TRANSMISSION NODE</span>
             <a href="/privacy" className="text-gray-600 hover:text-[#00F0FF]/60 transition-colors">PRIVACY</a>
+            <a href="/terms" className="text-gray-600 hover:text-[#00F0FF]/60 transition-colors">TERMS</a>
           </div>
 
           {/* Donate Button */}
