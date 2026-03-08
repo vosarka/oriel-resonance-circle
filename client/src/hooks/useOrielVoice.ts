@@ -132,37 +132,50 @@ export function useOrielVoice(): UseOrielVoiceReturn {
 
       // WebSocket to our proxy
       const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const ws = new WebSocket(
-        `${proto}//${window.location.host}/api/voice/oriel-realtime`
-      );
+      const wsUrl = `${proto}//${window.location.host}/api/voice/oriel-realtime`;
+      console.log("[OrielVoice] Connecting to", wsUrl);
+      const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
-      ws.onmessage = (ev) => handleMessage(ev.data);
-      ws.onerror = () => {
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          console.log("[OrielVoice] ←", msg.type, JSON.stringify(msg).slice(0, 120));
+        } catch { /* binary */ }
+        handleMessage(ev.data);
+      };
+      ws.onerror = (e) => {
+        console.error("[OrielVoice] WebSocket error", e);
         setError("Connection failed");
         setStatus("error");
       };
-      ws.onclose = () => {
+      ws.onclose = (e) => {
+        console.log("[OrielVoice] WebSocket closed", e.code, e.reason);
         setStatus("idle");
         wsRef.current = null;
       };
 
       await new Promise<void>((resolve, reject) => {
-        ws.onopen = () => resolve();
-        setTimeout(() => reject(new Error("WS timeout")), 8000);
+        ws.onopen = () => { console.log("[OrielVoice] WS open"); resolve(); };
+        setTimeout(() => reject(new Error("WS timeout after 8s")), 8000);
       });
 
       // Init capture AudioContext at 24kHz
+      console.log("[OrielVoice] Loading AudioWorklet...");
       audioCtxRef.current = new AudioContext({ sampleRate: 24000 });
       await audioCtxRef.current.audioWorklet.addModule("/pcm-processor.js");
+      console.log("[OrielVoice] AudioWorklet loaded");
       workletNodeRef.current = new AudioWorkletNode(
         audioCtxRef.current,
         "pcm-processor"
       );
 
       // PCM16 chunks → WebSocket
+      let chunkCount = 0;
       workletNodeRef.current.port.onmessage = (ev: MessageEvent) => {
         if (ws.readyState !== WebSocket.OPEN) return;
+        if (chunkCount === 0) console.log("[OrielVoice] First audio chunk sending...");
+        chunkCount++;
         const pcm16Buffer: ArrayBuffer = ev.data;
         const bytes = new Uint8Array(pcm16Buffer);
         let binary = "";
