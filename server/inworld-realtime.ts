@@ -60,11 +60,35 @@ export function mountInworldRealtimeProxy(server: HttpServer) {
     const sessionKey = `voice-${Date.now()}`;
     const inworldUrl = `${INWORLD_WS_BASE}&key=${sessionKey}`;
 
+    console.log("[Inworld Realtime] → Connecting to Inworld:", inworldUrl);
     const inworldWs = new WebSocket(inworldUrl, {
       headers: { Authorization: `Basic ${apiKey}` },
     });
 
+    // Catch HTTP-level rejections (401, 403, 404 etc.)
+    inworldWs.on("unexpected-response", (_req, res) => {
+      let body = "";
+      res.on("data", (d: Buffer) => (body += d.toString()));
+      res.on("end", () => {
+        console.error(`[Inworld Realtime] Inworld rejected connection: HTTP ${res.statusCode} — ${body.slice(0, 300)}`);
+        if (clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(JSON.stringify({ type: "error", error: { message: `Inworld auth failed: ${res.statusCode}` } }));
+          clientWs.close();
+        }
+      });
+    });
+
+    // Connection timeout
+    const connTimeout = setTimeout(() => {
+      if (inworldWs.readyState !== WebSocket.OPEN) {
+        console.error("[Inworld Realtime] Timeout connecting to Inworld — closing");
+        inworldWs.terminate();
+        if (clientWs.readyState === WebSocket.OPEN) clientWs.close();
+      }
+    }, 10000);
+
     inworldWs.on("open", () => {
+      clearTimeout(connTimeout);
       console.log("[Inworld Realtime] Connected to Inworld, sending session.update");
       inworldWs.send(buildSessionUpdate());
     });
