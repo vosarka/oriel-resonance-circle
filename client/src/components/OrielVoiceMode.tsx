@@ -35,12 +35,11 @@ export default function OrielVoiceMode({ onClose }: OrielVoiceModeProps) {
   const { status, error, connect, disconnect, startListening, stopListening } =
     useOrielVoice();
 
-  // Connect on mount
-  const hasConnected = status !== "idle";
-
   const handleMicPress = async () => {
     if (status === "idle") {
       await connect();
+      // Auto-start listening after connecting — no second tap needed
+      await startListening();
       return;
     }
     if (status === "ready") {
@@ -172,7 +171,7 @@ export default function OrielVoiceMode({ onClose }: OrielVoiceModeProps) {
           <p className="mt-8 text-xs font-mono text-gray-600 text-center max-w-xs leading-relaxed">
             {status === "idle"
               ? "TAP THE MIC TO BEGIN"
-              : "TAP MIC TO SPEAK · TAP AGAIN TO SEND"}
+              : "TAP AGAIN TO STOP SPEAKING"}
           </p>
         )}
 

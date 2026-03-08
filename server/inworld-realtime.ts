@@ -29,6 +29,7 @@ function buildSessionUpdate() {
       model: "google-ai-studio/gemini-2.5-flash",
       modalities: ["text", "audio"],
       instructions: ORIEL_VOICE_INSTRUCTIONS,
+      voice: "Dennis",
       input_audio_format: "pcm16",
       output_audio_format: "pcm16",
       turn_detection: {
@@ -36,12 +37,6 @@ function buildSessionUpdate() {
         silence_duration_ms: 700,
         threshold: 0.5,
         prefix_padding_ms: 200,
-      },
-      audio: {
-        output: {
-          voice: ORIEL_VOICE_ID,
-          model: "inworld-tts-1.5-mini",
-        },
       },
     },
   });
@@ -70,12 +65,20 @@ export function mountInworldRealtimeProxy(server: HttpServer) {
     });
 
     inworldWs.on("open", () => {
-      // Configure ORIEL identity before any user audio arrives
+      console.log("[Inworld Realtime] Connected to Inworld, sending session.update");
       inworldWs.send(buildSessionUpdate());
     });
 
-    // Inworld → client
+    // Inworld → client (log first message of each type for debugging)
+    const seenTypes = new Set<string>();
     inworldWs.on("message", (data: Buffer | string) => {
+      try {
+        const msg = JSON.parse(data.toString());
+        if (!seenTypes.has(msg.type)) {
+          seenTypes.add(msg.type);
+          console.log(`[Inworld Realtime] ← ${msg.type}`, JSON.stringify(msg).slice(0, 200));
+        }
+      } catch { /* binary or non-JSON */ }
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.send(data);
       }
