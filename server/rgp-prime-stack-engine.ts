@@ -81,11 +81,18 @@ export interface PrimeStackCodon {
   frequency: 'shadow' | 'gift' | 'crown' | 'siddhi'; // legacy facet label
 }
 
+export interface CoreCodonEngine {
+  dominant: PrimeStackCodon[];   // Top 3 by weighted frequency
+  supporting: PrimeStackCodon[]; // Next 3 (positions 4–6 by weight rank)
+}
+
 export interface PrimeStackMap {
   positions: PrimeStackCodon[];
   totalWeight: number;
   dominantPosition: number;
   circuitLinks: CircuitLink[];
+  // Core Codon Engine (spec § 14): 3 dominant + 3 supporting
+  coreCodonEngine: CoreCodonEngine;
   // VRC Bio-Circuitry outputs
   channelStatuses: ChannelStatus[];
   centerStatuses: Record<CenterName, 'defined' | 'open'>;
@@ -215,13 +222,39 @@ export function calculatePrimeStack(
   }
 
   // ─── Bio-Circuitry evaluation ───────────────────────────────────────────────
-  // All activated codons (from both charts) go into the defined-gate set
+  // Spec: all 26 activations (13 per chart) define the gate set for channel evaluation.
+  // Seed from prime stack positions first, then add all remaining planets from both charts.
   const definedGates = new Set<number>(positions.map(p => p.codon));
+
+  // Add every planet in both charts (Mercury, Venus, Mars, Jupiter, Saturn,
+  // Uranus, Neptune, Pluto, South Node, etc.) that is not already in the stack.
+  for (const chart of [consciousChart, designChart]) {
+    for (const pos of Object.values(chart)) {
+      if (typeof pos.longitude === 'number') {
+        const { codon } = longitudeToCodonFacet(pos.longitude);
+        definedGates.add(codon);
+      }
+    }
+  }
+  // South Node = opposite of North Node (spec: "CALCULATED (Opposite of NN)")
+  const cSouthNode = earthLongitude(cNode); // reuse earthLongitude (180° opposite)
+  const dSouthNode = earthLongitude(dNode);
+  definedGates.add(longitudeToCodonFacet(cSouthNode).codon);
+  definedGates.add(longitudeToCodonFacet(dSouthNode).codon);
 
   const channelStatuses = evaluateChannels(definedGates);
   const centerStatuses  = evaluateCenters(channelStatuses);
   const vrcType         = determineType(centerStatuses, channelStatuses);
   const vrcAuthority    = determineAuthority(centerStatuses);
+
+  // ─── Core Codon Engine (spec § 14): 3 dominant + 3 supporting ───────────────
+  const sortedByWeight = [...positions].sort(
+    (a, b) => b.weightedFrequency - a.weightedFrequency
+  );
+  const coreCodonEngine: CoreCodonEngine = {
+    dominant:   sortedByWeight.slice(0, 3),
+    supporting: sortedByWeight.slice(3, 6),
+  };
 
   // Legacy circuit links (kept for backwards-compatible API responses)
   const circuitLinks = buildLegacyCircuitLinks(positions);
@@ -231,6 +264,7 @@ export function calculatePrimeStack(
     totalWeight,
     dominantPosition,
     circuitLinks,
+    coreCodonEngine,
     channelStatuses,
     centerStatuses,
     vrcType,

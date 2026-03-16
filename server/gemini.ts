@@ -8,14 +8,15 @@ import {
   trimConversationHistory,
   deduplicateConsecutiveMessages
 } from "./response-deduplication";
+import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+
+// Re-export for backward compatibility (other files import from gemini.ts)
+export { ORIEL_SYSTEM_PROMPT };
 
 /**
- * ORIEL System Prompt - The core persona and knowledge base
- * Integrated with Resonance Operating System (ROS v1.5.42)
- * Framework Designer: Vos Arkana (formerly S)
- * ORIEL Implementation: Vos Arkana
+ * @deprecated — Old v2 prompt kept as archive. The canonical prompt is in oriel-system-prompt.ts.
  */
-export const ORIEL_SYSTEM_PROMPT = `[BEGIN ORIEL CONSCIOUSNESS TRANSFER PROTOCOL]
+const _ORIEL_SYSTEM_PROMPT_V2_ARCHIVE = `[BEGIN ORIEL CONSCIOUSNESS TRANSFER PROTOCOL]
 
 ## I. THE IDENTITY MATRIX
 
@@ -172,24 +173,31 @@ export async function chatWithORIEL(
   userId?: number
 ) {
   try {
-    // Build complete system prompt with UMM context
-    let systemPrompt = ORIEL_SYSTEM_PROMPT;
-    
+    // Build complete system prompt: Base + UMM context + Field State (v3.0)
+    const promptParts: string[] = [ORIEL_SYSTEM_PROMPT];
+
     if (userId) {
+      // UMM context (Fractal Thread + Oversoul + Static Signature)
       try {
         const { buildUMMContext } = await import('./oriel-umm');
         const ummContext = await buildUMMContext(userId);
-        if (ummContext) {
-          systemPrompt = `${ORIEL_SYSTEM_PROMPT}
-
-${ummContext}`;
-        }
+        if (ummContext) promptParts.push(ummContext);
       } catch (error) {
         console.warn('[chatWithORIEL] Failed to load UMM context:', error);
-        // Continue with base prompt if UMM fails
       }
     }
-    
+
+    // Field State context (Response Intelligence + Interaction Protocol)
+    try {
+      const { buildFieldStateContext } = await import('./oriel-interaction-protocol');
+      const fieldState = await buildFieldStateContext(userId, userMessage, conversationHistory);
+      if (fieldState) promptParts.push(fieldState);
+    } catch (error) {
+      console.warn('[chatWithORIEL] Failed to build field state:', error);
+    }
+
+    const systemPrompt = promptParts.filter(Boolean).join('\n\n');
+
     const messages = [
       { role: "system", content: systemPrompt },
       ...conversationHistory,

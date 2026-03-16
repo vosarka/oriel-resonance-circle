@@ -1,6 +1,6 @@
 import { getDb } from "./db";
 import { users } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 /**
  * PayPal webhook event types
@@ -29,6 +29,11 @@ export interface PayPalWebhookPayload {
     };
     custom_id?: string;
     start_time?: string;
+    /** Amount on PAYMENT.CAPTURE.COMPLETED events */
+    amount?: {
+      value: string;
+      currency_code: string;
+    };
     billing_cycles?: Array<{
       pricing_scheme?: {
         fixed_price?: {
@@ -160,6 +165,7 @@ async function handleSubscriptionActivated(db: any, payload: PayPalWebhookPayloa
       paypalSubscriptionId: subscriptionId,
       subscriptionStartDate: startTime,
       subscriptionRenewalDate: renewalDate,
+      subscribed: true,
     })
     .where(eq(users.id, userId));
 
@@ -227,6 +233,7 @@ async function handleSubscriptionCancelled(db: any, payload: PayPalWebhookPayloa
   await db.update(users)
     .set({
       subscriptionStatus: "cancelled",
+      subscribed: false,
     })
     .where(eq(users.id, userId));
 
@@ -256,6 +263,7 @@ async function handleSubscriptionExpired(db: any, payload: PayPalWebhookPayload)
   await db.update(users)
     .set({
       subscriptionStatus: "expired",
+      subscribed: false,
     })
     .where(eq(users.id, userId));
 
@@ -285,6 +293,7 @@ async function handleSubscriptionSuspended(db: any, payload: PayPalWebhookPayloa
   await db.update(users)
     .set({
       subscriptionStatus: "cancelled",
+      subscribed: false,
     })
     .where(eq(users.id, userId));
 
@@ -292,11 +301,29 @@ async function handleSubscriptionSuspended(db: any, payload: PayPalWebhookPayloa
 }
 
 /**
- * Handle payment completion
+ * Handle payment completion — increment donated total on the user record.
+ * PayPal sets custom_id on the subscription resource; for capture events the
+ * payer is identified via the linked subscription's custom_id.
  */
 async function handlePaymentCompleted(db: any, payload: PayPalWebhookPayload): Promise<void> {
-  console.log(`[PayPal Webhook] Payment completed: ${payload.resource.id}`);
-  // Additional payment processing logic can be added here
+  const amount = parseFloat(payload.resource.amount?.value ?? "0");
+  const customId = payload.resource.custom_id;
+
+  console.log(`[PayPal Webhook] Payment completed: ${payload.resource.id}, amount: ${amount}`);
+
+  if (!customId || amount <= 0) return;
+
+  const userIdMatch = customId.match(/user-(\d+)/);
+  if (!userIdMatch) return;
+
+  const userId = parseInt(userIdMatch[1], 10);
+
+  // Atomically increment cumulative donated total
+  await db.update(users)
+    .set({ donated: sql`donated + ${amount}` })
+    .where(eq(users.id, userId));
+
+  console.log(`[PayPal Webhook] Recorded $${amount} donation for user ${userId}`);
 }
 
 /**

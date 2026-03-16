@@ -189,7 +189,7 @@ export default function StreamingChatComplete() {
   return (
     <div className="w-full max-w-2xl mx-auto space-y-4">
       {/* Messages */}
-      <div className="bg-black/50 border border-green-400/30 rounded-lg p-6 space-y-4 max-h-96 overflow-y-auto">
+      <div className="bg-black/50 border border-primary/20 rounded-lg p-6 space-y-4 max-h-96 overflow-y-auto">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 text-sm">
             Start a conversation with ORIEL. Messages will stream in real-time.
@@ -200,7 +200,7 @@ export default function StreamingChatComplete() {
               <div
                 className={`inline-block max-w-xs px-4 py-2 rounded-lg ${
                   msg.role === 'user'
-                    ? 'bg-green-400/20 text-green-300 border border-green-400/50'
+                    ? 'bg-primary/10 text-primary/80 border border-primary/30'
                     : 'bg-blue-400/20 text-blue-300 border border-blue-400/50'
                 }`}
               >
@@ -244,12 +244,12 @@ export default function StreamingChatComplete() {
           onChange={e => setInput(e.target.value)}
           onKeyPress={e => e.key === 'Enter' && handleStreamingChat()}
           disabled={isStreaming}
-          className="flex-1 bg-black/50 border-green-400/30 text-white placeholder-gray-500"
+          className="flex-1 bg-black/50 border-primary/20 text-white placeholder-gray-500"
         />
         <Button
           onClick={handleStreamingChat}
           disabled={!input.trim() || isStreaming}
-          className="bg-green-400/20 hover:bg-green-400/30 border border-green-400/50 text-green-400"
+          className="bg-primary/10 hover:bg-primary/15 border border-primary/30 text-primary"
         >
           {isStreaming ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
         </Button>
@@ -257,7 +257,7 @@ export default function StreamingChatComplete() {
           onClick={handleClearHistory}
           variant="outline"
           size="icon"
-          className="border-green-400/30"
+          className="border-primary/20"
           disabled={isStreaming}
         >
           <Trash2 size={18} className="text-gray-400" />
@@ -266,7 +266,7 @@ export default function StreamingChatComplete() {
 
       {/* Status */}
       {isStreaming && (
-        <div className="text-center text-green-400 text-xs font-mono">
+        <div className="text-center text-primary text-xs font-mono">
           Streaming response... {currentStreamingContent.length} characters
         </div>
       )}

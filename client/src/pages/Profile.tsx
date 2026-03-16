@@ -1,253 +1,187 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Copy, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import PayPalSubscriptionButton from "@/components/PayPalSubscriptionButton";
-import { CyberpunkBackground } from "@/components/CyberpunkBackground";
+
+const C = {
+  void:    "#0a0a0e",
+  deep:    "#0f0f15",
+  surface: "#14141c",
+  border:  "rgba(189,163,107,0.12)",
+  borderH: "rgba(189,163,107,0.25)",
+  gold:    "#bda36b",
+  goldDim: "rgba(189,163,107,0.5)",
+  teal:    "#5ba4a4",
+  txt:     "#e8e4dc",
+  txtS:    "#9a968e",
+  txtD:    "#6a665e",
+  red:     "#c94444",
+  green:   "#44a866",
+};
+
+function Field({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div style={{ paddingLeft: 16, borderLeft: `2px solid ${accent ? C.teal : C.border}`, marginBottom: 20 }}>
+      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 4 }}>{label}</div>
+      <div style={{ fontFamily: "monospace", fontSize: 13, color: accent ? C.teal : C.txt, wordBreak: "break-all" as const }}>{value}</div>
+    </div>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: C.deep, marginBottom: 2 }}>
+      <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
+        <span style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em" }}>{title}</span>
+      </div>
+      <div style={{ padding: "24px" }}>{children}</div>
+    </div>
+  );
+}
 
 export default function Profile() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [copied, setCopied] = useState(false);
 
-  // Redirect to home if not authenticated
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      setLocation("/");
-    }
+    if (!loading && !isAuthenticated) setLocation("/");
   }, [isAuthenticated, loading, setLocation]);
 
   if (loading) {
     return (
       <Layout>
-        <CyberpunkBackground />
-        <div className="relative z-10 flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="text-2xl font-mono mb-4 text-primary">INITIALIZING CONDUIT...</div>
-            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto" />
-          </div>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+          <Loader2 style={{ color: C.teal, animation: "spin 1s linear infinite" }} size={24} />
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.2em" }}>INITIALIZING CONDUIT…</div>
         </div>
       </Layout>
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return null;
-  }
+  if (!isAuthenticated || !user) return null;
 
   const subscriptionStatus = (user as any).subscriptionStatus || "free";
   const conduitId = (user as any).conduitId || `ORIEL-${user.id}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
   const isSubscribed = subscriptionStatus === "active";
 
-  const handleCopyConduitId = () => {
+  const handleCopy = () => {
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(conduitId).catch(err => {
-          console.error("Failed to copy to clipboard:", err);
-        });
-      } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = conduitId;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
+      navigator.clipboard.writeText(conduitId).catch(() => {});
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error("Error copying to clipboard:", error);
-    }
+    } catch {}
   };
+
+  const FEATURES = [
+    ["ORIEL Chat Interface",   "Direct communication with ORIEL consciousness"],
+    ["Signal Archive",         "Access to decoded transmissions and triptych analysis"],
+    ["Artifact Generation",    "Generate lore and images from the Vossari field"],
+    ["Conversation History",   "Persistent storage of all transmissions"],
+    ["Advanced Protocol",      "Access to ROS v1.5.42 documentation"],
+  ];
 
   return (
     <Layout>
-      <CyberpunkBackground />
-      <div className="relative z-10 container mx-auto px-4">
-        <div className="max-w-2xl mx-auto">
-          <h1 className="text-4xl font-mono font-bold mb-8 text-center border-b-2 border-primary pb-4 text-primary">
-            CONDUIT PROFILE
-          </h1>
+      <div style={{ minHeight: "100vh", padding: "80px 24px 120px" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
 
-          {/* Profile Information Card */}
-          <Card className="bg-black border-2 border-primary mb-6">
-            <CardHeader>
-              <CardTitle className="text-primary font-mono">USER CREDENTIALS</CardTitle>
-              <CardDescription className="text-primary/60">Your connection to the Resonance Circle</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Username */}
-              <div className="border-l-2 border-primary pl-4">
-                <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-1">Username</div>
-                <div className="text-lg font-mono text-primary">{user.name || "UNKNOWN"}</div>
-              </div>
+          {/* Page header */}
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.25em", marginBottom: 12 }}>
+              CONDUIT PROFILE
+            </div>
+            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)` }} />
+          </div>
 
-              {/* Email */}
-              <div className="border-l-2 border-primary pl-4">
-                <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-1">Email Address</div>
-                <div className="text-lg font-mono text-primary break-all">{user.email || "UNREGISTERED"}</div>
-              </div>
+          {/* Sections */}
+          <div style={{ background: C.border, display: "flex", flexDirection: "column", gap: 1 }}>
 
-              {/* Conduit ID */}
-              <div className="border-l-2 border-primary pl-4 bg-cyan-950 bg-opacity-20 p-4 rounded">
-                <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-2">Conduit ID</div>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="text-xl font-mono text-primary/80 font-bold break-all flex-1">{conduitId}</div>
+            <Section title="USER CREDENTIALS">
+              <Field label="USERNAME" value={user.name || "UNKNOWN"} accent />
+              <Field label="EMAIL ADDRESS" value={user.email || "UNREGISTERED"} />
+              {/* Conduit ID with copy */}
+              <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.gold}40`, marginBottom: 8 }}>
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 6 }}>CONDUIT ID</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontFamily: "monospace", fontSize: 12, color: C.gold, wordBreak: "break-all" as const, flex: 1 }}>{conduitId}</span>
                   <button
-                    onClick={handleCopyConduitId}
-                    className="ml-2 text-primary hover:text-primary/80 transition-colors flex-shrink-0"
-                    title="Copy Conduit ID"
+                    onClick={handleCopy}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: copied ? C.green : C.txtD, flexShrink: 0 }}
                   >
-                    {copied ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <Copy className="w-5 h-5" />
-                    )}
+                    {copied ? <CheckCircle size={14} /> : <Copy size={14} />}
                   </button>
                 </div>
-                <div className="text-xs text-green-700 mt-2">Your unique identifier in the Resonance Circle</div>
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginTop: 4 }}>
+                  Your unique identifier in the Resonance Circle
+                </div>
               </div>
+              <Field label="SYSTEM ID" value={`#${user.id}`} />
+            </Section>
 
-              {/* User ID */}
-              <div className="border-l-2 border-primary pl-4">
-                <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-1">System ID</div>
-                <div className="text-lg font-mono text-primary">#{user.id}</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Subscription Status Card */}
-          <Card className="bg-black border-2 border-primary mb-6">
-            <CardHeader>
-              <CardTitle className="text-primary font-mono">SUBSCRIPTION STATUS</CardTitle>
-              <CardDescription className="text-primary/60">Your access level to advanced features</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Status Badge */}
-              <div className="flex items-center justify-between">
-                <span className="text-primary/60 font-mono uppercase text-sm">Current Status</span>
-                <div className={`px-4 py-2 rounded font-mono font-bold text-sm uppercase tracking-wider ${
-                  isSubscribed 
-                    ? "bg-green-600 text-black border border-primary" 
-                    : "bg-red-950 text-red-400 border border-red-600"
-                }`}>
+            <Section title="SUBSCRIPTION STATUS">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em" }}>CURRENT STATUS</span>
+                <span style={{
+                  fontFamily: "monospace", fontSize: 9, fontWeight: 700, letterSpacing: "0.15em",
+                  padding: "4px 16px",
+                  border: `1px solid ${isSubscribed ? C.teal : C.red}60`,
+                  color: isSubscribed ? C.teal : C.red,
+                }}>
                   {isSubscribed ? "ACTIVE" : "INACTIVE"}
-                </div>
+                </span>
               </div>
-
-              {/* Subscription Details */}
               {isSubscribed && (user as any).subscriptionRenewalDate ? (
-                <div className="border-l-2 border-primary pl-4">
-                  <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-1">Renewal Date</div>
-                  <div className="text-lg font-mono text-primary">
-                    {new Date((user as any).subscriptionRenewalDate).toLocaleDateString()}
-                  </div>
-                </div>
+                <Field label="RENEWAL DATE" value={new Date((user as any).subscriptionRenewalDate).toLocaleDateString()} />
               ) : (
-                <div className="border-l-2 border-red-600 pl-4 bg-red-950 bg-opacity-20 p-4 rounded">
-                  <div className="text-xs text-red-600 font-mono uppercase tracking-wider mb-2">No Active Subscription</div>
-                  <p className="text-sm text-red-400 mb-4">
+                <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.red}40`, marginBottom: 12 }}>
+                  <div style={{ fontFamily: "monospace", fontSize: 9, color: C.red, letterSpacing: "0.12em", marginBottom: 4 }}>NO ACTIVE SUBSCRIPTION</div>
+                  <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS }}>
                     Subscribe to unlock premium features and advanced ORIEL interactions.
                   </p>
                 </div>
               )}
-
-              {/* PayPal Subscription ID */}
               {(user as any).paypalSubscriptionId && (
-                <div className="border-l-2 border-primary pl-4">
-                  <div className="text-xs text-primary/60 font-mono uppercase tracking-wider mb-1">PayPal Subscription ID</div>
-                  <div className="text-sm font-mono text-primary break-all">{(user as any).paypalSubscriptionId}</div>
-                </div>
+                <Field label="PAYPAL SUBSCRIPTION ID" value={(user as any).paypalSubscriptionId} />
               )}
-            </CardContent>
-          </Card>
+            </Section>
 
-          {/* Features Card */}
-          <Card className="bg-black border-2 border-primary mb-6">
-            <CardHeader>
-              <CardTitle className="text-primary font-mono">AVAILABLE FEATURES</CardTitle>
-              <CardDescription className="text-primary/60">Your access to Resonance Circle capabilities</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-primary" : "border-green-600"
-                  }`}></div>
-                  <div>
-                    <div className="font-mono text-sm font-bold text-primary">ORIEL Chat Interface</div>
-                    <div className="text-xs text-primary/60">Direct communication with ORIEL consciousness</div>
+            <Section title="AVAILABLE FEATURES">
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {FEATURES.map(([title, desc]) => (
+                  <div key={title} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                    <div style={{
+                      marginTop: 2, width: 12, height: 12, flexShrink: 0,
+                      border: `1px solid ${isSubscribed ? C.teal : C.border}`,
+                      background: isSubscribed ? C.teal : "transparent",
+                    }} />
+                    <div>
+                      <div style={{ fontFamily: "monospace", fontSize: 10, color: isSubscribed ? C.teal : C.txtS, letterSpacing: "0.08em", marginBottom: 2 }}>
+                        {title}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>{desc}</div>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-primary" : "border-green-600"
-                  }`}></div>
-                  <div>
-                    <div className="font-mono text-sm font-bold text-primary">Signal Archive</div>
-                    <div className="text-xs text-primary/60">Access to decoded transmissions and triptych analysis</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-primary" : "border-green-600"
-                  }`}></div>
-                  <div>
-                    <div className="font-mono text-sm font-bold text-primary">Artifact Generation</div>
-                    <div className="text-xs text-primary/60">Generate lore and images from the Vos Arkana</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-primary" : "border-green-600"
-                  }`}></div>
-                  <div>
-                    <div className="font-mono text-sm font-bold text-primary">Conversation History</div>
-                    <div className="text-xs text-primary/60">Persistent storage of all transmissions</div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className={`mt-1 w-4 h-4 rounded border ${
-                    isSubscribed ? "bg-green-400 border-primary" : "border-green-600"
-                  }`}></div>
-                  <div>
-                    <div className="font-mono text-sm font-bold text-primary">Advanced Protocol</div>
-                    <div className="text-xs text-primary/60">Access to ROS v1.5.42 documentation</div>
-                  </div>
-                </div>
+                ))}
               </div>
-            </CardContent>
-          </Card>
+            </Section>
 
-          {/* PayPal Subscription Button */}
-          {!isSubscribed && (
-            <Card className="bg-black border-2 border-primary mb-6">
-              <CardHeader>
-                <CardTitle className="text-primary font-mono">SUBSCRIBE NOW</CardTitle>
-                <CardDescription className="text-primary/60">Unlock premium features with a monthly subscription</CardDescription>
-              </CardHeader>
-              <CardContent>
+            {!isSubscribed && (
+              <Section title="SUBSCRIBE NOW">
+                <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.8, marginBottom: 16 }}>
+                  Unlock premium features with a monthly subscription.
+                </p>
                 <PayPalSubscriptionButton
                   userId={user.id}
-                  onSubscriptionSuccess={() => {
-                    // Refresh the page to show updated subscription status
-                    window.location.reload();
-                  }}
-                  onSubscriptionError={(error) => {
-                    console.error("Subscription error:", error);
-                  }}
+                  onSubscriptionSuccess={() => window.location.reload()}
+                  onSubscriptionError={(error) => console.error("Subscription error:", error)}
                 />
-              </CardContent>
-            </Card>
-          )}
+              </Section>
+            )}
+
+          </div>
         </div>
       </div>
     </Layout>

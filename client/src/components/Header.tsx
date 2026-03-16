@@ -24,26 +24,56 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm border-b border-green-500/30">
+    <header style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 50,
+      background: "rgba(10,10,14,0.52)",
+      backdropFilter: "blur(14px)",
+      borderBottom: "1px solid rgba(189,163,107,0.15)",
+    }}>
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Logo/Title */}
+          {/* Logo */}
           <Link href="/">
-            <span className="text-xl font-bold tracking-wider text-green-400 hover:text-green-300 transition-colors uppercase font-orbitron cursor-pointer">
-              CONDUIT HUB
+            <span style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+              <img
+                src="/vossari-sigil.png"
+                alt="Vossari sigil"
+                style={{
+                  height: 36,
+                  width: 36,
+                  objectFit: "contain",
+                  opacity: 0.9,
+                  mixBlendMode: "screen" as const,
+                }}
+              />
+              <span style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 16,
+                fontWeight: 400,
+                color: "#bda36b",
+                letterSpacing: "0.3em",
+                textTransform: "uppercase" as const,
+              }}>
+                VOSS ARKIVA
+              </span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-4">
+          <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
               <Link key={link.href} href={link.href}>
-                <span
-                  className={`text-xs tracking-wider transition-colors font-mono cursor-pointer px-2 py-1 ${isActive(link.href)
-                    ? "text-green-400 border-b-2 border-green-400"
-                    : "text-gray-400 hover:text-green-400"
-                    }`}
-                >
+                <span style={{
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.15em",
+                  padding: "4px 12px",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  color: isActive(link.href) ? "#5ba4a4" : "#6a665e",
+                  borderBottom: isActive(link.href) ? "1px solid rgba(91,164,164,0.5)" : "none",
+                  display: "inline-block",
+                }}>
                   {link.label}
                 </span>
               </Link>
@@ -55,25 +85,25 @@ export default function Header() {
             {isAuthenticated && user ? (
               <>
                 <Link href="/profile">
-                  <span className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2">
-                    <User size={16} />
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "#6a665e", cursor: "pointer", letterSpacing: "0.12em", display: "flex", alignItems: "center", gap: 5 }}>
+                    <User size={12} />
                     PROFILE
                   </span>
                 </Link>
                 <button
                   onClick={() => logout()}
-                  className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2"
+                  style={{ fontFamily: "monospace", fontSize: 10, color: "#6a665e", cursor: "pointer", letterSpacing: "0.12em", display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", padding: 0 }}
                 >
-                  <LogOut size={16} />
+                  <LogOut size={12} />
                   LOGOUT
                 </button>
               </>
             ) : (
               <a
                 href={getLoginUrl()}
-                className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono cursor-pointer flex items-center gap-2"
+                style={{ fontFamily: "monospace", fontSize: 10, color: "#6a665e", cursor: "pointer", letterSpacing: "0.12em", display: "flex", alignItems: "center", gap: 5 }}
               >
-                <LogIn size={16} />
+                <LogIn size={12} />
                 LOGIN
               </a>
             )}
@@ -81,25 +111,28 @@ export default function Header() {
 
           {/* Mobile Menu Button */}
           <button
-            className="md:hidden text-green-400 hover:text-green-300 transition-colors"
+            style={{ color: "#bda36b", background: "none", border: "none", cursor: "pointer" }}
+            className="md:hidden"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <nav className="md:hidden pb-4 border-t border-green-500/30 mt-2">
-            <div className="flex flex-col gap-3 pt-4">
+          <nav className="md:hidden pb-4 mt-2" style={{ borderTop: "1px solid rgba(189,163,107,0.12)" }}>
+            <div className="flex flex-col pt-3">
               {navLinks.map((link) => (
                 <Link key={link.href} href={link.href}>
                   <span
-                    className={`text-sm tracking-wider transition-colors font-mono block py-2 cursor-pointer ${isActive(link.href)
-                      ? "text-green-400 border-l-2 border-green-400 pl-3"
-                      : "text-gray-400 hover:text-green-400 pl-3"
-                      }`}
+                    style={{
+                      fontFamily: "monospace", fontSize: 11, letterSpacing: "0.15em",
+                      display: "block", padding: "8px 12px", cursor: "pointer",
+                      color: isActive(link.href) ? "#5ba4a4" : "#6a665e",
+                      borderLeft: isActive(link.href) ? "2px solid #5ba4a4" : "2px solid transparent",
+                    }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     {link.label}
@@ -107,38 +140,32 @@ export default function Header() {
                 </Link>
               ))}
 
-              {/* Mobile Auth Links */}
-              <div className="border-t border-green-500/30 mt-4 pt-4">
+              {/* Mobile Auth */}
+              <div style={{ borderTop: "1px solid rgba(189,163,107,0.12)", marginTop: 8, paddingTop: 8 }}>
                 {isAuthenticated && user ? (
                   <>
                     <Link href="/profile">
                       <span
-                        className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono block py-2 pl-3 cursor-pointer flex items-center gap-2"
+                        style={{ fontFamily: "monospace", fontSize: 11, color: "#6a665e", display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", cursor: "pointer", letterSpacing: "0.12em" }}
                         onClick={() => setMobileMenuOpen(false)}
                       >
-                        <User size={16} />
-                        PROFILE
+                        <User size={12} /> PROFILE
                       </span>
                     </Link>
                     <button
-                      onClick={() => {
-                        logout();
-                        setMobileMenuOpen(false);
-                      }}
-                      className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono w-full text-left py-2 pl-3 cursor-pointer flex items-center gap-2"
+                      onClick={() => { logout(); setMobileMenuOpen(false); }}
+                      style={{ fontFamily: "monospace", fontSize: 11, color: "#6a665e", display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", cursor: "pointer", letterSpacing: "0.12em", background: "none", border: "none", width: "100%", textAlign: "left" as const }}
                     >
-                      <LogOut size={16} />
-                      LOGOUT
+                      <LogOut size={12} /> LOGOUT
                     </button>
                   </>
                 ) : (
                   <a
                     href={getLoginUrl()}
-                    className="text-sm tracking-wider text-gray-400 hover:text-green-400 transition-colors font-mono block py-2 pl-3 cursor-pointer flex items-center gap-2"
+                    style={{ fontFamily: "monospace", fontSize: 11, color: "#6a665e", display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", cursor: "pointer", letterSpacing: "0.12em" }}
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <LogIn size={16} />
-                    LOGIN
+                    <LogIn size={12} /> LOGIN
                   </a>
                 )}
               </div>

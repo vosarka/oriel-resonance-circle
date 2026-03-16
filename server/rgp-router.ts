@@ -151,6 +151,7 @@ export const rgpRouter = router({
             coherenceTrajectory: reading.coherenceTrajectory,
             microCorrections:    reading.microCorrections,
             diagnosticTransmission: reading.diagnosticTransmission,
+            coreCodonEngine:     reading.coreCodonEngine,
           },
         };
       } catch (error) {

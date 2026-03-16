@@ -45,45 +45,63 @@ export default function Codex() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-black text-zinc-100">
+      <div style={{ minHeight: "100vh", color: "#e8e4dc" }}>
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur border-b border-primary/10">
-          <div className="max-w-[1400px] mx-auto px-6 py-5 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
+        <div style={{
+          position: "sticky", top: 0, zIndex: 10,
+          background: "rgba(10,10,14,0.92)", backdropFilter: "blur(14px)",
+          borderBottom: "1px solid rgba(189,163,107,0.12)",
+        }}>
+          <div style={{ maxWidth: 1400, margin: "0 auto", padding: "20px 24px", display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
               <div>
-                <h1 className="text-2xl font-mono font-bold tracking-widest text-primary uppercase">
-                  Vossari Resonance Codex
+                <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 300, color: "#e8e4dc", letterSpacing: "0.05em", marginBottom: 4 }}>
+                  Voss Arkiva Codex
                 </h1>
-                <p className="text-zinc-500 text-xs font-mono mt-0.5 tracking-wider">
+                <p style={{ fontFamily: "monospace", fontSize: 9, color: "#6a665e", letterSpacing: "0.2em" }}>
                   64 ROOT CODONS · GENETIC ARCHITECTURE OF CONSCIOUSNESS
                 </p>
               </div>
               <button
                 onClick={() => setLocation("/carrierlock")}
-                className="px-4 py-2 bg-primary/10 border border-primary/30 rounded text-primary text-xs font-mono uppercase tracking-widest hover:bg-primary/20 hover:border-primary/60 transition-all"
+                style={{
+                  padding: "7px 18px",
+                  border: "1px solid rgba(91,164,164,0.35)",
+                  background: "rgba(91,164,164,0.05)",
+                  color: "#5ba4a4",
+                  fontFamily: "monospace", fontSize: 9,
+                  letterSpacing: "0.15em", cursor: "pointer",
+                  whiteSpace: "nowrap" as const,
+                }}
               >
-                Get Reading
+                GET READING
               </button>
             </div>
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-600" />
-              <Input
+            <div style={{ position: "relative", maxWidth: 380 }}>
+              <Search style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#6a665e", width: 12, height: 12 }} />
+              <input
                 type="text"
                 placeholder="Search name, title, domain…"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 bg-zinc-900/60 border-zinc-800 focus:border-primary/40 text-zinc-200 placeholder:text-zinc-600 text-sm h-9"
+                style={{
+                  width: "100%", paddingLeft: 30, paddingRight: 12, paddingTop: 7, paddingBottom: 7,
+                  background: "rgba(20,20,28,0.8)", border: "1px solid rgba(189,163,107,0.12)",
+                  color: "#e8e4dc", fontFamily: "monospace", fontSize: 11,
+                  outline: "none", boxSizing: "border-box" as const,
+                }}
               />
             </div>
           </div>
         </div>
 
         {/* ── Grid ────────────────────────────────────────────────────────── */}
-        <div className="max-w-[1400px] mx-auto px-6 py-8">
+        <div style={{ maxWidth: 1400, margin: "0 auto", padding: "32px 24px" }}>
           {isLoading ? (
-            <div className="flex items-center justify-center py-32">
-              <Loader2 className="w-7 h-7 animate-spin text-primary" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "120px 0", flexDirection: "column", gap: 12 }}>
+              <Loader2 style={{ color: "#5ba4a4", animation: "spin 1s linear infinite" }} size={24} />
+              <span style={{ fontFamily: "monospace", fontSize: 9, color: "#6a665e", letterSpacing: "0.2em" }}>LOADING CODEX…</span>
             </div>
           ) : (
             <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-3">
@@ -168,8 +186,8 @@ export default function Codex() {
           )}
 
           {!isLoading && filtered?.length === 0 && (
-            <div className="text-center py-32">
-              <p className="text-zinc-500 font-mono text-sm">No codons match "{searchQuery}"</p>
+            <div style={{ textAlign: "center", padding: "120px 0" }}>
+              <p style={{ fontFamily: "monospace", fontSize: 10, color: "#6a665e", letterSpacing: "0.1em" }}>No codons match "{searchQuery}"</p>
             </div>
           )}
         </div>

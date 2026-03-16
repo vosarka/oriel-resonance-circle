@@ -159,7 +159,7 @@ export const CODON_CENTER_MAP: Record<number, CenterName> = {
   20: 'Throat', 13: 'Throat',  7: 'Throat',  1: 'Throat',
 
   // G-Self
-  25: 'G-Self', 46: 'G-Self', 15: 'G-Self', 10: 'G-Self', 2: 'G-Self', 27: 'G-Self',
+  25: 'G-Self', 46: 'G-Self', 15: 'G-Self', 10: 'G-Self', 2: 'G-Self',
 
   // Heart / Ego
   21: 'Heart', 40: 'Heart', 26: 'Heart', 51: 'Heart',
@@ -170,7 +170,7 @@ export const CODON_CENTER_MAP: Record<number, CenterName> = {
 
   // Sacral
   34: 'Sacral', 5: 'Sacral', 14: 'Sacral', 29: 'Sacral',
-  59: 'Sacral', 9: 'Sacral', 3: 'Sacral', 42: 'Sacral',
+  59: 'Sacral', 9: 'Sacral', 3: 'Sacral', 42: 'Sacral', 27: 'Sacral',
 
   // Spleen
   48: 'Spleen', 57: 'Spleen', 44: 'Spleen', 50: 'Spleen',
@@ -205,8 +205,10 @@ export const VRC_CHANNELS: readonly [number, number][] = [
   [25, 51],
   // G-Self–Sacral
   [ 2, 14], [15,  5], [46, 29], [10, 34],
+  // Spleen–Sacral
+  [50, 27],
   // G-Self–Spleen
-  [27, 50], [10, 57],
+  [10, 57],
   // Heart–Solar Plexus
   [40, 37],
   // Heart–Spleen

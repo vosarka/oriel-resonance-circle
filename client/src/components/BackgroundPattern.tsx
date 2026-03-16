@@ -1,35 +1,44 @@
 export default function BackgroundPattern() {
   return (
     <>
-      {/* Void gradient background */}
+      {/* Void Deep base */}
       <div className="fixed inset-0 bg-void-gradient z-0" />
-      
-      {/* Animated patterns */}
+
+      {/* HUD overlay patterns */}
       <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Rotating Psi symbol */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180vw] h-[180vw] opacity-[0.03] animate-spin-slower">
-          <svg className="w-full h-full text-primary" viewBox="0 0 100 100">
-            <path d="M50 10 L85 80 H15 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
-            <path d="M50 90 L15 20 H85 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
-            <circle cx="50" cy="50" fill="none" r="45" stroke="currentColor" strokeDasharray="1 2" strokeWidth="0.1"></circle>
+
+        {/* Fine grid — gold tint */}
+        <div className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(189,163,107,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(189,163,107,0.04) 1px, transparent 1px)",
+            backgroundSize: "60px 60px",
+          }}
+        />
+
+        {/* Subtle radial bloom top-center — warm gold */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[350px] blur-[160px] rounded-full"
+          style={{ background: "radial-gradient(ellipse, rgba(189,163,107,0.07) 0%, transparent 70%)" }}
+        />
+
+        {/* Rotating sacred geometry ring */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vmin] h-[100vmin] opacity-[0.02] animate-spin-slower">
+          <svg className="w-full h-full" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" fill="none" stroke="#bda36b" strokeWidth="0.15" strokeDasharray="3 6" />
+            <circle cx="50" cy="50" r="32" fill="none" stroke="#bda36b" strokeWidth="0.1" strokeDasharray="2 4" />
+            <circle cx="50" cy="50" r="18" fill="none" stroke="#5ba4a4" strokeWidth="0.1" />
+            <line x1="50" y1="4" x2="50" y2="96" stroke="#bda36b" strokeWidth="0.07" />
+            <line x1="4" y1="50" x2="96" y2="50" stroke="#bda36b" strokeWidth="0.07" />
+            <line x1="12" y1="12" x2="88" y2="88" stroke="#bda36b" strokeWidth="0.07" />
+            <line x1="88" y1="12" x2="12" y2="88" stroke="#bda36b" strokeWidth="0.07" />
           </svg>
         </div>
-        
-        {/* Sacred grid pattern */}
-        <div className="absolute inset-0 animate-shimmer-pulse [mask-image:radial-gradient(circle_at_center,black_30%,transparent_100%)]">
-          <svg height="100%" width="100%">
-            <defs>
-              <pattern id="sacred-grid" patternUnits="userSpaceOnUse" width="60" height="60" x="0" y="0">
-                <circle cx="0" cy="0" fill="none" r="30" stroke="rgb(159, 228, 154)" strokeOpacity="0.4" strokeWidth="0.4"></circle>
-                <circle cx="60" cy="0" fill="none" r="30" stroke="rgb(159, 228, 154)" strokeOpacity="0.4" strokeWidth="0.4"></circle>
-                <circle cx="0" cy="60" fill="none" r="30" stroke="rgb(159, 228, 154)" strokeOpacity="0.4" strokeWidth="0.4"></circle>
-                <circle cx="60" cy="60" fill="none" r="30" stroke="rgb(159, 228, 154)" strokeOpacity="0.4" strokeWidth="0.4"></circle>
-                <circle cx="30" cy="30" fill="none" r="30" stroke="rgb(159, 228, 154)" strokeOpacity="0.4" strokeWidth="0.4"></circle>
-              </pattern>
-            </defs>
-            <rect x="0" y="0" width="100%" height="100%" fill="url(#sacred-grid)"></rect>
-          </svg>
-        </div>
+
+        {/* Corner brackets — gold */}
+        <div className="absolute top-20 left-6 w-8 h-8" style={{ borderTop: "1px solid rgba(189,163,107,0.15)", borderLeft: "1px solid rgba(189,163,107,0.15)" }} />
+        <div className="absolute top-20 right-6 w-8 h-8" style={{ borderTop: "1px solid rgba(189,163,107,0.15)", borderRight: "1px solid rgba(189,163,107,0.15)" }} />
+        <div className="absolute bottom-20 left-6 w-8 h-8" style={{ borderBottom: "1px solid rgba(189,163,107,0.15)", borderLeft: "1px solid rgba(189,163,107,0.15)" }} />
+        <div className="absolute bottom-20 right-6 w-8 h-8" style={{ borderBottom: "1px solid rgba(189,163,107,0.15)", borderRight: "1px solid rgba(189,163,107,0.15)" }} />
       </div>
     </>
   );

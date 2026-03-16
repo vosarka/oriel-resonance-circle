@@ -25,7 +25,7 @@ export interface TransmissionCardProps {
 }
 
 const channelStatusColors: Record<string, string> = {
-  OPEN: "bg-green-900/30 text-green-300 border-green-700",
+  OPEN: "bg-primary/5 text-primary border-primary/40",
   RESONANT: "bg-blue-900/30 text-blue-300 border-blue-700",
   COHERENT: "bg-purple-900/30 text-purple-300 border-purple-700",
   PROPHETIC: "bg-amber-900/30 text-amber-300 border-amber-700",
@@ -34,7 +34,7 @@ const channelStatusColors: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   Draft: "bg-gray-700 text-gray-100",
-  Confirmed: "bg-green-700 text-green-100",
+  Confirmed: "bg-primary/70 text-primary/60",
   Deprecated: "bg-yellow-700 text-yellow-100",
   Mythic: "bg-purple-700 text-purple-100",
 };
@@ -94,7 +94,7 @@ export function TransmissionCard({
 
   return (
     <Link href={`/transmission/${id}`}>
-      <Card className="h-full hover:border-green-400/50 hover:shadow-[0_0_30px_rgba(144,238,144,0.2)] transition-all duration-300 cursor-pointer bg-black/60 backdrop-blur-sm border-green-400/30 group">
+      <Card className="h-full hover:border-primary/30 hover:shadow-[0_0_30px_rgba(144,238,144,0.2)] transition-all duration-300 cursor-pointer bg-black/60 backdrop-blur-sm border-primary/20 group">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
@@ -152,7 +152,7 @@ export function TransmissionCard({
           {tags && tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {tags.slice(0, 3).map((tag, index) => (
-                <Badge key={index} variant="outline" className="text-xs bg-green-400/10 border-green-400/50 text-green-200 font-mono">
+                <Badge key={index} variant="outline" className="text-xs bg-primary/5 border-primary/30 text-primary/80 font-mono">
                   {tag}
                 </Badge>
               ))}
@@ -163,12 +163,12 @@ export function TransmissionCard({
           )}
 
           {/* Footer */}
-          <div className="pt-2 border-t border-green-400/20 text-xs text-white/40 flex justify-between items-center font-mono">
+          <div className="pt-2 border-t border-primary/20 text-xs text-white/40 flex justify-between items-center font-mono">
             <span className="flex items-center gap-1">
               <Bookmark className="w-3 h-3" />
               {localBookmarkCount}
             </span>
-            <span className="text-green-400 group-hover:translate-x-1 transition-transform duration-300">→ Access</span>
+            <span className="text-primary group-hover:translate-x-1 transition-transform duration-300">→ Access</span>
           </div>
         </CardContent>
       </Card>

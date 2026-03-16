@@ -182,7 +182,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
       case "inhale": return "from-primary/60 to-primary";
       case "hold": return "from-purple-500/60 to-purple-400";
       case "exhale": return "from-blue-500/60 to-blue-400";
-      case "complete": return "from-green-500/60 to-green-400";
+      case "complete": return "from-primary/50 to-primary/30";
       default: return "from-zinc-600/60 to-zinc-500";
     }
   };
@@ -200,9 +200,9 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
 
   if (isCompleted && phase !== "complete") {
     return (
-      <Card className="bg-zinc-900/50 border-green-500/30">
+      <Card className="bg-zinc-900/50 border-primary/20">
         <CardContent className="py-6">
-          <div className="flex items-center justify-center gap-3 text-green-400">
+          <div className="flex items-center justify-center gap-3 text-primary">
             <Check className="w-6 h-6" />
             <span className="font-orbitron">Breath Protocol Completed</span>
           </div>
@@ -407,7 +407,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
           )}
           
           {phase === "complete" && (
-            <div className="flex items-center gap-2 text-green-400">
+            <div className="flex items-center gap-2 text-primary">
               <Check className="w-5 h-5" />
               <span className="font-orbitron">Protocol Complete</span>
             </div>

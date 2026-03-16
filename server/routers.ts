@@ -5,6 +5,7 @@ import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import * as gemini from "./gemini";
+import { chatWithORIELMistral } from "./mistral-oriel";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
@@ -174,7 +175,17 @@ export const appRouter = router({
           fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
         }
 
-        const response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
+        let response: string;
+        if (process.env.MISTRAL_API_KEY) {
+          try {
+            response = await chatWithORIELMistral(fullMessage, conversationHistory, ctx.user?.id);
+          } catch (mistralErr) {
+            console.error("[ORIEL] Mistral failed, falling back to Gemini:", mistralErr);
+            response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
+          }
+        } else {
+          response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
+        }
 
         if (ctx.user) {
           await db.saveChatMessage({ userId: ctx.user.id, role: "user", content: input.message });
@@ -707,6 +718,7 @@ export const appRouter = router({
         ephemerisData: z.unknown().optional(),
         houses: z.unknown().optional(),
         diagnosticTransmission: z.string().optional(),
+        coreCodonEngine: z.unknown().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("User not authenticated");

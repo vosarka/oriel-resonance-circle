@@ -11,9 +11,9 @@ import Layout from "@/components/Layout";
 // ─── Coherence helpers ────────────────────────────────────────────────────────
 
 function getCoherenceColor(score: number) {
-  if (score >= 80) return "text-cyan-400";
-  if (score >= 40) return "text-yellow-400";
-  return "text-red-400";
+  if (score >= 80) return "#5ba4a4";
+  if (score >= 40) return "#bda36b";
+  return "#c94444";
 }
 
 function getCoherenceLabel(score: number): "Resonance" | "Flux" | "Entropy" {
@@ -34,24 +34,23 @@ function CoherenceBar({ score }: { score: number }) {
   const label = getCoherenceLabel(score);
   const color =
     label === "Resonance"
-      ? "bg-cyan-400"
+      ? "#5ba4a4"
       : label === "Flux"
-      ? "bg-yellow-400"
-      : "bg-red-500";
+      ? "#bda36b"
+      : "#c94444";
 
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <span className="text-xs text-zinc-400 uppercase tracking-widest">Coherence</span>
-        <span className={`text-2xl font-bold font-mono ${getCoherenceColor(score)}`}>
+        <span style={{ fontSize: "1.5rem", fontWeight: 700, fontFamily: "monospace", color: getCoherenceColor(score) }}>
           {score}
-          <span className="text-sm text-zinc-500">/100</span>
+          <span style={{ fontSize: "0.875rem", color: "#6a665e" }}>/100</span>
         </span>
       </div>
       <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-700 ${color}`}
-          style={{ width: `${score}%` }}
+          style={{ height: "100%", borderRadius: "9999px", transition: "width 0.7s", width: `${score}%`, background: color }}
         />
       </div>
       <div className="flex justify-between text-xs text-zinc-600">
@@ -67,15 +66,15 @@ function CoherenceBar({ score }: { score: number }) {
 
 function DiagRow({ label, value, max = 10 }: { label: string; value: number; max?: number }) {
   const pct = (value / max) * 100;
-  const color = pct >= 70 ? "bg-red-500" : pct >= 40 ? "bg-yellow-500" : "bg-cyan-500";
+  const diagColor = pct >= 70 ? "#c94444" : pct >= 40 ? "#bda36b" : "#5ba4a4";
   return (
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="text-zinc-400">{label}</span>
-        <span className="text-zinc-300 font-mono">{value}/{max}</span>
+        <span style={{ color: "#e8e4dc", fontFamily: "monospace" }}>{value}/{max}</span>
       </div>
       <div className="w-full h-1 bg-zinc-800 rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
+        <div style={{ height: "100%", borderRadius: "9999px", width: `${pct}%`, background: diagColor }} />
       </div>
     </div>
   );
@@ -180,7 +179,7 @@ export default function DynamicReading() {
             </Button>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 font-orbitron">
+                <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, fontWeight: 300, color: "#e8e4dc", letterSpacing: "0.05em" }}>
                   Dynamic State Reading
                 </h1>
                 <Badge variant={badgeVariant} className="font-mono text-xs">
@@ -267,7 +266,7 @@ export default function DynamicReading() {
                       className="group flex items-center justify-between bg-zinc-800/50 border border-primary/20 hover:border-primary/60 hover:bg-primary/5 rounded-lg px-4 py-3 transition-all"
                     >
                       <div>
-                        <p className="text-primary font-orbitron text-sm font-bold">{codonId}</p>
+                        <p className="text-sm font-bold" style={{ color: "#5ba4a4", fontFamily: "monospace" }}>{codonId}</p>
                         <p className="text-zinc-500 text-xs mt-0.5">View in Codex</p>
                       </div>
                       <ChevronRight className="h-4 w-4 text-zinc-600 group-hover:text-primary transition-colors" />

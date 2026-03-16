@@ -1,27 +1,80 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { Loader2, ArrowRight, Calendar, Zap, Info, MapPin, CheckCircle } from "lucide-react";
+import { Loader2, ArrowRight, Calendar, Zap, MapPin, CheckCircle } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import BreathProtocol from "@/components/BreathProtocol";
 import Layout from "@/components/Layout";
 
-// Reading types
 type ReadingType = "dynamic" | "static";
+
+const C = {
+  void:    "#0a0a0e",
+  deep:    "#0f0f15",
+  surface: "#14141c",
+  border:  "rgba(189,163,107,0.12)",
+  borderH: "rgba(189,163,107,0.25)",
+  gold:    "#bda36b",
+  goldDim: "rgba(189,163,107,0.5)",
+  teal:    "#5ba4a4",
+  txt:     "#e8e4dc",
+  txtS:    "#9a968e",
+  txtD:    "#6a665e",
+  red:     "#c94444",
+  green:   "#44a866",
+};
+
+function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: C.deep }}>
+      <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}` }}>
+        <span style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em" }}>{title}</span>
+        {subtitle && (
+          <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, marginTop: 4, lineHeight: 1.6 }}>{subtitle}</p>
+        )}
+      </div>
+      <div style={{ padding: "24px" }}>{children}</div>
+    </div>
+  );
+}
+
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 6 }}>
+      {children}
+    </div>
+  );
+}
+
+function HudInput({ type, value, onChange, placeholder, style }: {
+  type: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string; style?: React.CSSProperties;
+}) {
+  return (
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      style={{
+        width: "100%", boxSizing: "border-box" as const,
+        background: C.surface, border: `1px solid ${C.border}`,
+        color: C.txt, fontFamily: "monospace", fontSize: 12,
+        padding: "9px 12px", outline: "none",
+        colorScheme: "dark",
+        ...style,
+      }}
+    />
+  );
+}
 
 export default function Carrierlock() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
-  
-  // Reading type selection
+
   const [readingType, setReadingType] = useState<ReadingType>("dynamic");
-  
-  // Static Signature fields (birth data)
+
   const [birthDate, setBirthDate] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [birthCity, setBirthCity] = useState("");
@@ -33,76 +86,47 @@ export default function Carrierlock() {
     tzId: string;
     offsetHours: number;
   } | null>(null);
-  
-  // Dynamic State fields (current moment)
+
   const [mentalNoise, setMentalNoise] = useState(5);
   const [bodyTension, setBodyTension] = useState(5);
   const [emotionalTurbulence, setEmotionalTurbulence] = useState(5);
   const [breathCompletion, setBreathCompletion] = useState(false);
 
-  // Mutations
   const saveCarrierlockMutation = trpc.codex.saveCarrierlock.useMutation();
   const saveReadingMutation = trpc.codex.saveReading.useMutation();
   const saveStaticReadingMutation = trpc.codex.saveStaticReading.useMutation();
-
-  // New RGP endpoints
   const staticSignatureMutation = trpc.rgp.staticSignature.useMutation();
   const dynamicStateMutation = trpc.rgp.dynamicState.useMutation();
 
-  // Geocoding — fires only when resolveQuery is set (button click)
   const geocodeQuery = trpc.geo.geocode.useQuery(
     { city: resolveQuery },
     { enabled: resolveQuery.length > 0 }
   );
 
   useEffect(() => {
-    if (geocodeQuery.data) {
-      setResolvedLocation(geocodeQuery.data);
-    }
+    if (geocodeQuery.data) setResolvedLocation(geocodeQuery.data);
   }, [geocodeQuery.data]);
 
   const [readingError, setReadingError] = useState<string | null>(null);
 
-  // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
-  const coherenceScore = Math.max(
-    0,
-    Math.min(
-      100,
-      100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3) + (breathCompletion ? 10 : 0)
-    )
-  );
+  const coherenceScore = Math.max(0, Math.min(100,
+    100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3) + (breathCompletion ? 10 : 0)
+  ));
 
-  const getCoherenceColor = (score: number) => {
-    if (score >= 70) return "text-green-400";
-    if (score >= 40) return "text-yellow-400";
-    return "text-red-400";
-  };
+  const coherenceColor = coherenceScore >= 70 ? C.teal : coherenceScore >= 40 ? C.gold : C.red;
+  const coherenceLabel = coherenceScore >= 70 ? "RESONANCE" : coherenceScore >= 40 ? "FLUX" : "ENTROPY";
 
-  const getCoherenceLabel = (score: number) => {
-    if (score >= 70) return "High Coherence";
-    if (score >= 40) return "Moderate Coherence";
-    return "Low Coherence";
-  };
-
-  // Handle breath protocol completion
-  const handleBreathComplete = () => {
-    setBreathCompletion(true);
-  };
+  const handleBreathComplete = () => setBreathCompletion(true);
 
   const handleGetReading = async () => {
-    if (!user) {
-      window.location.href = getLoginUrl();
-      return;
-    }
-
+    if (!user) { window.location.href = getLoginUrl(); return; }
     setReadingError(null);
 
     try {
       if (readingType === "static") {
-        // Static Signature reading using new RGP engine
         const result = await staticSignatureMutation.mutateAsync({
           birthDate,
-          birthTime: birthTime || undefined,
+          birthTime: birthTime || "12:00",
           birthCity: resolvedLocation?.displayName || birthCity || undefined,
           birthLatitude: resolvedLocation?.latitude,
           birthLongitude: resolvedLocation?.longitude,
@@ -115,48 +139,40 @@ export default function Carrierlock() {
           throw new Error((result as { error?: string }).error || "Static signature generation failed");
         }
 
-        if (result.success && result.data) {
-          const data = result.data;
+        const data = result.data;
+        await saveStaticReadingMutation.mutateAsync({
+          readingId: data.readingId,
+          birthDate,
+          birthTime: birthTime || "",
+          birthCity: resolvedLocation?.displayName ?? birthCity ?? "",
+          birthCountry: "",
+          latitude: resolvedLocation?.latitude ?? 0,
+          longitude: resolvedLocation?.longitude ?? 0,
+          timezoneId: resolvedLocation?.tzId,
+          timezoneOffset: resolvedLocation?.offsetHours,
+          primeStack: data.primeStack,
+          ninecenters: data.ninecenters,
+          fractalRole: data.fractalRole,
+          authorityNode: data.authorityNode,
+          vrcType: data.vrcType,
+          vrcAuthority: data.vrcAuthority,
+          circuitLinks: data.circuitLinks,
+          baseCoherence: data.baseCoherence,
+          coherenceTrajectory: data.coherenceTrajectory,
+          microCorrections: data.microCorrections,
+          ephemerisData: data.ephemerisData,
+          diagnosticTransmission: data.diagnosticTransmission,
+          coreCodonEngine: data.coreCodonEngine,
+        });
 
-          await saveStaticReadingMutation.mutateAsync({
-            readingId: data.readingId,
-            birthDate,
-            birthTime: birthTime || "",
-            birthCity: resolvedLocation?.displayName ?? birthCity ?? "",
-            birthCountry: "",
-            latitude: resolvedLocation?.latitude ?? 0,
-            longitude: resolvedLocation?.longitude ?? 0,
-            timezoneId: resolvedLocation?.tzId,
-            timezoneOffset: resolvedLocation?.offsetHours,
-            primeStack: data.primeStack,
-            ninecenters: data.ninecenters,
-            fractalRole: data.fractalRole,
-            authorityNode: data.authorityNode,
-            vrcType: data.vrcType,
-            vrcAuthority: data.vrcAuthority,
-            circuitLinks: data.circuitLinks,
-            baseCoherence: data.baseCoherence,
-            coherenceTrajectory: data.coherenceTrajectory,
-            microCorrections: data.microCorrections,
-            ephemerisData: data.ephemerisData,
-            diagnosticTransmission: data.diagnosticTransmission,
-          });
-
-          setLocation(`/reading/static/${data.readingId}`);
-        }
+        setLocation(`/reading/static/${data.readingId}`);
       } else {
-        // Dynamic State reading — save Carrierlock state then generate ORIEL transmission
         const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-          mentalNoise,
-          bodyTension,
-          emotionalTurbulence,
-          breathCompletion,
+          mentalNoise, bodyTension, emotionalTurbulence, breathCompletion,
         });
 
         const result = await dynamicStateMutation.mutateAsync({
-          mentalNoise,
-          bodyTension,
-          emotionalTurbulence,
+          mentalNoise, bodyTension, emotionalTurbulence,
           breathCompletion: breathCompletion ? 1 : 0,
           birthDate: new Date().toISOString(),
           userId: user?.id ? String(user.id) : undefined,
@@ -164,15 +180,12 @@ export default function Carrierlock() {
 
         if (result.success && result.data) {
           const data = result.data;
-
-          // Build a compact header so the reading page can parse the score/label
           const readingText = [
             `ORIEL Dynamic Reading — ${data.coherenceScore}/100 — ${data.coherenceLabel}`,
             "",
             data.orielTransmission,
           ].join("\n");
 
-          // Extract the falsifier from the transmission (last paragraph that starts with "Falsifier:")
           const falsifierMatch = data.orielTransmission.match(/falsifier[:\s]+(.+)/i);
 
           const savedReading = await saveReadingMutation.mutateAsync({
@@ -182,7 +195,7 @@ export default function Carrierlock() {
             sliScores: {},
             activeFacets: {},
             confidenceLevels: {},
-            microCorrection: data.collapsed ? undefined : undefined, // micro-correction is embedded in ORIEL text
+            microCorrection: undefined,
             correctionFacet: undefined,
             falsifier: falsifierMatch?.[1]?.trim() ?? "",
           });
@@ -197,104 +210,97 @@ export default function Carrierlock() {
   };
 
   const isLoading = saveCarrierlockMutation.isPending ||
-                    staticSignatureMutation.isPending ||
-                    dynamicStateMutation.isPending ||
-                    saveReadingMutation.isPending ||
-                    saveStaticReadingMutation.isPending;
-  const canSubmitStatic = birthDate.length > 0;
+    staticSignatureMutation.isPending ||
+    dynamicStateMutation.isPending ||
+    saveReadingMutation.isPending ||
+    saveStaticReadingMutation.isPending;
+
+  const canSubmitStatic = birthDate.length > 0 && resolvedLocation !== null;
 
   return (
     <Layout>
-      <div className="min-h-screen text-zinc-100">
-        {/* Header */}
-        <div className="border-b border-primary/20 bg-black/50 backdrop-blur-sm">
-          <div className="container py-6">
-            <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400 font-orbitron">
-              Static Signature Scan
-            </h1>
-            <p className="text-zinc-400 mt-1">A Static Signature reveals the baseline resonance pattern of your consciousness field. It is derived from the moment your signal entered the timeline.</p>
-          </div>
-        </div>
+      <div style={{ minHeight: "100vh", padding: "80px 24px 120px" }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
 
-        {/* Content */}
-        <div className="container py-8">
-          <div className="max-w-3xl mx-auto space-y-6">
-            
+          {/* Page header */}
+          <div style={{ marginBottom: 36 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.25em", marginBottom: 12 }}>
+              SIGNAL CALIBRATION
+            </div>
+            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 20 }} />
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(26px, 4vw, 42px)",
+              fontWeight: 300, color: C.txt, lineHeight: 1.1, marginBottom: 8,
+            }}>
+              Carrierlock Diagnostic
+            </h1>
+            <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 480 }}>
+              Select a reading mode. Your response determines how ORIEL calibrates your field.
+            </p>
+          </div>
+
+          {/* All panels stacked with 1px gap */}
+          <div style={{ background: C.border, display: "flex", flexDirection: "column", gap: 1 }}>
+
             {/* Reading Type Selector */}
-            <Card className="bg-zinc-900/50 border-primary/30 overflow-hidden">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-primary font-orbitron">Select Reading Type</CardTitle>
-                <CardDescription>
-                  Choose between your permanent blueprint or current moment state
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setReadingType("dynamic")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      readingType === "dynamic"
-                        ? "border-primary bg-primary/10"
-                        : "border-zinc-700 hover:border-zinc-600"
-                    }`}
-                  >
-                    <Zap className={`w-8 h-8 mx-auto mb-2 ${readingType === "dynamic" ? "text-primary" : "text-zinc-500"}`} />
-                    <h3 className="font-semibold text-center">Dynamic State</h3>
-                    <p className="text-xs text-zinc-400 text-center mt-1">Current moment Carrierlock</p>
-                  </button>
-                  
-                  <button
-                    onClick={() => setReadingType("static")}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      readingType === "static"
-                        ? "border-primary bg-primary/10"
-                        : "border-zinc-700 hover:border-zinc-600"
-                    }`}
-                  >
-                    <Calendar className={`w-8 h-8 mx-auto mb-2 ${readingType === "static" ? "text-primary" : "text-zinc-500"}`} />
-                    <h3 className="font-semibold text-center">Static Signature</h3>
-                    <p className="text-xs text-zinc-400 text-center mt-1">Birth-based blueprint</p>
-                  </button>
-                </div>
-              </CardContent>
-            </Card>
+            <Panel title="READING MODE">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                {([
+                  { id: "dynamic" as ReadingType, icon: <Zap size={20} />, label: "Dynamic State", desc: "Current moment Carrierlock" },
+                  { id: "static"  as ReadingType, icon: <Calendar size={20} />, label: "Static Signature", desc: "Birth-based blueprint" },
+                ] as const).map(({ id, icon, label, desc }) => {
+                  const active = readingType === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setReadingType(id)}
+                      style={{
+                        padding: "20px 16px",
+                        border: `1px solid ${active ? C.teal : C.border}`,
+                        background: active ? "rgba(91,164,164,0.06)" : "transparent",
+                        cursor: "pointer", textAlign: "center" as const,
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      <div style={{ color: active ? C.teal : C.txtD, display: "flex", justifyContent: "center", marginBottom: 10 }}>
+                        {icon}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 10, color: active ? C.teal : C.txtS, letterSpacing: "0.1em", marginBottom: 4 }}>
+                        {label.toUpperCase()}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>{desc}</div>
+                    </button>
+                  );
+                })}
+              </div>
+            </Panel>
 
             {/* Static Signature Form */}
             {readingType === "static" && (
-              <Card className="bg-zinc-900/50 border-primary/30">
-                <CardHeader>
-                  <CardTitle className="text-primary font-orbitron flex items-center gap-2">
-                    <Calendar className="w-5 h-5" />
-                    Static Signature Reading
-                  </CardTitle>
-                  <CardDescription>
-                    Your birth data encodes your permanent resonance blueprint—the 9-position Prime Stack that defines your unique archetypal signature.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              <Panel
+                title="STATIC SIGNATURE · BIRTH DATA"
+                subtitle="Your birth data encodes your permanent resonance blueprint — the 9-position Prime Stack that defines your archetypal signature."
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
                   <div>
-                    <label className="text-sm text-zinc-400 mb-1 block">Birth Date *</label>
-                    <Input
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => setBirthDate(e.target.value)}
-                      className="bg-zinc-800 border-zinc-700"
-                    />
+                    <FieldLabel>BIRTH DATE *</FieldLabel>
+                    <HudInput type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
                   </div>
+
                   <div>
-                    <label className="text-sm text-zinc-400 mb-1 block">Birth Time (optional)</label>
-                    <Input
-                      type="time"
-                      value={birthTime}
-                      onChange={(e) => setBirthTime(e.target.value)}
-                      className="bg-zinc-800 border-zinc-700"
-                    />
-                    <p className="text-xs text-zinc-500 mt-1">Improves facet accuracy for time-sensitive positions</p>
+                    <FieldLabel>BIRTH TIME (OPTIONAL)</FieldLabel>
+                    <HudInput type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} />
+                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginTop: 4 }}>
+                      If unknown, 12:00 noon will be used as an approximation
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-sm text-zinc-400 mb-1 block">Birth Location (optional)</label>
-                    <div className="flex gap-2">
-                      <Input
+                    <FieldLabel>BIRTH LOCATION *</FieldLabel>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <HudInput
                         type="text"
                         value={birthCity}
                         onChange={(e) => {
@@ -303,228 +309,203 @@ export default function Carrierlock() {
                           if (resolveQuery) setResolveQuery("");
                         }}
                         placeholder="e.g. London, UK"
-                        className="bg-zinc-800 border-zinc-700 flex-1"
+                        style={{ flex: 1, width: "auto" }}
                       />
-                      <Button
+                      <button
                         type="button"
-                        variant="outline"
-                        size="sm"
                         disabled={!birthCity.trim() || geocodeQuery.isFetching}
-                        onClick={() => {
-                          setResolvedLocation(null);
-                          setResolveQuery(birthCity.trim());
+                        onClick={() => { setResolvedLocation(null); setResolveQuery(birthCity.trim()); }}
+                        style={{
+                          padding: "9px 16px", flexShrink: 0,
+                          background: "transparent",
+                          border: `1px solid ${C.borderH}`,
+                          color: C.gold, fontFamily: "monospace", fontSize: 9,
+                          letterSpacing: "0.12em", cursor: "pointer",
+                          display: "flex", alignItems: "center", gap: 6,
+                          opacity: (!birthCity.trim() || geocodeQuery.isFetching) ? 0.5 : 1,
                         }}
-                        className="border-zinc-600 text-zinc-300 hover:text-white shrink-0"
                       >
-                        {geocodeQuery.isFetching ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <MapPin className="w-4 h-4 mr-1" />
-                        )}
-                        {geocodeQuery.isFetching ? "Resolving…" : "Resolve"}
-                      </Button>
+                        {geocodeQuery.isFetching
+                          ? <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                          : <MapPin size={12} />}
+                        {geocodeQuery.isFetching ? "RESOLVING…" : "RESOLVE"}
+                      </button>
                     </div>
 
-                    {/* Confirmed location chip */}
                     {resolvedLocation && (
-                      <div className="flex items-start gap-2 mt-2 p-2 rounded-md bg-emerald-950/40 border border-emerald-800/50">
-                        <CheckCircle className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />
-                        <div className="text-xs text-emerald-300 leading-relaxed">
-                          <p className="font-medium">{resolvedLocation.displayName}</p>
-                          <p className="text-emerald-400/70 mt-0.5">
+                      <div style={{
+                        display: "flex", alignItems: "flex-start", gap: 10, marginTop: 10,
+                        padding: "10px 14px",
+                        border: `1px solid ${C.green}40`,
+                        background: "rgba(68,168,102,0.05)",
+                      }}>
+                        <CheckCircle size={13} style={{ color: C.green, marginTop: 1, flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.green, marginBottom: 2 }}>
+                            {resolvedLocation.displayName}
+                          </div>
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>
                             {resolvedLocation.latitude.toFixed(4)}° · {resolvedLocation.longitude.toFixed(4)}° · {resolvedLocation.tzId} (UTC{resolvedLocation.offsetHours >= 0 ? "+" : ""}{resolvedLocation.offsetHours})
-                          </p>
+                          </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Geocoding error */}
                     {geocodeQuery.isError && (
-                      <p className="text-xs text-red-400 mt-1">
-                        Could not find that location. Try a more specific name (e.g. "Paris, France").
-                      </p>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.red, marginTop: 6 }}>
+                        Location not found. Try a more specific name (e.g. "Paris, France").
+                      </div>
                     )}
 
-                    <p className="text-xs text-zinc-500 mt-1">
-                      Enter a city name and click Resolve to set coordinates automatically.
-                    </p>
-                  </div>
-                  
-                  <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                    <div className="flex items-start gap-2">
-                      <Info className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-zinc-400">
-                        <p className="font-medium text-zinc-300 mb-1">What you'll receive:</p>
-                        <ul className="space-y-1">
-                          <li>• 9-Position Prime Stack with facet assignments</li>
-                          <li>• 9-Center Resonance Map</li>
-                          <li>• Fractal Role and Authority Node</li>
-                          <li>• Circuit Link activations</li>
-                          <li>• Falsifier verification clauses</li>
-                        </ul>
-                      </div>
+                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginTop: 6 }}>
+                      Enter a city and click RESOLVE to confirm coordinates.
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* What you'll receive */}
+                  <div style={{ paddingLeft: 16, borderLeft: `2px solid ${C.border}` }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.15em", marginBottom: 8 }}>
+                      READING INCLUDES
+                    </div>
+                    {[
+                      "9-Position Prime Stack with Facet assignments",
+                      "9-Center Resonance Map (defined / open)",
+                      "Fractal Role and Authority Node",
+                      "Circuit Link activations",
+                      "Falsifier verification clauses",
+                    ].map((item, i) => (
+                      <div key={i} style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.9 }}>
+                        <span style={{ color: C.teal, marginRight: 8 }}>◈</span>{item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Panel>
             )}
 
             {/* Dynamic State Form */}
             {readingType === "dynamic" && (
               <>
-                {/* Breath Protocol */}
                 <BreathProtocol onComplete={handleBreathComplete} isCompleted={breathCompletion} />
 
-                {/* Carrierlock Sliders */}
-                <Card className="bg-zinc-900/50 border-primary/30">
-                  <CardHeader>
-                    <CardTitle className="text-primary font-orbitron flex items-center gap-2">
-                      <Zap className="w-5 h-5" />
-                      Carrierlock Assessment
-                    </CardTitle>
-                    <CardDescription>
-                      Rate your current state on each axis. These values determine your Coherence Score and Facet Loudness.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Mental Noise */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-sm text-zinc-400">Mental Noise (MN)</label>
-                        <span className="text-sm font-mono text-primary">{mentalNoise}/10</span>
-                      </div>
-                      <Slider
-                        value={[mentalNoise]}
-                        onValueChange={([v]) => setMentalNoise(v)}
-                        max={10}
-                        step={1}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-zinc-500">Racing thoughts, mental chatter, cognitive overwhelm</p>
-                    </div>
+                <Panel
+                  title="CARRIERLOCK ASSESSMENT"
+                  subtitle="Rate your current state on each axis. These values determine your Coherence Score and Facet Loudness."
+                >
+                  <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
 
-                    {/* Body Tension */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-sm text-zinc-400">Body Tension (BT)</label>
-                        <span className="text-sm font-mono text-primary">{bodyTension}/10</span>
+                    {([
+                      { label: "MENTAL NOISE", key: "mn", desc: "Racing thoughts, mental chatter, cognitive overwhelm", value: mentalNoise, set: setMentalNoise },
+                      { label: "BODY TENSION", key: "bt", desc: "Physical tightness, somatic stress, nervous system activation", value: bodyTension, set: setBodyTension },
+                      { label: "EMOTIONAL TURBULENCE", key: "et", desc: "Emotional reactivity, mood instability, feeling overwhelmed", value: emotionalTurbulence, set: setEmotionalTurbulence },
+                    ] as const).map(({ label, key, desc, value, set }) => (
+                      <div key={key}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em" }}>{label}</div>
+                          <div style={{ fontFamily: "monospace", fontSize: 16, color: C.teal }}>{value}<span style={{ fontSize: 10, color: C.txtD }}>/10</span></div>
+                        </div>
+                        <input
+                          type="range"
+                          min={0} max={10} step={1}
+                          value={value}
+                          onChange={(e) => set(Number(e.target.value))}
+                          style={{ width: "100%", accentColor: C.teal, cursor: "pointer" }}
+                        />
+                        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginTop: 4 }}>{desc}</div>
                       </div>
-                      <Slider
-                        value={[bodyTension]}
-                        onValueChange={([v]) => setBodyTension(v)}
-                        max={10}
-                        step={1}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-zinc-500">Physical tightness, somatic stress, nervous system activation</p>
-                    </div>
-
-                    {/* Emotional Turbulence */}
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <label className="text-sm text-zinc-400">Emotional Turbulence (ET)</label>
-                        <span className="text-sm font-mono text-primary">{emotionalTurbulence}/10</span>
-                      </div>
-                      <Slider
-                        value={[emotionalTurbulence]}
-                        onValueChange={([v]) => setEmotionalTurbulence(v)}
-                        max={10}
-                        step={1}
-                        className="w-full"
-                      />
-                      <p className="text-xs text-zinc-500">Emotional reactivity, mood instability, feeling overwhelmed</p>
-                    </div>
+                    ))}
 
                     {/* Coherence Score Display */}
-                    <div className="bg-zinc-800/50 rounded-lg p-4 border border-zinc-700">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-zinc-400">Coherence Score</span>
-                        <div className="text-right">
-                          <span className={`text-2xl font-bold font-mono ${getCoherenceColor(coherenceScore)}`}>
-                            {coherenceScore}
-                          </span>
-                          <span className="text-zinc-500 text-sm ml-1">/100</span>
+                    <div style={{ border: `1px solid ${C.border}`, padding: "16px 20px", background: C.surface }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em" }}>COHERENCE SCORE</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                          <span style={{ fontFamily: "monospace", fontSize: 28, color: coherenceColor, lineHeight: 1 }}>{coherenceScore}</span>
+                          <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD }}>/100</span>
                         </div>
                       </div>
-                      <div className="mt-2">
-                        <div className="h-2 bg-zinc-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-300 ${
-                              coherenceScore >= 70 ? 'bg-green-500' : 
-                              coherenceScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${coherenceScore}%` }}
-                          />
-                        </div>
-                        <p className={`text-xs mt-1 ${getCoherenceColor(coherenceScore)}`}>
-                          {getCoherenceLabel(coherenceScore)}
-                        </p>
+                      <div style={{ height: 3, background: C.surface, border: `1px solid ${C.border}`, marginBottom: 8 }}>
+                        <div style={{ height: "100%", width: `${coherenceScore}%`, background: coherenceColor, transition: "all 0.3s" }} />
                       </div>
-                      <p className="text-xs text-zinc-500 mt-2">
-                        Formula: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
-                      </p>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontFamily: "monospace", fontSize: 9, color: coherenceColor, letterSpacing: "0.15em" }}>{coherenceLabel}</span>
+                        <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>CS = 100 − (MN+BT+ET)×3 + BC×10</span>
+                      </div>
                     </div>
 
-                    {/* Optional: Birth data for personalized reading */}
-                    <div className="border-t border-zinc-700 pt-4">
-                      <p className="text-sm text-zinc-400 mb-3">Optional: Add birth data for personalized reading</p>
-                      <div className="grid grid-cols-2 gap-4">
+                    {/* Optional birth data */}
+                    <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 20 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 14 }}>
+                        OPTIONAL · BIRTH DATA FOR PERSONALIZED READING
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                         <div>
-                          <label className="text-xs text-zinc-500 mb-1 block">Birth Date</label>
-                          <Input
-                            type="date"
-                            value={birthDate}
-                            onChange={(e) => setBirthDate(e.target.value)}
-                            className="bg-zinc-800 border-zinc-700 text-sm"
-                          />
+                          <FieldLabel>BIRTH DATE</FieldLabel>
+                          <HudInput type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
                         </div>
                         <div>
-                          <label className="text-xs text-zinc-500 mb-1 block">Birth Time</label>
-                          <Input
-                            type="time"
-                            value={birthTime}
-                            onChange={(e) => setBirthTime(e.target.value)}
-                            className="bg-zinc-800 border-zinc-700 text-sm"
-                          />
+                          <FieldLabel>BIRTH TIME</FieldLabel>
+                          <HudInput type="time" value={birthTime} onChange={(e) => setBirthTime(e.target.value)} />
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </Panel>
               </>
             )}
 
-            {/* Error display */}
+            {/* Error */}
             {readingError && (
-              <div className="rounded-lg border border-red-500/40 bg-red-950/30 px-4 py-3 text-sm text-red-400">
+              <div style={{
+                padding: "14px 20px",
+                border: `1px solid ${C.red}40`,
+                background: "rgba(201,68,68,0.06)",
+                fontFamily: "monospace", fontSize: 10, color: C.red,
+              }}>
                 {readingError}
               </div>
             )}
 
-            {/* Submit Button */}
-            <Button
-              onClick={handleGetReading}
-              disabled={isLoading || (readingType === "static" && !canSubmitStatic)}
-              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-primary via-emerald-500 to-teal-500 hover:from-primary/90 hover:via-emerald-500/90 hover:to-teal-500/90 disabled:opacity-50"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  Generating Reading...
-                </>
-              ) : (
-                <>
-                  {readingType === "static" ? "Generate Static Signature" : "Generate Dynamic Reading"}
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </>
-              )}
-            </Button>
+            {/* Submit */}
+            <div style={{ background: C.deep, padding: "24px" }}>
+              <button
+                onClick={handleGetReading}
+                disabled={isLoading || (readingType === "static" && !canSubmitStatic)}
+                style={{
+                  width: "100%", padding: "16px 0",
+                  background: isLoading || (readingType === "static" && !canSubmitStatic)
+                    ? "transparent"
+                    : `linear-gradient(90deg, rgba(189,163,107,0.15), rgba(91,164,164,0.15))`,
+                  border: `1px solid ${
+                    isLoading || (readingType === "static" && !canSubmitStatic) ? C.border : C.gold
+                  }`,
+                  color: isLoading || (readingType === "static" && !canSubmitStatic) ? C.txtD : C.gold,
+                  fontFamily: "monospace", fontSize: 11, letterSpacing: "0.2em",
+                  cursor: isLoading || (readingType === "static" && !canSubmitStatic) ? "not-allowed" : "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                  transition: "all 0.15s",
+                }}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                    GENERATING READING…
+                  </>
+                ) : (
+                  <>
+                    {readingType === "static" ? "GENERATE STATIC SIGNATURE" : "GENERATE DYNAMIC READING"}
+                    <ArrowRight size={14} />
+                  </>
+                )}
+              </button>
 
-            {readingType === "static" && !canSubmitStatic && (
-              <p className="text-center text-sm text-zinc-500">
-                Please enter your birth date to continue
-              </p>
-            )}
+              {readingType === "static" && !canSubmitStatic && (
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, textAlign: "center" as const, marginTop: 10 }}>
+                  {!birthDate ? "ENTER BIRTH DATE TO CONTINUE" : "RESOLVE BIRTH LOCATION TO CONTINUE"}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

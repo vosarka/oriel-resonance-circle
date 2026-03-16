@@ -285,7 +285,7 @@ export default function Auth() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-xs font-mono text-[#00F0FF]/60 tracking-[0.3em] uppercase mb-2">
-            VOSSARI CONDUIT HUB
+            VOSS ARKIVA
           </div>
           <h1 className="text-2xl font-mono text-[#00F0FF] tracking-wider uppercase">
             Enter as Static.

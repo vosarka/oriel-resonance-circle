@@ -31,6 +31,10 @@ export const users = mysqlTable("users", {
   subscriptionStartDate: timestamp("subscriptionStartDate"),
   /** Subscription renewal date */
   subscriptionRenewalDate: timestamp("subscriptionRenewalDate"),
+  /** True when the user has an active recurring donation/subscription */
+  subscribed: boolean("subscribed").default(false).notNull(),
+  /** Cumulative total donated (USD). Updated on each successful PayPal event. */
+  donated: double("donated").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -340,6 +344,8 @@ export const staticSignatures = mysqlTable("staticSignatures", {
   houses: text("houses"),
   /** ORIEL's diagnostic narration */
   diagnosticTransmission: text("diagnosticTransmission"),
+  /** Core Codon Engine: 3 dominant + 3 supporting codons (JSON) */
+  coreCodonEngine: text("coreCodonEngine"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

@@ -537,6 +537,7 @@ export async function saveStaticSignature(
     ephemerisData?: unknown;
     houses?: unknown;
     diagnosticTransmission?: string;
+    coreCodonEngine?: unknown;
   }
 ) {
   const db = await getDb();
@@ -568,6 +569,7 @@ export async function saveStaticSignature(
       ephemerisData: data.ephemerisData ? JSON.stringify(data.ephemerisData) : null,
       houses: data.houses ? JSON.stringify(data.houses) : null,
       diagnosticTransmission: data.diagnosticTransmission ?? null,
+      coreCodonEngine: data.coreCodonEngine ? JSON.stringify(data.coreCodonEngine) : null,
     });
 
     const inserted = await db.select().from(staticSignatures)
@@ -652,5 +654,6 @@ function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
     microCorrections: row.microCorrections ? JSON.parse(row.microCorrections) : null,
     ephemerisData: row.ephemerisData ? JSON.parse(row.ephemerisData) : null,
     houses: row.houses ? JSON.parse(row.houses) : null,
+    coreCodonEngine: row.coreCodonEngine ? JSON.parse(row.coreCodonEngine) : null,
   };
 }

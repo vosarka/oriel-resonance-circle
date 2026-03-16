@@ -95,7 +95,7 @@ export default function Archive() {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12 animate-fade-in-up">
-            <h1 className="text-4xl md:text-6xl font-light text-white mb-4 font-orbitron uppercase tracking-wide drop-shadow-lg">
+            <h1 className="text-4xl md:text-6xl font-light text-white mb-4 uppercase tracking-wide drop-shadow-lg" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               <span className="font-bold" style={{ color: '#9fe49a' }}>ARCHIVE</span>
             </h1>
             <p className="text-white/60 text-lg font-mono max-w-3xl">
@@ -173,7 +173,7 @@ export default function Archive() {
             <TabsList className="grid w-full max-w-md grid-cols-2 bg-black/60 backdrop-blur-sm border border-primary/30">
               <TabsTrigger 
                 value="tx" 
-                className="data-[state=active]:bg-green-400/20 data-[state=active]:text-green-400 text-white/60 font-mono uppercase tracking-wider"
+                className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary text-white/60 font-mono uppercase tracking-wider"
               >
                 TX Transmissions ({transmissions.length})
               </TabsTrigger>
@@ -189,7 +189,7 @@ export default function Archive() {
             <TabsContent value="tx" className="mt-8">
               {txLoading ? (
                 <div className="flex items-center justify-center py-20">
-                  <Loader2 className="w-8 h-8 animate-spin text-green-400" />
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 </div>
               ) : transmissions.length === 0 ? (
                 <div className="text-center py-20">

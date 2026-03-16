@@ -17,12 +17,12 @@ const FACET_LABELS: Record<string, string> = {
   D: "Transpersonal",
 };
 
-// Facet letter → colour tokens
+// Facet letter → colour tokens (HUD palette)
 const FACET_COLORS: Record<string, { border: string; text: string; bg: string; pill: string }> = {
-  A: { border: "border-orange-500/40", text: "text-orange-300", bg: "bg-orange-500/5",  pill: "bg-orange-500/20 text-orange-300" },
-  B: { border: "border-primary/40",    text: "text-primary",    bg: "bg-primary/5",     pill: "bg-primary/20 text-primary" },
-  C: { border: "border-purple-500/40", text: "text-purple-300", bg: "bg-purple-500/5",  pill: "bg-purple-500/20 text-purple-300" },
-  D: { border: "border-yellow-500/40", text: "text-yellow-300", bg: "bg-yellow-500/5",  pill: "bg-yellow-500/20 text-yellow-300" },
+  A: { border: "border-[#5ba4a4]/40",  text: "text-[#5ba4a4]",  bg: "bg-[#5ba4a4]/5",  pill: "bg-[#5ba4a4]/15 text-[#5ba4a4]" },
+  B: { border: "border-[#bda36b]/40",  text: "text-[#bda36b]",  bg: "bg-[#bda36b]/5",  pill: "bg-[#bda36b]/15 text-[#bda36b]" },
+  C: { border: "border-[#5ba4a4]/30",  text: "text-[#7ec0c0]",  bg: "bg-[#5ba4a4]/4",  pill: "bg-[#5ba4a4]/10 text-[#7ec0c0]" },
+  D: { border: "border-[#bda36b]/30",  text: "text-[#d4c090]",  bg: "bg-[#bda36b]/4",  pill: "bg-[#bda36b]/10 text-[#d4c090]" },
 };
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -276,11 +276,11 @@ export default function CodonDetail() {
               </h3>
               <div className="flex items-center gap-2 text-xs font-mono text-zinc-500">
                 <span>SHADOW</span>
-                <div className="w-24 h-[1px] bg-gradient-to-r from-red-500 via-primary to-purple-500" />
+                <div className="w-24 h-[1px] bg-gradient-to-r from-[#c94444] via-[#5ba4a4] to-[#bda36b]" />
                 <span>SIDDHI</span>
               </div>
             </div>
-            <div className="w-full h-0.5 bg-gradient-to-r from-red-500 via-primary to-purple-500 rounded-full opacity-50" />
+            <div className="w-full h-0.5 bg-gradient-to-r from-[#c94444] via-[#5ba4a4] to-[#bda36b] rounded-full opacity-50" />
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Shadow */}
@@ -312,11 +312,11 @@ export default function CodonDetail() {
               </div>
 
               {/* Siddhi */}
-              <div className="bg-zinc-900/50 backdrop-blur-sm border border-purple-500/20 rounded-xl p-6 border-t-4 border-t-purple-500 relative overflow-hidden group hover:bg-purple-500/5 transition-colors duration-300">
-                <div className="absolute -right-4 -top-4 size-24 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-all" />
+              <div className="bg-zinc-900/50 backdrop-blur-sm border border-[#bda36b]/20 rounded-xl p-6 border-t-4 border-t-[#bda36b] relative overflow-hidden group hover:bg-[#bda36b]/5 transition-colors duration-300">
+                <div className="absolute -right-4 -top-4 size-24 bg-[#bda36b]/10 rounded-full blur-2xl group-hover:bg-[#bda36b]/20 transition-all" />
                 <div className="flex justify-between items-start mb-3">
-                  <span className="text-purple-400 font-mono text-xs font-bold tracking-widest uppercase">Siddhi</span>
-                  <Infinity className="w-4 h-4 text-purple-400" />
+                  <span className="text-[#d4c090] font-mono text-xs font-bold tracking-widest uppercase">Siddhi</span>
+                  <Infinity className="w-4 h-4 text-[#d4c090]" />
                 </div>
                 <h4 className="text-xl font-serif text-white mb-2">{codon.frequency?.siddhi ?? codon.crown}</h4>
                 <p className="text-zinc-400 text-sm leading-relaxed">
@@ -466,7 +466,7 @@ export default function CodonDetail() {
           <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-3 opacity-50">
               <Zap className="w-5 h-5" />
-              <span className="font-mono text-sm tracking-wider">VOSSARI RESONANCE CODEX</span>
+              <span className="font-mono text-sm tracking-wider">VOSS ARKIVA CODEX</span>
             </div>
             <div className="flex gap-8 text-sm text-zinc-500">
               <Link href="/protocol" className="hover:text-primary transition-colors">Protocol</Link>

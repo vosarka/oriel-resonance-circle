@@ -124,7 +124,7 @@ export default function PayPalSubscriptionButton({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <div className="text-green-400 font-mono">LOADING PAYMENT GATEWAY...</div>
+        <div className="text-primary font-mono">LOADING PAYMENT GATEWAY...</div>
       </div>
     );
   }

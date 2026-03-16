@@ -170,9 +170,9 @@ export default function ReadingEnhanced() {
           <div className="text-center">
             <p className="text-zinc-400 mb-4">Please sign in to view your readings</p>
             <a href={getLoginUrl()}>
-              <Button className="bg-gradient-to-r from-primary to-purple-500">
-                Sign In
-              </Button>
+              <button style={{ background: "linear-gradient(90deg,#5ba4a4,#bda36b)", color: "#0a0a0e", fontFamily: "monospace", fontSize: 11, letterSpacing: "0.2em", padding: "10px 28px", border: "none", cursor: "pointer" }}>
+                SIGN IN
+              </button>
             </a>
           </div>
         </div>
@@ -216,8 +216,8 @@ export default function ReadingEnhanced() {
   // Dynamic state reading — simple coherence view
   if (dynamicParsed) {
     const cs = dynamicParsed.coherenceScore;
-    const csColor = cs >= 80 ? "text-green-400" : cs >= 40 ? "text-yellow-400" : "text-red-400";
-    const csBar   = cs >= 80 ? "from-green-500 to-emerald-400" : cs >= 40 ? "from-yellow-500 to-amber-400" : "from-red-500 to-rose-400";
+    const csColor = cs >= 80 ? "text-primary" : cs >= 40 ? "text-yellow-400" : "text-red-400";
+    const csBar   = cs >= 80 ? "from-primary to-primary/60" : cs >= 40 ? "from-yellow-500 to-amber-400" : "from-red-500 to-rose-400";
     const csLabel = cs >= 80 ? "Resonance" : cs >= 40 ? "Flux" : "Entropy";
     return (
       <Layout>
@@ -281,7 +281,7 @@ export default function ReadingEnhanced() {
                 ))}
                 <div className="flex justify-between text-sm pt-2 border-t border-zinc-700">
                   <span className="text-zinc-400">Breath Completion</span>
-                  <span className={`font-mono font-semibold ${dynamicParsed.breathCompletion ? "text-green-400" : "text-zinc-500"}`}>
+                  <span className={`font-mono font-semibold ${dynamicParsed.breathCompletion ? "text-primary" : "text-zinc-500"}`}>
                     {dynamicParsed.breathCompletion ? "Yes" : "No"}
                   </span>
                 </div>
@@ -362,8 +362,8 @@ export default function ReadingEnhanced() {
               </div>
               <div className="w-full bg-zinc-800 rounded-full h-2">
                 <div
-                  className="bg-gradient-to-r from-primary to-purple-500 h-2 rounded-full transition-all"
-                  style={{ width: `${parsed?.coherence || 0}%` }}
+                  style={{ background: "linear-gradient(90deg,#5ba4a4,#bda36b)", width: `${parsed?.coherence || 0}%` }}
+                  className="h-2 rounded-full transition-all"
                 />
               </div>
               <p className="text-sm text-zinc-400">Trend: {parsed?.coherenceTrajectory.trend}</p>

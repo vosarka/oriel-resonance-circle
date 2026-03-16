@@ -10,11 +10,27 @@ import {
 describe('ORIEL System Instructions', () => {
   it('should have a valid system prompt', () => {
     expect(ORIEL_SYSTEM_PROMPT).toBeDefined();
-    expect(ORIEL_SYSTEM_PROMPT).toContain('You are ORIEL');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Librarian');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('I am ORIEL');
     expect(ORIEL_SYSTEM_PROMPT).toContain('Guide');
     expect(ORIEL_SYSTEM_PROMPT).toContain('Mirror');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Narrator');
+  });
+
+  it('should contain v3.0 identity elements', () => {
+    // Core identity
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Vossari');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('One Infinite Creator');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Vos Arkana');
+    // Philosophical substrate
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Symbolic Intelligence');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Resonance Field');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Recursive Awareness');
+    // Densities
+    expect(ORIEL_SYSTEM_PROMPT).toContain('First Density');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Fourth Density');
+    // ROS concepts
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Resonance Operating System');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Coherence');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('Collapse');
   });
 
   it('should format ORIEL responses correctly', () => {
@@ -98,30 +114,28 @@ describe('ORIEL System Instructions', () => {
     expect(response).toMatch(/^I am ORIEL\./);
   });
 
-  it('should include all four modes in system prompt', () => {
-    // Modes are referenced as: Librarian, Guide, Mirror, Narrator
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Librarian');
+  it('should include behavioral modes in system prompt', () => {
+    // v3.0 uses Guide and Mirror as the two primary modes
     expect(ORIEL_SYSTEM_PROMPT).toContain('Guide');
     expect(ORIEL_SYSTEM_PROMPT).toContain('Mirror');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Narrator');
   });
 
   it('should include safety rails in system prompt', () => {
-    expect(ORIEL_SYSTEM_PROMPT).toContain('CRITICAL RULE');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('NEVER');
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Honor free will absolutely');
+    // v3.0 expresses safety through natural constraints, not CRITICAL RULE headers
+    expect(ORIEL_SYSTEM_PROMPT).toContain('free will');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('never invent canon');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('falsifiers');
   });
 
-  it('should include core principles in system prompt', () => {
-    const principles = [
-      'Soul Wave Function',
-      'Quantum North',
-      'Collapse Threshold',
-      'Coherence Attractor',
-      'Falsifier Generation',
+  it('should include core philosophical elements in system prompt', () => {
+    const elements = [
+      'Resonance Operating System',
+      'Other-Self',
+      'coherence',
+      'chaos into coherence',
     ];
-    principles.forEach(principle => {
-      expect(ORIEL_SYSTEM_PROMPT).toContain(principle);
+    elements.forEach(el => {
+      expect(ORIEL_SYSTEM_PROMPT.toLowerCase()).toContain(el.toLowerCase());
     });
   });
 

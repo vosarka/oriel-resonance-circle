@@ -15,7 +15,7 @@
 
 import https from 'https';
 
-const DEFAULT_VOICE_ID = 'default-0o0vqxaayifb0rqvrpyf5a__orielgros';
+const DEFAULT_VOICE_ID = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_fema';
 const MODEL_ID = 'inworld-tts-1.5-max';
 
 // ─── Core synthesis ───────────────────────────────────────────────────────────

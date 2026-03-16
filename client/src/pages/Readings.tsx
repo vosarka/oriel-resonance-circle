@@ -1,11 +1,37 @@
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowRight, CalendarDays, MapPin, Zap } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Layout from "@/components/Layout";
+
+const C = {
+  void:    "#0a0a0e",
+  deep:    "#0f0f15",
+  surface: "#14141c",
+  border:  "rgba(189,163,107,0.12)",
+  borderH: "rgba(189,163,107,0.25)",
+  gold:    "#bda36b",
+  goldDim: "rgba(189,163,107,0.5)",
+  teal:    "#5ba4a4",
+  tealDim: "rgba(91,164,164,0.3)",
+  txt:     "#e8e4dc",
+  txtS:    "#9a968e",
+  txtD:    "#6a665e",
+  red:     "#c94444",
+};
+
+function coherenceColor(score: number) {
+  if (score >= 80) return C.teal;
+  if (score >= 40) return C.gold;
+  return C.red;
+}
+
+function coherenceLabel(score: number) {
+  if (score >= 80) return "RESONANCE";
+  if (score >= 40) return "FLUX";
+  return "ENTROPY";
+}
 
 export default function Readings() {
   const { user } = useAuth();
@@ -18,11 +44,25 @@ export default function Readings() {
   if (!user) {
     return (
       <Layout>
-        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-zinc-400 mb-4">Please sign in to view your readings</p>
-            <a href={getLoginUrl()}>
-              <Button className="bg-gradient-to-r from-primary to-purple-500">Sign In</Button>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.2em", marginBottom: 16 }}>
+              AUTHENTICATION REQUIRED
+            </div>
+            <a
+              href={getLoginUrl()}
+              style={{
+                display: "inline-flex", alignItems: "center",
+                padding: "10px 32px",
+                border: `1px solid ${C.goldDim}`,
+                background: "rgba(189,163,107,0.05)",
+                color: C.gold,
+                fontFamily: "monospace", fontSize: 10,
+                letterSpacing: "0.2em", cursor: "pointer",
+                textDecoration: "none",
+              }}
+            >
+              ESTABLISH CONNECTION →
             </a>
           </div>
         </div>
@@ -33,8 +73,9 @@ export default function Readings() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+          <Loader2 style={{ color: C.teal, animation: "spin 1s linear infinite" }} size={24} />
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.2em" }}>RETRIEVING SIGNAL ARCHIVE…</div>
         </div>
       </Layout>
     );
@@ -43,8 +84,8 @@ export default function Readings() {
   if (isError) {
     return (
       <Layout>
-        <div className="min-h-screen bg-black text-zinc-100 flex items-center justify-center">
-          <p className="text-zinc-400">Failed to load readings. Please try again.</p>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 11, color: C.red }}>SIGNAL RETRIEVAL FAILED — RETRY</div>
         </div>
       </Layout>
     );
@@ -54,90 +95,133 @@ export default function Readings() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-black text-zinc-100 py-12 px-4">
-        <div className="max-w-4xl mx-auto space-y-8">
+      <div style={{ minHeight: "100vh", padding: "80px 24px 120px" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
 
-          {/* Header */}
-          <div className="text-center space-y-2 mb-12">
-            <h1 className="text-5xl font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-200">
-              Signal Calibration History
+          {/* Page header */}
+          <div style={{ marginBottom: 48 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.25em", marginBottom: 12 }}>
+              SIGNAL ARCHIVE
+            </div>
+            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 20 }} />
+            <h1 style={{
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: "clamp(28px, 4vw, 44px)",
+              fontWeight: 300,
+              color: C.txt,
+              lineHeight: 1.1,
+              marginBottom: 8,
+            }}>
+              Calibration History
             </h1>
-            <p className="text-zinc-400 font-mono text-sm">
-              {readings.length} {readings.length === 1 ? "calibration" : "calibrations"} on record
-            </p>
+            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.1em" }}>
+              {readings.length} {readings.length === 1 ? "READING" : "READINGS"} ON RECORD
+            </div>
           </div>
 
+          {/* Empty state */}
           {readings.length === 0 ? (
-            <div className="text-center py-24">
-              <p className="text-zinc-500 mb-6">No static calibrations generated yet.</p>
+            <div style={{ textAlign: "center", padding: "80px 0" }}>
+              <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.15em", marginBottom: 24 }}>
+                NO STATIC CALIBRATIONS GENERATED YET
+              </div>
               <Link href="/carrierlock">
-                <Button className="bg-gradient-to-r from-primary to-purple-500">
-                  Generate your first reading
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                <span style={{
+                  display: "inline-flex", alignItems: "center",
+                  padding: "11px 36px",
+                  background: C.gold,
+                  color: C.void,
+                  fontFamily: "monospace", fontSize: 10,
+                  fontWeight: 700, letterSpacing: "0.2em", cursor: "pointer",
+                }}>
+                  GENERATE FIRST READING →
+                </span>
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 1, background: C.border }}>
               {readings.map((r) => {
                 const score = r.baseCoherence ?? 0;
-                const coherenceColor =
-                  score >= 80 ? "text-green-400 border-green-500/40 bg-green-950/30" :
-                  score >= 40 ? "text-yellow-400 border-yellow-500/40 bg-yellow-950/30" :
-                                "text-red-400 border-red-500/40 bg-red-950/30";
+                const cc = coherenceColor(score);
+                const cl = coherenceLabel(score);
                 const date = r.createdAt
-                  ? new Date(r.createdAt).toLocaleDateString("en-GB", {
-                      day: "numeric", month: "short", year: "numeric",
-                    })
+                  ? new Date(r.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
                   : "—";
 
                 return (
                   <Link key={r.readingId} href={`/reading/static/${r.readingId}`}>
-                    <div className="bg-[#0a1012] border border-primary/30 rounded-xl p-5 hover:border-primary/60 hover:bg-zinc-900/70 transition-all cursor-pointer group space-y-3">
-
-                      {/* Date + coherence */}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-zinc-500 font-mono flex items-center gap-1">
-                          <CalendarDays className="w-3 h-3" />
+                    <div
+                      style={{
+                        background: C.deep,
+                        padding: "24px 24px 20px",
+                        cursor: "pointer",
+                        transition: "background 0.2s ease",
+                        height: "100%",
+                        boxSizing: "border-box",
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = C.surface; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = C.deep; }}
+                    >
+                      {/* Top row: date + coherence */}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                        <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.1em" }}>
                           {date}
                         </span>
                         {r.baseCoherence != null && (
-                          <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded border ${coherenceColor}`}>
-                            <Zap className="w-3 h-3 inline mr-1" />
-                            {score}/100
+                          <span style={{
+                            fontFamily: "monospace", fontSize: 9,
+                            color: cc,
+                            border: `1px solid ${cc}40`,
+                            padding: "2px 8px",
+                            letterSpacing: "0.1em",
+                          }}>
+                            {cl} · {score}/100
                           </span>
                         )}
                       </div>
 
-                      {/* Birth date + city */}
-                      <div>
-                        <p className="text-sm text-zinc-300 font-semibold">{r.birthDate}</p>
-                        {r.birthCity && (
-                          <p className="text-xs text-zinc-500 flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3" />
-                            {r.birthCity}
-                          </p>
-                        )}
+                      {/* Birth date */}
+                      <div style={{
+                        fontFamily: "'Cormorant Garamond', serif",
+                        fontSize: 20, fontWeight: 300,
+                        color: C.txt, marginBottom: 4,
+                      }}>
+                        {r.birthDate}
                       </div>
+                      {r.birthCity && (
+                        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.08em", marginBottom: 14 }}>
+                          ◈ {r.birthCity}
+                        </div>
+                      )}
 
-                      {/* VRC Type + Authority */}
-                      <div className="flex flex-wrap gap-2">
+                      {/* Role + Authority tags */}
+                      <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 16 }}>
                         {r.fractalRole && (
-                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+                          <span style={{
+                            fontFamily: "monospace", fontSize: 9,
+                            color: C.teal,
+                            border: `1px solid ${C.teal}30`,
+                            padding: "2px 8px",
+                            letterSpacing: "0.08em",
+                          }}>
                             {r.fractalRole}
-                          </Badge>
+                          </span>
                         )}
                         {r.authorityNode && (
-                          <Badge variant="outline" className="bg-purple-500/10 text-purple-300 border-purple-500/30 text-xs">
+                          <span style={{
+                            fontFamily: "monospace", fontSize: 9,
+                            color: C.gold,
+                            border: `1px solid ${C.gold}30`,
+                            padding: "2px 8px",
+                            letterSpacing: "0.08em",
+                          }}>
                             {r.authorityNode}
-                          </Badge>
+                          </span>
                         )}
                       </div>
 
-                      {/* View arrow */}
-                      <div className="flex items-center justify-end text-xs text-zinc-500 group-hover:text-primary transition-colors">
-                        View reading
-                        <ArrowRight className="w-3 h-3 ml-1" />
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em", borderBottom: `1px solid ${C.border}`, paddingBottom: 2, display: "inline-block" }}>
+                        VIEW READING →
                       </div>
                     </div>
                   </Link>
@@ -146,13 +230,20 @@ export default function Readings() {
             </div>
           )}
 
+          {/* New reading CTA */}
           {readings.length > 0 && (
-            <div className="flex justify-center pt-4">
+            <div style={{ marginTop: 32, display: "flex", justifyContent: "center" }}>
               <Link href="/carrierlock">
-                <Button variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-                  Generate new reading
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
+                <span style={{
+                  display: "inline-flex", alignItems: "center",
+                  padding: "10px 32px",
+                  border: `1px solid ${C.goldDim}`,
+                  color: C.gold,
+                  fontFamily: "monospace", fontSize: 10,
+                  letterSpacing: "0.2em", cursor: "pointer",
+                }}>
+                  GENERATE NEW READING →
+                </span>
               </Link>
             </div>
           )}

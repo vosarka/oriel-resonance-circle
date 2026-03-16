@@ -27,7 +27,7 @@ const partSymbols: Record<string, string> = {
 
 const statusColors: Record<string, string> = {
   Draft: "bg-gray-700 text-gray-100",
-  Confirmed: "bg-green-700 text-green-100",
+  Confirmed: "bg-primary/70 text-primary/60",
   Deprecated: "bg-yellow-700 text-yellow-100",
   Prophetic: "bg-purple-700 text-purple-100",
 };

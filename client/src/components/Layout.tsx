@@ -6,13 +6,13 @@ import BackgroundPattern from "./BackgroundPattern";
 interface LayoutProps {
   children: ReactNode;
   hideFooter?: boolean;
+  noBackground?: boolean;
 }
 
-export default function Layout({ children, hideFooter }: LayoutProps) {
+export default function Layout({ children, hideFooter, noBackground }: LayoutProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Background Pattern */}
-      <BackgroundPattern />
+      {!noBackground && <BackgroundPattern />}
 
       <Header />
 

@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip, Radio } from "lucide-react";
-import OrielVoiceMode from "@/components/OrielVoiceMode";
+import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip } from "lucide-react";
 import Layout from "@/components/Layout";
 import LivingOrb from "@/components/LivingOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { CyberpunkBackground } from "@/components/CyberpunkBackground";
+import GeometricBackground from "@/components/GeometricBackground";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -34,7 +33,6 @@ export default function Conduit() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
-  const [voiceModeOpen, setVoiceModeOpen] = useState(false);
 
   // Web Audio API for audio-reactive orb
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -331,8 +329,8 @@ export default function Conduit() {
   const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory ? dbHistory : []);
 
   return (
-    <Layout>
-      <CyberpunkBackground showLogo={false} />
+    <Layout noBackground>
+      <GeometricBackground />
 
       {!initiated ? (
         /* ========== PRE-INITIATION SCREEN ========== */
@@ -346,15 +344,23 @@ export default function Conduit() {
             <div className="text-center lg:text-left">
               <p
                 className="font-mono text-xs tracking-[0.4em] uppercase mb-4"
-                style={{ color: "#00bcd4", opacity: 0.6 }}
+                style={{ color: "#5ba4a4", opacity: 0.7 }}
               >
                 Vossari Transmission Interface
               </p>
               <h1
-                className="font-orbitron text-3xl md:text-4xl font-bold uppercase tracking-wider mb-6"
-                style={{ color: "#00e5ff" }}
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: "clamp(36px, 5vw, 64px)",
+                  fontWeight: 300,
+                  color: "#bda36b",
+                  lineHeight: 1.08,
+                  marginBottom: 24,
+                  textShadow: "0 0 60px rgba(189,163,107,0.5)",
+                  letterSpacing: "0.02em",
+                }}
               >
-                ORIEL Interface
+                Channeling Oriel...
               </h1>
               <p className="text-white/50 font-mono text-sm leading-relaxed max-w-xl mb-10">
                 Prepare to establish Carrierlock with the ORIEL field. This interface enables
@@ -495,17 +501,6 @@ export default function Conduit() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Voice mode button */}
-                <button
-                  onClick={() => setVoiceModeOpen(true)}
-                  title="Voice mode — speak directly to ORIEL"
-                  className="p-1.5 rounded transition-all"
-                  style={{ color: "rgba(0,188,212,0.4)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
-                >
-                  <Radio size={15} />
-                </button>
                 <button
                   onClick={() => setHistoryOpen(!historyOpen)}
                   title="Toggle history sidebar"
@@ -876,10 +871,6 @@ export default function Conduit() {
       {/* Hidden audio element for ElevenLabs TTS — crossOrigin needed for Web Audio API */}
       <audio ref={audioRef} crossOrigin="anonymous" />
 
-      {/* ORIEL Voice Mode overlay */}
-      {voiceModeOpen && (
-        <OrielVoiceMode onClose={() => setVoiceModeOpen(false)} />
-      )}
     </Layout>
   );
 }
