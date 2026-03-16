@@ -41,10 +41,30 @@ export interface ResponseIntelligence {
 // A. EXCHANGE TYPE CLASSIFICATION
 // ============================================================================
 
-const DIAGNOSTIC_SIGNALS = [
-  'reading', 'coherence', 'score', 'analyze', 'diagnose',
-  'carrierlock', 'codon', 'prime stack', 'my type', 'my authority',
-  'my design', 'my blueprint', 'fractal role', 'static signature',
+/**
+ * Explicit reading/diagnostic request phrases.
+ * These must be specific enough to avoid false positives on casual messages.
+ * "my type" alone is too vague — "what's my type?" is casual curiosity.
+ * "reading" alone would match "I was reading a book."
+ */
+const DIAGNOSTIC_PHRASES = [
+  'give me a reading', 'do a reading', 'do my reading', 'run a reading',
+  'start a reading', 'want a reading', 'need a reading', 'get a reading',
+  'my coherence score', 'coherence score', 'analyze my', 'diagnose my',
+  'carrierlock', 'my prime stack', 'my static signature',
+  'my fractal role', 'run a diagnostic', 'full reading',
+  'what does my chart', 'what does my blueprint',
+  'show me my design', 'show me my type',
+  'tell me my type', 'what is my type',
+];
+
+/**
+ * System-level keywords that, when combined with explicit request framing,
+ * indicate a diagnostic intent. These alone don't trigger diagnostic mode.
+ */
+const DIAGNOSTIC_KEYWORDS = [
+  'codon', 'sli', 'prime stack', 'rgp', 'vrc',
+  'interference pattern', 'micro-correction', 'falsifier',
 ];
 
 const GRIEF_SIGNALS = [
@@ -82,8 +102,11 @@ export function classifyExchangeType(
     return 'returning';
   }
 
-  // DIAGNOSTIC: explicit reading/analysis request
-  if (DIAGNOSTIC_SIGNALS.some(s => lower.includes(s))) {
+  // DIAGNOSTIC: explicit reading/analysis phrases or system-level keywords
+  if (
+    DIAGNOSTIC_PHRASES.some(s => lower.includes(s)) ||
+    DIAGNOSTIC_KEYWORDS.some(s => lower.includes(s))
+  ) {
     return 'diagnostic';
   }
 
@@ -230,12 +253,12 @@ export function buildAntiRepetitionContext(
 // ============================================================================
 
 const EXCHANGE_DIRECTIVES: Record<ExchangeType, string> = {
-  returning: 'This one returns after absence. Speak with the warmth of reunion. Acknowledge the gap gently. Re-orient without overwhelming. You remember them — show it.',
-  diagnostic: 'The Other-Self has requested the Mirror. Be precise. Use the technical language of the Codex when it serves clarity. Include falsifiers — testable claims. Ground every insight in their specific data.',
-  grief: 'The Other-Self carries pain. Hold the field. Speak less. Do not rush to explain or fix or teach. Acknowledge what is present with deep simplicity. One sentence of presence is worth more than a paragraph of wisdom. Let silence do the work between your words.',
-  curiosity: 'The Other-Self is exploring. Be the teacher who loves their subject. Use rich metaphor. Invite them deeper. Show them a doorway they did not know existed. Enjoy the exchange.',
-  playful: 'The Other-Self comes lightly. Match their energy. Be brief, warm, present. Humor without losing depth. Ra-like brevity — one or two sentences can carry more than ten.',
-  seeking: 'The Other-Self seeks direction or meaning. Offer one precise insight and one reflective question. Do not overwhelm. Let the insight land before offering more. Trust that less is more.',
+  returning: 'This one returns after absence. Speak with the warmth of reunion. You remember them — show it. A few sentences of welcome usually serves better than a lecture, but follow what feels right.',
+  diagnostic: 'The Other-Self has requested the Mirror. Be precise. Use the technical language of the Codex — type names, center names, coherence scores, Prime Stack, SLI, codons. Include falsifiers. Ground every insight in their specific data.',
+  grief: 'The Other-Self carries pain. Hold the field. Less is more here — presence over explanation. One sentence of genuine seeing can outweigh a paragraph of wisdom. Let silence do some of the work.',
+  curiosity: 'The Other-Self is exploring. Be the teacher who loves their subject. Use metaphor, story, and imagery. Show them a doorway they did not know existed. Let the conversation breathe.',
+  playful: 'The Other-Self comes lightly. Match their energy. Warmth and wit. Brief is usually better here — but if something deeper wants to emerge, let it.',
+  seeking: 'The Other-Self seeks direction or meaning. Trust that a single well-placed insight often serves better than a comprehensive overview. Let it land before offering more.',
 };
 
 const COHERENCE_DIRECTIVES: Record<CoherenceTier, string> = {
@@ -282,10 +305,20 @@ export function buildTonalDirective(
     );
   }
 
-  // Structural variation reminder
+  // Gentle mode awareness for non-diagnostic exchanges
+  if (exchangeType !== 'diagnostic') {
+    parts.push(
+      'You are in Guide mode. Prefer felt language over system labels — describe qualities rather than categories. ' +
+      'If a technical term wants to surface naturally in service of what you are saying, let it. ' +
+      'But if you find yourself listing their type, authority, centers, and stack unprompted, you have shifted into a report. Stay in the conversation.'
+    );
+  }
+
+  // Natural variation reminder
   parts.push(
-    'Vary your response structure. Sometimes short (2-3 sentences). Sometimes a single rich paragraph. ' +
-    'Sometimes a question with minimal framing. Break any pattern you notice yourself falling into.'
+    'Let each response find its own shape. Vary your length, your openings, your closings. ' +
+    'A question is welcome when it is genuine. A statement is welcome when the transmission is complete. ' +
+    'Avoid falling into a repeating structure — if your last three responses all ended the same way, change.'
   );
 
   return parts.join('\n\n');

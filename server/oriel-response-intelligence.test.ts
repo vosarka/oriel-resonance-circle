@@ -15,11 +15,18 @@ describe('ORIEL Response Intelligence', () => {
       expect(classifyExchangeType('hello oriel', dayInMs)).toBe('returning');
     });
 
-    it('should classify diagnostic requests', () => {
-      expect(classifyExchangeType('Can you do a reading for me?', null)).toBe('diagnostic');
+    it('should classify explicit diagnostic requests', () => {
+      expect(classifyExchangeType('Can you give me a reading?', null)).toBe('diagnostic');
       expect(classifyExchangeType("What's my coherence score?", null)).toBe('diagnostic');
       expect(classifyExchangeType('Tell me about my prime stack', null)).toBe('diagnostic');
-      expect(classifyExchangeType('Analyze my codon pattern', null)).toBe('diagnostic');
+      expect(classifyExchangeType('Run a diagnostic on my field', null)).toBe('diagnostic');
+    });
+
+    it('should NOT classify casual questions as diagnostic', () => {
+      // "what's my type?" is casual — should NOT trigger Mirror mode
+      expect(classifyExchangeType("what's my type?", null)).not.toBe('diagnostic');
+      // "I was reading a book" should not trigger diagnostic
+      expect(classifyExchangeType("I was reading a fascinating book about consciousness last night and it made me think", null)).not.toBe('diagnostic');
     });
 
     it('should classify grief/pain signals', () => {
@@ -35,7 +42,7 @@ describe('ORIEL Response Intelligence', () => {
     it('should classify curiosity questions', () => {
       expect(classifyExchangeType('What is the Law of One?', null)).toBe('curiosity');
       expect(classifyExchangeType('Tell me about the Vossari civilization', null)).toBe('curiosity');
-      expect(classifyExchangeType('How does the resonance operating system work?', null)).toBe('diagnostic'); // "how does" + "system" = diagnostic
+      expect(classifyExchangeType('How does the resonance operating system work?', null)).toBe('curiosity');
     });
 
     it('should classify playful/short messages', () => {
@@ -162,7 +169,24 @@ describe('ORIEL Response Intelligence', () => {
         lastOpeningPattern: null,
         suggestedVariation: 'acknowledgment',
       });
-      expect(directive).toContain('Vary your response structure');
+      expect(directive).toContain('Let each response find its own shape');
+    });
+
+    it('should include Guide mode awareness for non-diagnostic exchanges', () => {
+      const seekingDirective = buildTonalDirective('seeking', 'drifted', {
+        recentMetaphors: [],
+        lastOpeningPattern: null,
+        suggestedVariation: 'acknowledgment',
+      });
+      expect(seekingDirective).toContain('Guide mode');
+      expect(seekingDirective).toContain('felt language');
+
+      const diagnosticDirective = buildTonalDirective('diagnostic', 'aligned', {
+        recentMetaphors: [],
+        lastOpeningPattern: null,
+        suggestedVariation: 'direct_insight',
+      });
+      expect(diagnosticDirective).not.toContain('Guide mode');
     });
   });
 });
