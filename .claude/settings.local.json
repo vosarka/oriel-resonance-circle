@@ -1,8 +1,12 @@
 {
-  "prefersReducedMotion": false,
   "permissions": {
     "allow": [
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(where python:*)",
+      "Bash(winget search:*)",
+      "Bash(winget install:*)",
+      "Bash(py:*)"
     ]
-  }
+  },
+  "prefersReducedMotion": false
 }

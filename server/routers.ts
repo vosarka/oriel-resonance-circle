@@ -175,6 +175,13 @@ export const appRouter = router({
           fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
         }
 
+        // Trim conversation history to avoid context flooding
+        // Long ORIEL responses (letters, readings) can push the current message
+        // too far down the context, causing the LLM to fixate on old content
+        const { trimConversationHistory, deduplicateConsecutiveMessages } = await import('./response-deduplication');
+        conversationHistory = deduplicateConsecutiveMessages(conversationHistory);
+        conversationHistory = trimConversationHistory(conversationHistory, 8);
+
         // Helper to call the active LLM
         const callLLM = async (msg: string, history: typeof conversationHistory) => {
           if (process.env.MISTRAL_API_KEY) {
