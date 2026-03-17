@@ -9,6 +9,7 @@ import { chatWithORIELMistral } from "./mistral-oriel";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
+import { generateElevenLabsSpeech, audioToDataUrl as elevenLabsAudioToDataUrl } from "./elevenlabs-tts";
 import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
@@ -244,14 +245,42 @@ export const appRouter = router({
 
     generateSpeech: publicProcedure
       .input(z.object({
-        text: z.string(),
+        text: z.string().min(1, "Text is required").max(5000, "Text too long for TTS"),
+        voiceId: z.enum(["fast", "nostalgic", "none"]).optional().default("fast"),
       }))
       .mutation(async ({ input }) => {
         try {
-          console.log("[generateSpeech] Starting TTS generation for text:", input.text.substring(0, 100), `(${input.text.length} chars)`);
-          const audioBase64 = await generateChunkedSpeech(input.text);
+          // If voiceId is 'none', skip TTS entirely
+          if (input.voiceId === "none") {
+            console.log("[generateSpeech] Voice disabled, skipping TTS");
+            return {
+              success: true,
+              audioUrl: null,
+            };
+          }
+
+          console.log("[generateSpeech] Starting TTS generation for text:", input.text.substring(0, 100), `(${input.text.length} chars) with voiceId: ${input.voiceId}`);
+
+          let audioBase64: string;
+          let audioUrl: string;
+
+          if (input.voiceId === "nostalgic") {
+            // Use ElevenLabs TTS
+            try {
+              audioBase64 = await generateElevenLabsSpeech(input.text);
+              audioUrl = elevenLabsAudioToDataUrl(audioBase64);
+            } catch (elevenLabsError) {
+              console.error("[generateSpeech] ElevenLabs failed, falling back to Inworld:", elevenLabsError);
+              audioBase64 = await generateChunkedSpeech(input.text);
+              audioUrl = audioToDataUrl(audioBase64);
+            }
+          } else {
+            // Default to Inworld TTS (fast)
+            audioBase64 = await generateChunkedSpeech(input.text);
+            audioUrl = audioToDataUrl(audioBase64);
+          }
+
           console.log("[generateSpeech] Audio generated successfully, size:", audioBase64.length);
-          const audioUrl = audioToDataUrl(audioBase64);
           return {
             success: true,
             audioUrl,
@@ -263,6 +292,24 @@ export const appRouter = router({
             success: false,
             error: errorMsg,
           };
+        }
+      }),
+
+    // Mutation to save user's voice preference
+    setVoicePreference: protectedProcedure
+      .input(z.object({
+        voicePreference: z.enum(["fast", "nostalgic", "none"]),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+        try {
+          await db.updateUserVoicePreference(ctx.user.id, input.voicePreference);
+          return { success: true, voicePreference: input.voicePreference };
+        } catch (error) {
+          console.error("[setVoicePreference] Failed to save preference:", error);
+          throw new Error("Failed to save voice preference");
         }
       }),
 

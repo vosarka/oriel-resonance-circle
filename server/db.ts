@@ -259,6 +259,12 @@ export async function updateUserConduitId(userId: number, conduitId: string) {
   await db.update(users).set({ conduitId }).where(eq(users.id, userId));
 }
 
+export async function updateUserVoicePreference(userId: number, voicePreference: "fast" | "nostalgic" | "none") {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(users).set({ voicePreference }).where(eq(users.id, userId));
+}
+
 
 // Bookmark queries
 export async function addBookmark(userId: number, transmissionId: number) {

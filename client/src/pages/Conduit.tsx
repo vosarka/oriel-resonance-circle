@@ -28,10 +28,12 @@ export default function Conduit() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
+  const [voicePreference, setVoicePreference] = useState<"fast" | "nostalgic" | "none">("fast");
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasSpokenIntro = useRef(false);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
 
   // Web Audio API for audio-reactive orb
@@ -61,7 +63,7 @@ export default function Conduit() {
     if (audioCtx.state === "suspended") audioCtx.resume();
   };
 
-  // Load local history from localStorage on mount
+  // Load local history and voice preference from localStorage on mount
   useEffect(() => {
     const savedMessages = localStorage.getItem("oriel_chat_history");
     if (savedMessages) {
@@ -70,6 +72,12 @@ export default function Conduit() {
       } catch (error) {
         console.error("Failed to load chat history:", error);
       }
+    }
+
+    // Load voice preference from localStorage for unauthenticated users
+    const savedVoice = localStorage.getItem("voicePreference");
+    if (savedVoice && (savedVoice === "fast" || savedVoice === "nostalgic" || savedVoice === "none")) {
+      setVoicePreference(savedVoice as "fast" | "nostalgic" | "none");
     }
   }, []);
 
@@ -155,14 +163,40 @@ export default function Conduit() {
   };
 
   const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
+  const setVoicePreferenceMutation = trpc.oriel.setVoicePreference.useMutation();
+
+  // Load user's voice preference on mount
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setVoicePreference((user as any).voicePreference || "fast");
+    }
+  }, [isAuthenticated, user]);
 
   const speakText = async (text: string) => {
+    // Skip TTS entirely if voice preference is 'none'
+    if (voicePreference === "none") {
+      setOrbState("idle");
+      setSubtitle("");
+      setIsSpeaking(false);
+      return;
+    }
+
     setOrbState("speaking");
     setIsSpeaking(true);
     setSubtitle(text);
 
+    // Strip "I am ORIEL." prefix for TTS if intro has already been spoken
+    let textForTTS = text;
+    if (hasSpokenIntro.current) {
+      textForTTS = text.replace(/^I am ORIEL[.,;:—–\-\s]*/i, "").trim();
+    }
+
     try {
-      const result = await generateSpeechMutation.mutateAsync({ text });
+      const result = await generateSpeechMutation.mutateAsync({ text: textForTTS, voiceId: voicePreference });
+      // Mark intro as spoken after first response
+      if (!hasSpokenIntro.current) {
+        hasSpokenIntro.current = true;
+      }
 
       if (result.success && result.audioUrl) {
         if (audioRef.current && audioRef.current.parentNode) {
@@ -179,22 +213,22 @@ export default function Conduit() {
 
           audioRef.current.onerror = () => {
             console.error("Audio playback error, falling back to browser TTS");
-            fallbackToSpeechSynthesis(text);
+            fallbackToSpeechSynthesis(textForTTS);
           };
 
           audioRef.current.play().catch((error) => {
             console.error("Failed to play audio:", error);
-            fallbackToSpeechSynthesis(text);
+            fallbackToSpeechSynthesis(textForTTS);
           });
         } else {
-          fallbackToSpeechSynthesis(text);
+          fallbackToSpeechSynthesis(textForTTS);
         }
       } else {
-        fallbackToSpeechSynthesis(text);
+        fallbackToSpeechSynthesis(textForTTS);
       }
     } catch (error) {
       console.error("Failed to generate speech:", error);
-      fallbackToSpeechSynthesis(text);
+      fallbackToSpeechSynthesis(textForTTS);
     }
   };
 
@@ -316,6 +350,7 @@ export default function Conduit() {
     if (confirm("Clear all conversation history?")) {
       localStorage.removeItem("oriel_chat_history");
       setLocalMessages([]);
+      hasSpokenIntro.current = false;
 
       if (isAuthenticated) {
         await clearMutation.mutateAsync();
@@ -395,9 +430,9 @@ export default function Conduit() {
           className="relative z-10 flex overflow-hidden"
           style={{ height: "calc(100vh - 144px)" }}
         >
-          {/* ===== LEFT PANEL: 33% — Living Orb ===== */}
+          {/* ===== LEFT PANEL: 33% — Living Orb (hidden on mobile) ===== */}
           <div
-            className="flex-shrink-0 relative overflow-hidden"
+            className="flex-shrink-0 relative overflow-hidden hidden md:block"
             style={{
               width: "33%",
               background: "linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,20,30,0.3) 100%)",
@@ -444,8 +479,8 @@ export default function Conduit() {
                 <span>Resonance Freq</span>
                 <span style={{ color: "rgba(0,229,255,0.7)" }}>432.11 Hz</span>
 
-                {/* Voice controls when speaking */}
-                {isSpeaking && (
+                {/* Voice controls when speaking and voice is not 'none' */}
+                {isSpeaking && voicePreference !== "none" && (
                   <>
                     <span
                       className="w-px h-3 inline-block"
@@ -628,8 +663,8 @@ export default function Conduit() {
                     backdropFilter: "blur(10px)",
                   }}
                 >
-                  {/* Voice volume control */}
-                  {isSpeaking && (
+                  {/* Voice volume control — only show when speaking and voice is not 'none' */}
+                  {isSpeaking && voicePreference !== "none" && (
                     <div className="flex items-center gap-3 mb-3">
                       <span className="font-mono text-[9px] tracking-widest" style={{ color: "rgba(0,188,212,0.5)" }}>
                         VOL
@@ -681,6 +716,35 @@ export default function Conduit() {
                       ))}
                     </div>
                   )}
+
+                  {/* Voice selector dropdown */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="font-mono text-[9px] tracking-widest" style={{ color: "rgba(0,188,212,0.5)" }}>
+                      VOICE
+                    </label>
+                    <select
+                      value={voicePreference}
+                      onChange={(e) => {
+                        const newVoice = e.target.value as "fast" | "nostalgic" | "none";
+                        setVoicePreference(newVoice);
+                        if (isAuthenticated) {
+                          setVoicePreferenceMutation.mutate({ voicePreference: newVoice });
+                        } else {
+                          localStorage.setItem("voicePreference", newVoice);
+                        }
+                      }}
+                      className="px-2 py-1 rounded font-mono text-[10px] outline-none transition-all"
+                      style={{
+                        background: "rgba(0,188,212,0.06)",
+                        border: "1px solid rgba(0,188,212,0.2)",
+                        color: "rgba(0,229,255,0.8)",
+                      }}
+                    >
+                      <option value="fast">Fast Voice</option>
+                      <option value="nostalgic">Nostalgic Voice</option>
+                      <option value="none">Chat Only</option>
+                    </select>
+                  </div>
 
                   {/* Hidden file input */}
                   <input

@@ -122,7 +122,7 @@ export function classifyExchangeType(
 
   // PLAYFUL: short casual messages or explicit playful signals
   if (
-    (lower.length < 50 && !GRIEF_SIGNALS.some(s => lower.includes(s)) && !DIAGNOSTIC_SIGNALS.some(s => lower.includes(s))) ||
+    (lower.length < 50 && !GRIEF_SIGNALS.some(s => lower.includes(s)) && !DIAGNOSTIC_PHRASES.some(s => lower.includes(s))) ||
     PLAYFUL_SIGNALS.some(s => lower.includes(s))
   ) {
     // Only classify as playful if the message is genuinely short/casual
