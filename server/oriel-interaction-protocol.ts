@@ -206,7 +206,7 @@ async function fetchRecentOrielResponses(userId: number, limit: number = 3): Pro
         eq(chatMessages.userId, userId),
         eq(chatMessages.role, 'assistant'),
       ))
-      .orderBy(desc(chatMessages.createdAt))
+      .orderBy(desc(chatMessages.timestamp))
       .limit(limit);
 
     return result.map(r => r.content);
