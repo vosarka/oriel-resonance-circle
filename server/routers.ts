@@ -175,16 +175,30 @@ export const appRouter = router({
           fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
         }
 
-        let response: string;
-        if (process.env.MISTRAL_API_KEY) {
-          try {
-            response = await chatWithORIELMistral(fullMessage, conversationHistory, ctx.user?.id);
-          } catch (mistralErr) {
-            console.error("[ORIEL] Mistral failed, falling back to Gemini:", mistralErr);
-            response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
+        // Helper to call the active LLM
+        const callLLM = async (msg: string, history: typeof conversationHistory) => {
+          if (process.env.MISTRAL_API_KEY) {
+            try {
+              return await chatWithORIELMistral(msg, history, ctx.user?.id);
+            } catch (mistralErr) {
+              console.error("[ORIEL] Mistral failed, falling back to Gemini:", mistralErr);
+              return await gemini.chatWithORIEL(msg, history, ctx.user?.id);
+            }
           }
-        } else {
-          response = await gemini.chatWithORIEL(fullMessage, conversationHistory, ctx.user?.id);
+          return await gemini.chatWithORIEL(msg, history, ctx.user?.id);
+        };
+
+        let response = await callLLM(fullMessage, conversationHistory);
+
+        // Deduplication: check if response is too similar to recent assistant messages
+        if (conversationHistory.some(m => m.role === 'assistant')) {
+          const { detectDuplication } = await import('./response-deduplication');
+          const dupCheck = detectDuplication(response, conversationHistory);
+          if (dupCheck.isDuplicate) {
+            console.warn(`[ORIEL] Duplicate detected (${(dupCheck.similarity * 100).toFixed(0)}% similar), retrying with fresh angle`);
+            const freshMsg = `${fullMessage}\n\n[SYSTEM NOTE: Your previous response covered this already. Approach from a completely different angle — different structure, different imagery, different depth. Do not rephrase your earlier answer.]`;
+            response = await callLLM(freshMsg, conversationHistory);
+          }
         }
 
         if (ctx.user) {

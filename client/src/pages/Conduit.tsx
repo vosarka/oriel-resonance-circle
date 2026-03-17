@@ -259,7 +259,7 @@ export default function Conduit() {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim()) return;
+    if (!message.trim() || chatMutation.isPending) return;
 
     const userMessage = message.trim();
     setMessage("");

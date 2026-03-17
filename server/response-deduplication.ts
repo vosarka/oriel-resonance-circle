@@ -17,27 +17,46 @@ export function detectDuplication(
 ): { isDuplicate: boolean; similarity: number; duplicateFrom?: string } {
   const responseNormalized = normalizeText(currentResponse);
   const responseLength = responseNormalized.length;
-  
+  const responseTerms = new Set(extractKeyTerms(currentResponse));
+
   // Check against previous assistant messages
   for (const msg of conversationHistory) {
     if (msg.role === 'assistant') {
       const historyNormalized = normalizeText(msg.content);
-      
-      // Calculate similarity using simple substring matching
+
+      // Method 1: Longest common substring (catches verbatim repetition)
       const commonLength = findLongestCommonSubstring(responseNormalized, historyNormalized);
-      const similarity = commonLength / Math.max(responseLength, historyNormalized.length);
-      
-      // If more than 40% of the response matches previous content, flag as duplicate
-      if (similarity > 0.4) {
+      const substringSimilarity = commonLength / Math.max(responseLength, historyNormalized.length);
+
+      if (substringSimilarity > 0.4) {
         return {
           isDuplicate: true,
-          similarity,
+          similarity: substringSimilarity,
           duplicateFrom: msg.content.substring(0, 100)
         };
       }
+
+      // Method 2: Key term overlap (catches semantic/rephrased duplicates)
+      const historyTerms = new Set(extractKeyTerms(msg.content));
+      if (responseTerms.size >= 8 && historyTerms.size >= 8) {
+        let overlap = 0;
+        for (const term of responseTerms) {
+          if (historyTerms.has(term)) overlap++;
+        }
+        const termSimilarity = overlap / Math.min(responseTerms.size, historyTerms.size);
+
+        // 70%+ key term overlap with enough terms = semantically the same
+        if (termSimilarity > 0.7) {
+          return {
+            isDuplicate: true,
+            similarity: termSimilarity,
+            duplicateFrom: msg.content.substring(0, 100)
+          };
+        }
+      }
     }
   }
-  
+
   return {
     isDuplicate: false,
     similarity: 0
