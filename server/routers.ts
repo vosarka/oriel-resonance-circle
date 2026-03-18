@@ -182,8 +182,8 @@ export const appRouter = router({
         // Long ORIEL responses (letters, readings) can push the current message
         // too far down the context, causing the LLM to fixate on old content
         const { trimConversationHistory, deduplicateConsecutiveMessages } = await import('./response-deduplication');
-        conversationHistory = deduplicateConsecutiveMessages(conversationHistory);
-        conversationHistory = trimConversationHistory(conversationHistory, 8);
+        conversationHistory = deduplicateConsecutiveMessages(conversationHistory) as Array<{ role: 'user' | 'assistant'; content: string }>;
+        conversationHistory = trimConversationHistory(conversationHistory, 8) as Array<{ role: 'user' | 'assistant'; content: string }>;
 
         // Helper to call the active LLM
         const callLLM = async (msg: string, history: typeof conversationHistory) => {
