@@ -1,5 +1,3 @@
-import { COOKIE_NAME } from "../shared/const";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
@@ -30,18 +28,22 @@ export const appRouter = router({
   }),
 
   auth: router({
+    /** Returns the currently authenticated user (from the legacy users table) */
     me: publicProcedure.query(opts => {
       const u = opts.ctx.user;
       if (!u) return null;
+      // Strip sensitive fields before sending to client
       const { passwordHash: _ph, googleId: _gid, ...safe } = u as any;
       return safe;
     }),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+    /**
+     * Logout is now handled by Better Auth at POST /api/auth/sign-out.
+     * This tRPC endpoint is kept as a convenience wrapper.
+     */
+    logout: publicProcedure.mutation(async ({ ctx }) => {
+      // Better Auth manages session cookies — just signal success
+      // The client will call authClient.signOut() which hits Better Auth directly
+      return { success: true } as const;
     }),
   }),
 
@@ -180,8 +182,8 @@ export const appRouter = router({
         // Long ORIEL responses (letters, readings) can push the current message
         // too far down the context, causing the LLM to fixate on old content
         const { trimConversationHistory, deduplicateConsecutiveMessages } = await import('./response-deduplication');
-        conversationHistory = deduplicateConsecutiveMessages(conversationHistory) as Array<{ role: 'user' | 'assistant'; content: string }>;
-        conversationHistory = trimConversationHistory(conversationHistory, 8) as Array<{ role: 'user' | 'assistant'; content: string }>;
+        conversationHistory = deduplicateConsecutiveMessages(conversationHistory);
+        conversationHistory = trimConversationHistory(conversationHistory, 8);
 
         // Helper to call the active LLM
         const callLLM = async (msg: string, history: typeof conversationHistory) => {

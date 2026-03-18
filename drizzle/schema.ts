@@ -353,3 +353,70 @@ export const staticSignatures = mysqlTable("staticSignatures", {
 
 export type StaticSignature = typeof staticSignatures.$inferSelect;
 export type InsertStaticSignature = typeof staticSignatures.$inferInsert;
+
+// ============================================================================
+// BETTER AUTH TABLES
+// ============================================================================
+
+/**
+ * Better Auth session table — manages active user sessions.
+ * Replaces the old JWT-based session system.
+ */
+export const baSession = mysqlTable("ba_session", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  ipAddress: text("ipAddress"),
+  userAgent: text("userAgent"),
+  userId: varchar("userId", { length: 36 }).notNull(),
+});
+
+/**
+ * Better Auth account table — links users to auth providers.
+ * Stores Google OAuth, email+password, phone credentials.
+ */
+export const baAccount = mysqlTable("ba_account", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  accountId: varchar("accountId", { length: 255 }).notNull(),
+  providerId: varchar("providerId", { length: 255 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  accessToken: text("accessToken"),
+  refreshToken: text("refreshToken"),
+  idToken: text("idToken"),
+  accessTokenExpiresAt: timestamp("accessTokenExpiresAt"),
+  refreshTokenExpiresAt: timestamp("refreshTokenExpiresAt"),
+  scope: text("scope"),
+  password: text("password"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * Better Auth user table — separate from the legacy `users` table.
+ * Bridged to our `users` table by email after authentication.
+ */
+export const baUser = mysqlTable("ba_user", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerified: boolean("emailVerified").default(false).notNull(),
+  image: text("image"),
+  phoneNumber: varchar("phoneNumber", { length: 20 }),
+  phoneNumberVerified: boolean("phoneNumberVerified").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+/**
+ * Better Auth verification table — stores OTP codes and verification tokens.
+ */
+export const baVerification = mysqlTable("ba_verification", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  identifier: varchar("identifier", { length: 255 }).notNull(),
+  value: text("value").notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow(),
+});

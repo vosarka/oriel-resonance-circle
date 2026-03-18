@@ -5,7 +5,12 @@
       "Bash(where python:*)",
       "Bash(winget search:*)",
       "Bash(winget install:*)",
-      "Bash(py:*)"
+      "Bash(py:*)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm db:push)",
+      "Bash(npx tsx:*)",
+      "Bash(npx drizzle-kit:*)",
+      "Bash(taskkill //F //IM node.exe)"
     ]
   },
   "prefersReducedMotion": false

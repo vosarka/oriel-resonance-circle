@@ -13,4 +13,19 @@ export const ENV = {
   appBaseUrl: process.env.APP_BASE_URL ?? "",
   elevenLabsApiKey: process.env.ELEVENLABS_API_KEY ?? "",
   elevenLabsVoiceId: process.env.ELEVENLABS_VOICE_ID ?? "",
+
+  // ─── Better Auth ────────────────────────────────────────────────────────
+  betterAuthSecret: process.env.BETTER_AUTH_SECRET ?? "",
+
+  // ─── SMTP (Email OTP) ──────────────────────────────────────────────────
+  smtpHost: process.env.SMTP_HOST ?? "",
+  smtpPort: process.env.SMTP_PORT ?? "587",
+  smtpUser: process.env.SMTP_USER ?? "",
+  smtpPass: process.env.SMTP_PASS ?? "",
+  smtpFrom: process.env.SMTP_FROM ?? "",
+
+  // ─── Twilio (Phone SMS) ────────────────────────────────────────────────
+  twilioAccountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
+  twilioAuthToken: process.env.TWILIO_AUTH_TOKEN ?? "",
+  twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER ?? "",
 };
