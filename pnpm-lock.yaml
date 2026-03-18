@@ -125,7 +125,7 @@ importers:
         specifier: ^3.0.3
         version: 3.0.3
       better-auth:
-        specifier: ^1.4.7
+        specifier: ^1.5.5
         version: 1.5.5(drizzle-kit@0.31.5)(drizzle-orm@0.44.6(kysely@0.28.12)(mysql2@3.15.1))(mongodb@7.1.0)(mysql2@3.15.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(vitest@2.1.9(@types/node@24.7.0)(lightningcss@1.30.1))
       class-variance-authority:
         specifier: ^0.7.1
