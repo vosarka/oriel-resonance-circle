@@ -30,7 +30,7 @@ export function CyberpunkBackground({ showLogo = true }: CyberpunkBackgroundProp
             <div className="relative w-40 h-40 md:w-48 md:h-48">
               {/* Vos Arkana Logo - already has concentric rings */}
               <img
-                src="/psi-logo.png"
+                src="/qinklogo.png"
                 alt="Vos Arkana Logo"
                 className="absolute inset-0 w-full h-full object-contain drop-shadow-[0_0_30px_rgba(144,238,144,0.3)] animate-float"
               />

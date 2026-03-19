@@ -17,12 +17,9 @@ export const ENV = {
   // ─── Better Auth ────────────────────────────────────────────────────────
   betterAuthSecret: process.env.BETTER_AUTH_SECRET ?? "",
 
-  // ─── SMTP (Email OTP) ──────────────────────────────────────────────────
-  smtpHost: process.env.SMTP_HOST ?? "",
-  smtpPort: process.env.SMTP_PORT ?? "587",
-  smtpUser: process.env.SMTP_USER ?? "",
-  smtpPass: process.env.SMTP_PASS ?? "",
-  smtpFrom: process.env.SMTP_FROM ?? "",
+  // ─── Resend (Email OTP) ────────────────────────────────────────────────
+  resendApiKey: process.env.RESEND_API_KEY ?? "",
+  resendFrom: process.env.RESEND_FROM ?? "",
 
   // ─── Twilio (Phone SMS) ────────────────────────────────────────────────
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID ?? "",

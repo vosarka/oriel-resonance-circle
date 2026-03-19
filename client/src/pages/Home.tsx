@@ -155,7 +155,7 @@ export default function Home() {
 
           {/* Actual sigil */}
           <img
-            src="/vossari-sigil.png"
+            src="/qinklogo.png"
             alt="Vossari Sigil"
             className="flicker"
             style={{

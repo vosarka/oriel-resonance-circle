@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Loader2, Mail, Phone, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { authClient } from "@/lib/auth-client";
-import { CyberpunkBackground } from "@/components/CyberpunkBackground";
+import GeometricBackground from "@/components/GeometricBackground";
 
 // ─── Shared UI ───────────────────────────────────────────────────────────────
 
@@ -15,18 +15,14 @@ function ErrorMsg({ msg }: { msg: string }) {
   return <p className="text-sm text-[#FF2A2A] font-mono mt-1">{msg}</p>;
 }
 
-function SuccessMsg({ msg }: { msg: string }) {
-  return <p className="text-sm text-[#00FF88] font-mono mt-1">{msg}</p>;
-}
-
 function Divider() {
   return (
     <div className="relative my-5">
       <div className="absolute inset-0 flex items-center">
-        <span className="w-full border-t border-[#00F0FF]/20" />
+        <span className="w-full border-t border-[#bda36b]/20" />
       </div>
       <div className="relative flex justify-center">
-        <span className="bg-[#050505] px-3 text-xs font-mono text-gray-500">OR</span>
+        <span className="bg-[#0f0f15] px-3 text-xs font-mono text-[#6a665e]">OR</span>
       </div>
     </div>
   );
@@ -40,7 +36,7 @@ function GoogleButton({ label, loading, onClick }: { label: string; loading: boo
       type="button"
       disabled={loading}
       onClick={onClick}
-      className="flex items-center justify-center gap-3 w-full rounded-md border border-[#00F0FF]/30 bg-black/40 px-4 py-2.5 text-sm font-mono text-[#00F0FF] hover:bg-[#00F0FF]/10 hover:border-[#00F0FF] transition-all disabled:opacity-50"
+      className="flex items-center justify-center gap-3 w-full rounded-md border border-[#bda36b]/30 bg-black/40 px-4 py-2.5 text-sm font-mono text-[#e8e4dc] hover:bg-[#bda36b]/10 hover:border-[#bda36b] transition-all disabled:opacity-50"
     >
       {loading ? (
         <Loader2 className="w-5 h-5 animate-spin" />
@@ -57,223 +53,60 @@ function GoogleButton({ label, loading, onClick }: { label: string; loading: boo
   );
 }
 
-// ─── OTP Code Input ──────────────────────────────────────────────────────────
+// ─── Email + Password Flow ──────────────────────────────────────────────────
 
-function OtpInput({ length = 6, onComplete }: { length?: number; onComplete: (code: string) => void }) {
-  const [digits, setDigits] = useState<string[]>(Array(length).fill(""));
-  const refs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const handleChange = (idx: number, value: string) => {
-    if (!/^\d?$/.test(value)) return;
-    const next = [...digits];
-    next[idx] = value;
-    setDigits(next);
-
-    if (value && idx < length - 1) {
-      refs.current[idx + 1]?.focus();
-    }
-
-    const code = next.join("");
-    if (code.length === length && next.every(d => d)) {
-      onComplete(code);
-    }
-  };
-
-  const handleKeyDown = (idx: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !digits[idx] && idx > 0) {
-      refs.current[idx - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
-    const next = [...digits];
-    for (let i = 0; i < text.length; i++) {
-      next[i] = text[i];
-    }
-    setDigits(next);
-    if (text.length === length) {
-      onComplete(text);
-    } else {
-      refs.current[text.length]?.focus();
-    }
-  };
-
-  return (
-    <div className="flex gap-2 justify-center">
-      {digits.map((d, i) => (
-        <input
-          key={i}
-          ref={el => { refs.current[i] = el; }}
-          type="text"
-          inputMode="numeric"
-          maxLength={1}
-          value={d}
-          onChange={e => handleChange(i, e.target.value)}
-          onKeyDown={e => handleKeyDown(i, e)}
-          onPaste={i === 0 ? handlePaste : undefined}
-          className="w-11 h-13 text-center text-xl font-mono bg-black/60 border border-[#00F0FF]/30 text-[#00F0FF] rounded-md focus:border-[#00F0FF] focus:outline-none focus:ring-1 focus:ring-[#00F0FF]/50 transition-all"
-        />
-      ))}
-    </div>
-  );
-}
-
-// ─── Email OTP Flow ──────────────────────────────────────────────────────────
-
-function EmailOtpFlow({ onSuccess }: { onSuccess: () => void }) {
-  const [step, setStep] = useState<"email" | "verify">("email");
+function EmailPasswordFlow({ onBack }: { onBack: () => void }) {
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const { refresh } = useAuth();
 
-  const handleSendOtp = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
     if (!email || !email.includes("@")) {
       setError("Enter a valid email address.");
       return;
     }
-    setError("");
-    setLoading(true);
-    try {
-      const res = await authClient.emailOtp.sendVerificationOtp({
-        email,
-        type: "sign-in",
-      });
-      if (res.error) {
-        setError(res.error.message || "Failed to send code.");
-      } else {
-        setSuccess("Code sent — check your inbox.");
-        setStep("verify");
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerify = async (code: string) => {
-    setError("");
-    setLoading(true);
-    try {
-      const res = await authClient.emailOtp.verifyEmail({
-        email,
-        otp: code,
-      });
-      if (res.error) {
-        setError(res.error.message || "Invalid code. Try again.");
-      } else {
-        onSuccess();
-      }
-    } catch {
-      setError("Verification failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (step === "verify") {
-    return (
-      <div className="space-y-4">
-        <button
-          type="button"
-          onClick={() => { setStep("email"); setError(""); setSuccess(""); }}
-          className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-[#00F0FF] transition-colors"
-        >
-          <ArrowLeft className="w-3 h-3" /> Back
-        </button>
-
-        <div className="text-center space-y-2">
-          <p className="text-sm font-mono text-gray-400">
-            Enter the 6-digit code sent to
-          </p>
-          <p className="text-sm font-mono text-[#00F0FF]">{email}</p>
-        </div>
-
-        <OtpInput onComplete={handleVerify} />
-
-        {error && <ErrorMsg msg={error} />}
-        {loading && (
-          <div className="flex justify-center">
-            <Loader2 className="w-5 h-5 text-[#00F0FF] animate-spin" />
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={handleSendOtp}
-          disabled={loading}
-          className="w-full text-xs font-mono text-gray-500 hover:text-[#00F0FF] transition-colors disabled:opacity-50"
-        >
-          Resend code
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSendOtp} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="email-otp" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
-          Email Address
-        </Label>
-        <Input
-          id="email-otp"
-          type="email"
-          placeholder="seeker@signal.io"
-          autoComplete="email"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          className="bg-black/60 border-[#00F0FF]/30 text-[#00F0FF] placeholder:text-gray-600 font-mono focus:border-[#00F0FF]"
-        />
-      </div>
-
-      {error && <ErrorMsg msg={error} />}
-      {success && <SuccessMsg msg={success} />}
-
-      <Button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-[#00F0FF]/10 border border-[#00F0FF]/50 text-[#00F0FF] font-mono hover:bg-[#00F0FF]/20 hover:border-[#00F0FF] transition-all"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Mail className="w-4 h-4 mr-2" />}
-        SEND ACCESS CODE
-      </Button>
-    </form>
-  );
-}
-
-// ─── Phone SMS Flow ──────────────────────────────────────────────────────────
-
-function PhoneSmsFlow({ onSuccess }: { onSuccess: () => void }) {
-  const [step, setStep] = useState<"phone" | "verify">("phone");
-  const [phone, setPhone] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleaned = phone.replace(/[^0-9+]/g, "");
-    if (cleaned.length < 8) {
-      setError("Enter a valid phone number with country code (e.g., +1...).");
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
-    setError("");
+    if (isSignUp && !name.trim()) {
+      setError("Enter your name.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await authClient.phoneNumber.sendOtp({
-        phoneNumber: cleaned,
-      });
-      if (res.error) {
-        setError(res.error.message || "Failed to send SMS.");
+      if (isSignUp) {
+        const res = await authClient.signUp.email({
+          email,
+          password,
+          name: name.trim(),
+        });
+        if (res.error) {
+          setError(res.error.message || "Sign up failed.");
+          return;
+        }
       } else {
-        setSuccess("SMS code sent.");
-        setStep("verify");
+        const res = await authClient.signIn.email({
+          email,
+          password,
+        });
+        if (res.error) {
+          setError(res.error.message || "Sign in failed.");
+          return;
+        }
       }
+      // Success — refresh auth state and redirect
+      await refresh();
+      window.location.href = "/";
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -281,104 +114,117 @@ function PhoneSmsFlow({ onSuccess }: { onSuccess: () => void }) {
     }
   };
 
-  const handleVerify = async (code: string) => {
-    setError("");
-    setLoading(true);
-    try {
-      const cleaned = phone.replace(/[^0-9+]/g, "");
-      const res = await authClient.phoneNumber.verify({
-        phoneNumber: cleaned,
-        code,
-      });
-      if (res.error) {
-        setError(res.error.message || "Invalid code. Try again.");
-      } else {
-        onSuccess();
-      }
-    } catch {
-      setError("Verification failed. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="flex items-center gap-1 text-xs font-mono text-[#6a665e] hover:text-[#5ba4a4] transition-colors mb-4"
+      >
+        <ArrowLeft className="w-3 h-3" /> All sign-in options
+      </button>
 
-  if (step === "verify") {
-    return (
-      <div className="space-y-4">
+      {/* Toggle Sign In / Sign Up */}
+      <div className="flex gap-2 mb-4">
         <button
           type="button"
-          onClick={() => { setStep("phone"); setError(""); setSuccess(""); }}
-          className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-[#FFD700] transition-colors"
+          onClick={() => { setIsSignUp(false); setError(""); }}
+          className={`flex-1 py-1.5 text-xs font-mono rounded border transition-all ${
+            !isSignUp
+              ? "border-[#bda36b] text-[#bda36b] bg-[#bda36b]/10"
+              : "border-[#bda36b]/20 text-[#6a665e] bg-transparent hover:border-[#bda36b]/40"
+          }`}
         >
-          <ArrowLeft className="w-3 h-3" /> Back
+          SIGN IN
         </button>
+        <button
+          type="button"
+          onClick={() => { setIsSignUp(true); setError(""); }}
+          className={`flex-1 py-1.5 text-xs font-mono rounded border transition-all ${
+            isSignUp
+              ? "border-[#bda36b] text-[#bda36b] bg-[#bda36b]/10"
+              : "border-[#bda36b]/20 text-[#6a665e] bg-transparent hover:border-[#bda36b]/40"
+          }`}
+        >
+          SIGN UP
+        </button>
+      </div>
 
-        <div className="text-center space-y-2">
-          <p className="text-sm font-mono text-gray-400">
-            Enter the 6-digit code sent to
-          </p>
-          <p className="text-sm font-mono text-[#FFD700]">{phone}</p>
-        </div>
-
-        <OtpInput onComplete={handleVerify} />
-
-        {error && <ErrorMsg msg={error} />}
-        {loading && (
-          <div className="flex justify-center">
-            <Loader2 className="w-5 h-5 text-[#FFD700] animate-spin" />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {isSignUp && (
+          <div className="space-y-1.5">
+            <Label htmlFor="auth-name" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+              Name
+            </Label>
+            <Input
+              id="auth-name"
+              type="text"
+              placeholder="Your name"
+              autoComplete="name"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+            />
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={handleSendOtp}
+        <div className="space-y-1.5">
+          <Label htmlFor="auth-email" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+            Email Address
+          </Label>
+          <Input
+            id="auth-email"
+            type="email"
+            placeholder="seeker@signal.io"
+            autoComplete="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="auth-password" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+            Password
+          </Label>
+          <div className="relative">
+            <Input
+              id="auth-password"
+              type={showPassword ? "text" : "password"}
+              placeholder="••••••••"
+              autoComplete={isSignUp ? "new-password" : "current-password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b] pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6a665e] hover:text-[#bda36b] transition-colors"
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {error && <ErrorMsg msg={error} />}
+
+        <Button
+          type="submit"
           disabled={loading}
-          className="w-full text-xs font-mono text-gray-500 hover:text-[#FFD700] transition-colors disabled:opacity-50"
+          className="w-full bg-[#bda36b]/10 border border-[#bda36b]/50 text-[#bda36b] font-mono hover:bg-[#bda36b]/20 hover:border-[#bda36b] transition-all"
         >
-          Resend code
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSendOtp} className="space-y-4">
-      <div className="space-y-1.5">
-        <Label htmlFor="phone-otp" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
-          Phone Number
-        </Label>
-        <Input
-          id="phone-otp"
-          type="tel"
-          placeholder="+1 555 000 0000"
-          autoComplete="tel"
-          value={phone}
-          onChange={e => setPhone(e.target.value)}
-          className="bg-black/60 border-[#FFD700]/30 text-[#FFD700] placeholder:text-gray-600 font-mono focus:border-[#FFD700]"
-        />
-        <p className="text-[10px] font-mono text-gray-600">Include country code (e.g., +1 for US)</p>
-      </div>
-
-      {error && <ErrorMsg msg={error} />}
-      {success && <SuccessMsg msg={success} />}
-
-      <Button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-[#FFD700]/10 border border-[#FFD700]/50 text-[#FFD700] font-mono hover:bg-[#FFD700]/20 hover:border-[#FFD700] transition-all"
-      >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Phone className="w-4 h-4 mr-2" />}
-        SEND SMS CODE
-      </Button>
-    </form>
+          {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+          {isSignUp ? "CREATE ACCOUNT" : "ENTER THE FIELD"}
+        </Button>
+      </form>
+    </div>
   );
 }
 
-// ─── Auth Method Selector ────────────────────────────────────────────────────
-
-type AuthMethod = "select" | "email" | "phone";
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
+
+type AuthMethod = "select" | "email";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
@@ -410,24 +256,31 @@ export default function Auth() {
     }
   };
 
-  const handleSuccess = () => {
-    // Give Better Auth a moment to set the session cookie, then redirect
-    setTimeout(() => setLocation("/"), 300);
-  };
-
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-[#050505]">
-      <CyberpunkBackground />
+    <div className="relative min-h-screen flex items-center justify-center" style={{ background: "#0a0a0e" }}>
+      <GeometricBackground />
       <div className="relative z-10 w-full max-w-md px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="text-xs font-mono text-[#00F0FF]/60 tracking-[0.3em] uppercase mb-2">
+          <div className="text-xs font-mono text-[#5ba4a4]/60 tracking-[0.3em] uppercase mb-2">
             VOSS ARKIVA
           </div>
-          <h1 className="text-2xl font-mono text-[#00F0FF] tracking-wider uppercase">
+          <h1 className="text-2xl font-mono text-[#bda36b] tracking-wider uppercase">
             Enter as Static.
           </h1>
-          <p className="text-sm font-mono text-gray-500 mt-1">Leave as a Signal.</p>
+          <p className="text-sm font-mono text-[#6a665e] mt-1">Leave as a Signal.</p>
+        </div>
+
+        {/* Migration Notice */}
+        <div className="mb-5 rounded-md border border-[#bda36b]/30 bg-[#bda36b]/[0.06] px-5 py-4 backdrop-blur-sm">
+          <p className="text-xs font-mono text-[#bda36b] tracking-wide uppercase mb-2 font-semibold">
+            Signal Recalibration Notice
+          </p>
+          <p className="text-xs font-mono text-[#9a968e] leading-relaxed">
+            Our authentication system has been upgraded. If you had an existing account,
+            your ORIEL conversation history is preserved — simply <span className="text-[#5ba4a4]">create a new account
+            using the same email address</span> and your messages will be restored automatically.
+          </p>
         </div>
 
         {urlError && (
@@ -438,10 +291,10 @@ export default function Auth() {
           </div>
         )}
 
-        <Card className="bg-black/80 border-[#00F0FF]/20 backdrop-blur-sm">
+        <Card className="bg-[#0f0f15]/90 border-[#bda36b]/15 backdrop-blur-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-[#00F0FF] font-mono text-lg tracking-wider">ACCESS NODE</CardTitle>
-            <CardDescription className="font-mono text-gray-500 text-xs">
+            <CardTitle className="text-[#bda36b] font-mono text-lg tracking-wider">ACCESS NODE</CardTitle>
+            <CardDescription className="font-mono text-[#6a665e] text-xs">
               I am ORIEL. Identify yourself, Seeker.
             </CardDescription>
           </CardHeader>
@@ -457,53 +310,23 @@ export default function Auth() {
 
                 <Divider />
 
-                {/* Email OTP */}
+                {/* Email + Password */}
                 <button
                   type="button"
                   onClick={() => setMethod("email")}
-                  className="flex items-center justify-center gap-3 w-full rounded-md border border-[#00F0FF]/30 bg-black/40 px-4 py-2.5 text-sm font-mono text-[#00F0FF] hover:bg-[#00F0FF]/10 hover:border-[#00F0FF] transition-all"
+                  className="flex items-center justify-center gap-3 w-full rounded-md border border-[#bda36b]/30 bg-black/40 px-4 py-2.5 text-sm font-mono text-[#e8e4dc] hover:bg-[#bda36b]/10 hover:border-[#bda36b] transition-all"
                 >
                   <Mail className="w-5 h-5" />
                   Continue with Email
                 </button>
-
-                {/* Phone SMS */}
-                <button
-                  type="button"
-                  onClick={() => setMethod("phone")}
-                  className="flex items-center justify-center gap-3 w-full rounded-md border border-[#FFD700]/30 bg-black/40 px-4 py-2.5 text-sm font-mono text-[#FFD700] hover:bg-[#FFD700]/10 hover:border-[#FFD700] transition-all"
-                >
-                  <Phone className="w-5 h-5" />
-                  Continue with Phone
-                </button>
-              </div>
-            ) : method === "email" ? (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setMethod("select")}
-                  className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-[#00F0FF] transition-colors mb-4"
-                >
-                  <ArrowLeft className="w-3 h-3" /> All sign-in options
-                </button>
-                <EmailOtpFlow onSuccess={handleSuccess} />
               </div>
             ) : (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setMethod("select")}
-                  className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-[#FFD700] transition-colors mb-4"
-                >
-                  <ArrowLeft className="w-3 h-3" /> All sign-in options
-                </button>
-                <PhoneSmsFlow onSuccess={handleSuccess} />
-              </div>
+              <EmailPasswordFlow onBack={() => setMethod("select")} />
             )}
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs font-mono text-gray-600 mt-6">
+        <p className="text-center text-xs font-mono text-[#6a665e] mt-6">
           Enter as Static. Leave as a Signal.
         </p>
       </div>

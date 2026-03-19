@@ -36,7 +36,7 @@ export default function Header() {
           <Link href="/">
             <span style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
               <img
-                src="/vossari-sigil.png"
+                src="/qinklogo.png"
                 alt="Vossari sigil"
                 style={{
                   height: 36,

@@ -185,6 +185,24 @@ export const appRouter = router({
         conversationHistory = deduplicateConsecutiveMessages(conversationHistory) as Array<{ role: 'user' | 'assistant'; content: string }>;
         conversationHistory = trimConversationHistory(conversationHistory, 8) as Array<{ role: 'user' | 'assistant'; content: string }>;
 
+        // ── RGP Bridge: detect birth reading requests and inject real data ──
+        try {
+          const { extractBirthData, runRGPForChat } = await import('./oriel-rgp-bridge');
+          const birthData = extractBirthData(fullMessage, conversationHistory);
+          if (birthData) {
+            console.log('[ORIEL] Birth reading detected:', birthData);
+            const rgpResult = await runRGPForChat(birthData);
+            if (rgpResult.success) {
+              console.log('[ORIEL] RGP engine ran successfully — injecting real data');
+              fullMessage = `${fullMessage}\n\n${rgpResult.summary}`;
+            } else {
+              console.warn('[ORIEL] RGP engine failed:', rgpResult.summary);
+            }
+          }
+        } catch (err) {
+          console.warn('[ORIEL] RGP bridge error (non-fatal):', err);
+        }
+
         // Helper to call the active LLM
         const callLLM = async (msg: string, history: typeof conversationHistory) => {
           if (process.env.MISTRAL_API_KEY) {
@@ -247,7 +265,7 @@ export const appRouter = router({
 
     generateSpeech: publicProcedure
       .input(z.object({
-        text: z.string().min(1, "Text is required").max(5000, "Text too long for TTS"),
+        text: z.string().min(1, "Text is required").max(20000, "Text too long for TTS"),
         voiceId: z.enum(["fast", "nostalgic", "none"]).optional().default("fast"),
       }))
       .mutation(async ({ input }) => {

@@ -32,7 +32,8 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   // Better Auth handles its own body parsing — mount BEFORE express.json()
-  app.all("/api/auth/*", toNodeHandler(auth));
+  const baHandler = toNodeHandler(auth);
+  app.all("/api/auth/*", (req, res) => baHandler(req, res));
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
