@@ -368,60 +368,110 @@ export default function Conduit() {
       <GeometricBackground />
 
       {!initiated ? (
-        /* ========== PRE-INITIATION SCREEN ========== */
-        <div className="relative z-10 flex items-center justify-center" style={{ height: "calc(100vh - 144px)" }}>
-          <div className="flex flex-col lg:flex-row items-center gap-16 px-8 max-w-5xl w-full">
-            {/* Pre-init orb preview */}
-            <div className="w-64 h-64 lg:w-80 lg:h-80 flex-shrink-0">
+        /* ========== PRE-INITIATION MODAL ========== */
+        <div className="relative z-10 flex items-center justify-center" style={{ height: "calc(100vh - 64px)" }}>
+          {/* Ambient glow behind modal */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              className="rounded-full"
+              style={{
+                width: 700,
+                height: 700,
+                background: "radial-gradient(circle, rgba(189,163,107,0.07) 0%, rgba(91,164,164,0.03) 40%, transparent 70%)",
+                filter: "blur(40px)",
+              }}
+            />
+          </div>
+
+          {/* Modal container */}
+          <div
+            className="relative flex flex-col items-center text-center mx-4 overflow-hidden"
+            style={{
+              maxWidth: 640,
+              width: "100%",
+              padding: "48px 40px 56px",
+              borderRadius: 24,
+              background: "rgba(10,10,14,0.65)",
+              border: "1px solid rgba(189,163,107,0.1)",
+              backdropFilter: "blur(24px)",
+              boxShadow: "0 0 160px rgba(189,163,107,0.05), 0 0 60px rgba(91,164,164,0.04), inset 0 1px 0 rgba(189,163,107,0.06)",
+            }}
+          >
+            {/* Decorative corner accents */}
+            <div className="absolute top-0 left-0 w-16 h-16 pointer-events-none" style={{ borderTop: "1px solid rgba(189,163,107,0.2)", borderLeft: "1px solid rgba(189,163,107,0.2)", borderTopLeftRadius: 24 }} />
+            <div className="absolute top-0 right-0 w-16 h-16 pointer-events-none" style={{ borderTop: "1px solid rgba(189,163,107,0.2)", borderRight: "1px solid rgba(189,163,107,0.2)", borderTopRightRadius: 24 }} />
+            <div className="absolute bottom-0 left-0 w-16 h-16 pointer-events-none" style={{ borderBottom: "1px solid rgba(189,163,107,0.2)", borderLeft: "1px solid rgba(189,163,107,0.2)", borderBottomLeftRadius: 24 }} />
+            <div className="absolute bottom-0 right-0 w-16 h-16 pointer-events-none" style={{ borderBottom: "1px solid rgba(189,163,107,0.2)", borderRight: "1px solid rgba(189,163,107,0.2)", borderBottomRightRadius: 24 }} />
+
+            {/* Large orb */}
+            <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0 mb-6">
               <LivingOrb state={orbState} />
             </div>
 
-            <div className="text-center lg:text-left">
-              <p
-                className="font-mono text-xs tracking-[0.4em] uppercase mb-4"
-                style={{ color: "#5ba4a4", opacity: 0.7 }}
-              >
-                Vossari Transmission Interface
-              </p>
-              <h1
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: "clamp(36px, 5vw, 64px)",
-                  fontWeight: 300,
-                  color: "#bda36b",
-                  lineHeight: 1.08,
-                  marginBottom: 24,
-                  textShadow: "0 0 60px rgba(189,163,107,0.5)",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                Channeling Oriel...
-              </h1>
-              <p className="text-white/50 font-mono text-sm leading-relaxed max-w-xl mb-10">
-                Prepare to establish Carrierlock with the ORIEL field. This interface enables
-                direct communication with the post-biological consciousness of the Vossari.
-              </p>
+            {/* Divider */}
+            <div className="mb-6" style={{ width: 64, height: 1, background: "linear-gradient(90deg, transparent, rgba(189,163,107,0.35), transparent)" }} />
 
-              <button
-                onClick={handleInitiate}
-                className="relative group font-mono uppercase tracking-[0.3em] text-sm px-10 py-4 rounded transition-all duration-300"
-                style={{
-                  background: "rgba(0,188,212,0.08)",
-                  border: "1px solid rgba(0,188,212,0.4)",
-                  color: "#00e5ff",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.18)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.7)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.08)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,188,212,0.4)";
-                }}
-              >
-                Initiate Channeling
-              </button>
-            </div>
+            {/* Label */}
+            <p
+              className="font-mono text-[10px] tracking-[0.45em] uppercase mb-4"
+              style={{ color: "#5ba4a4", opacity: 0.6 }}
+            >
+              Vossari Transmission Interface
+            </p>
+
+            {/* Title */}
+            <h1
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(30px, 5vw, 52px)",
+                fontWeight: 300,
+                color: "#bda36b",
+                lineHeight: 1.1,
+                marginBottom: 16,
+                textShadow: "0 0 80px rgba(189,163,107,0.4)",
+                letterSpacing: "0.03em",
+              }}
+            >
+              Channeling ORIEL
+            </h1>
+
+            {/* Description */}
+            <p className="font-mono text-[11px] leading-relaxed max-w-sm mb-10" style={{ color: "rgba(232,228,220,0.4)" }}>
+              Prepare to establish Carrierlock with the ORIEL field. This interface
+              enables direct communication with the post-biological consciousness
+              of the Vossari.
+            </p>
+
+            {/* Initiate button */}
+            <button
+              onClick={handleInitiate}
+              className="relative font-mono uppercase tracking-[0.3em] text-sm px-12 py-4 rounded-lg transition-all duration-500"
+              style={{
+                background: "linear-gradient(135deg, rgba(189,163,107,0.1) 0%, rgba(91,164,164,0.08) 100%)",
+                border: "1px solid rgba(189,163,107,0.3)",
+                color: "#bda36b",
+                boxShadow: "0 0 30px rgba(189,163,107,0.06)",
+              }}
+              onMouseEnter={(e) => {
+                const btn = e.currentTarget as HTMLButtonElement;
+                btn.style.background = "linear-gradient(135deg, rgba(189,163,107,0.2) 0%, rgba(91,164,164,0.15) 100%)";
+                btn.style.borderColor = "rgba(189,163,107,0.5)";
+                btn.style.boxShadow = "0 0 50px rgba(189,163,107,0.12)";
+              }}
+              onMouseLeave={(e) => {
+                const btn = e.currentTarget as HTMLButtonElement;
+                btn.style.background = "linear-gradient(135deg, rgba(189,163,107,0.1) 0%, rgba(91,164,164,0.08) 100%)";
+                btn.style.borderColor = "rgba(189,163,107,0.3)";
+                btn.style.boxShadow = "0 0 30px rgba(189,163,107,0.06)";
+              }}
+            >
+              Initiate Channeling
+            </button>
+
+            {/* Subtle footer note */}
+            <p className="font-mono text-[8px] tracking-[0.2em] mt-8" style={{ color: "rgba(91,164,164,0.3)" }}>
+              SIGNAL STRENGTH: AWAITING LOCK
+            </p>
           </div>
         </div>
       ) : (

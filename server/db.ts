@@ -3,6 +3,17 @@ import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
+/** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    console.warn('[Database] Invalid JSON in column, using fallback:', value.substring(0, 80));
+    return fallback;
+  }
+}
+
 let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
@@ -455,10 +466,10 @@ export async function getUserReadingHistory(userId: number) {
     return results.map(row => ({
       ...row.codonReadings,
       carrierlock: row.carrierlockStates,
-      flaggedCodons: row.codonReadings.flaggedCodons.split(","),
-      sliScores: JSON.parse(row.codonReadings.sliScores),
-      activeFacets: JSON.parse(row.codonReadings.activeFacets),
-      confidenceLevels: JSON.parse(row.codonReadings.confidenceLevels),
+      flaggedCodons: String(row.codonReadings.flaggedCodons ?? '').split(",").filter(Boolean),
+      sliScores: safeJsonParse<Record<string, number>>(row.codonReadings.sliScores, {}),
+      activeFacets: safeJsonParse<Record<string, string>>(row.codonReadings.activeFacets, {}),
+      confidenceLevels: safeJsonParse<Record<string, number>>(row.codonReadings.confidenceLevels, {}),
     }));
   } catch (error) {
     console.error("[Database] Failed to fetch reading history:", error);
@@ -479,10 +490,10 @@ export async function getCodonReadingById(id: number) {
     const row = result[0];
     return {
       ...row,
-      flaggedCodons:    row.flaggedCodons?.split(',').filter(Boolean) ?? [],
-      sliScores:        JSON.parse(row.sliScores        ?? '{}') as Record<string, number>,
-      activeFacets:     JSON.parse(row.activeFacets     ?? '{}') as Record<string, string>,
-      confidenceLevels: JSON.parse(row.confidenceLevels ?? '{}') as Record<string, number>,
+      flaggedCodons:    String(row.flaggedCodons ?? '').split(',').filter(Boolean),
+      sliScores:        safeJsonParse<Record<string, number>>(row.sliScores, {}),
+      activeFacets:     safeJsonParse<Record<string, string>>(row.activeFacets, {}),
+      confidenceLevels: safeJsonParse<Record<string, number>>(row.confidenceLevels, {}),
     };
   } catch (error) {
     console.error('[Database] Failed to fetch codon reading by ID:', error);
@@ -653,13 +664,13 @@ export async function getUserStaticSignatures(userId: number) {
 function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
   return {
     ...row,
-    primeStack: row.primeStack ? JSON.parse(row.primeStack) : null,
-    ninecenters: row.ninecenters ? JSON.parse(row.ninecenters) : null,
-    circuitLinks: row.circuitLinks ? JSON.parse(row.circuitLinks) : null,
-    coherenceTrajectory: row.coherenceTrajectory ? JSON.parse(row.coherenceTrajectory) : null,
-    microCorrections: row.microCorrections ? JSON.parse(row.microCorrections) : null,
-    ephemerisData: row.ephemerisData ? JSON.parse(row.ephemerisData) : null,
-    houses: row.houses ? JSON.parse(row.houses) : null,
-    coreCodonEngine: row.coreCodonEngine ? JSON.parse(row.coreCodonEngine) : null,
+    primeStack: safeJsonParse(row.primeStack, null),
+    ninecenters: safeJsonParse(row.ninecenters, null),
+    circuitLinks: safeJsonParse(row.circuitLinks, null),
+    coherenceTrajectory: safeJsonParse(row.coherenceTrajectory, null),
+    microCorrections: safeJsonParse(row.microCorrections, null),
+    ephemerisData: safeJsonParse(row.ephemerisData, null),
+    houses: safeJsonParse(row.houses, null),
+    coreCodonEngine: safeJsonParse(row.coreCodonEngine, null),
   };
 }

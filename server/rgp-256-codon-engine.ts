@@ -129,9 +129,13 @@ export interface FacetLoudness {
 
 /**
  * Calculate state amplifier from coherence score (0–100 → 0–1).
+ *
+ * Per VRC spec: StateAmp = (100 - CS) / 100
+ * Low coherence → high amplifier (shadow is LOUD).
+ * High coherence → low amplifier (shadow is quiet).
  */
 export function calculateStateAmplifier(coherenceScore: number): number {
-  return Math.max(0, Math.min(1, coherenceScore / 100));
+  return Math.max(0, Math.min(1, (100 - coherenceScore) / 100));
 }
 
 /**

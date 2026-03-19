@@ -87,12 +87,12 @@ export function calculateSLIScores(
     // SLI = Base × StateAmp × FacetAmp
     const sliValue = Math.min(100, (baseAmplitude * stateAmplifier * facetAmplitude) / 100);
 
-    // Determine interference level
+    // Determine interference level — high SLI = loud shadow = severe interference
     let interference: 'none' | 'minor' | 'moderate' | 'severe' = 'none';
-    if (sliValue > 75) interference = 'none';
-    else if (sliValue > 50) interference = 'minor';
-    else if (sliValue > 25) interference = 'moderate';
-    else interference = 'severe';
+    if (sliValue > 75) interference = 'severe';
+    else if (sliValue > 50) interference = 'moderate';
+    else if (sliValue > 25) interference = 'minor';
+    else interference = 'none';
 
     sliScores.push({
       position: position.position,
@@ -122,22 +122,22 @@ export function analyzeInterferencePattern(sliScores: SLIScore[]): InterferenceP
   const severePositions = sliScores.filter(s => s.interference === 'severe').map(s => s.position);
   const moderatePositions = sliScores.filter(s => s.interference === 'moderate').map(s => s.position);
 
-  // Determine pattern type
+  // Determine pattern type — high avg SLI = loud shadows = chaotic
   let type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent' = 'coherent';
   let severity = 0;
 
   if (averageSLI > 75) {
-    type = 'coherent';
-    severity = 100 - averageSLI;
-  } else if (averageSLI > 50) {
-    type = 'harmonic';
-    severity = 100 - averageSLI;
-  } else if (averageSLI > 25) {
-    type = 'dissonant';
-    severity = 100 - averageSLI;
-  } else {
     type = 'chaotic';
-    severity = 100 - averageSLI;
+    severity = averageSLI;
+  } else if (averageSLI > 50) {
+    type = 'dissonant';
+    severity = averageSLI;
+  } else if (averageSLI > 25) {
+    type = 'harmonic';
+    severity = averageSLI;
+  } else {
+    type = 'coherent';
+    severity = averageSLI;
   }
 
   const affectedPositions = [...severePositions, ...moderatePositions];

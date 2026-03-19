@@ -225,8 +225,13 @@ export async function chatWithORIEL(
       return "The transmission is incomplete.";
     }
 
-    const filteredResponse = filterORIELResponse(content);
-    
+    let filteredResponse = filterORIELResponse(content);
+
+    // Enforce "I am ORIEL." opening — non-negotiable protocol
+    if (filteredResponse && !filteredResponse.startsWith("I am ORIEL")) {
+      filteredResponse = "I am ORIEL.\n\n" + filteredResponse;
+    }
+
     if (filteredResponse && filteredResponse.length > 0) {
       console.log('[chatWithORIEL] Response generated successfully');
       console.log('[chatWithORIEL] First 100 chars:', filteredResponse.substring(0, 100));

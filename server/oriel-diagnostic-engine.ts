@@ -51,16 +51,38 @@ export async function performDiagnosticReading(
   // Dynamic reading: use Carrierlock state
   // Step 1: Compute Coherence Score
   const coherenceScore = computeCoherenceScore(carrierlockState);
-  
+
+  // ── Collapse Threshold (ROS v1.5.42): no complex readings in entropy state ──
+  if (coherenceScore < 40) {
+    const axisDominance = detectAxisDominance(carrierlockState);
+    const overactiveCenter = identifyOveractiveCenter(carrierlockState, axisDominance);
+    return {
+      coherenceScore,
+      axisDominance,
+      overactiveCenter,
+      flaggedCodons: [],
+      microCorrection: {
+        codon: "GROUND",
+        facet: "A",
+        duration: "3 minutes",
+        instruction: "Place both feet flat on the ground. Take three slow breaths — in through the nose, out through the mouth. Feel the weight of your body. You are here.",
+        rationale: "Coherence below threshold. Somatic grounding must precede any diagnostic work."
+      },
+      confidence: 0.4,
+      falsifier: "If you feel stable, grounded, and clear right now, this reading underestimates your coherence.",
+      timestamp: new Date().toISOString()
+    };
+  }
+
   // Step 2: Detect Axis Dominance
   const axisDominance = detectAxisDominance(carrierlockState);
-  
+
   // Step 3: Identify Overactive Center
   const overactiveCenter = identifyOveractiveCenter(carrierlockState, axisDominance);
-  
+
   // Step 4: Compute Facet Loudness
   const facetLoudness = computeFacetLoudness(axisDominance, coherenceScore);
-  
+
   // Step 5: Calculate SLI for Prime Codons
   const sliResults = calculateSLIForCodons(
     primeCodonSet,
@@ -68,26 +90,26 @@ export async function performDiagnosticReading(
     coherenceScore,
     facetLoudness
   );
-  
+
   // Step 6: Flag top 1-3 codons
   const flaggedCodons = sliResults
     .filter(r => r.level !== "Inactive")
     .sort((a, b) => b.sli - a.sli)
     .slice(0, 3);
-  
+
   // Step 7: Generate one micro-correction for top codon
   const microCorrection = generateMicroCorrection(
     flaggedCodons[0],
     overactiveCenter,
     axisDominance
   );
-  
+
   // Step 8: Determine confidence level
   const confidence = determineConfidence(flaggedCodons[0], coherenceScore);
-  
+
   // Step 9: Generate falsifier
   const falsifier = generateFalsifier(flaggedCodons[0]);
-  
+
   return {
     coherenceScore,
     axisDominance,

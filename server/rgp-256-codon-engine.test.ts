@@ -201,20 +201,21 @@ describe('RGP 256-Codon Resolution Engine', () => {
 
   describe('State Amplifier Calculation', () => {
     it('should calculate state amplifier from coherence score', () => {
+      // StateAmp = (100 - CS) / 100 — mid coherence → 0.5 amplifier
       expect(calculateStateAmplifier(50)).toBe(0.5);
     });
 
-    it('should return 0 for zero coherence', () => {
-      expect(calculateStateAmplifier(0)).toBe(0);
+    it('should return 1 for zero coherence (shadow is loudest)', () => {
+      expect(calculateStateAmplifier(0)).toBe(1);
     });
 
-    it('should return 1 for perfect coherence', () => {
-      expect(calculateStateAmplifier(100)).toBe(1);
+    it('should return 0 for perfect coherence (shadow is silent)', () => {
+      expect(calculateStateAmplifier(100)).toBe(0);
     });
 
-    it('should scale linearly with coherence', () => {
-      expect(calculateStateAmplifier(25)).toBe(0.25);
-      expect(calculateStateAmplifier(75)).toBe(0.75);
+    it('should scale linearly with coherence (inverse)', () => {
+      expect(calculateStateAmplifier(25)).toBe(0.75);
+      expect(calculateStateAmplifier(75)).toBe(0.25);
     });
   });
 

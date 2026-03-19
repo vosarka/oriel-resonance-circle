@@ -104,17 +104,7 @@ export default function CodonDetail() {
 
   return (
     <Layout>
-      <main className="min-h-screen bg-black text-zinc-100">
-        {/* Background grid */}
-        <div
-          className="absolute inset-0 z-0 opacity-10"
-          style={{
-            backgroundSize: "40px 40px",
-            backgroundImage:
-              "linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)",
-          }}
-        />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-primary/10 blur-[120px] rounded-full pointer-events-none z-0" />
+      <main className="min-h-screen" style={{ background: "#0a0a0e", color: "#e8e4dc" }}>
 
         <div className="relative z-10 max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-12">
 
@@ -462,18 +452,18 @@ export default function CodonDetail() {
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-white/5 bg-zinc-900/50 py-12">
+        <footer className="py-12" style={{ borderTop: "1px solid rgba(189,163,107,0.12)", background: "rgba(15,15,21,0.6)" }}>
           <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3 opacity-50">
+            <div className="flex items-center gap-3" style={{ opacity: 0.5, color: "#bda36b" }}>
               <Zap className="w-5 h-5" />
               <span className="font-mono text-sm tracking-wider">VOSS ARKIVA CODEX</span>
             </div>
-            <div className="flex gap-8 text-sm text-zinc-500">
-              <Link href="/protocol" className="hover:text-primary transition-colors">Protocol</Link>
-              <Link href="/carrierlock" className="hover:text-primary transition-colors">Diagnostics</Link>
-              <Link href="/conduit" className="hover:text-primary transition-colors">Neural Link</Link>
+            <div className="flex gap-8 text-sm" style={{ color: "#6a665e" }}>
+              <Link href="/protocol" className="hover:opacity-80 transition-opacity" style={{ color: "#5ba4a4" }}>Protocol</Link>
+              <Link href="/carrierlock" className="hover:opacity-80 transition-opacity" style={{ color: "#5ba4a4" }}>Diagnostics</Link>
+              <Link href="/conduit" className="hover:opacity-80 transition-opacity" style={{ color: "#5ba4a4" }}>Neural Link</Link>
             </div>
-            <div className="text-xs text-zinc-600 font-mono">
+            <div className="text-xs font-mono" style={{ color: "#6a665e" }}>
               VRC v1.0 — Engine Constants Loaded
             </div>
           </div>

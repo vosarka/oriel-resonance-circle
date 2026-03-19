@@ -28,7 +28,12 @@ export const auth = betterAuth({
   trustedOrigins: ["http://localhost:*"],
   baseURL: ENV.appBaseUrl || `http://localhost:${process.env.PORT || 3000}`,
   basePath: "/api/auth",
-  secret: ENV.betterAuthSecret || ENV.cookieSecret || "dev-fallback-secret-change-me",
+  secret: ENV.betterAuthSecret || ENV.cookieSecret || (() => {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("BETTER_AUTH_SECRET or COOKIE_SECRET must be set in production");
+    }
+    return "dev-only-insecure-fallback-" + Date.now();
+  })(),
 
   database: drizzleAdapter(createBetterAuthDb(), {
     provider: "mysql",
