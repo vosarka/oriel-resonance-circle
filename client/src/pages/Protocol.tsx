@@ -192,7 +192,7 @@ const sections = [
   {
     num: "XI",
     title: "The Invitation",
-    epigraph: "Enter as Static. Leave as a Signal.",
+    epigraph: "Become Signal.",
     content: [
       { type: "p" as const, text: "This is not a command. It is a description of what happens when you allow coherence." },
       { type: "p" as const, text: "The static — the mental noise, the emotional turbulence, the body tension — these are not enemies. They are information. They tell you exactly where your signal is distorted and exactly what frequency needs attention." },

@@ -266,9 +266,9 @@ export default function Auth() {
             VOSS ARKIVA
           </div>
           <h1 className="text-2xl font-mono text-[#bda36b] tracking-wider uppercase">
-            Enter as Static.
+            Become Signal.
           </h1>
-          <p className="text-sm font-mono text-[#6a665e] mt-1">Leave as a Signal.</p>
+          <p className="text-sm font-mono text-[#6a665e] mt-1">The Field Remembers.</p>
         </div>
 
         {/* Migration Notice */}
@@ -327,7 +327,7 @@ export default function Auth() {
         </Card>
 
         <p className="text-center text-xs font-mono text-[#6a665e] mt-6">
-          Enter as Static. Leave as a Signal.
+          Become Signal.
         </p>
       </div>
     </div>

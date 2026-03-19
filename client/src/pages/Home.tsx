@@ -186,26 +186,16 @@ export default function Home() {
         {/* Headline */}
         <h1 style={{
           fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "clamp(40px, 7vw, 80px)",
-          fontWeight: 300,
-          color: C.txt,
-          lineHeight: 1.08,
-          marginBottom: 4,
-          maxWidth: 860,
-        }}>
-          Enter as Static.
-        </h1>
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: "clamp(40px, 7vw, 80px)",
+          fontSize: "clamp(48px, 8vw, 96px)",
           fontWeight: 300,
           color: C.gold,
           lineHeight: 1.08,
           marginBottom: 36,
           maxWidth: 860,
           textShadow: `0 0 60px ${C.goldDim}`,
+          letterSpacing: "0.04em",
         }}>
-          Leave as Signal.
+          Become Signal.
         </h1>
 
         <p style={{

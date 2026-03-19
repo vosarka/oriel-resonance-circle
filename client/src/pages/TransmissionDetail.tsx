@@ -1,28 +1,28 @@
 import Layout from "@/components/Layout";
-
-import { useState } from "react";
-import { useParams, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ArrowLeft, Bookmark, Share2 } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { useParams, useLocation, Link } from "wouter";
+import {
+  Loader2,
+  ArrowLeft,
+  Bookmark,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 
-
-const channelStatusColors: Record<string, string> = {
-  OPEN: "bg-primary/5 text-primary border-primary/40",
-  RESONANT: "bg-blue-900/30 text-blue-300 border-blue-700",
-  COHERENT: "bg-purple-900/30 text-purple-300 border-purple-700",
-  PROPHETIC: "bg-amber-900/30 text-amber-300 border-amber-700",
-  LIVE: "bg-red-900/30 text-red-300 border-red-700",
-};
-
-const statusColors: Record<string, string> = {
-  Draft: "bg-gray-700 text-gray-100",
-  Confirmed: "bg-primary/70 text-[#5ba4a4]/60",
-  Deprecated: "bg-yellow-700 text-yellow-100",
-  Mythic: "bg-purple-700 text-purple-100",
+// ── Status colors ───────────────────────────────────────────────────
+const CH_COLORS: Record<string, string> = {
+  OPEN: "#5ba4a4",
+  RESONANT: "#7ab8c4",
+  COHERENT: "#a88fd0",
+  PROPHETIC: "#bda36b",
+  LIVE: "#e05555",
+  STABLE: "#5ba4a4",
+  "HIGH COHERENCE": "#a88fd0",
+  "MAXIMUM COHERENCE": "#bda36b",
+  "CRITICAL/STABLE": "#e05555",
 };
 
 export default function TransmissionDetail() {
@@ -30,53 +30,108 @@ export default function TransmissionDetail() {
   const [, navigate] = useLocation();
   const { user } = useAuth();
   const txId = params.id ? parseInt(params.id) : null;
-  const [isBookmarked, setIsBookmarked] = useState(false);
 
-  const { data: transmission, isLoading } = trpc.archive.transmissions.getById.useQuery(
-    { id: txId || 0 },
-    { enabled: !!txId }
+  // Protocol reveal stage
+  const [stage, setStage] = useState(0);
+  const [vlsText, setVlsText] = useState("");
+
+  // Data
+  const { data: transmission, isLoading } =
+    trpc.archive.transmissions.getById.useQuery(
+      { id: txId || 0 },
+      { enabled: !!txId },
+    );
+
+  // All transmissions for prev/next
+  const { data: allTx = [] } = trpc.archive.transmissions.list.useQuery();
+
+  // Bookmarks
+  const { data: bookmarkStatus } =
+    trpc.archive.bookmarks.isBookmarked.useQuery(
+      { transmissionId: txId || 0 },
+      { enabled: !!user && !!txId },
+    );
+  const addBookmark = trpc.archive.bookmarks.add.useMutation();
+  const removeBookmark = trpc.archive.bookmarks.remove.useMutation();
+
+  // Sort for navigation
+  const sorted = useMemo(
+    () =>
+      [...allTx].sort((a: any, b: any) => a.txNumber - b.txNumber),
+    [allTx],
   );
+  const currentIndex = sorted.findIndex((t: any) => t.id === txId);
+  const prevTx = currentIndex > 0 ? sorted[currentIndex - 1] : null;
+  const nextTx =
+    currentIndex >= 0 && currentIndex < sorted.length - 1
+      ? sorted[currentIndex + 1]
+      : null;
 
-  // Check if transmission is bookmarked
-  const { data: bookmarkStatus } = trpc.archive.bookmarks.isBookmarked.useQuery(
-    { transmissionId: txId || 0 },
-    { enabled: !!user && !!txId }
-  );
+  // ── Progressive reveal ──────────────────────────────────────────
+  useEffect(() => {
+    if (!transmission) return;
 
-  // Bookmark mutations
-  const addBookmarkMutation = trpc.archive.bookmarks.add.useMutation({
-    onSuccess: () => setIsBookmarked(true),
-  });
+    // Reset
+    setStage(0);
+    setVlsText("");
 
-  const removeBookmarkMutation = trpc.archive.bookmarks.remove.useMutation({
-    onSuccess: () => setIsBookmarked(false),
-  });
+    const vls = `VLS// RECEIVE.node TX-${String((transmission as any).txNumber).padStart(3, "0")}`;
+    let charIndex = 0;
 
-  const handleBookmarkClick = () => {
+    const typeInterval = setInterval(() => {
+      charIndex++;
+      setVlsText(vls.substring(0, charIndex));
+      if (charIndex >= vls.length) {
+        clearInterval(typeInterval);
+        // Stage progression
+        setTimeout(() => setStage(1), 300); // Signal bar + PROTOCOL BEGIN
+        setTimeout(() => setStage(2), 900); // Title
+        setTimeout(() => setStage(3), 1500); // Content
+        setTimeout(() => setStage(4), 2400); // Archetype + Tags
+        setTimeout(() => setStage(5), 3200); // PROTOCOL END
+        setTimeout(() => setStage(6), 3800); // Navigation
+      }
+    }, 30);
+
+    return () => clearInterval(typeInterval);
+  }, [transmission?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleBookmark = () => {
     if (!user) {
-      // Redirect to Manus OAuth login
       window.location.href = getLoginUrl();
       return;
     }
-
     if (bookmarkStatus) {
-      removeBookmarkMutation.mutate({ transmissionId: txId || 0 });
+      removeBookmark.mutate({ transmissionId: txId || 0 });
     } else {
-      addBookmarkMutation.mutate({ transmissionId: txId || 0 });
+      addBookmark.mutate({ transmissionId: txId || 0 });
     }
   };
 
+  // ── Loading / Error states ──────────────────────────────────────
   if (!txId) {
     return (
       <Layout>
-        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div
+          className="fixed inset-0 z-0"
+          style={{ background: "#050508" }}
+        />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
-          <div className="text-center bg-black/60 backdrop-blur-sm border border-[#5ba4a4]/20 p-8 rounded-lg">
-            <p className="text-red-400 mb-4 font-mono">Invalid transmission ID</p>
-            <Button onClick={() => navigate("/archive")} className="bg-primary/10 hover:bg-primary/15 border border-[#5ba4a4]/20 text-white">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Archive
-            </Button>
+          <div className="text-center">
+            <p
+              className="font-mono mb-4"
+              style={{ color: "#e05555", fontSize: 12 }}
+            >
+              SIGNAL NOT FOUND
+            </p>
+            <button
+              onClick={() => navigate("/archive")}
+              className="font-mono flex items-center gap-2 mx-auto transition-colors"
+              style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+            >
+              <ArrowLeft size={12} />
+              RETURN TO FIELD
+            </button>
           </div>
         </div>
       </Layout>
@@ -86,9 +141,23 @@ export default function TransmissionDetail() {
   if (isLoading) {
     return (
       <Layout>
-        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div
+          className="fixed inset-0 z-0"
+          style={{ background: "#050508" }}
+        />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <div className="text-center">
+            <Loader2
+              className="w-5 h-5 animate-spin mx-auto mb-3"
+              style={{ color: "rgba(91,164,164,0.3)" }}
+            />
+            <p
+              className="font-mono tracking-wider"
+              style={{ fontSize: 10, color: "rgba(91,164,164,0.2)" }}
+            >
+              LOCKING SIGNAL...
+            </p>
+          </div>
         </div>
       </Layout>
     );
@@ -97,198 +166,420 @@ export default function TransmissionDetail() {
   if (!transmission) {
     return (
       <Layout>
-        <div className="fixed inset-0 bg-void-gradient z-0" />
+        <div
+          className="fixed inset-0 z-0"
+          style={{ background: "#050508" }}
+        />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
-          <div className="text-center bg-black/60 backdrop-blur-sm border border-[#5ba4a4]/20 p-8 rounded-lg">
-            <p className="text-red-400 mb-4 font-mono">Transmission not found</p>
-            <Button onClick={() => navigate("/archive")} className="bg-primary/10 hover:bg-primary/15 border border-[#5ba4a4]/20 text-white">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Archive
-            </Button>
+          <div className="text-center">
+            <p
+              className="font-mono mb-4"
+              style={{ color: "rgba(91,164,164,0.3)", fontSize: 12 }}
+            >
+              TRANSMISSION NOT FOUND
+            </p>
+            <button
+              onClick={() => navigate("/archive")}
+              className="font-mono flex items-center gap-2 mx-auto transition-colors"
+              style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+            >
+              <ArrowLeft size={12} />
+              RETURN TO FIELD
+            </button>
           </div>
         </div>
       </Layout>
     );
   }
 
-  const tags = typeof transmission.tags === "string" ? JSON.parse(transmission.tags) : transmission.tags || [];
-  const hashtags = typeof transmission.hashtags === "string" ? JSON.parse(transmission.hashtags) : transmission.hashtags || [];
+  // ── Parsed data ─────────────────────────────────────────────────
+  const tx = transmission as any;
+  const tags =
+    typeof tx.tags === "string" ? JSON.parse(tx.tags) : tx.tags || [];
+  const clarity = parseFloat(tx.signalClarity?.replace("%", "") || "0");
+  const statusColor = CH_COLORS[tx.channelStatus] || "#5ba4a4";
 
   return (
     <Layout>
-      {/* Cyberpunk Background */}
-      <div className="fixed inset-0 bg-void-gradient z-0" />
-      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-        {/* Rotating SVG background */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[180vw] h-[180vw] opacity-[0.03] animate-spin-slower">
-          <svg className="w-full h-full text-primary" viewBox="0 0 100 100">
-            <path d="M50 10 L85 80 H15 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
-            <path d="M50 90 L15 20 H85 Z" fill="none" stroke="currentColor" strokeWidth="0.1"></path>
-            <circle cx="50" cy="50" fill="none" r="45" stroke="currentColor" strokeDasharray="1 2" strokeWidth="0.1"></circle>
-          </svg>
-        </div>
+      {/* ── Background ──────────────────────────────────── */}
+      <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.02]">
+        <div className="absolute inset-0 animate-scan-lines" />
       </div>
 
-      {/* Header Navigation */}
-      <div className="sticky top-16 z-20 bg-black/80 backdrop-blur-sm border-b border-primary/20 p-4 md:p-6 animate-fade-in-up">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/archive")}
-            className="text-white/80 hover:text-white hover:bg-primary/10 font-mono"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Archive
-          </Button>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBookmarkClick}
-              disabled={addBookmarkMutation.isPending || removeBookmarkMutation.isPending}
-              className={`border-primary/30 hover:bg-primary/10 backdrop-blur-sm ${
-                bookmarkStatus ? "bg-amber-400/20 text-amber-400 border-amber-400/50" : "text-white bg-black/60"
-              }`}
+      <div className="relative z-10 min-h-screen pt-20 pb-16">
+        {/* ── Back navigation ─────────────────────────────── */}
+        <div className="px-6 md:px-12 mb-12">
+          <div className="max-w-3xl mx-auto">
+            <button
+              onClick={() => navigate("/archive")}
+              className="flex items-center gap-2 font-mono tracking-wider transition-colors"
+              style={{ fontSize: 10, color: "rgba(91,164,164,0.25)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "rgba(91,164,164,0.5)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "rgba(91,164,164,0.25)")
+              }
             >
-              <Bookmark className="w-4 h-4" fill={bookmarkStatus ? "currentColor" : "none"} />
-            </Button>
-            <Button variant="outline" size="sm" className="border-primary/30 text-white bg-black/60 hover:bg-primary/10 backdrop-blur-sm">
-              <Share2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="relative z-10 max-w-6xl mx-auto p-6 md:p-12">
-        {/* Header Section */}
-        <div className="mb-12 animate-fade-in-up">
-          <div className="flex items-start gap-4 mb-6">
-            <span className="text-5xl drop-shadow-[0_0_20px_rgba(144,238,144,0.5)]" style={{ color: '#9fe49a' }}>
-              {transmission.microSigil || "◈"}
-            </span>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3 flex-wrap">
-                <span className="text-xs font-mono" style={{ color: '#9fe49a' }}>TX-{String(transmission.txNumber).padStart(3, "0")}</span>
-                <Badge variant="outline" className={statusColors[transmission.status]}>
-                  {transmission.status}
-                </Badge>
-                <Badge variant="outline" className={`text-xs ${channelStatusColors[transmission.channelStatus]}`}>
-                  {transmission.channelStatus}
-                </Badge>
-              </div>
-              <h1 className="text-4xl md:text-5xl font-light text-white mb-2 uppercase tracking-wide drop-shadow-lg" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
-                {transmission.title}
-              </h1>
-              <p className="text-white/60 text-lg font-mono">{transmission.field}</p>
-            </div>
-          </div>
-
-          {/* Signal Metadata */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 p-4 bg-black/60 backdrop-blur-sm rounded border border-[#5ba4a4]/20 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <div>
-              <p className="text-xs text-[#5ba4a4]/60 uppercase tracking-wide font-mono">Signal Clarity</p>
-              <p className="text-lg font-mono text-[#5ba4a4]">{transmission.signalClarity}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#5ba4a4]/60 uppercase tracking-wide font-mono">Channel Status</p>
-              <p className="text-lg font-mono text-[#5ba4a4]">{transmission.channelStatus}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#5ba4a4]/60 uppercase tracking-wide font-mono">Cycle</p>
-              <p className="text-lg font-mono text-[#5ba4a4]">{transmission.cycle || "N/A"}</p>
-            </div>
-            <div>
-              <p className="text-xs text-[#5ba4a4]/60 uppercase tracking-wide font-mono">Status</p>
-              <p className="text-lg font-mono text-[#5ba4a4]">{transmission.status}</p>
-            </div>
+              <ArrowLeft size={12} />
+              RETURN TO FIELD
+            </button>
           </div>
         </div>
 
-        {/* Triptych Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-          {/* Left Panel */}
-          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-primary/20 hover:border-primary/30 transition-colors">
-            <h3 className="text-sm uppercase tracking-widest text-[#5ba4a4]/60 mb-4 font-mono">Left Panel</h3>
-            <p className="text-white/80 leading-relaxed italic font-mono text-sm">
-              {transmission.leftPanelPrompt || "No left panel prompt available"}
-            </p>
-          </div>
-
-          {/* Center Panel */}
-          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-[#5ba4a4]/20 hover:border-primary/50 transition-colors flex flex-col items-center justify-center">
-            <h3 className="text-sm uppercase tracking-widest text-[#5ba4a4]/60 mb-4 font-mono">Center Visual</h3>
-            <div className="text-center">
-              <p className="text-4xl mb-4 drop-shadow-[0_0_20px_rgba(144,238,144,0.5)]" style={{ color: '#9fe49a' }}>
-                {transmission.microSigil || "◈"}
-              </p>
-              <p className="text-white/80 leading-relaxed italic text-sm font-mono">
-                {transmission.centerPanelPrompt || "Visual field resonance"}
-              </p>
-            </div>
-          </div>
-
-          {/* Right Panel */}
-          <div className="p-6 bg-black/60 backdrop-blur-sm rounded border border-primary/20 hover:border-primary/30 transition-colors">
-            <h3 className="text-sm uppercase tracking-widest text-[#5ba4a4]/60 mb-4 font-mono">Right Panel</h3>
-            <p className="text-white/80 leading-relaxed italic font-mono text-sm">
-              {transmission.rightPanelPrompt || "No right panel prompt available"}
-            </p>
-          </div>
-        </div>
-
-        {/* Core Message */}
-        <div className="mb-12 p-8 bg-black/60 backdrop-blur-sm rounded border border-[#5ba4a4]/20 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-          <h2 className="text-xl uppercase tracking-widest text-primary mb-6 font-mono">Core Message</h2>
-          <p className="text-lg text-white/90 leading-relaxed italic font-mono">{transmission.coreMessage}</p>
-        </div>
-
-        {/* Encoded Archetype */}
-        {transmission.encodedArchetype && (
-          <div className="mb-12 p-6 bg-black/60 backdrop-blur-sm rounded border border-purple-400/50 animate-fade-in-up" style={{ animationDelay: '0.8s' }}>
-            <h3 className="text-sm uppercase tracking-widest text-purple-400 mb-3 font-mono">Encoded Archetype</h3>
-            <p className="text-purple-200 font-mono text-sm">{transmission.encodedArchetype}</p>
-          </div>
-        )}
-
-        {/* Tags */}
-        {tags.length > 0 && (
-          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '1s' }}>
-            <h3 className="text-sm uppercase tracking-widest text-[#5ba4a4]/60 mb-4 font-mono">Tags</h3>
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag: string) => (
-                <Badge key={tag} variant="outline" className="bg-primary/5 border-primary/30 text-primary/80 font-mono">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Hashtags */}
-        {hashtags.length > 0 && (
-          <div className="mb-12 animate-fade-in-up" style={{ animationDelay: '1.2s' }}>
-            <h3 className="text-sm uppercase tracking-widest text-[#5ba4a4]/60 mb-4 font-mono">Hashtags</h3>
-            <div className="flex flex-wrap gap-2">
-              {hashtags.map((tag: string) => (
-                <span key={tag} className="text-primary text-sm font-mono">
-                  {tag}
+        <div className="px-6 md:px-12">
+          <div className="max-w-3xl mx-auto">
+            {/* ── VLS Command ───────────────────────────────── */}
+            <div className="mb-10">
+              <span
+                className="font-mono tracking-wider"
+                style={{ fontSize: 12, color: "rgba(91,164,164,0.5)" }}
+              >
+                {vlsText}
+                <span className="animate-pulse" style={{ opacity: 0.6 }}>
+                  _
                 </span>
-              ))}
+              </span>
+            </div>
+
+            {/* ── Signal Clarity Bar ────────────────────────── */}
+            <div
+              className="mb-10 transition-opacity"
+              style={{
+                opacity: stage >= 1 ? 1 : 0,
+                transitionDuration: "600ms",
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div
+                  className="flex-1 relative overflow-hidden rounded-full"
+                  style={{ height: 1, background: "rgba(91,164,164,0.08)" }}
+                >
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{
+                      width: stage >= 1 ? `${clarity}%` : "0%",
+                      background: "rgba(91,164,164,0.35)",
+                      transition: "width 2s ease-out",
+                    }}
+                  />
+                </div>
+                <span
+                  className="font-mono"
+                  style={{ fontSize: 9, color: "rgba(91,164,164,0.35)" }}
+                >
+                  {tx.signalClarity}
+                </span>
+              </div>
+            </div>
+
+            {/* ── PROTOCOL:: BEGIN ──────────────────────────── */}
+            <div
+              className="mb-12"
+              style={{
+                opacity: stage >= 1 ? 1 : 0,
+                transform: stage >= 1 ? "translateY(0)" : "translateY(8px)",
+                transition: "all 700ms ease-out",
+              }}
+            >
+              <span
+                className="font-mono tracking-widest"
+                style={{ fontSize: 10, color: "rgba(189,163,107,0.35)" }}
+              >
+                PROTOCOL:: BEGIN
+              </span>
+            </div>
+
+            {/* ── Title Block ───────────────────────────────── */}
+            <div
+              className="mb-12"
+              style={{
+                opacity: stage >= 2 ? 1 : 0,
+                transform: stage >= 2 ? "translateY(0)" : "translateY(12px)",
+                transition: "all 800ms ease-out",
+              }}
+            >
+              {/* Sigil + ID + Status */}
+              <div className="flex items-center gap-3 mb-5">
+                <span
+                  className="text-3xl"
+                  style={{
+                    color: statusColor,
+                    filter: `drop-shadow(0 0 12px ${statusColor}40)`,
+                  }}
+                >
+                  {tx.microSigil || "◈"}
+                </span>
+                <span
+                  className="font-mono tracking-wider"
+                  style={{ fontSize: 10, color: "rgba(91,164,164,0.35)" }}
+                >
+                  TX-{String(tx.txNumber).padStart(3, "0")}
+                </span>
+                <span
+                  className="font-mono tracking-widest px-2.5 py-0.5 rounded-sm border"
+                  style={{
+                    fontSize: 8,
+                    color: statusColor,
+                    borderColor: `${statusColor}25`,
+                  }}
+                >
+                  {tx.channelStatus}
+                </span>
+              </div>
+
+              {/* Title */}
+              <h1
+                className="text-3xl md:text-5xl uppercase tracking-wide mb-4"
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontWeight: 300,
+                  color: "#e8e4dc",
+                  lineHeight: 1.15,
+                }}
+              >
+                {tx.title}
+              </h1>
+
+              {/* Field */}
+              <p
+                className="font-mono tracking-wider"
+                style={{ fontSize: 11, color: "rgba(91,164,164,0.25)" }}
+              >
+                {tx.field}
+              </p>
+            </div>
+
+            {/* ── Core Message ───────────────────────────────── */}
+            <div
+              className="mb-14"
+              style={{
+                opacity: stage >= 3 ? 1 : 0,
+                transform: stage >= 3 ? "translateY(0)" : "translateY(12px)",
+                transition: "all 1000ms ease-out",
+              }}
+            >
+              <div
+                className="py-3"
+                style={{
+                  borderLeft: "1px solid rgba(189,163,107,0.15)",
+                  paddingLeft: 24,
+                }}
+              >
+                <p
+                  className="font-mono italic"
+                  style={{
+                    fontSize: "clamp(13px, 1.4vw, 16px)",
+                    color: "rgba(232,228,220,0.75)",
+                    lineHeight: 2,
+                  }}
+                >
+                  {tx.coreMessage}
+                </p>
+              </div>
+            </div>
+
+            {/* ── Encoded Archetype ─────────────────────────── */}
+            {tx.encodedArchetype && (
+              <div
+                className="mb-12"
+                style={{
+                  opacity: stage >= 4 ? 1 : 0,
+                  transform:
+                    stage >= 4 ? "translateY(0)" : "translateY(12px)",
+                  transition: "all 700ms ease-out",
+                }}
+              >
+                <div
+                  className="p-5 rounded-sm"
+                  style={{
+                    border: "1px solid rgba(168,143,208,0.12)",
+                    background: "rgba(168,143,208,0.02)",
+                  }}
+                >
+                  <div
+                    className="font-mono uppercase tracking-widest mb-3"
+                    style={{ fontSize: 9, color: "rgba(168,143,208,0.35)" }}
+                  >
+                    ENCODED ARCHETYPE
+                  </div>
+                  <p
+                    className="font-mono"
+                    style={{ fontSize: 12, color: "rgba(168,143,208,0.55)" }}
+                  >
+                    {tx.encodedArchetype}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Tags ──────────────────────────────────────── */}
+            {tags.length > 0 && (
+              <div
+                className="mb-10"
+                style={{
+                  opacity: stage >= 4 ? 1 : 0,
+                  transition: "opacity 700ms ease-out",
+                }}
+              >
+                <div className="flex flex-wrap gap-2">
+                  {tags.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="font-mono px-2.5 py-1 rounded-sm border"
+                      style={{
+                        fontSize: 9,
+                        color: "rgba(91,164,164,0.2)",
+                        borderColor: "rgba(91,164,164,0.06)",
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── PROTOCOL:: END + Bookmark ─────────────────── */}
+            <div
+              className="mb-16"
+              style={{
+                opacity: stage >= 5 ? 1 : 0,
+                transform: stage >= 5 ? "translateY(0)" : "translateY(8px)",
+                transition: "all 700ms ease-out",
+              }}
+            >
+              <div className="flex items-center justify-between">
+                <span
+                  className="font-mono tracking-widest"
+                  style={{ fontSize: 10, color: "rgba(189,163,107,0.35)" }}
+                >
+                  PROTOCOL:: END
+                </span>
+                <button
+                  onClick={handleBookmark}
+                  className="flex items-center gap-2 font-mono tracking-wider transition-colors"
+                  style={{
+                    fontSize: 10,
+                    color: bookmarkStatus
+                      ? "#bda36b"
+                      : "rgba(91,164,164,0.2)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!bookmarkStatus)
+                      e.currentTarget.style.color = "rgba(91,164,164,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!bookmarkStatus)
+                      e.currentTarget.style.color = "rgba(91,164,164,0.2)";
+                  }}
+                >
+                  <Bookmark
+                    size={12}
+                    fill={bookmarkStatus ? "currentColor" : "none"}
+                  />
+                  {bookmarkStatus ? "SIGNAL LOCKED" : "LOCK SIGNAL"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Navigation ────────────────────────────────── */}
+            <div
+              style={{
+                opacity: stage >= 6 ? 1 : 0,
+                transform: stage >= 6 ? "translateY(0)" : "translateY(12px)",
+                transition: "all 700ms ease-out",
+              }}
+            >
+              <div
+                className="pt-10"
+                style={{ borderTop: "1px solid rgba(91,164,164,0.06)" }}
+              >
+                <div className="flex justify-between items-start">
+                  {/* Prev */}
+                  {prevTx ? (
+                    <Link href={`/transmission/${(prevTx as any).id}`}>
+                      <div className="group cursor-pointer max-w-[45%]">
+                        <div className="flex items-center gap-2 mb-2">
+                          <ChevronLeft
+                            size={12}
+                            style={{ color: "rgba(91,164,164,0.2)" }}
+                            className="group-hover:text-[#5ba4a4]/50 transition-colors"
+                          />
+                          <span
+                            className="font-mono tracking-wider transition-colors group-hover:text-[#5ba4a4]/50"
+                            style={{
+                              fontSize: 9,
+                              color: "rgba(91,164,164,0.2)",
+                            }}
+                          >
+                            PREV SIGNAL
+                          </span>
+                        </div>
+                        <p
+                          className="font-mono uppercase tracking-wider truncate transition-colors group-hover:text-[#e8e4dc]/50"
+                          style={{
+                            fontSize: 12,
+                            color: "rgba(232,228,220,0.25)",
+                          }}
+                        >
+                          {(prevTx as any).title}
+                        </p>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div />
+                  )}
+
+                  {/* Next */}
+                  {nextTx ? (
+                    <Link href={`/transmission/${(nextTx as any).id}`}>
+                      <div className="group cursor-pointer text-right max-w-[45%]">
+                        <div className="flex items-center justify-end gap-2 mb-2">
+                          <span
+                            className="font-mono tracking-wider transition-colors group-hover:text-[#5ba4a4]/50"
+                            style={{
+                              fontSize: 9,
+                              color: "rgba(91,164,164,0.2)",
+                            }}
+                          >
+                            NEXT SIGNAL
+                          </span>
+                          <ChevronRight
+                            size={12}
+                            style={{ color: "rgba(91,164,164,0.2)" }}
+                            className="group-hover:text-[#5ba4a4]/50 transition-colors"
+                          />
+                        </div>
+                        <p
+                          className="font-mono uppercase tracking-wider truncate transition-colors group-hover:text-[#e8e4dc]/50"
+                          style={{
+                            fontSize: 12,
+                            color: "rgba(232,228,220,0.25)",
+                          }}
+                        >
+                          {(nextTx as any).title}
+                        </p>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div />
+                  )}
+                </div>
+              </div>
+
+              {/* Footer ambient */}
+              <div className="mt-16 text-center">
+                <span
+                  className="font-mono tracking-widest"
+                  style={{ fontSize: 8, color: "rgba(189,163,107,0.12)" }}
+                >
+                  THE FIELD REMEMBERS
+                </span>
+              </div>
             </div>
           </div>
-        )}
-
-        {/* Footer Navigation */}
-        <div className="mt-16 pt-8 border-t border-primary/20 flex justify-between animate-fade-in-up" style={{ animationDelay: '1.4s' }}>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/archive")}
-            className="border-primary/30 text-white bg-black/60 hover:bg-primary/10 backdrop-blur-sm font-mono"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Archive
-          </Button>
         </div>
       </div>
     </Layout>

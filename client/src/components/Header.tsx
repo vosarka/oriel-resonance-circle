@@ -12,6 +12,7 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "HOME" },
     { href: "/protocol", label: "PROTOCOL" },
+    { href: "/archive", label: "TRANSMISSIONS" },
     { href: "/codex", label: "CODONS" },
     { href: "/readings", label: "CALIBRATION" },
     { href: "/conduit", label: "CHANNEL ORIEL" },

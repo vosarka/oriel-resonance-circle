@@ -169,7 +169,7 @@ export default function TermsOfService() {
           {/* Footer note */}
           <div className="mt-16 pt-8 border-t border-[#00F0FF]/10 text-center">
             <p className="text-xs font-mono text-gray-600">
-              ORIEL RESONANCE CIRCLE · VOS ARKANA · Enter as Static. Leave as a Signal.
+              ORIEL RESONANCE CIRCLE · ARKIVA VOS · Become Signal.
             </p>
             <div className="mt-3 flex justify-center gap-6 text-xs font-mono text-gray-600">
               <a href="/privacy" className="hover:text-[#00F0FF]/60 transition-colors">Privacy Policy</a>

@@ -3,7 +3,7 @@ import { transmissions } from "./drizzle/schema";
 import transmissionData from "./server/transmissions-seed-v2.json";
 
 async function seedTransmissions() {
-  console.log("Seeding 42 TX transmissions with full template...");
+  console.log(`Seeding ${transmissionData.length} TX transmissions...`);
   const db = await getDb();
   if (!db) {
     console.error("Database connection failed");
