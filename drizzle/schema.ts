@@ -35,8 +35,8 @@ export const users = mysqlTable("users", {
   subscribed: boolean("subscribed").default(false).notNull(),
   /** Cumulative total donated (USD). Updated on each successful PayPal event. */
   donated: double("donated").default(0).notNull(),
-  /** Voice preference for TTS: 'fast' (Inworld), 'nostalgic' (ElevenLabs), 'none' (text only) */
-  voicePreference: mysqlEnum("voicePreference", ["fast", "nostalgic", "none"]).default("fast").notNull(),
+  /** Voice preference for TTS: 'sophianic' (Inworld fema), 'deep' (Inworld serii), 'none' (text only) */
+  voicePreference: mysqlEnum("voicePreference", ["sophianic", "deep", "none"]).default("sophianic").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

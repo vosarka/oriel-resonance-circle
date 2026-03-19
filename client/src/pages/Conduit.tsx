@@ -28,7 +28,7 @@ export default function Conduit() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
-  const [voicePreference, setVoicePreference] = useState<"fast" | "nostalgic" | "none">("fast");
+  const [voicePreference, setVoicePreference] = useState<"sophianic" | "deep" | "none">("sophianic");
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -76,8 +76,8 @@ export default function Conduit() {
 
     // Load voice preference from localStorage for unauthenticated users
     const savedVoice = localStorage.getItem("voicePreference");
-    if (savedVoice && (savedVoice === "fast" || savedVoice === "nostalgic" || savedVoice === "none")) {
-      setVoicePreference(savedVoice as "fast" | "nostalgic" | "none");
+    if (savedVoice && (savedVoice === "sophianic" || savedVoice === "deep" || savedVoice === "none")) {
+      setVoicePreference(savedVoice as "sophianic" | "deep" | "none");
     }
   }, []);
 
@@ -168,7 +168,7 @@ export default function Conduit() {
   // Load user's voice preference on mount
   useEffect(() => {
     if (isAuthenticated && user) {
-      setVoicePreference((user as any).voicePreference || "fast");
+      setVoicePreference((user as any).voicePreference || "sophianic");
     }
   }, [isAuthenticated, user]);
 
@@ -775,7 +775,7 @@ export default function Conduit() {
                     <select
                       value={voicePreference}
                       onChange={(e) => {
-                        const newVoice = e.target.value as "fast" | "nostalgic" | "none";
+                        const newVoice = e.target.value as "sophianic" | "deep" | "none";
                         setVoicePreference(newVoice);
                         if (isAuthenticated) {
                           setVoicePreferenceMutation.mutate({ voicePreference: newVoice });
@@ -790,8 +790,8 @@ export default function Conduit() {
                         color: "rgba(0,229,255,0.8)",
                       }}
                     >
-                      <option value="fast">Fast Voice</option>
-                      <option value="nostalgic">Nostalgic Voice</option>
+                      <option value="sophianic">Sophianic Voice</option>
+                      <option value="deep">Deep Voice</option>
                       <option value="none">Chat Only</option>
                     </select>
                   </div>

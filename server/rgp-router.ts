@@ -19,12 +19,25 @@ export const rgpRouter = router({
       birthTimezoneOffset: z.number().optional(),
       birthCity: z.string().optional(),
       userId: z.string().optional(),
-      coherenceScore: z.number().optional().default(50),
+      coherenceScore: z.number().optional().default(55),
     }))
     .mutation(async ({ input }) => {
       try {
         const birthDateObj = new Date(input.birthDate);
         const userId = input.userId || 'anonymous';
+
+        // Use last Carrierlock score if user has one, otherwise fall back to default
+        let coherenceScore = input.coherenceScore;
+        if (userId !== 'anonymous') {
+          try {
+            const numericId = parseInt(userId, 10);
+            if (!isNaN(numericId)) {
+              const { getLatestCarrierlockScore } = await import('./db');
+              const lastScore = await getLatestCarrierlockScore(numericId);
+              if (lastScore !== null) coherenceScore = lastScore;
+            }
+          } catch { /* no previous carrierlock — use default */ }
+        }
 
         let consciousChartData: Record<string, number> | undefined;
         let designChartData: Record<string, number> | undefined;
@@ -113,7 +126,7 @@ export const rgpRouter = router({
             moon:  consciousChartData?.['Moon'],
             chiron:consciousChartData?.['Chiron'],
           },
-          input.coherenceScore
+          coherenceScore
         );
 
         const primeStackDetails = reading.primeStack.map(pos => ({

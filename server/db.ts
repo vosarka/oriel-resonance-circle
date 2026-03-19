@@ -270,7 +270,7 @@ export async function updateUserConduitId(userId: number, conduitId: string) {
   await db.update(users).set({ conduitId }).where(eq(users.id, userId));
 }
 
-export async function updateUserVoicePreference(userId: number, voicePreference: "fast" | "nostalgic" | "none") {
+export async function updateUserVoicePreference(userId: number, voicePreference: "sophianic" | "deep" | "none") {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ voicePreference }).where(eq(users.id, userId));
@@ -392,6 +392,25 @@ export async function saveCarrierlockState(
   } catch (error) {
     console.error("[Database] Failed to save Carrierlock state:", error);
     throw error;
+  }
+}
+
+/**
+ * Get the most recent coherence score for a user, or null if none exists.
+ */
+export async function getLatestCarrierlockScore(userId: number): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const { carrierlockStates } = await import("../drizzle/schema");
+    const rows = await db.select({ coherenceScore: carrierlockStates.coherenceScore })
+      .from(carrierlockStates)
+      .where(eq(carrierlockStates.userId, userId))
+      .orderBy(desc(carrierlockStates.createdAt))
+      .limit(1);
+    return rows[0]?.coherenceScore ?? null;
+  } catch {
+    return null;
   }
 }
 

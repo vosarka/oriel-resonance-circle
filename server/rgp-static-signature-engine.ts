@@ -130,7 +130,7 @@ function chartInputToRecord(input: ChartInput | undefined): Record<string, { lon
 export async function generateStaticSignature(
   userId: string,
   birthChartData: BirthChartDataInput,
-  coherenceScore = 50
+  coherenceScore = 55
 ): Promise<StaticSignatureReading> {
   const readingId = `sig-${userId}-${Date.now()}`;
 

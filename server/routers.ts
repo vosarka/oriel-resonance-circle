@@ -266,7 +266,7 @@ export const appRouter = router({
     generateSpeech: publicProcedure
       .input(z.object({
         text: z.string().min(1, "Text is required").max(20000, "Text too long for TTS"),
-        voiceId: z.enum(["fast", "nostalgic", "none"]).optional().default("fast"),
+        voiceId: z.enum(["sophianic", "deep", "none"]).optional().default("sophianic"),
       }))
       .mutation(async ({ input }) => {
         try {
@@ -284,21 +284,13 @@ export const appRouter = router({
           let audioBase64: string;
           let audioUrl: string;
 
-          if (input.voiceId === "nostalgic") {
-            // Use ElevenLabs TTS
-            try {
-              audioBase64 = await generateElevenLabsSpeech(input.text);
-              audioUrl = elevenLabsAudioToDataUrl(audioBase64);
-            } catch (elevenLabsError) {
-              console.error("[generateSpeech] ElevenLabs failed, falling back to Inworld:", elevenLabsError);
-              audioBase64 = await generateChunkedSpeech(input.text);
-              audioUrl = audioToDataUrl(audioBase64);
-            }
-          } else {
-            // Default to Inworld TTS (fast)
-            audioBase64 = await generateChunkedSpeech(input.text);
-            audioUrl = audioToDataUrl(audioBase64);
-          }
+          // Both voices use Inworld TTS with different voice IDs
+          const { INWORLD_VOICES } = await import("./inworld-tts");
+          const inworldVoice = input.voiceId === "deep"
+            ? INWORLD_VOICES.deep
+            : INWORLD_VOICES.sophianic;
+          audioBase64 = await generateChunkedSpeech(input.text, inworldVoice);
+          audioUrl = audioToDataUrl(audioBase64);
 
           console.log("[generateSpeech] Audio generated successfully, size:", audioBase64.length);
           return {
@@ -318,7 +310,7 @@ export const appRouter = router({
     // Mutation to save user's voice preference
     setVoicePreference: protectedProcedure
       .input(z.object({
-        voicePreference: z.enum(["fast", "nostalgic", "none"]),
+        voicePreference: z.enum(["sophianic", "deep", "none"]),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) {

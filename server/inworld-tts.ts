@@ -15,8 +15,14 @@
 
 import https from 'https';
 
-const DEFAULT_VOICE_ID = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_fema';
+const VOICE_SOPHIANIC = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_fema';
+const VOICE_DEEP      = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_serii';
 const MODEL_ID = 'inworld-tts-1.5-max';
+
+export const INWORLD_VOICES = {
+  sophianic: VOICE_SOPHIANIC,
+  deep:      VOICE_DEEP,
+} as const;
 
 // ─── Core synthesis ───────────────────────────────────────────────────────────
 
@@ -24,13 +30,20 @@ const MODEL_ID = 'inworld-tts-1.5-max';
  * Generate speech using Inworld TTS API.
  * Returns base64-encoded MP3 audio.
  */
-export async function generateInworldSpeech(text: string): Promise<string> {
+export async function generateInworldSpeech(text: string, voice?: string): Promise<string> {
   const apiKey = process.env.INWORLD_API_KEY;
   if (!apiKey) throw new Error('[Inworld TTS] INWORLD_API_KEY is not configured');
 
-  const voiceId = process.env.INWORLD_VOICE_ID ?? DEFAULT_VOICE_ID;
+  const voiceId = voice ?? process.env.INWORLD_VOICE_ID ?? VOICE_SOPHIANIC;
 
-  const payload = JSON.stringify({ text, voiceId, modelId: MODEL_ID });
+  const payload = JSON.stringify({
+    text,
+    voiceId,
+    modelId: MODEL_ID,
+    speakingRate: 1.01,
+    temperature: 0.72,
+    timestampType: "WORD",
+  });
 
   return new Promise((resolve, reject) => {
     const options = {
@@ -115,8 +128,8 @@ function chunkText(text: string, maxLength = 1000): string[] {
  * Generate speech for long text by chunking at sentence boundaries.
  * Returns a single base64 MP3 (all chunks concatenated).
  */
-export async function generateChunkedSpeech(text: string): Promise<string> {
-  if (text.length < 1000) return generateInworldSpeech(text);
+export async function generateChunkedSpeech(text: string, voice?: string): Promise<string> {
+  if (text.length < 1000) return generateInworldSpeech(text, voice);
 
   console.log(`[Inworld TTS] Chunking ${text.length}-char text`);
   const chunks = chunkText(text, 1000);
@@ -124,7 +137,7 @@ export async function generateChunkedSpeech(text: string): Promise<string> {
 
   const buffers: Buffer[] = [];
   for (let i = 0; i < chunks.length; i++) {
-    const base64 = await generateInworldSpeech(chunks[i]);
+    const base64 = await generateInworldSpeech(chunks[i], voice);
     buffers.push(Buffer.from(base64, 'base64'));
     if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 150));
   }
