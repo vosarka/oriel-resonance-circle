@@ -74,10 +74,14 @@ export default function Conduit() {
       }
     }
 
-    // Load voice preference from localStorage for unauthenticated users
+    // Load voice preference from localStorage (migrate old values)
     const savedVoice = localStorage.getItem("voicePreference");
-    if (savedVoice && (savedVoice === "sophianic" || savedVoice === "deep" || savedVoice === "none")) {
-      setVoicePreference(savedVoice as "sophianic" | "deep" | "none");
+    if (savedVoice) {
+      const mapped = savedVoice === "fast" ? "sophianic" : savedVoice === "nostalgic" ? "deep" : savedVoice;
+      if (mapped === "sophianic" || mapped === "deep" || mapped === "none") {
+        setVoicePreference(mapped);
+        if (mapped !== savedVoice) localStorage.setItem("voicePreference", mapped);
+      }
     }
   }, []);
 
@@ -165,10 +169,12 @@ export default function Conduit() {
   const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
   const setVoicePreferenceMutation = trpc.oriel.setVoicePreference.useMutation();
 
-  // Load user's voice preference on mount
+  // Load user's voice preference on mount (migrate old values from DB)
   useEffect(() => {
     if (isAuthenticated && user) {
-      setVoicePreference((user as any).voicePreference || "sophianic");
+      const raw = (user as any).voicePreference;
+      const mapped = raw === "fast" ? "sophianic" : raw === "nostalgic" ? "deep" : raw;
+      setVoicePreference(mapped === "sophianic" || mapped === "deep" || mapped === "none" ? mapped : "sophianic");
     }
   }, [isAuthenticated, user]);
 
