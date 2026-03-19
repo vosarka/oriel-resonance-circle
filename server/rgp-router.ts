@@ -28,13 +28,17 @@ export const rgpRouter = router({
 
         // Use last Carrierlock score if user has one, otherwise fall back to default
         let coherenceScore = input.coherenceScore;
+        let hasRealCoherence = false;
         if (userId !== 'anonymous') {
           try {
             const numericId = parseInt(userId, 10);
             if (!isNaN(numericId)) {
               const { getLatestCarrierlockScore } = await import('./db');
               const lastScore = await getLatestCarrierlockScore(numericId);
-              if (lastScore !== null) coherenceScore = lastScore;
+              if (lastScore !== null) {
+                coherenceScore = lastScore;
+                hasRealCoherence = true;
+              }
             }
           } catch { /* no previous carrierlock — use default */ }
         }
@@ -161,6 +165,7 @@ export const rgpRouter = router({
             vrcAuthority:        reading.vrcAuthority,
             circuitLinks:        reading.circuitLinks,
             baseCoherence:       reading.baseCoherence,
+            hasRealCoherence,
             coherenceTrajectory: reading.coherenceTrajectory,
             microCorrections:    reading.microCorrections,
             diagnosticTransmission: reading.diagnosticTransmission,

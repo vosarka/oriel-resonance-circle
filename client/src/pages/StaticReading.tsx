@@ -322,6 +322,8 @@ export default function StaticReading() {
   const microCorrections = (data.microCorrections ?? []) as MicroCorrection[];
   const trajectory = data.coherenceTrajectory as CoherenceTrajectory | null;
   const coherenceScore = Math.round(data.baseCoherence ?? 0);
+  // Hide coherence display when it's the engine default (55) — means no real Carrierlock data
+  const hasRealCoherence = coherenceScore !== 55 && coherenceScore !== 0;
 
   // ninecenters keys are full names ("Crown", "G-Self") — map from short bodygraph IDs
   const isDefinedCenter = (shortId: string): boolean => {
@@ -844,7 +846,7 @@ export default function StaticReading() {
     <div style={{ animation: "fadeUp 0.6s ease" }}>
 
       {/* Fractal Role Header + Coherence Gauge */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: hasRealCoherence ? "1fr auto" : "1fr", gap: 24, marginBottom: 32 }}>
         <div>
           <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 8 }}>
             FRACTAL ROLE DESIGNATION
@@ -871,34 +873,36 @@ export default function StaticReading() {
           </div>
         </div>
 
-        {/* Coherence Gauge */}
-        <div style={{ textAlign: "center", minWidth: 110 }}>
-          <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.15em", marginBottom: 8 }}>COHERENCE</div>
-          <svg viewBox="0 0 100 100" width={100} height={100}>
-            <circle cx={50} cy={50} r={42} fill="none" stroke={C.border} strokeWidth="2" />
-            <circle cx={50} cy={50} r={42} fill="none"
-              stroke={coherenceScore >= 80 ? C.teal : coherenceScore >= 40 ? C.gold : C.red}
-              strokeWidth="3"
-              strokeDasharray={`${Math.min(coherenceScore, 100) * 2.639} 263.9`}
-              strokeDashoffset="65.97"
-              strokeLinecap="round"
-              style={{ transition: "stroke-dasharray 1s ease" }}
-            />
-            <text x="50" y="46" textAnchor="middle"
-              style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "22px", fill: C.txt, fontWeight: 300 }}>
-              {coherenceScore}
-            </text>
-            <text x="50" y="60" textAnchor="middle"
-              style={{ fontFamily: "monospace", fontSize: "7px", fill: C.txtD, letterSpacing: "1px" }}>
-              CS SCORE
-            </text>
-          </svg>
-          {trajectory && (
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.08em", marginTop: 4 }}>
-              {trajectory.trend.toUpperCase()}
-            </div>
-          )}
-        </div>
+        {/* Coherence Gauge — only shown when user has real Carrierlock data */}
+        {hasRealCoherence && (
+          <div style={{ textAlign: "center", minWidth: 110 }}>
+            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.15em", marginBottom: 8 }}>COHERENCE</div>
+            <svg viewBox="0 0 100 100" width={100} height={100}>
+              <circle cx={50} cy={50} r={42} fill="none" stroke={C.border} strokeWidth="2" />
+              <circle cx={50} cy={50} r={42} fill="none"
+                stroke={coherenceScore >= 80 ? C.teal : coherenceScore >= 40 ? C.gold : C.red}
+                strokeWidth="3"
+                strokeDasharray={`${Math.min(coherenceScore, 100) * 2.639} 263.9`}
+                strokeDashoffset="65.97"
+                strokeLinecap="round"
+                style={{ transition: "stroke-dasharray 1s ease" }}
+              />
+              <text x="50" y="46" textAnchor="middle"
+                style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "22px", fill: C.txt, fontWeight: 300 }}>
+                {coherenceScore}
+              </text>
+              <text x="50" y="60" textAnchor="middle"
+                style={{ fontFamily: "monospace", fontSize: "7px", fill: C.txtD, letterSpacing: "1px" }}>
+                CS SCORE
+              </text>
+            </svg>
+            {trajectory && (
+              <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.08em", marginTop: 4 }}>
+                {trajectory.trend.toUpperCase()}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Two Column: Center Map + Prime Stack */}
@@ -1071,7 +1075,7 @@ export default function StaticReading() {
         <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: C.txtD, fontStyle: "italic" }}>
           Your signal is sovereign. This transmission is a framework, not a verdict.
         </div>
-        {trajectory && (
+        {hasRealCoherence && trajectory && (
           <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginTop: 8, letterSpacing: "0.1em" }}>
             COHERENCE: {coherenceScore} · TRAJECTORY: {trajectory.trend.toUpperCase()}
           </div>
