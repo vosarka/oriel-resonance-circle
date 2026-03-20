@@ -43,17 +43,19 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
   const lastPhaseRef = useRef<BreathPhase>("idle");
+  const isGeneratingAudioRef = useRef(false);
 
   const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
 
   // Generate and play audio for a given prompt
   const playAudioPrompt = useCallback(async (prompt: string) => {
-    if (!audioEnabled || isGeneratingAudio) return;
-    
+    if (!audioEnabled || isGeneratingAudioRef.current) return;
+
     try {
+      isGeneratingAudioRef.current = true;
       setIsGeneratingAudio(true);
       const result = await generateSpeechMutation.mutateAsync({ text: prompt });
-      
+
       if (result.audioUrl && audioRef.current) {
         audioRef.current.src = result.audioUrl;
         audioRef.current.play().catch(console.error);
@@ -61,9 +63,18 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
     } catch (error) {
       console.error("Failed to generate audio:", error);
     } finally {
+      isGeneratingAudioRef.current = false;
       setIsGeneratingAudio(false);
     }
-  }, [audioEnabled, generateSpeechMutation, isGeneratingAudio]);
+  }, [audioEnabled, generateSpeechMutation]);
+
+  // Ref to always hold latest playAudioPrompt — decouples audio from timer effect
+  const playAudioPromptRef = useRef(playAudioPrompt);
+  useEffect(() => { playAudioPromptRef.current = playAudioPrompt; });
+
+  // Ref for onComplete to prevent parent re-renders from resetting timers
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; });
 
   // Start the breath protocol
   const startProtocol = useCallback(() => {
@@ -71,8 +82,8 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
     setPhase("inhale");
     setCurrentCycle(1);
     setProgress(0);
-    playAudioPrompt(AUDIO_PROMPTS.start);
-  }, [playAudioPrompt]);
+    playAudioPromptRef.current(AUDIO_PROMPTS.start);
+  }, []);
 
   // Pause the protocol
   const pauseProtocol = useCallback(() => {
@@ -91,32 +102,32 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
     if (progressRef.current) clearInterval(progressRef.current);
   }, []);
 
-  // Handle phase transitions
+  // Handle phase transitions — deps are only phase/isPlaying/currentCycle (stable)
   useEffect(() => {
     if (!isPlaying || phase === "idle" || phase === "complete") return;
 
     // Play audio for new phase (only if phase changed)
     if (phase !== lastPhaseRef.current) {
       lastPhaseRef.current = phase;
-      
+
       if (phase === "inhale") {
-        playAudioPrompt(AUDIO_PROMPTS.inhale);
+        playAudioPromptRef.current(AUDIO_PROMPTS.inhale);
       } else if (phase === "hold") {
-        playAudioPrompt(AUDIO_PROMPTS.hold);
+        playAudioPromptRef.current(AUDIO_PROMPTS.hold);
       } else if (phase === "exhale") {
-        playAudioPrompt(AUDIO_PROMPTS.exhale);
+        playAudioPromptRef.current(AUDIO_PROMPTS.exhale);
       }
     }
 
-    const phaseDuration = phase === "pause" 
-      ? BREATH_CONFIG.pause 
+    const phaseDuration = phase === "pause"
+      ? BREATH_CONFIG.pause
       : BREATH_CONFIG[phase as keyof typeof BREATH_CONFIG] || 4000;
 
     // Progress animation
     setProgress(0);
     const progressInterval = 50;
     const progressStep = (progressInterval / phaseDuration) * 100;
-    
+
     progressRef.current = setInterval(() => {
       setProgress(prev => Math.min(prev + progressStep, 100));
     }, progressInterval);
@@ -132,14 +143,14 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
         setPhase("exhale");
       } else if (phase === "exhale") {
         if (currentCycle < TOTAL_CYCLES) {
-          playAudioPrompt(AUDIO_PROMPTS.cycleComplete);
+          playAudioPromptRef.current(AUDIO_PROMPTS.cycleComplete);
           setPhase("pause");
         } else {
           // Protocol complete
           setPhase("complete");
           setIsPlaying(false);
-          playAudioPrompt(AUDIO_PROMPTS.complete);
-          onComplete();
+          playAudioPromptRef.current(AUDIO_PROMPTS.complete);
+          onCompleteRef.current();
         }
       } else if (phase === "pause") {
         setCurrentCycle(prev => prev + 1);
@@ -151,7 +162,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
       if (timerRef.current) clearTimeout(timerRef.current);
       if (progressRef.current) clearInterval(progressRef.current);
     };
-  }, [phase, isPlaying, currentCycle, onComplete, playAudioPrompt]);
+  }, [phase, isPlaying, currentCycle]);
 
   // Calculate circle scale based on phase
   const getCircleScale = () => {

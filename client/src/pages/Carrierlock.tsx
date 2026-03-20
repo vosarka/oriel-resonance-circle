@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ArrowRight, Calendar, Zap, MapPin, CheckCircle } from "lucide-react";
@@ -116,7 +116,7 @@ export default function Carrierlock() {
   const coherenceColor = coherenceScore >= 70 ? C.teal : coherenceScore >= 40 ? C.gold : C.red;
   const coherenceLabel = coherenceScore >= 70 ? "RESONANCE" : coherenceScore >= 40 ? "FLUX" : "ENTROPY";
 
-  const handleBreathComplete = () => setBreathCompletion(true);
+  const handleBreathComplete = useCallback(() => setBreathCompletion(true), []);
 
   const handleGetReading = async () => {
     if (!user) { window.location.href = getLoginUrl(); return; }
@@ -192,7 +192,7 @@ export default function Carrierlock() {
             carrierlockId: carrierlockResult.id,
             readingText,
             flaggedCodons: [],
-            sliScores: {},
+            sliScores: { mentalNoise, bodyTension, emotionalTurbulence },
             activeFacets: {},
             confidenceLevels: {},
             microCorrection: undefined,

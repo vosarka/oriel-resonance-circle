@@ -266,6 +266,13 @@ export const rgpRouter = router({
             bodyTension:         input.bodyTension,
             emotionalTurbulence: input.emotionalTurbulence,
             breathCompletion:    input.breathCompletion,
+            // Static signature context for Resonance Context view
+            hasStaticSignature: !!vrcType,
+            vrcType,
+            vrcAuthority,
+            fractalRole,
+            primeCodonName,
+            primeCodonCenter,
           },
         };
       } catch (error) {

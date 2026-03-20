@@ -415,6 +415,33 @@ export async function getLatestCarrierlockScore(userId: number): Promise<number 
 }
 
 /**
+ * Get recent Carrierlock history for a user (last N entries, newest first).
+ */
+export async function getCarrierlockHistory(userId: number, limit = 10) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const { carrierlockStates } = await import("../drizzle/schema");
+    const rows = await db.select({
+      id: carrierlockStates.id,
+      mentalNoise: carrierlockStates.mentalNoise,
+      bodyTension: carrierlockStates.bodyTension,
+      emotionalTurbulence: carrierlockStates.emotionalTurbulence,
+      breathCompletion: carrierlockStates.breathCompletion,
+      coherenceScore: carrierlockStates.coherenceScore,
+      createdAt: carrierlockStates.createdAt,
+    })
+      .from(carrierlockStates)
+      .where(eq(carrierlockStates.userId, userId))
+      .orderBy(desc(carrierlockStates.createdAt))
+      .limit(limit);
+    return rows;
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Save a diagnostic reading
  */
 export async function saveCodonReading(

@@ -7,7 +7,6 @@ import { chatWithORIELMistral } from "./mistral-oriel";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
-import { generateElevenLabsSpeech, audioToDataUrl as elevenLabsAudioToDataUrl } from "./elevenlabs-tts";
 import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
@@ -832,6 +831,14 @@ export const appRouter = router({
       if (!ctx.user) throw new Error("User not authenticated");
       return db.getUserStaticSignatures(ctx.user.id);
     }),
+
+    // Get recent Carrierlock history for the current user
+    getCoherenceHistory: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(30).default(10) }).optional())
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+        return db.getCarrierlockHistory(ctx.user.id, input?.limit ?? 10);
+      }),
 
     // Get a single codon (dynamic) reading by ID
     getCodonReading: protectedProcedure
