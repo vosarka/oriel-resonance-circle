@@ -1,7 +1,6 @@
 import { eq, desc, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
-import { ENV } from './_core/env';
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -86,7 +85,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
 
   try {
-    const role = user.role ?? (user.openId === ENV.ownerOpenId ? 'admin' : undefined);
+    const role = user.role ?? undefined;
     const now = new Date();
 
     // Build insert values — only include fields that were explicitly provided

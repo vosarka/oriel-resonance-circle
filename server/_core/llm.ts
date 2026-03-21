@@ -209,18 +209,10 @@ const normalizeToolChoice = (
   return toolChoice;
 };
 
-const useGemini = () => ENV.geminiApiKey.length > 0;
+const resolveApiUrl = () =>
+  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
-const resolveApiUrl = () => {
-  if (useGemini()) {
-    return "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-  }
-  return ENV.forgeApiUrl && ENV.forgeApiUrl.trim().length > 0
-    ? `${ENV.forgeApiUrl.replace(/\/$/, "")}/v1/chat/completions`
-    : "https://forge.manus.im/v1/chat/completions";
-};
-
-const resolveApiKey = () => useGemini() ? ENV.geminiApiKey : ENV.forgeApiKey;
+const resolveApiKey = () => ENV.geminiApiKey;
 
 const assertApiKey = () => {
   if (!resolveApiKey()) {
@@ -304,10 +296,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     payload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = useGemini() ? 8192 : 32768;
-  if (!useGemini()) {
-    payload.thinking = { budget_tokens: 128 };
-  }
+  payload.max_tokens = 8192;
 
   const normalizedResponseFormat = normalizeResponseFormat({
     responseFormat,

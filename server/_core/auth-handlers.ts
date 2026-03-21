@@ -15,7 +15,7 @@ function getSecretKey() {
 
 async function createSessionCookie(openId: string, name: string): Promise<string> {
   const expiresAt = Math.floor((Date.now() + ONE_YEAR_MS) / 1000);
-  return new SignJWT({ openId, appId: ENV.appId || "vossari", name })
+  return new SignJWT({ openId, appId: "vossari", name })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
     .setExpirationTime(expiresAt)
     .sign(getSecretKey());
