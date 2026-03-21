@@ -80,7 +80,7 @@ export function TransmissionCard({
     e.stopPropagation();
 
     if (!user) {
-      // Redirect to Manus OAuth login
+      // Redirect to login
       window.location.href = getLoginUrl();
       return;
     }
