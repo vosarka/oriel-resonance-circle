@@ -141,6 +141,8 @@ export const appRouter = router({
     // ── Conversation management ──
     listConversations: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.user) return [];
+      // Auto-migrate orphaned messages (pre-conversation-system) into a conversation
+      await db.migrateOrphanedMessages(ctx.user.id);
       return db.getUserConversations(ctx.user.id);
     }),
 
