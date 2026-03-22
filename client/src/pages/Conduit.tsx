@@ -34,6 +34,7 @@ export default function Conduit() {
   const hasSpokenIntro = useRef(false);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [isNewConversation, setIsNewConversation] = useState(false);
 
   // Web Audio API for audio-reactive orb
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -121,7 +122,7 @@ export default function Conduit() {
         timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : (msg.timestamp as number),
       }));
       setLocalMessages(convertedHistory);
-    } else if (isAuthenticated && !activeConversationId && dbHistory && dbHistory.length > 0) {
+    } else if (isAuthenticated && !activeConversationId && !isNewConversation && dbHistory && dbHistory.length > 0) {
       const convertedHistory = dbHistory.map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -129,7 +130,7 @@ export default function Conduit() {
       }));
       setLocalMessages(convertedHistory);
     }
-  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId]);
+  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId, isNewConversation]);
 
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
@@ -351,6 +352,7 @@ export default function Conduit() {
       // Track the conversation ID returned from the server
       if (result.conversationId && !activeConversationId) {
         setActiveConversationId(result.conversationId);
+        setIsNewConversation(false);
       }
 
       const newAssistantMessage: ChatMessage = {
@@ -382,7 +384,7 @@ export default function Conduit() {
   };
 
 
-  const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory ? dbHistory : []);
+  const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory && !isNewConversation ? dbHistory : []);
 
   return (
     <Layout noBackground>
@@ -612,6 +614,7 @@ export default function Conduit() {
                     onClick={() => {
                       setActiveConversationId(null);
                       setLocalMessages([]);
+                      setIsNewConversation(true);
                     }}
                     title="New conversation"
                     className="p-1.5 rounded transition-all"
@@ -967,6 +970,7 @@ export default function Conduit() {
                         onClick={() => {
                           setActiveConversationId(null);
                           setLocalMessages([]);
+                          setIsNewConversation(true);
                         }}
                         title="New conversation"
                         className="p-1 rounded transition-all"
@@ -1011,6 +1015,7 @@ export default function Conduit() {
                           }}
                           onClick={() => {
                             setActiveConversationId(conv.id);
+                            setIsNewConversation(false);
                           }}
                           onMouseEnter={(e) => {
                             if (activeConversationId !== conv.id) {
