@@ -28,6 +28,62 @@ export async function getDb() {
   return _db;
 }
 
+/**
+ * Run pending schema migrations on startup.
+ * Uses IF NOT EXISTS / IF NOT so it's safe to call every boot.
+ */
+export async function runMigrations() {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Migrations] Skipped — no database connection");
+    return;
+  }
+
+  const migrations = [
+    // 0009: conversations table + conversationId column on chatMessages
+    `CREATE TABLE IF NOT EXISTS \`conversations\` (
+      \`id\` int AUTO_INCREMENT NOT NULL,
+      \`userId\` int NOT NULL,
+      \`title\` varchar(255) NOT NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(\`id\`),
+      INDEX \`conversations_userId_idx\` (\`userId\`)
+    )`,
+  ];
+
+  for (const sql of migrations) {
+    try {
+      await db.execute(sql);
+    } catch (error: any) {
+      // Ignore "already exists" errors
+      if (!String(error?.message).includes("already exists")) {
+        console.error("[Migrations] Error:", error);
+      }
+    }
+  }
+
+  // Add conversationId column to chatMessages if missing
+  try {
+    await db.execute(`ALTER TABLE \`chatMessages\` ADD COLUMN \`conversationId\` int NULL`);
+    console.log("[Migrations] Added conversationId column to chatMessages");
+  } catch (error: any) {
+    // Column already exists — that's fine
+    if (!String(error?.message).includes("Duplicate column")) {
+      console.error("[Migrations] Error adding conversationId:", error);
+    }
+  }
+
+  // Add index on conversationId if missing
+  try {
+    await db.execute(`CREATE INDEX \`chatMessages_conversationId_idx\` ON \`chatMessages\` (\`conversationId\`)`);
+  } catch {
+    // Index already exists — fine
+  }
+
+  console.log("[Migrations] Schema sync complete");
+}
+
 export async function getAllTransmissions() {
   const db = await getDb();
   if (!db) return [];

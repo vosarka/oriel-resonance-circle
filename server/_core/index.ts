@@ -8,6 +8,7 @@ import { auth } from "./auth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { runMigrations } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -29,6 +30,9 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 }
 
 async function startServer() {
+  // Ensure DB schema is up to date before accepting requests
+  await runMigrations();
+
   const app = express();
   const server = createServer(app);
   // Better Auth handles its own body parsing — mount BEFORE express.json()
