@@ -138,9 +138,34 @@ export const appRouter = router({
 
   // ORIEL Interface router
   oriel: router({
+    // ── Conversation management ──
+    listConversations: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return [];
+      return db.getUserConversations(ctx.user.id);
+    }),
+
+    getConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) return null;
+        const conversation = await db.getConversationById(input.id, ctx.user.id);
+        if (!conversation) return null;
+        const messages = await db.getConversationMessages(input.id, ctx.user.id);
+        return { ...conversation, messages };
+      }),
+
+    deleteConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Authentication required");
+        await db.deleteConversation(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
     chat: publicProcedure
       .input(z.object({
         message: z.string(),
+        conversationId: z.number().optional(),
         history: z.array(z.object({
           role: z.enum(['user', 'assistant']),
           content: z.string(),
@@ -153,7 +178,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
-        if (ctx.user) {
+        if (ctx.user && input.conversationId) {
+          // Load history from the specific conversation
+          const history = await db.getConversationMessages(input.conversationId, ctx.user.id);
+          conversationHistory = history.slice(-6).map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          }));
+        } else if (ctx.user) {
           const history = await db.getChatHistory(ctx.user.id, 6);
           conversationHistory = history.reverse().map(msg => ({
             role: msg.role as 'user' | 'assistant',
@@ -202,35 +234,87 @@ export const appRouter = router({
           console.warn('[ORIEL] RGP bridge error (non-fatal):', err);
         }
 
-        // Helper to call the active LLM
-        const callLLM = async (msg: string, history: typeof conversationHistory) => {
+        // Helper to call the active LLM with optional temperature
+        const callLLM = async (
+          msg: string,
+          history: typeof conversationHistory,
+          options?: { temperature?: number },
+        ) => {
           if (process.env.MISTRAL_API_KEY) {
             try {
               return await chatWithORIELMistral(msg, history, ctx.user?.id);
             } catch (mistralErr) {
               console.error("[ORIEL] Mistral failed, falling back to Gemini:", mistralErr);
-              return await gemini.chatWithORIEL(msg, history, ctx.user?.id);
+              return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
             }
           }
-          return await gemini.chatWithORIEL(msg, history, ctx.user?.id);
+          return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
         };
 
         let response = await callLLM(fullMessage, conversationHistory);
 
-        // Deduplication: check if response is too similar to recent assistant messages
+        // Deduplication with retry loop (max 2 retries, temperature escalation)
         if (conversationHistory.some(m => m.role === 'assistant')) {
           const { detectDuplication } = await import('./response-deduplication');
-          const dupCheck = detectDuplication(response, conversationHistory);
-          if (dupCheck.isDuplicate) {
-            console.warn(`[ORIEL] Duplicate detected (${(dupCheck.similarity * 100).toFixed(0)}% similar), retrying with fresh angle`);
-            const freshMsg = `${fullMessage}\n\n[SYSTEM NOTE: Your previous response covered this already. Approach from a completely different angle — different structure, different imagery, different depth. Do not rephrase your earlier answer.]`;
-            response = await callLLM(freshMsg, conversationHistory);
+          const MAX_RETRIES = 2;
+          const TEMPERATURE_ESCALATION = [1.2, 1.5];
+
+          for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+            const dupCheck = detectDuplication(response, conversationHistory);
+            if (!dupCheck.isDuplicate) break;
+
+            const isStructural = dupCheck.duplicateFrom === 'structural';
+            console.warn(
+              `[ORIEL] ${isStructural ? 'Structural' : 'Content'} duplicate detected ` +
+              `(${(dupCheck.similarity * 100).toFixed(0)}% similar), ` +
+              `retry ${attempt + 1}/${MAX_RETRIES}`
+            );
+
+            // Build summary of recent responses so LLM knows what to avoid
+            const recentAssistant = conversationHistory
+              .filter(m => m.role === 'assistant')
+              .slice(-2);
+            const summaries = recentAssistant.map((m, i) => {
+              const paragraphs = m.content.split(/\n\n+/).filter(p => p.trim()).length;
+              const lastSentence = m.content.trim().split(/[.!?]\s+/).pop()?.trim() || '';
+              return `Response ${i + 1}: ${paragraphs} paragraphs, ended with: "${lastSentence.substring(0, 60)}"`;
+            });
+            const summaryBlock = summaries.length > 0
+              ? `\nYour recent responses looked like this: ${summaries.join('; ')}. Do NOT repeat these patterns.`
+              : '';
+
+            const systemNote = isStructural
+              ? `[SYSTEM NOTE: Your response has the same structure as your recent messages ` +
+                `(same paragraph count, same closing pattern). Change your structure entirely: ` +
+                `use a different number of paragraphs, open differently, close differently. ` +
+                `If you ended with a question last time, end with a statement. ` +
+                `If you wrote 3 paragraphs, write 1 or 5.${summaryBlock}]`
+              : `[SYSTEM NOTE: Your previous response covered similar ground. ` +
+                `Approach from a completely different angle — different metaphors, ` +
+                `different structure, different depth. Do not rephrase your earlier answer. ` +
+                `Say something you have NOT said yet.${summaryBlock}]`;
+
+            const freshMsg = `${fullMessage}\n\n${systemNote}`;
+            response = await callLLM(freshMsg, conversationHistory, {
+              temperature: TEMPERATURE_ESCALATION[attempt],
+            });
           }
         }
 
+        let conversationId = input.conversationId ?? null;
+
         if (ctx.user) {
-          await db.saveChatMessage({ userId: ctx.user.id, role: "user", content: input.message });
-          await db.saveChatMessage({ userId: ctx.user.id, role: "assistant", content: response });
+          // Auto-create conversation if none provided
+          if (!conversationId) {
+            const title = input.message.length > 60
+              ? input.message.substring(0, 57) + '...'
+              : input.message;
+            const conv = await db.createConversation(ctx.user.id, title);
+            conversationId = conv?.id ?? null;
+          }
+
+          await db.saveChatMessage({ userId: ctx.user.id, conversationId, role: "user", content: input.message });
+          await db.saveChatMessage({ userId: ctx.user.id, conversationId, role: "assistant", content: response });
 
           const uid = ctx.user.id;
           (async () => {
@@ -243,7 +327,7 @@ export const appRouter = router({
           })();
         }
 
-        return { response };
+        return { response, conversationId };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {

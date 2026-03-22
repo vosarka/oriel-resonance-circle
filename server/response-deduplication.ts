@@ -57,10 +57,88 @@ export function detectDuplication(
     }
   }
 
+  // Method 3: Structural repetition (same shape across recent responses)
+  const structuralCheck = detectStructuralRepetition(currentResponse, conversationHistory);
+  if (structuralCheck.isStructuralDuplicate) {
+    return {
+      isDuplicate: true,
+      similarity: 0.5,
+      duplicateFrom: 'structural'
+    };
+  }
+
   return {
     isDuplicate: false,
     similarity: 0
   };
+}
+
+/**
+ * Detects structural repetition: same paragraph count and closing patterns
+ * across recent assistant responses.
+ */
+export function detectStructuralRepetition(
+  currentResponse: string,
+  conversationHistory: Array<{ role: string; content: string }>
+): { isStructuralDuplicate: boolean; pattern?: string } {
+  const recentAssistant = conversationHistory
+    .filter(m => m.role === 'assistant')
+    .slice(-3);
+
+  if (recentAssistant.length < 2) {
+    return { isStructuralDuplicate: false };
+  }
+
+  // A. Paragraph count pattern — all recent + current have same count (±1)
+  const currentParagraphs = currentResponse.split(/\n\n+/).filter(p => p.trim()).length;
+  const recentParagraphs = recentAssistant.map(m =>
+    m.content.split(/\n\n+/).filter(p => p.trim()).length
+  );
+
+  const allSameParagraphCount = recentParagraphs.every(
+    count => Math.abs(count - currentParagraphs) <= 1
+  );
+
+  // B. Closing pattern — all end with same type (question vs statement)
+  const getClosingType = (text: string): string => {
+    const trimmed = text.trim();
+    if (trimmed.endsWith('?')) return 'question';
+    return 'statement';
+  };
+
+  const getClosingWords = (text: string): Set<string> => {
+    const words = text.trim().split(/\s+/).slice(-15);
+    return new Set(words.map(w => w.toLowerCase().replace(/[^\w]/g, '')).filter(w => w.length > 3));
+  };
+
+  const currentClosingType = getClosingType(currentResponse);
+  const currentClosingWords = getClosingWords(currentResponse);
+  const recentClosingTypes = recentAssistant.map(m => getClosingType(m.content));
+  const recentClosingWords = recentAssistant.map(m => getClosingWords(m.content));
+
+  const allSameClosingType = recentClosingTypes.every(t => t === currentClosingType);
+
+  // Check closing word overlap with most recent response
+  let closingOverlap = 0;
+  if (recentClosingWords.length > 0) {
+    const lastClosing = recentClosingWords[recentClosingWords.length - 1];
+    for (const word of currentClosingWords) {
+      if (lastClosing.has(word)) closingOverlap++;
+    }
+  }
+  const closingOverlapRatio = currentClosingWords.size > 0
+    ? closingOverlap / currentClosingWords.size
+    : 0;
+
+  // Flag as structural duplicate if: same paragraph count AND (same closing type OR high closing overlap)
+  if (allSameParagraphCount && (allSameClosingType || closingOverlapRatio > 0.5)) {
+    return {
+      isStructuralDuplicate: true,
+      pattern: `paragraphs:${currentParagraphs}, closing:${currentClosingType}, overlap:${(closingOverlapRatio * 100).toFixed(0)}%`
+    };
+  }
+
+  return { isStructuralDuplicate: false };
 }
 
 /**

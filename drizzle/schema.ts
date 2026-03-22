@@ -77,12 +77,29 @@ export type Artifact = typeof artifacts.$inferSelect;
 export type InsertArtifact = typeof artifacts.$inferInsert;
 
 /**
+ * Conversations — groups chat messages into distinct sessions
+ */
+export const conversations = mysqlTable("conversations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** Auto-generated title from first user message */
+  title: varchar("title", { length: 255 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = typeof conversations.$inferInsert;
+
+/**
  * Chat messages for ORIEL interface
  * Stores conversation history for each user
  */
 export const chatMessages = mysqlTable("chatMessages", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
+  /** Links message to a conversation (null for legacy messages) */
+  conversationId: int("conversationId"),
   role: mysqlEnum("role", ["user", "assistant"]).notNull(),
   content: text("content").notNull(),
   timestamp: timestamp("timestamp").defaultNow().notNull(),

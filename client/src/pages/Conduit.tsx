@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Loader2, Mic, Send, History, Trash2, X, Pause, Play, Square, Paperclip } from "lucide-react";
+import { Loader2, Mic, History, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare } from "lucide-react";
 import Layout from "@/components/Layout";
 import LivingOrb from "@/components/LivingOrb";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -35,6 +33,7 @@ export default function Conduit() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasSpokenIntro = useRef(false);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
 
   // Web Audio API for audio-reactive orb
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -95,9 +94,34 @@ export default function Conduit() {
     retry: false,
   });
 
-  // Sync localMessages with dbHistory when authenticated user loads their history
+  // Conversation list
+  const { data: conversationsList, refetch: refetchConversations } = trpc.oriel.listConversations.useQuery(undefined, {
+    enabled: isAuthenticated,
+    retry: false,
+  });
+
+  // Load specific conversation messages
+  const { data: activeConvData, refetch: refetchActiveConv } = trpc.oriel.getConversation.useQuery(
+    { id: activeConversationId! },
+    { enabled: isAuthenticated && activeConversationId !== null, retry: false }
+  );
+
+  const deleteConversationMutation = trpc.oriel.deleteConversation.useMutation({
+    onSuccess: () => {
+      refetchConversations();
+    },
+  });
+
+  // Sync localMessages with active conversation or general history
   useEffect(() => {
-    if (isAuthenticated && dbHistory && dbHistory.length > 0) {
+    if (isAuthenticated && activeConversationId && activeConvData?.messages) {
+      const convertedHistory = activeConvData.messages.map(msg => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+        timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : (msg.timestamp as number),
+      }));
+      setLocalMessages(convertedHistory);
+    } else if (isAuthenticated && !activeConversationId && dbHistory && dbHistory.length > 0) {
       const convertedHistory = dbHistory.map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -105,7 +129,7 @@ export default function Conduit() {
       }));
       setLocalMessages(convertedHistory);
     }
-  }, [isAuthenticated, dbHistory]);
+  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId]);
 
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
@@ -114,11 +138,6 @@ export default function Conduit() {
     },
   });
 
-  const clearMutation = trpc.oriel.clearHistory.useMutation({
-    onError: (error) => {
-      console.error("Clear history error:", error);
-    },
-  });
 
   // Initialize speech recognition for voice input
   useEffect(() => {
@@ -321,12 +340,18 @@ export default function Conduit() {
     try {
       const result = await chatMutation.mutateAsync({
         message: userMessage,
+        conversationId: activeConversationId ?? undefined,
         history: !isAuthenticated ? localMessages : undefined,
         fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
       });
 
       // Clear attached files after sending
       setAttachedFiles([]);
+
+      // Track the conversation ID returned from the server
+      if (result.conversationId && !activeConversationId) {
+        setActiveConversationId(result.conversationId);
+      }
 
       const newAssistantMessage: ChatMessage = {
         role: "assistant",
@@ -342,6 +367,10 @@ export default function Conduit() {
 
       if (isAuthenticated) {
         refetchHistory();
+        refetchConversations();
+        if (result.conversationId) {
+          refetchActiveConv();
+        }
       }
 
       await speakText(result.response);
@@ -352,20 +381,6 @@ export default function Conduit() {
     }
   };
 
-  const handleClearHistory = async () => {
-    if (confirm("Clear all conversation history?")) {
-      localStorage.removeItem("oriel_chat_history");
-      setLocalMessages([]);
-      hasSpokenIntro.current = false;
-
-      if (isAuthenticated) {
-        await clearMutation.mutateAsync();
-        refetchHistory();
-      }
-
-      setHistoryOpen(false);
-    }
-  };
 
   const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory ? dbHistory : []);
 
@@ -577,7 +592,7 @@ export default function Conduit() {
             >
               <div className="flex items-center gap-3">
                 <p className="font-mono text-[10px] tracking-[0.35em] uppercase" style={{ color: "rgba(0,188,212,0.5)" }}>
-                  Transmission Log
+                  {activeConversationId && activeConvData ? activeConvData.title : "Transmission Log"}
                 </p>
                 <span
                   className="font-mono text-[9px] px-2 py-0.5 rounded"
@@ -592,9 +607,24 @@ export default function Conduit() {
               </div>
 
               <div className="flex items-center gap-2">
+                {isAuthenticated && (
+                  <button
+                    onClick={() => {
+                      setActiveConversationId(null);
+                      setLocalMessages([]);
+                    }}
+                    title="New conversation"
+                    className="p-1.5 rounded transition-all"
+                    style={{ color: "rgba(0,188,212,0.4)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
+                  >
+                    <Plus size={15} />
+                  </button>
+                )}
                 <button
                   onClick={() => setHistoryOpen(!historyOpen)}
-                  title="Toggle history sidebar"
+                  title="Conversations"
                   className="p-1.5 rounded transition-all"
                   style={{
                     color: historyOpen ? "rgba(0,229,255,0.8)" : "rgba(0,188,212,0.4)",
@@ -605,18 +635,6 @@ export default function Conduit() {
                 >
                   <History size={15} />
                 </button>
-                {displayMessages.length > 0 && (
-                  <button
-                    onClick={handleClearHistory}
-                    title="Clear history"
-                    className="p-1.5 rounded transition-all"
-                    style={{ color: "rgba(255,80,80,0.4)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.8)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.4)")}
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                )}
               </div>
             </div>
 
@@ -927,10 +945,10 @@ export default function Conduit() {
                 </div>
               </div>
 
-              {/* History sidebar */}
+              {/* Conversations sidebar */}
               {historyOpen && (
                 <div
-                  className="w-64 flex-shrink-0 flex flex-col overflow-hidden"
+                  className="w-72 flex-shrink-0 flex flex-col overflow-hidden"
                   style={{
                     borderLeft: "1px solid rgba(0,188,212,0.1)",
                     background: "rgba(0,0,0,0.6)",
@@ -942,41 +960,101 @@ export default function Conduit() {
                     style={{ borderBottom: "1px solid rgba(0,188,212,0.1)" }}
                   >
                     <span className="font-mono text-[9px] tracking-[0.3em] uppercase" style={{ color: "rgba(0,188,212,0.5)" }}>
-                      Session Log
+                      Conversations
                     </span>
-                    <button
-                      onClick={() => setHistoryOpen(false)}
-                      style={{ color: "rgba(0,188,212,0.4)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.7)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
-                    >
-                      <X size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setActiveConversationId(null);
+                          setLocalMessages([]);
+                        }}
+                        title="New conversation"
+                        className="p-1 rounded transition-all"
+                        style={{ color: "rgba(0,188,212,0.5)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.5)")}
+                      >
+                        <Plus size={14} />
+                      </button>
+                      <button
+                        onClick={() => setHistoryOpen(false)}
+                        style={{ color: "rgba(0,188,212,0.4)" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.7)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {displayMessages.length === 0 ? (
-                      <p className="font-mono text-[9px] text-center" style={{ color: "rgba(0,188,212,0.3)" }}>
-                        No transmissions yet...
+                  <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,188,212,0.2) transparent" }}>
+                    {!isAuthenticated ? (
+                      <p className="font-mono text-[9px] text-center py-4" style={{ color: "rgba(0,188,212,0.3)" }}>
+                        Sign in to save conversations
+                      </p>
+                    ) : !conversationsList || conversationsList.length === 0 ? (
+                      <p className="font-mono text-[9px] text-center py-4" style={{ color: "rgba(0,188,212,0.3)" }}>
+                        No conversations yet...
                       </p>
                     ) : (
-                      displayMessages.map((msg, idx) => (
+                      conversationsList.map((conv) => (
                         <div
-                          key={idx}
-                          className="pl-3 py-2"
-                          style={{ borderLeft: `1px solid ${msg.role === "user" ? "rgba(0,188,212,0.25)" : "rgba(0,229,255,0.15)"}` }}
+                          key={conv.id}
+                          className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
+                          style={{
+                            background: activeConversationId === conv.id
+                              ? "rgba(0,188,212,0.1)"
+                              : "transparent",
+                            border: activeConversationId === conv.id
+                              ? "1px solid rgba(0,188,212,0.2)"
+                              : "1px solid transparent",
+                          }}
+                          onClick={() => {
+                            setActiveConversationId(conv.id);
+                          }}
+                          onMouseEnter={(e) => {
+                            if (activeConversationId !== conv.id) {
+                              e.currentTarget.style.background = "rgba(0,188,212,0.05)";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (activeConversationId !== conv.id) {
+                              e.currentTarget.style.background = "transparent";
+                            }
+                          }}
                         >
-                          <p className="font-mono text-[8px] mb-1 tracking-widest uppercase" style={{ color: "rgba(0,188,212,0.5)" }}>
-                            {msg.role === "user" ? "You" : "ORIEL"}
-                            {msg.timestamp && (
-                              <span className="ml-1" style={{ color: "rgba(0,188,212,0.3)" }}>
-                                {new Date(msg.timestamp).toLocaleTimeString()}
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-[10px] leading-relaxed line-clamp-2" style={{ color: "rgba(200,230,240,0.6)" }}>
-                            {msg.content}
-                          </p>
+                          <MessageSquare size={12} style={{ color: "rgba(0,188,212,0.4)", flexShrink: 0 }} />
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className="font-mono text-[10px] truncate"
+                              style={{ color: activeConversationId === conv.id ? "rgba(0,229,255,0.85)" : "rgba(200,230,240,0.6)" }}
+                            >
+                              {conv.title}
+                            </p>
+                            <p className="font-mono text-[8px] mt-0.5" style={{ color: "rgba(0,188,212,0.3)" }}>
+                              {new Date(conv.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                              {' '}
+                              {new Date(conv.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm("Delete this conversation?")) {
+                                deleteConversationMutation.mutate({ id: conv.id });
+                                if (activeConversationId === conv.id) {
+                                  setActiveConversationId(null);
+                                  setLocalMessages([]);
+                                }
+                              }
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
+                            style={{ color: "rgba(255,80,80,0.5)" }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.8)")}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.5)")}
+                          >
+                            <Trash2 size={11} />
+                          </button>
                         </div>
                       ))
                     )}

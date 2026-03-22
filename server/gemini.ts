@@ -170,7 +170,8 @@ Respond ONLY to the user's most recent message. The conversation history above i
 export async function chatWithORIEL(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }> = [],
-  userId?: number
+  userId?: number,
+  options?: { temperature?: number },
 ) {
   try {
     // Build complete system prompt: Base + UMM context + Field State (v3.0)
@@ -206,6 +207,7 @@ export async function chatWithORIEL(
 
     const response = await invokeLLM({
       messages: messages as any,
+      ...(options?.temperature !== undefined ? { temperature: options.temperature } : {}),
     });
 
     if (!response.choices || !response.choices[0]) {

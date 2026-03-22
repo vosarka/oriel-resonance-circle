@@ -261,7 +261,7 @@ export async function buildFieldStateContext(
   const [profile, coherenceScore, recentResponses, hasReads] = await Promise.all([
     fetchUserProfile(userId),
     fetchLatestCoherenceScore(userId),
-    fetchRecentOrielResponses(userId, 3),
+    fetchRecentOrielResponses(userId, 5),
     userHasReadings(userId),
   ]);
 
