@@ -188,11 +188,9 @@ export const appRouter = router({
             content: msg.content,
           }));
         } else if (ctx.user) {
-          const history = await db.getChatHistory(ctx.user.id, 6);
-          conversationHistory = history.reverse().map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content,
-          }));
+          // New conversation: start with empty history.
+          // UMM context (injected into system prompt) provides cross-conversation memory.
+          conversationHistory = [];
         } else if (input.history && input.history.length > 0) {
           conversationHistory = input.history;
         }
