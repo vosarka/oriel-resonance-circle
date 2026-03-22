@@ -840,6 +840,26 @@ export const appRouter = router({
         return db.getCarrierlockHistory(ctx.user.id, input?.limit ?? 10);
       }),
 
+    // Get profile sigil data: fractal role, VRC type, Lumens (points)
+    getProfileSigil: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) throw new Error("User not authenticated");
+      const [sig, readingCount] = await Promise.all([
+        db.getLatestStaticSignature(ctx.user.id),
+        db.getReadingCount(ctx.user.id),
+      ]);
+      const donated: number = (ctx.user as any).donated || 0;
+      const lumens = Math.floor(donated) + (readingCount * 5);
+      return {
+        fractalRole: sig?.fractalRole || sig?.vrcType || null,
+        vrcType: sig?.vrcType || null,
+        vrcAuthority: sig?.authorityNode || sig?.vrcAuthority || null,
+        primeCodonName: (sig?.primeStack as any)?.[0]?.codonName || null,
+        lumens,
+        readingCount,
+        donated,
+      };
+    }),
+
     // Get a single codon (dynamic) reading by ID
     getCodonReading: protectedProcedure
       .input(z.object({ id: z.number() }))

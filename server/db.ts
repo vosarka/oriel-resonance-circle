@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 
@@ -702,6 +702,42 @@ export async function getUserStaticSignatures(userId: number) {
   } catch (error) {
     console.error("[Database] Failed to get user static signatures:", error);
     return [];
+  }
+}
+
+/**
+ * Count total readings (static signatures) for a user — used for Lumens calculation.
+ */
+export async function getReadingCount(userId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const result = await db.select({ total: count() }).from(staticSignatures)
+      .where(eq(staticSignatures.userId, userId));
+    return result[0]?.total ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Get the latest static signature for a user (just fractal role / type / authority)
+ */
+export async function getLatestStaticSignature(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const results = await db.select().from(staticSignatures)
+      .where(eq(staticSignatures.userId, userId))
+      .orderBy(desc(staticSignatures.createdAt))
+      .limit(1);
+
+    if (!results[0]) return null;
+    return parseStaticSignatureRow(results[0]);
+  } catch (error) {
+    console.error("[Database] Failed to get latest static signature:", error);
+    return null;
   }
 }
 
