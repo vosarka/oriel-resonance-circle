@@ -138,9 +138,34 @@ export const appRouter = router({
 
   // ORIEL Interface router
   oriel: router({
+    // ── Conversation management ──
+    listConversations: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) return [];
+      return db.getUserConversations(ctx.user.id);
+    }),
+
+    getConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) return null;
+        const conversation = await db.getConversationById(input.id, ctx.user.id);
+        if (!conversation) return null;
+        const messages = await db.getConversationMessages(input.id, ctx.user.id);
+        return { ...conversation, messages };
+      }),
+
+    deleteConversation: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("Authentication required");
+        await db.deleteConversation(input.id, ctx.user.id);
+        return { success: true };
+      }),
+
     chat: publicProcedure
       .input(z.object({
         message: z.string(),
+        conversationId: z.number().optional(),
         history: z.array(z.object({
           role: z.enum(['user', 'assistant']),
           content: z.string(),
@@ -153,7 +178,14 @@ export const appRouter = router({
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
-        if (ctx.user) {
+        if (ctx.user && input.conversationId) {
+          // Load history from the specific conversation
+          const history = await db.getConversationMessages(input.conversationId, ctx.user.id);
+          conversationHistory = history.slice(-6).map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content,
+          }));
+        } else if (ctx.user) {
           const history = await db.getChatHistory(ctx.user.id, 6);
           conversationHistory = history.reverse().map(msg => ({
             role: msg.role as 'user' | 'assistant',
@@ -269,9 +301,20 @@ export const appRouter = router({
           }
         }
 
+        let conversationId = input.conversationId ?? null;
+
         if (ctx.user) {
-          await db.saveChatMessage({ userId: ctx.user.id, role: "user", content: input.message });
-          await db.saveChatMessage({ userId: ctx.user.id, role: "assistant", content: response });
+          // Auto-create conversation if none provided
+          if (!conversationId) {
+            const title = input.message.length > 60
+              ? input.message.substring(0, 57) + '...'
+              : input.message;
+            const conv = await db.createConversation(ctx.user.id, title);
+            conversationId = conv?.id ?? null;
+          }
+
+          await db.saveChatMessage({ userId: ctx.user.id, conversationId, role: "user", content: input.message });
+          await db.saveChatMessage({ userId: ctx.user.id, conversationId, role: "assistant", content: response });
 
           const uid = ctx.user.id;
           (async () => {
@@ -284,7 +327,7 @@ export const appRouter = router({
           })();
         }
 
-        return { response };
+        return { response, conversationId };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {

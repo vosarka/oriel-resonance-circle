@@ -1,6 +1,6 @@
 import { eq, desc, and, count } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, InsertSignal, InsertArtifact, InsertChatMessage, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -207,6 +207,62 @@ export async function updateArtifact(id: number, updates: Partial<InsertArtifact
   await db.update(artifacts).set(updates).where(eq(artifacts.id, id));
 }
 
+// ============================================================================
+// CONVERSATIONS
+// ============================================================================
+
+export async function createConversation(userId: number, title: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(conversations).values({ userId, title });
+  const inserted = await db.select().from(conversations)
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.createdAt))
+    .limit(1);
+  return inserted[0];
+}
+
+export async function getUserConversations(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(conversations)
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.updatedAt));
+}
+
+export async function getConversationById(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function updateConversationTitle(id: number, userId: number, title: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(conversations).set({ title }).where(
+    and(eq(conversations.id, id), eq(conversations.userId, userId))
+  );
+}
+
+export async function deleteConversation(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Delete messages first, then conversation
+  await db.delete(chatMessages).where(
+    and(eq(chatMessages.conversationId, id), eq(chatMessages.userId, userId))
+  );
+  await db.delete(conversations).where(
+    and(eq(conversations.id, id), eq(conversations.userId, userId))
+  );
+}
+
+// ============================================================================
+// CHAT MESSAGES
+// ============================================================================
+
 // Chat message queries
 export async function getChatHistory(userId: number, limit: number = 50) {
   const db = await getDb();
@@ -215,6 +271,14 @@ export async function getChatHistory(userId: number, limit: number = 50) {
     .where(eq(chatMessages.userId, userId))
     .orderBy(desc(chatMessages.timestamp))
     .limit(limit);
+}
+
+export async function getConversationMessages(conversationId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(chatMessages)
+    .where(and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.userId, userId)))
+    .orderBy(chatMessages.timestamp);
 }
 
 export async function saveChatMessage(message: InsertChatMessage) {
