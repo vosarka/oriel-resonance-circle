@@ -1,4 +1,4 @@
-import { eq, desc, and, count } from "drizzle-orm";
+import { eq, desc, and, count, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 
@@ -284,6 +284,29 @@ export async function getUserConversations(userId: number) {
   return db.select().from(conversations)
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.updatedAt));
+}
+
+export async function migrateOrphanedMessages(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Find messages without a conversationId
+  const orphans = await db.select().from(chatMessages)
+    .where(and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId)))
+    .orderBy(chatMessages.timestamp);
+  if (orphans.length === 0) return;
+  // Create a conversation for them
+  const title = "Previous conversations";
+  await db.insert(conversations).values({ userId, title });
+  const inserted = await db.select().from(conversations)
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.createdAt))
+    .limit(1);
+  const conv = inserted[0];
+  if (!conv) return;
+  // Assign all orphaned messages to this conversation
+  await db.update(chatMessages)
+    .set({ conversationId: conv.id })
+    .where(and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId)));
 }
 
 export async function getConversationById(id: number, userId: number) {
