@@ -28,7 +28,7 @@ export function detectDuplication(
       const commonLength = findLongestCommonSubstring(responseNormalized, historyNormalized);
       const substringSimilarity = commonLength / Math.max(responseLength, historyNormalized.length);
 
-      if (substringSimilarity > 0.4) {
+      if (substringSimilarity > 0.25) {
         return {
           isDuplicate: true,
           similarity: substringSimilarity,
@@ -38,15 +38,15 @@ export function detectDuplication(
 
       // Method 2: Key term overlap (catches semantic/rephrased duplicates)
       const historyTerms = new Set(extractKeyTerms(msg.content));
-      if (responseTerms.size >= 8 && historyTerms.size >= 8) {
+      if (responseTerms.size >= 6 && historyTerms.size >= 6) {
         let overlap = 0;
         for (const term of responseTerms) {
           if (historyTerms.has(term)) overlap++;
         }
         const termSimilarity = overlap / Math.min(responseTerms.size, historyTerms.size);
 
-        // 70%+ key term overlap with enough terms = semantically the same
-        if (termSimilarity > 0.7) {
+        // 55%+ key term overlap = semantically too similar
+        if (termSimilarity > 0.55) {
           return {
             isDuplicate: true,
             similarity: termSimilarity,

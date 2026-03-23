@@ -185,7 +185,10 @@ export const appRouter = router({
           const history = await db.getConversationMessages(input.conversationId, ctx.user.id);
           conversationHistory = history.slice(-6).map(msg => ({
             role: msg.role as 'user' | 'assistant',
-            content: msg.content,
+            // Truncate old assistant messages — full text causes the LLM to parrot them
+            content: msg.role === 'assistant' && msg.content.length > 300
+              ? msg.content.substring(0, 300) + '...'
+              : msg.content,
           }));
         } else if (ctx.user) {
           // New conversation: start with empty history.
@@ -234,21 +237,22 @@ export const appRouter = router({
           console.warn('[ORIEL] RGP bridge error (non-fatal):', err);
         }
 
-        // Helper to call the active LLM with optional temperature
+        // Helper to call the active LLM — Gemini primary, Mistral fallback
         const callLLM = async (
           msg: string,
           history: typeof conversationHistory,
           options?: { temperature?: number },
         ) => {
-          if (process.env.MISTRAL_API_KEY) {
-            try {
+          try {
+            return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
+          } catch (geminiErr) {
+            console.error("[ORIEL] Gemini failed:", geminiErr);
+            if (process.env.MISTRAL_API_KEY) {
+              console.log("[ORIEL] Falling back to Mistral...");
               return await chatWithORIELMistral(msg, history, ctx.user?.id);
-            } catch (mistralErr) {
-              console.error("[ORIEL] Mistral failed, falling back to Gemini:", mistralErr);
-              return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
             }
+            throw geminiErr;
           }
-          return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
         };
 
         let response = await callLLM(fullMessage, conversationHistory);

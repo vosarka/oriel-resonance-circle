@@ -32,7 +32,24 @@
       "Bash(node:*)",
       "Bash(taskkill:*)",
       "Bash(cmd //c \"taskkill /PID 4616 /F\")",
-      "Bash(pnpm check:*)"
+      "Bash(pnpm check:*)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm vitest:*)",
+      "Bash(npx tsc:*)",
+      "Bash(grep -n \"coherence\\\\|Coherence\" client/src/pages/*.tsx)",
+      "Bash(xargs grep:*)",
+      "Read(//c/Users/Eredari/Desktop/Mizerie Digitala/_COWORK/_shared/**)",
+      "Read(//c/Users/Eredari/Desktop/Mizerie Digitala/_COWORK/**)",
+      "Bash(npx vite:*)",
+      "Bash(pip install:*)",
+      "Bash(npx vitest:*)",
+      "WebFetch(domain:orionmessenger.io)",
+      "Bash(pnpm remove:*)",
+      "Bash(wc -l oriel-*.ts)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(grep -rn \"saveCarrierlockState\\\\|saveCodonReading\\\\|saveStaticSignature\" '/c/Users/Eredari/Desktop/Mizerie Digitala/_COWORK/Vossari_Conduit-Hub/code/oriel-resonance-circle' --include=*.ts --include=*.tsx)",
+      "Bash(grep -rn \"orielMemories\\\\|orielUserProfiles\\\\|orielOversoulPatterns\" '/c/Users/Eredari/Desktop/Mizerie Digitala/_COWORK/Vossari_Conduit-Hub/code/oriel-resonance-circle/server' --include=*.ts)",
+      "Bash(grep -rn \"saveCarrierlock\\\\|saveReading\\\\|saveStaticReading\\\\|rgp.staticSignature\\\\|rgp.dynamicState\" '/c/Users/Eredari/Desktop/Mizerie Digitala/_COWORK/Vossari_Conduit-Hub/code/oriel-resonance-circle/client/src' --include=*.tsx --include=*.ts)"
     ]
   },
   "prefersReducedMotion": false
