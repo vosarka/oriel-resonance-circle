@@ -1,6 +1,6 @@
 import { eq, desc, and, count, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -105,6 +105,35 @@ export async function getTransmissionById(id: number) {
     console.error("[Database] Failed to fetch transmission:", error);
     return null;
   }
+}
+
+export async function createTransmission(data: InsertTransmission) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(transmissions).values(data);
+}
+
+export async function updateTransmission(id: number, data: Partial<InsertTransmission>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(transmissions).set(data).where(eq(transmissions.id, id));
+}
+
+export async function deleteTransmission(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.transaction(async (tx) => {
+    await tx.delete(bookmarks).where(eq(bookmarks.transmissionId, id));
+    await tx.delete(transmissions).where(eq(transmissions.id, id));
+  });
+}
+
+export async function getNextTxNumber(): Promise<number> {
+  const db = await getDb();
+  if (!db) return 1;
+  const result = await db.select({ max: transmissions.txNumber }).from(transmissions);
+  const maxNum = result[0]?.max ?? 0;
+  return maxNum + 1;
 }
 
 export async function getAllOracles() {

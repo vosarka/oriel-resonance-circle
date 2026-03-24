@@ -1,5 +1,5 @@
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import * as db from "./db";
 import * as gemini from "./gemini";
@@ -988,6 +988,74 @@ export const appRouter = router({
           return { success: false };
         }
       }),
+  }),
+
+  // ── Admin Dashboard ─────────────────────────────────────────────────────────
+  admin: router({
+    transmissions: router({
+      list: adminProcedure.query(async () => {
+        return db.getAllTransmissions();
+      }),
+
+      create: adminProcedure
+        .input(z.object({
+          title: z.string().min(1),
+          field: z.string().min(1),
+          coreMessage: z.string().min(1),
+          tags: z.string().min(1),
+          microSigil: z.string().min(1),
+          signalClarity: z.string().default("98.7%"),
+          channelStatus: z.enum(["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).default("OPEN"),
+          encodedArchetype: z.string().optional(),
+          leftPanelPrompt: z.string().optional(),
+          centerPanelPrompt: z.string().optional(),
+          rightPanelPrompt: z.string().optional(),
+          hashtags: z.string().optional(),
+          cycle: z.string().default("FOUNDATION ARC"),
+          status: z.enum(["Draft", "Confirmed", "Deprecated", "Mythic"]).default("Confirmed"),
+        }))
+        .mutation(async ({ input }) => {
+          const nextNum = await db.getNextTxNumber();
+          const txId = `TX-${String(nextNum).padStart(4, "0")}`;
+          await db.createTransmission({
+            txId,
+            txNumber: nextNum,
+            ...input,
+          });
+          return { success: true, txId, txNumber: nextNum };
+        }),
+
+      update: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          title: z.string().min(1).optional(),
+          field: z.string().min(1).optional(),
+          coreMessage: z.string().min(1).optional(),
+          tags: z.string().optional(),
+          microSigil: z.string().optional(),
+          signalClarity: z.string().optional(),
+          channelStatus: z.enum(["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).optional(),
+          encodedArchetype: z.string().optional(),
+          leftPanelPrompt: z.string().optional(),
+          centerPanelPrompt: z.string().optional(),
+          rightPanelPrompt: z.string().optional(),
+          hashtags: z.string().optional(),
+          cycle: z.string().optional(),
+          status: z.enum(["Draft", "Confirmed", "Deprecated", "Mythic"]).optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const { id, ...data } = input;
+          await db.updateTransmission(id, data);
+          return { success: true };
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+          await db.deleteTransmission(input.id);
+          return { success: true };
+        }),
+    }),
   }),
 });
 
