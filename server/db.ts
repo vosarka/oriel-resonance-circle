@@ -329,13 +329,15 @@ export async function updateConversationTitle(id: number, userId: number, title:
 export async function deleteConversation(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Delete messages first, then conversation
-  await db.delete(chatMessages).where(
-    and(eq(chatMessages.conversationId, id), eq(chatMessages.userId, userId))
-  );
-  await db.delete(conversations).where(
-    and(eq(conversations.id, id), eq(conversations.userId, userId))
-  );
+  // Delete messages and conversation atomically
+  await db.transaction(async (tx) => {
+    await tx.delete(chatMessages).where(
+      and(eq(chatMessages.conversationId, id), eq(chatMessages.userId, userId))
+    );
+    await tx.delete(conversations).where(
+      and(eq(conversations.id, id), eq(conversations.userId, userId))
+    );
+  });
 }
 
 // ============================================================================

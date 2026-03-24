@@ -385,11 +385,20 @@ export const appRouter = router({
             audioUrl,
           };
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          console.error("[generateSpeech] Failed to generate speech:", errorMsg);
+          const internalMsg = error instanceof Error ? error.message : String(error);
+          console.error("[generateSpeech] Failed to generate speech:", internalMsg);
+          // Map known errors; never leak internal details to client
+          const knownErrors: Record<string, string> = {
+            "ECONNREFUSED": "Voice service is temporarily unavailable",
+            "ETIMEDOUT": "Voice service timed out",
+            "rate limit": "Voice service rate limit reached, please try again shortly",
+          };
+          const clientMsg = Object.entries(knownErrors).find(([key]) =>
+            internalMsg.toLowerCase().includes(key.toLowerCase())
+          )?.[1] ?? "Text-to-Speech generation failed";
           return {
             success: false,
-            error: errorMsg,
+            error: clientMsg,
           };
         }
       }),
@@ -446,7 +455,10 @@ export const appRouter = router({
             const dayOfYear = Math.floor((birthDateObj.getTime() - new Date(birthDateObj.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
 
             // Map day of year to codon (64 codons, ~5.7 days per codon)
-            const primaryCodon = Math.floor((dayOfYear / 365) * 64) + 1;
+            // Use actual days in year (365 or 366) to avoid out-of-bounds on leap years
+            const year = birthDateObj.getFullYear();
+            const daysInYear = ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? 366 : 365;
+            const primaryCodon = Math.min(64, Math.floor((dayOfYear / daysInYear) * 64) + 1);
             const secondaryCodon = ((primaryCodon + 31) % 64) + 1; // Harmonic partner offset
             const tertiaryCodon = ((primaryCodon + 15) % 64) + 1; // Quarter offset
 

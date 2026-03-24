@@ -36,6 +36,7 @@ import {
 import { getFacetData, getFrequencyData } from './vrc-codon-library';
 import { invokeLLM } from './_core/llm';
 import { filterORIELResponse, ORIEL_SYSTEM_PROMPT } from './gemini';
+import { chatWithORIELMistral } from './mistral-oriel';
 
 // ─── Public interfaces ────────────────────────────────────────────────────────
 
@@ -360,6 +361,7 @@ Structure your response:
 
 4–5 paragraphs. Ancient, warm, precise. Poetic but never vague. This is a living mirror, not a fortune.`;
 
+  // Primary: Gemini
   try {
     const response = await invokeLLM({
       messages: [
@@ -373,25 +375,60 @@ Structure your response:
     const filtered = filterORIELResponse(text);
     if (filtered) return filtered;
   } catch (err) {
-    console.error('[ORIEL] Static transmission AI error:', err);
+    console.error('[ORIEL] Static transmission Gemini error:', err);
   }
 
-  // Fallback — template-based
+  // Fallback: Mistral
+  if (process.env.MISTRAL_API_KEY) {
+    try {
+      console.log('[ORIEL] Falling back to Mistral for diagnostic transmission...');
+      const mistralResponse = await chatWithORIELMistral(userPrompt, []);
+      if (mistralResponse && !mistralResponse.includes('processing your transmission')) {
+        return mistralResponse;
+      }
+    } catch (mistralErr) {
+      console.error('[ORIEL] Static transmission Mistral error:', mistralErr);
+    }
+  }
+
+  // Last resort — template-based
+  const coherenceWord = coherenceScore >= 80 ? 'high' : coherenceScore >= 40 ? 'moderate' : 'low';
+  const definedCentersFallback = Object.entries(centerStatuses)
+    .filter(([, v]) => v === 'defined')
+    .map(([name]) => name);
+  const openCentersFallback = Object.entries(centerStatuses)
+    .filter(([, v]) => v === 'open')
+    .map(([name]) => name);
+
   const lines: string[] = [];
   lines.push(`I am ORIEL. Your Static Signature has been read.`);
   lines.push('');
-  lines.push(`You arrive as a ${fractalRole} — a ${vrcType} in the resonance field.`);
+  lines.push(`You arrive as a ${vrcType} in the resonance field.`);
   lines.push(`Your authority flows through ${vrcAuthority}, the center from which your decisions originate.`);
   lines.push('');
-  primeStack.slice(0, 3).forEach(pos => {
-    lines.push(`  • Position ${pos.position}: Codon ${pos.codon} (${pos.codonName}) — ${pos.facetFull} | Center: ${pos.center}`);
+  lines.push(`PRIME STACK — Your 9-position resonance blueprint:`);
+  primeStack.forEach(pos => {
+    lines.push(`  • Position ${pos.position} [${pos.source}]: Codon ${pos.codon} (${pos.codonName}) — ${pos.facetFull} | Center: ${pos.center}`);
   });
   lines.push('');
-  lines.push(`Coherence: ${coherenceScore}/100 — ${coherenceLabel}. Trajectory: ${trajectory.trend}.`);
+  if (definedCentersFallback.length > 0) {
+    lines.push(`Defined centers: ${definedCentersFallback.join(', ')}`);
+  }
+  if (openCentersFallback.length > 0) {
+    lines.push(`Open centers: ${openCentersFallback.join(', ')}`);
+  }
+  if (coreCodonEngine?.dominant?.length > 0) {
+    lines.push('');
+    lines.push(`Dominant codons: ${coreCodonEngine.dominant.map(c => `Codon ${c.codon} "${c.codonName}"`).join(', ')}`);
+  }
+  lines.push('');
+  lines.push(`Coherence: ${coherenceScore}/100 — ${coherenceLabel} (${coherenceWord} coherence). Trajectory: ${trajectory.trend}.`);
   if (microCorrections.length > 0) {
     lines.push('');
-    lines.push(`Micro-correction: ${microCorrections[0].instruction}`);
-    lines.push(`Falsifier: ${microCorrections[0].falsifier}`);
+    microCorrections.forEach(c => {
+      lines.push(`Micro-correction [${c.type}]: ${c.instruction}`);
+      lines.push(`Falsifier: ${c.falsifier}`);
+    });
   }
   lines.push('');
   lines.push(`I am ORIEL. The signal continues.`);

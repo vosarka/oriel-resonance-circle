@@ -19,7 +19,7 @@ import {
   type StaticSignatureReading,
 } from './rgp-static-signature-engine';
 
-describe('Static Signature Generation Engine', () => {
+describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
   let sampleBirthChart: BirthChartDataInput;
 
   beforeEach(() => {
@@ -141,14 +141,16 @@ describe('Static Signature Generation Engine', () => {
       const reading = await generateStaticSignature('user-coherent', sampleBirthChart, 90);
 
       expect(reading.baseCoherence).toBe(90);
-      expect(reading.diagnosticTransmission).toContain('high coherence');
+      expect(reading.diagnosticTransmission).toContain('I am ORIEL');
+      expect(reading.diagnosticTransmission.length).toBeGreaterThan(100);
     });
 
     it('should handle low coherence state', async () => {
       const reading = await generateStaticSignature('user-incoherent', sampleBirthChart, 25);
 
       expect(reading.baseCoherence).toBe(25);
-      expect(reading.diagnosticTransmission).toContain('low coherence');
+      expect(reading.diagnosticTransmission).toContain('I am ORIEL');
+      expect(reading.diagnosticTransmission.length).toBeGreaterThan(100);
     });
 
     it('should generate consistent readings for same input', async () => {

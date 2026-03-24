@@ -242,9 +242,12 @@ export default function DynamicReading() {
 
   // Compute trend from history
   const trend = useMemo(() => {
-    if (!coherenceHistory || coherenceHistory.length < 2) return null;
-    const recent = coherenceHistory.slice(0, 3).reduce((s, h) => s + h.coherenceScore, 0) / Math.min(3, coherenceHistory.length);
-    const older = coherenceHistory.slice(-3).reduce((s, h) => s + h.coherenceScore, 0) / Math.min(3, coherenceHistory.length);
+    if (!coherenceHistory || coherenceHistory.length < 4) return null;
+    const recentSlice = coherenceHistory.slice(0, 3);
+    const olderSlice = coherenceHistory.slice(3, 6);
+    if (olderSlice.length === 0) return null;
+    const recent = recentSlice.reduce((s, h) => s + h.coherenceScore, 0) / recentSlice.length;
+    const older = olderSlice.reduce((s, h) => s + h.coherenceScore, 0) / olderSlice.length;
     const delta = recent - older;
     if (delta > 5) return { label: "RISING", color: C.teal, symbol: "↑" };
     if (delta < -5) return { label: "FALLING", color: C.red, symbol: "↓" };
