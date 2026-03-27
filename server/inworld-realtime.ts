@@ -280,7 +280,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
  * Enqueue a user message save onto the per-connection promise chain.
  * Captures and clears the transcript before awaiting I/O to prevent races.
  */
-function enqueueSaveUser(state: SessionState, clientWs: WebSocket): void {
+function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void {
   const content = state.currentUserTranscript.trim();
   state.currentUserTranscript = "";
   if (!content) return;
@@ -295,7 +295,7 @@ function enqueueSaveUser(state: SessionState, clientWs: WebSocket): void {
         console.log(`[Realtime] Created conversation ${state.conversationId}`);
 
         // Notify client so it can update its sidebar
-        if (state.conversationId && clientWs.readyState === WebSocket.OPEN) {
+        if (state.conversationId && clientWs && clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(JSON.stringify({
             type: "conversation.created",
             conversationId: state.conversationId,
@@ -342,7 +342,7 @@ function enqueueSaveAssistant(state: SessionState): void {
 
 function flushTranscripts(state: SessionState): void {
   if (state.currentUserTranscript.trim()) {
-    enqueueSaveUser(state, null as any);
+    enqueueSaveUser(state, null);
   }
   if (state.currentAssistantTranscript.trim()) {
     enqueueSaveAssistant(state);
