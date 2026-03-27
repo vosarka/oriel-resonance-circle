@@ -54,7 +54,14 @@ export async function handleStreamingChat(
 
     // Generate ORIEL response
     console.log('[Streaming] Generating response for:', req.message.substring(0, 100));
-    const response = await gemini.chatWithORIEL(req.message, conversationHistory);
+    let response = await gemini.chatWithORIEL(req.message, conversationHistory);
+    if (
+      response === 'The signal is disrupted. Please try again in a moment.' &&
+      process.env.MISTRAL_API_KEY
+    ) {
+      const { chatWithORIELMistral } = await import('./mistral-oriel');
+      response = await chatWithORIELMistral(req.message, conversationHistory, req.userId);
+    }
 
     // Validate response
     if (!response || response.length === 0) {

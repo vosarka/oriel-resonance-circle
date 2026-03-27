@@ -342,6 +342,7 @@ export default function Conduit() {
       const result = await chatMutation.mutateAsync({
         message: userMessage,
         conversationId: activeConversationId ?? undefined,
+        createNewConversation: isNewConversation,
         history: !isAuthenticated ? localMessages : undefined,
         fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
       });
@@ -992,6 +993,30 @@ export default function Conduit() {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-3 space-y-1" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,188,212,0.2) transparent" }}>
+                    {isAuthenticated && !activeConversationId && !isNewConversation && (
+                      <div
+                        className="px-3 py-2 rounded-lg mb-2 font-mono text-[9px]"
+                        style={{
+                          background: "rgba(255,170,0,0.08)",
+                          border: "1px solid rgba(255,170,0,0.25)",
+                          color: "rgba(255,200,120,0.75)",
+                        }}
+                      >
+                        No active conversation. Press + before sending to save this chat.
+                      </div>
+                    )}
+                    {isAuthenticated && isNewConversation && (
+                      <div
+                        className="px-3 py-2 rounded-lg mb-2 font-mono text-[9px]"
+                        style={{
+                          background: "rgba(0,188,212,0.08)",
+                          border: "1px solid rgba(0,188,212,0.25)",
+                          color: "rgba(0,229,255,0.8)",
+                        }}
+                      >
+                        New conversation ready. Your next message will create it.
+                      </div>
+                    )}
                     {!isAuthenticated ? (
                       <p className="font-mono text-[9px] text-center py-4" style={{ color: "rgba(0,188,212,0.3)" }}>
                         Sign in to save conversations

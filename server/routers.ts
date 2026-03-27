@@ -168,6 +168,7 @@ export const appRouter = router({
       .input(z.object({
         message: z.string(),
         conversationId: z.number().optional(),
+        createNewConversation: z.boolean().optional().default(false),
         history: z.array(z.object({
           role: z.enum(['user', 'assistant']),
           content: z.string(),
@@ -244,7 +245,15 @@ export const appRouter = router({
           options?: { temperature?: number },
         ) => {
           try {
-            return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
+            const geminiResponse = await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
+            if (
+              geminiResponse === "The signal is disrupted. Please try again in a moment." &&
+              process.env.MISTRAL_API_KEY
+            ) {
+              console.log("[ORIEL] Gemini returned disruption sentinel, falling back to Mistral...");
+              return await chatWithORIELMistral(msg, history, ctx.user?.id);
+            }
+            return geminiResponse;
           } catch (geminiErr) {
             console.error("[ORIEL] Gemini failed:", geminiErr);
             if (process.env.MISTRAL_API_KEY) {
@@ -308,8 +317,8 @@ export const appRouter = router({
         let conversationId = input.conversationId ?? null;
 
         if (ctx.user) {
-          // Auto-create conversation if none provided
-          if (!conversationId) {
+          // Create a conversation only when explicitly requested by client
+          if (!conversationId && input.createNewConversation) {
             const title = input.message.length > 60
               ? input.message.substring(0, 57) + '...'
               : input.message;
