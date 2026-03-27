@@ -15,8 +15,6 @@ interface ChatMessage {
 export default function Conduit() {
   const { user, isAuthenticated } = useAuth();
   const [message, setMessage] = useState("");
-  const [orbState, setOrbState] = useState<"idle" | "processing" | "speaking">("idle");
-  const [subtitle, setSubtitle] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -127,7 +125,7 @@ export default function Conduit() {
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
       console.error("Chat error:", error);
-      setOrbState("idle");
+
     },
   });
 
@@ -177,15 +175,15 @@ export default function Conduit() {
 
   const speakText = async (text: string) => {
     if (voicePreference === "none") {
-      setOrbState("idle");
-      setSubtitle("");
+
+
       setIsSpeaking(false);
       return;
     }
 
-    setOrbState("speaking");
+
     setIsSpeaking(true);
-    setSubtitle(text);
+
 
     let textForTTS = text;
     if (hasSpokenIntro.current) {
@@ -203,8 +201,8 @@ export default function Conduit() {
           audioRef.current.volume = voiceVolume;
 
           audioRef.current.onended = () => {
-            setOrbState("idle");
-            setSubtitle("");
+      
+      
             setIsSpeaking(false);
             setIsPaused(false);
           };
@@ -237,42 +235,30 @@ export default function Conduit() {
       utterance.pitch = 0.9;
       utterance.volume = voiceVolume;
       utterance.onend = () => {
-        setOrbState("idle");
-        setSubtitle("");
+  
+  
         setIsSpeaking(false);
       };
       window.speechSynthesis.speak(utterance);
     } else {
-      setOrbState("idle");
-      setSubtitle("");
+
+
       setIsSpeaking(false);
     }
   };
 
   const handlePauseVoice = () => {
-    if (audioRef.current && audioRef.current.parentNode) {
-      try {
-        if (isPaused) {
-          const playPromise = audioRef.current.play();
-          if (playPromise !== undefined) {
-            playPromise.catch(error => console.error("Failed to resume audio:", error));
-          }
-          setIsPaused(false);
-        } else {
-          audioRef.current.pause();
-          setIsPaused(true);
-        }
-      } catch (error) {
-        console.error("Error in handlePauseVoice:", error);
-      }
-    } else if ("speechSynthesis" in window) {
+    if (!audioRef.current) return;
+    try {
       if (isPaused) {
-        window.speechSynthesis.resume();
+        audioRef.current.play().catch(error => console.error("Failed to resume audio:", error));
         setIsPaused(false);
       } else {
-        window.speechSynthesis.pause();
+        audioRef.current.pause();
         setIsPaused(true);
       }
+    } catch (error) {
+      console.error("Error in handlePauseVoice:", error);
     }
   };
 
@@ -285,8 +271,8 @@ export default function Conduit() {
       if (window.speechSynthesis) {
         window.speechSynthesis.cancel();
       }
-      setOrbState("idle");
-      setSubtitle("");
+
+
       setIsSpeaking(false);
       setIsPaused(false);
     } catch (error) {
@@ -299,7 +285,7 @@ export default function Conduit() {
 
     const userMessage = message.trim();
     setMessage("");
-    setOrbState("processing");
+
 
     const newUserMessage: ChatMessage = {
       role: "user",
@@ -351,7 +337,7 @@ export default function Conduit() {
       await speakText(result.response);
     } catch (error) {
       console.error("Chat error:", error);
-      setOrbState("idle");
+
     }
   };
 

@@ -164,7 +164,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
         const msg = JSON.parse(data.toString());
 
         // Intercept transcript events for saving to DB
-        handleInworldEvent(msg, state);
+        handleInworldEvent(msg, state, clientWs);
 
         // Forward everything to the client
         if (clientWs.readyState === WebSocket.OPEN) {
@@ -222,7 +222,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
 // ── Event interception for transcript saving ─────────────────────────────────
 
-function handleInworldEvent(msg: any, state: SessionState): void {
+function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket): void {
   const type = msg?.type;
   if (!type) return;
 
@@ -231,7 +231,7 @@ function handleInworldEvent(msg: any, state: SessionState): void {
     case "conversation.item.input_audio_transcription.completed":
       if (msg.transcript) {
         state.currentUserTranscript = msg.transcript;
-        saveUserMessage(state);
+        saveUserMessage(state, clientWs);
       }
       break;
 
@@ -260,7 +260,7 @@ function handleInworldEvent(msg: any, state: SessionState): void {
   }
 }
 
-async function saveUserMessage(state: SessionState): Promise<void> {
+async function saveUserMessage(state: SessionState, clientWs?: WebSocket): Promise<void> {
   const content = state.currentUserTranscript.trim();
   if (!content) return;
 
@@ -271,6 +271,14 @@ async function saveUserMessage(state: SessionState): Promise<void> {
       const conv = await db.createConversation(state.userId, title);
       state.conversationId = conv?.id ?? null;
       console.log(`[Realtime] Created conversation ${state.conversationId}`);
+
+      // Notify client so it can update its sidebar
+      if (state.conversationId && clientWs && clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(JSON.stringify({
+          type: "conversation.created",
+          conversationId: state.conversationId,
+        }));
+      }
     }
 
     await db.saveChatMessage({

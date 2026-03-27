@@ -17,6 +17,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
   const [currentAssistantText, setCurrentAssistantText] = useState("");
+  const currentAssistantTextRef = useRef("");
   const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -31,6 +32,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // Keep ref in sync with state for use in stale closures
+  useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -171,6 +175,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       });
   }, [getAudioContext]);
 
+  // Keep a ref to the latest handler so the WebSocket always calls the current version
+  const handleServerEventRef = useRef(handleServerEvent);
+  useEffect(() => { handleServerEventRef.current = handleServerEvent; }, [handleServerEvent]);
+
   // ── WebSocket connection ────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -191,7 +199,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
-        handleServerEvent(msg);
+        handleServerEventRef.current(msg);
       } catch {
         // Binary data or unparseable
       }
@@ -232,6 +240,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         // Config confirmed
         break;
 
+      case "conversation.created":
+        // Server created a conversation — notify parent
+        if (msg.conversationId) {
+          onConversationCreated(msg.conversationId);
+        }
+        break;
+
       case "input_audio_buffer.speech_started":
         setOrbState("processing");
         break;
@@ -255,26 +270,29 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "response.audio_transcript.delta":
         if (msg.delta) {
           setCurrentAssistantText((prev) => prev + msg.delta);
+          currentAssistantTextRef.current += msg.delta;
         }
         break;
 
       case "response.audio_transcript.done":
-        // Finalize the assistant transcript
+        // Finalize the assistant transcript — use ref for latest value
         setTranscript((prev) => [
           ...prev,
-          { role: "assistant", text: msg.transcript || currentAssistantText },
+          { role: "assistant", text: msg.transcript || currentAssistantTextRef.current },
         ]);
         setCurrentAssistantText("");
+        currentAssistantTextRef.current = "";
         break;
 
       case "response.done":
-        // Response finished
-        if (currentAssistantText.trim()) {
+        // Response finished — use ref for latest value
+        if (currentAssistantTextRef.current.trim()) {
           setTranscript((prev) => [
             ...prev,
-            { role: "assistant", text: currentAssistantText },
+            { role: "assistant", text: currentAssistantTextRef.current },
           ]);
           setCurrentAssistantText("");
+          currentAssistantTextRef.current = "";
         }
         break;
 
@@ -283,7 +301,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setStatus("error");
         break;
     }
-  }, [playAudioChunk, startMicCapture, currentAssistantText]);
+  }, [playAudioChunk, startMicCapture, onConversationCreated]);
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
 
