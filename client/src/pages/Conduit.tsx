@@ -248,7 +248,19 @@ export default function Conduit() {
   };
 
   const handlePauseVoice = () => {
-    if (!audioRef.current) return;
+    if (!audioRef.current) {
+      // speechSynthesis fallback path
+      if ("speechSynthesis" in window) {
+        if (isPaused) {
+          window.speechSynthesis.resume();
+          setIsPaused(false);
+        } else {
+          window.speechSynthesis.pause();
+          setIsPaused(true);
+        }
+      }
+      return;
+    }
     try {
       if (isPaused) {
         audioRef.current.play().catch(error => console.error("Failed to resume audio:", error));

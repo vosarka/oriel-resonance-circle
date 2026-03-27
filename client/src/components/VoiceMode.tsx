@@ -176,7 +176,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   }, [getAudioContext]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
-  const handleServerEventRef = useRef(handleServerEvent);
+  const handleServerEventRef = useRef<(msg: any) => void>(() => {});
   useEffect(() => { handleServerEventRef.current = handleServerEvent; }, [handleServerEvent]);
 
   // ── WebSocket connection ────────────────────────────────────────────────────
