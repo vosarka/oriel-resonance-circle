@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { runMigrations } from "../db";
+import { setupRealtimeWebSocket } from "../inworld-realtime";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -51,6 +52,9 @@ async function startServer() {
       createContext,
     })
   );
+  // Inworld Realtime WebSocket proxy (must be before Vite, which also handles upgrades)
+  setupRealtimeWebSocket(server);
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);

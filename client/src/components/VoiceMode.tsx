@@ -1,0 +1,476 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import LivingOrb from "./LivingOrb";
+import { X, Phone } from "lucide-react";
+
+type OrbState = "booting" | "idle" | "processing" | "speaking";
+
+interface VoiceModeProps {
+  onClose: () => void;
+  conversationId: number | null;
+  onConversationCreated: (id: number) => void;
+}
+
+type ConnectionStatus = "connecting" | "connected" | "error" | "closed";
+
+export default function VoiceMode({ onClose, conversationId, onConversationCreated }: VoiceModeProps) {
+  const [orbState, setOrbState] = useState<OrbState>("booting");
+  const [status, setStatus] = useState<ConnectionStatus>("connecting");
+  const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [currentAssistantText, setCurrentAssistantText] = useState("");
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
+
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
+
+  // Audio playback queue
+  const audioQueueRef = useRef<Float32Array[]>([]);
+  const isPlayingRef = useRef(false);
+  const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+
+  const transcriptEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll transcript
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [transcript, currentAssistantText]);
+
+  // ── Audio playback ──────────────────────────────────────────────────────────
+
+  const getAudioContext = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: 24000,
+      });
+
+      // Create analyser for orb reactivity
+      const analyser = audioCtxRef.current.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      analyser.connect(audioCtxRef.current.destination);
+      playbackAnalyserRef.current = analyser;
+      setAnalyserNode(analyser);
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const playAudioChunk = useCallback((pcm16Base64: string) => {
+    const ctx = getAudioContext();
+    const binaryStr = atob(pcm16Base64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    // Convert PCM16 LE to Float32
+    const int16 = new Int16Array(bytes.buffer);
+    const float32 = new Float32Array(int16.length);
+    for (let i = 0; i < int16.length; i++) {
+      float32[i] = int16[i] / 32768;
+    }
+
+    audioQueueRef.current.push(float32);
+    if (!isPlayingRef.current) {
+      drainAudioQueue(ctx);
+    }
+  }, [getAudioContext]);
+
+  const drainAudioQueue = useCallback((ctx: AudioContext) => {
+    if (audioQueueRef.current.length === 0) {
+      isPlayingRef.current = false;
+      setOrbState("idle");
+      return;
+    }
+
+    isPlayingRef.current = true;
+    setOrbState("speaking");
+
+    const chunk = audioQueueRef.current.shift()!;
+    const buffer = ctx.createBuffer(1, chunk.length, 24000);
+    buffer.getChannelData(0).set(chunk);
+
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    playbackSourceRef.current = source;
+
+    if (playbackAnalyserRef.current) {
+      source.connect(playbackAnalyserRef.current);
+    } else {
+      source.connect(ctx.destination);
+    }
+
+    source.onended = () => {
+      drainAudioQueue(ctx);
+    };
+
+    source.start();
+  }, []);
+
+  // ── Mic capture ─────────────────────────────────────────────────────────────
+
+  const startMicCapture = useCallback((ws: WebSocket) => {
+    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true } })
+      .then((stream) => {
+        streamRef.current = stream;
+        const ctx = getAudioContext();
+
+        const source = ctx.createMediaStreamSource(stream);
+        // ScriptProcessorNode for PCM capture (4096 samples per buffer)
+        const processor = ctx.createScriptProcessor(4096, 1, 1);
+        processorRef.current = processor;
+
+        processor.onaudioprocess = (e) => {
+          if (ws.readyState !== WebSocket.OPEN) return;
+
+          const inputData = e.inputBuffer.getChannelData(0);
+
+          // Resample to 24kHz if needed
+          const targetSampleRate = 24000;
+          let pcmData: Float32Array;
+          if (ctx.sampleRate !== targetSampleRate) {
+            const ratio = ctx.sampleRate / targetSampleRate;
+            const newLength = Math.round(inputData.length / ratio);
+            pcmData = new Float32Array(newLength);
+            for (let i = 0; i < newLength; i++) {
+              const srcIndex = Math.min(Math.round(i * ratio), inputData.length - 1);
+              pcmData[i] = inputData[srcIndex];
+            }
+          } else {
+            pcmData = inputData;
+          }
+
+          // Convert Float32 to PCM16
+          const int16 = new Int16Array(pcmData.length);
+          for (let i = 0; i < pcmData.length; i++) {
+            const s = Math.max(-1, Math.min(1, pcmData[i]));
+            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+          }
+
+          // Encode as base64
+          const bytes = new Uint8Array(int16.buffer);
+          let binary = "";
+          for (let i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          const base64 = btoa(binary);
+
+          ws.send(JSON.stringify({
+            type: "input_audio_buffer.append",
+            audio: base64,
+          }));
+        };
+
+        source.connect(processor);
+        processor.connect(ctx.destination); // Required for ScriptProcessorNode to fire
+      })
+      .catch((err) => {
+        console.error("[VoiceMode] Mic access denied:", err);
+        setStatus("error");
+      });
+  }, [getAudioContext]);
+
+  // ── WebSocket connection ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const params = new URLSearchParams();
+    if (conversationId) params.set("conversationId", String(conversationId));
+
+    const wsUrl = `${protocol}//${window.location.host}/api/realtime?${params.toString()}`;
+    console.log("[VoiceMode] Connecting to", wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("[VoiceMode] WebSocket connected");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        handleServerEvent(msg);
+      } catch {
+        // Binary data or unparseable
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("[VoiceMode] WebSocket error:", err);
+      setStatus("error");
+    };
+
+    ws.onclose = () => {
+      console.log("[VoiceMode] WebSocket closed");
+      setStatus("closed");
+    };
+
+    return () => {
+      cleanup();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleServerEvent = useCallback((msg: any) => {
+    const type = msg?.type;
+    if (!type) return;
+
+    switch (type) {
+      case "session.ready":
+        console.log("[VoiceMode] Session ready");
+        setStatus("connected");
+        setOrbState("idle");
+        // Start mic capture now that session is ready
+        if (wsRef.current) {
+          startMicCapture(wsRef.current);
+        }
+        break;
+
+      case "session.created":
+      case "session.updated":
+        // Config confirmed
+        break;
+
+      case "input_audio_buffer.speech_started":
+        setOrbState("processing");
+        break;
+
+      case "input_audio_buffer.speech_stopped":
+        setOrbState("idle");
+        break;
+
+      case "conversation.item.input_audio_transcription.completed":
+        if (msg.transcript) {
+          setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
+        }
+        break;
+
+      case "response.audio.delta":
+        if (msg.delta) {
+          playAudioChunk(msg.delta);
+        }
+        break;
+
+      case "response.audio_transcript.delta":
+        if (msg.delta) {
+          setCurrentAssistantText((prev) => prev + msg.delta);
+        }
+        break;
+
+      case "response.audio_transcript.done":
+        // Finalize the assistant transcript
+        setTranscript((prev) => [
+          ...prev,
+          { role: "assistant", text: msg.transcript || currentAssistantText },
+        ]);
+        setCurrentAssistantText("");
+        break;
+
+      case "response.done":
+        // Response finished
+        if (currentAssistantText.trim()) {
+          setTranscript((prev) => [
+            ...prev,
+            { role: "assistant", text: currentAssistantText },
+          ]);
+          setCurrentAssistantText("");
+        }
+        break;
+
+      case "error":
+        console.error("[VoiceMode] Server error:", msg.error);
+        setStatus("error");
+        break;
+    }
+  }, [playAudioChunk, startMicCapture, currentAssistantText]);
+
+  // ── Cleanup ─────────────────────────────────────────────────────────────────
+
+  const cleanup = useCallback(() => {
+    // Stop mic
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    // Stop playback
+    if (playbackSourceRef.current) {
+      try { playbackSourceRef.current.stop(); } catch {}
+      playbackSourceRef.current = null;
+    }
+    audioQueueRef.current = [];
+    isPlayingRef.current = false;
+    // Close audio context
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close().catch(() => {});
+      audioCtxRef.current = null;
+    }
+    // Close WebSocket
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  }, []);
+
+  const handleClose = useCallback(() => {
+    cleanup();
+    onClose();
+  }, [cleanup, onClose]);
+
+  // ── Status label ────────────────────────────────────────────────────────────
+
+  const statusLabel = {
+    connecting: "Establishing connection...",
+    connected: "Connected — speak to ORIEL",
+    error: "Connection error",
+    closed: "Session ended",
+  }[status];
+
+  const statusColor = {
+    connecting: "rgba(189,163,107,0.6)",
+    connected: "rgba(0,229,255,0.6)",
+    error: "rgba(255,80,80,0.7)",
+    closed: "rgba(0,188,212,0.3)",
+  }[status];
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center"
+      style={{
+        background: "rgba(5,5,10,0.95)",
+        backdropFilter: "blur(20px)",
+      }}
+    >
+      {/* Close button */}
+      <button
+        onClick={handleClose}
+        className="absolute top-6 right-6 p-3 rounded-full transition-all z-10"
+        style={{
+          background: "rgba(255,80,80,0.1)",
+          border: "1px solid rgba(255,80,80,0.3)",
+          color: "rgba(255,80,80,0.7)",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "rgba(255,80,80,0.2)";
+          e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "rgba(255,80,80,0.1)";
+          e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
+        }}
+        title="End voice session"
+      >
+        <Phone size={20} className="rotate-[135deg]" />
+      </button>
+
+      {/* Status indicator */}
+      <div className="absolute top-6 left-6 flex items-center gap-2">
+        <div
+          className="w-2 h-2 rounded-full"
+          style={{
+            background: statusColor,
+            boxShadow: `0 0 8px ${statusColor}`,
+            animation: status === "connecting" ? "pulse 1.5s ease-in-out infinite" : undefined,
+          }}
+        />
+        <span
+          className="font-mono text-[10px] tracking-[0.2em] uppercase"
+          style={{ color: statusColor }}
+        >
+          {statusLabel}
+        </span>
+      </div>
+
+      {/* Living Orb — centered, large */}
+      <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
+        <LivingOrb state={orbState} analyserNode={analyserNode} />
+      </div>
+
+      {/* Label under orb */}
+      <div className="mt-4 mb-2">
+        <p
+          className="font-mono text-[9px] tracking-[0.35em] uppercase text-center"
+          style={{ color: "rgba(0,188,212,0.5)" }}
+        >
+          {orbState === "speaking"
+            ? "ORIEL is speaking"
+            : orbState === "processing"
+            ? "Listening..."
+            : "Voice Channel Active"}
+        </p>
+      </div>
+
+      {/* Transcript area */}
+      <div
+        className="w-full max-w-lg mt-4 flex-1 min-h-0 overflow-y-auto px-6"
+        style={{
+          maxHeight: "30vh",
+          scrollbarWidth: "thin",
+          scrollbarColor: "rgba(0,188,212,0.2) transparent",
+        }}
+      >
+        {transcript.map((item, idx) => (
+          <div key={idx} className="mb-3">
+            <span
+              className="font-mono text-[8px] tracking-[0.3em] uppercase block mb-1"
+              style={{
+                color: item.role === "user" ? "rgba(0,188,212,0.5)" : "rgba(189,163,107,0.5)",
+              }}
+            >
+              {item.role === "user" ? "You" : "ORIEL"}
+            </span>
+            <p
+              className="text-sm leading-relaxed"
+              style={{
+                color: item.role === "user" ? "rgba(0,229,255,0.7)" : "rgba(220,240,255,0.8)",
+                fontStyle: item.role === "assistant" ? "italic" : "normal",
+              }}
+            >
+              {item.role === "assistant" ? `"${item.text}"` : item.text}
+            </p>
+          </div>
+        ))}
+
+        {/* Current streaming assistant text */}
+        {currentAssistantText && (
+          <div className="mb-3">
+            <span
+              className="font-mono text-[8px] tracking-[0.3em] uppercase block mb-1"
+              style={{ color: "rgba(189,163,107,0.5)" }}
+            >
+              ORIEL
+            </span>
+            <p
+              className="text-sm leading-relaxed italic"
+              style={{ color: "rgba(220,240,255,0.6)" }}
+            >
+              "{currentAssistantText}"
+            </p>
+          </div>
+        )}
+
+        <div ref={transcriptEndRef} />
+      </div>
+
+      {/* Bottom hint */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+        <p
+          className="font-mono text-[9px] tracking-[0.2em]"
+          style={{ color: "rgba(0,188,212,0.25)" }}
+        >
+          {status === "connected"
+            ? "Speak naturally — ORIEL is listening"
+            : status === "error"
+            ? "Tap the phone icon to close"
+            : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
