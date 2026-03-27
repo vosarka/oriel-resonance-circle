@@ -179,50 +179,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       });
   }, [getAudioContext]);
 
-  // Keep a ref to the latest handler so the WebSocket always calls the current version
-  const handleServerEventRef = useRef<(msg: any) => void>(() => {});
-  useEffect(() => { handleServerEventRef.current = handleServerEvent; }, [handleServerEvent]);
-
-  // ── WebSocket connection ────────────────────────────────────────────────────
-
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const params = new URLSearchParams();
-    if (conversationId) params.set("conversationId", String(conversationId));
-
-    const wsUrl = `${protocol}//${window.location.host}/api/realtime?${params.toString()}`;
-    console.log("[VoiceMode] Connecting to", wsUrl);
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("[VoiceMode] WebSocket connected");
-    };
-
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        handleServerEventRef.current(msg);
-      } catch {
-        // Binary data or unparseable
-      }
-    };
-
-    ws.onerror = (err) => {
-      console.error("[VoiceMode] WebSocket error:", err);
-      setStatus("error");
-    };
-
-    ws.onclose = () => {
-      console.log("[VoiceMode] WebSocket closed");
-      setStatus("closed");
-    };
-
-    return () => {
-      cleanup();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // ── Server event handler ────────────────────────────────────────────────────
 
   const handleServerEvent = useCallback((msg: any) => {
     const type = msg?.type;
@@ -289,12 +246,17 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "response.done":
-        // Response finished — use ref for latest value
+        // response.audio_transcript.done should have already finalized;
+        // only add if there's unflushed streaming text (edge case)
         if (currentAssistantTextRef.current.trim()) {
-          setTranscript((prev) => [
-            ...prev,
-            { role: "assistant", text: currentAssistantTextRef.current },
-          ]);
+          setTranscript((prev) => {
+            const last = prev[prev.length - 1];
+            // Avoid duplicate if the same text was just added
+            if (last?.role === "assistant" && last.text === currentAssistantTextRef.current.trim()) {
+              return prev;
+            }
+            return [...prev, { role: "assistant", text: currentAssistantTextRef.current }];
+          });
           setCurrentAssistantText("");
           currentAssistantTextRef.current = "";
         }
@@ -306,6 +268,51 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
     }
   }, [playAudioChunk, startMicCapture, onConversationCreated]);
+
+  // Keep a ref to the latest handler so the WebSocket always calls the current version
+  const handleServerEventRef = useRef<(msg: any) => void>(() => {});
+  useEffect(() => { handleServerEventRef.current = handleServerEvent; }, [handleServerEvent]);
+
+  // ── WebSocket connection ────────────────────────────────────────────────────
+
+  useEffect(() => {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const params = new URLSearchParams();
+    if (conversationId) params.set("conversationId", String(conversationId));
+
+    const wsUrl = `${protocol}//${window.location.host}/api/realtime?${params.toString()}`;
+    console.log("[VoiceMode] Connecting to", wsUrl);
+
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      console.log("[VoiceMode] WebSocket connected");
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        handleServerEventRef.current(msg);
+      } catch {
+        // Binary data or unparseable
+      }
+    };
+
+    ws.onerror = (err) => {
+      console.error("[VoiceMode] WebSocket error:", err);
+      setStatus("error");
+    };
+
+    ws.onclose = () => {
+      console.log("[VoiceMode] WebSocket closed");
+      setStatus("closed");
+    };
+
+    return () => {
+      cleanup();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Cleanup ─────────────────────────────────────────────────────────────────
 
