@@ -14,8 +14,8 @@
 import { Server as HttpServer, IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { parse as parseUrl } from "url";
-import { parse as parseCookie } from "cookie";
 import { auth } from "./_core/auth";
+import { ENV } from "./_core/env";
 import * as db from "./db";
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 
@@ -57,6 +57,8 @@ interface SessionState {
   conversationId: number | null;
   currentUserTranscript: string;
   currentAssistantTranscript: string;
+  /** Per-connection promise chain to serialize DB writes */
+  saveQueue: Promise<void>;
 }
 
 /**
@@ -64,8 +66,6 @@ interface SessionState {
  */
 async function resolveUser(req: IncomingMessage): Promise<{ id: number } | null> {
   try {
-    const cookies = parseCookie(req.headers.cookie || "");
-
     // Build a minimal headers object for Better Auth
     const headers = new Headers();
     if (req.headers.cookie) {
@@ -114,16 +114,32 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       return;
     }
 
+    // ── Validate conversation ownership ──────────────────────────────────
+    let conversationId: number | null = null;
+    if (query.conversationId) {
+      const parsedId = parseInt(query.conversationId as string, 10);
+      if (!isNaN(parsedId)) {
+        const conv = await db.getConversationById(parsedId, user.id);
+        if (conv) {
+          conversationId = parsedId;
+        } else {
+          console.warn(`[Realtime] Conversation ${parsedId} not owned by user ${user.id}`);
+          // Don't reject — just start a fresh conversation
+        }
+      }
+    }
+
     // ── Session state ────────────────────────────────────────────────────
     const state: SessionState = {
       userId: user.id,
-      conversationId: query.conversationId ? parseInt(query.conversationId as string, 10) : null,
+      conversationId,
       currentUserTranscript: "",
       currentAssistantTranscript: "",
+      saveQueue: Promise.resolve(),
     };
 
     // ── Connect to Inworld ───────────────────────────────────────────────
-    const apiKey = process.env.INWORLD_API_KEY;
+    const apiKey = ENV.inworldApiKey;
     if (!apiKey) {
       console.error("[Realtime] INWORLD_API_KEY not set");
       clientWs.close(4002, "Server misconfigured");
@@ -202,7 +218,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
     clientWs.on("close", () => {
       console.log("[Realtime] Client disconnected");
-      // Save any remaining transcripts
+      // Save any remaining transcripts (chained onto the queue)
       flushTranscripts(state);
       if (inworldWs.readyState === WebSocket.OPEN) {
         inworldWs.close();
@@ -231,7 +247,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     case "conversation.item.input_audio_transcription.completed":
       if (msg.transcript) {
         state.currentUserTranscript = msg.transcript;
-        saveUserMessage(state, clientWs);
+        enqueueSaveUser(state, clientWs);
       }
       break;
 
@@ -247,78 +263,88 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
       if (msg.transcript) {
         state.currentAssistantTranscript = msg.transcript;
       }
-      saveAssistantMessage(state);
+      enqueueSaveAssistant(state);
       break;
 
     // Alternative: full response done
     case "response.done":
       // If we have an unsaved assistant transcript, save it
       if (state.currentAssistantTranscript.trim()) {
-        saveAssistantMessage(state);
+        enqueueSaveAssistant(state);
       }
       break;
   }
 }
 
-async function saveUserMessage(state: SessionState, clientWs?: WebSocket): Promise<void> {
+/**
+ * Enqueue a user message save onto the per-connection promise chain.
+ * Captures and clears the transcript before awaiting I/O to prevent races.
+ */
+function enqueueSaveUser(state: SessionState, clientWs: WebSocket): void {
   const content = state.currentUserTranscript.trim();
+  state.currentUserTranscript = "";
   if (!content) return;
 
-  try {
-    // Auto-create conversation on first message
-    if (!state.conversationId) {
-      const title = content.length > 60 ? content.substring(0, 57) + "..." : content;
-      const conv = await db.createConversation(state.userId, title);
-      state.conversationId = conv?.id ?? null;
-      console.log(`[Realtime] Created conversation ${state.conversationId}`);
+  state.saveQueue = state.saveQueue.then(async () => {
+    try {
+      // Auto-create conversation on first message
+      if (!state.conversationId) {
+        const title = content.length > 60 ? content.substring(0, 57) + "..." : content;
+        const conv = await db.createConversation(state.userId, title);
+        state.conversationId = conv?.id ?? null;
+        console.log(`[Realtime] Created conversation ${state.conversationId}`);
 
-      // Notify client so it can update its sidebar
-      if (state.conversationId && clientWs && clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(JSON.stringify({
-          type: "conversation.created",
-          conversationId: state.conversationId,
-        }));
+        // Notify client so it can update its sidebar
+        if (state.conversationId && clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(JSON.stringify({
+            type: "conversation.created",
+            conversationId: state.conversationId,
+          }));
+        }
       }
+
+      await db.saveChatMessage({
+        userId: state.userId,
+        conversationId: state.conversationId,
+        role: "user",
+        content,
+      });
+      console.log(`[Realtime] Saved user message (${content.length} chars)`);
+    } catch (err) {
+      console.error("[Realtime] Failed to save user message:", err);
     }
-
-    await db.saveChatMessage({
-      userId: state.userId,
-      conversationId: state.conversationId,
-      role: "user",
-      content,
-    });
-    console.log(`[Realtime] Saved user message (${content.length} chars)`);
-  } catch (err) {
-    console.error("[Realtime] Failed to save user message:", err);
-  }
-
-  state.currentUserTranscript = "";
+  });
 }
 
-async function saveAssistantMessage(state: SessionState): Promise<void> {
+/**
+ * Enqueue an assistant message save onto the per-connection promise chain.
+ * Captures and clears the transcript before awaiting I/O to prevent races.
+ */
+function enqueueSaveAssistant(state: SessionState): void {
   const content = state.currentAssistantTranscript.trim();
+  state.currentAssistantTranscript = "";
   if (!content || !state.conversationId) return;
 
-  try {
-    await db.saveChatMessage({
-      userId: state.userId,
-      conversationId: state.conversationId,
-      role: "assistant",
-      content,
-    });
-    console.log(`[Realtime] Saved assistant message (${content.length} chars)`);
-  } catch (err) {
-    console.error("[Realtime] Failed to save assistant message:", err);
-  }
-
-  state.currentAssistantTranscript = "";
+  state.saveQueue = state.saveQueue.then(async () => {
+    try {
+      await db.saveChatMessage({
+        userId: state.userId,
+        conversationId: state.conversationId,
+        role: "assistant",
+        content,
+      });
+      console.log(`[Realtime] Saved assistant message (${content.length} chars)`);
+    } catch (err) {
+      console.error("[Realtime] Failed to save assistant message:", err);
+    }
+  });
 }
 
 function flushTranscripts(state: SessionState): void {
   if (state.currentUserTranscript.trim()) {
-    saveUserMessage(state).catch(() => {});
+    enqueueSaveUser(state, null as any);
   }
   if (state.currentAssistantTranscript.trim()) {
-    saveAssistantMessage(state).catch(() => {});
+    enqueueSaveAssistant(state);
   }
 }

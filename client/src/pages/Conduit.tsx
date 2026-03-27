@@ -372,6 +372,7 @@ export default function Conduit() {
             setVoiceMode(false);
             refetchConversations();
             refetchHistory();
+            refetchActiveConv();
           }}
           conversationId={activeConversationId}
           onConversationCreated={(id) => {
@@ -452,6 +453,8 @@ export default function Conduit() {
               conversationsList.map((conv) => (
                 <div
                   key={conv.id}
+                  role="button"
+                  tabIndex={0}
                   className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                   style={{
                     background: activeConversationId === conv.id
@@ -465,6 +468,14 @@ export default function Conduit() {
                     setActiveConversationId(conv.id);
                     setIsNewConversation(false);
                     setSidebarOpen(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setActiveConversationId(conv.id);
+                      setIsNewConversation(false);
+                      setSidebarOpen(false);
+                    }
                   }}
                   onMouseEnter={(e) => {
                     if (activeConversationId !== conv.id) {
@@ -808,16 +819,15 @@ export default function Conduit() {
                   }
                   const reader = new FileReader();
                   reader.onload = () => {
-                    const arrayBuffer = reader.result as ArrayBuffer;
-                    const base64 = btoa(
-                      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-                    );
+                    const dataUrl = reader.result as string;
+                    // Strip the "data:<mime>;base64," prefix to get raw base64
+                    const base64 = dataUrl.split(",", 2)[1] ?? "";
                     setAttachedFiles(prev => {
                       if (prev.length >= 2) return prev;
                       return [...prev, { name: file.name, data: base64 }];
                     });
                   };
-                  reader.readAsArrayBuffer(file);
+                  reader.readAsDataURL(file);
                 });
 
                 e.target.value = "";

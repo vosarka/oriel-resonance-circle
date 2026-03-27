@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import LivingOrb from "./LivingOrb";
+import LivingOrb from "@/components/LivingOrb";
 import { X, Phone } from "lucide-react";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
@@ -167,7 +167,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         };
 
         source.connect(processor);
-        processor.connect(ctx.destination); // Required for ScriptProcessorNode to fire
+        // Connect through a zero-gain node so ScriptProcessorNode fires without routing mic audio to speakers
+        const silentSink = ctx.createGain();
+        silentSink.gain.value = 0;
+        processor.connect(silentSink);
+        silentSink.connect(ctx.destination);
       })
       .catch((err) => {
         console.error("[VoiceMode] Mic access denied:", err);
