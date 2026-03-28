@@ -204,11 +204,11 @@ function Scene({
       }
     }
 
-    curInRef.current += (targetIn - curInRef.current) * 0.2
-    curOutRef.current += (targetOut - curOutRef.current) * 0.2
+    curInRef.current += (targetIn - curInRef.current) * 0.35
+    curOutRef.current += (targetOut - curOutRef.current) * 0.35
 
-    const targetSpeed = 0.1 + (1 - Math.pow(curOutRef.current - 1, 2)) * 0.9
-    animSpeedRef.current += (targetSpeed - animSpeedRef.current) * 0.12
+    const targetSpeed = 0.2 + (1 - Math.pow(curOutRef.current - 1, 2)) * 1.8
+    animSpeedRef.current += (targetSpeed - animSpeedRef.current) * 0.2
 
     u.uAnimation.value += delta * animSpeedRef.current
     u.uInputVolume.value = curInRef.current
@@ -414,12 +414,12 @@ void main() {
         abs(theta / PI - 1.0)
     );
 
-    // Add noise to the angle for a flow-like distortion (reduced for flatter look)
-    float noise = flow(decomposed, radius * 0.03 - uAnimation * 0.2) - 0.5;
-    theta += noise * mix(0.08, 0.25, uOutputVolume);
+    // Add noise to the angle for a flow-like distortion — amplified by output volume
+    float noise = flow(decomposed, radius * 0.03 - uAnimation * 0.35) - 0.5;
+    theta += noise * mix(0.12, 0.7, uOutputVolume);
 
-    // Initialize the base color to background (#0a0a0e)
-    vec4 color = vec4(0.039, 0.039, 0.055, 1.0);
+    // Initialize the base color to background (#05050a)
+    vec4 color = vec4(0.02, 0.02, 0.039, 1.0);
 
     // Original parameters for the ovals in polar coordinates
     float originalCenters[7] = float[7](0.0, 0.5 * PI, 1.0 * PI, 1.5 * PI, 2.0 * PI, 2.5 * PI, 3.0 * PI);
@@ -427,7 +427,7 @@ void main() {
     // Parameters for the animated centers in polar coordinates
     float centers[7];
     for (int i = 0; i < 7; i++) {
-        centers[i] = originalCenters[i] + 0.5 * sin(uTime / 20.0 + uOffsets[i]);
+        centers[i] = originalCenters[i] + mix(0.5, 1.2, uOutputVolume) * sin(uTime / 10.0 + uOffsets[i]);
     }
 
     float a, b;
@@ -436,8 +436,8 @@ void main() {
     // Check if the pixel is inside any of the ovals
     for (int i = 0; i < 7; i++) {
         float noise = texture(uPerlinTexture, vec2(mod(centers[i] + uTime * 0.05, 1.0), 0.5)).r;
-        a = 0.5 + noise * 0.3; // Increased for more coverage
-        b = noise * mix(3.5, 2.5, uInputVolume); // Increased height for fuller appearance
+        a = 0.5 + noise * mix(0.3, 0.6, uOutputVolume); // Wider when speaking
+        b = noise * mix(3.5, 1.8, uInputVolume + uOutputVolume); // More reactive height
         bool reverseGradient = (i % 2 == 1); // Reverse gradient for every second oval
 
         // Calculate the distance in polar coordinates
@@ -464,11 +464,12 @@ void main() {
     float ringRadius1 = sharpRing(decomposed, uTime * 0.1);
     float ringRadius2 = smoothRing(decomposed, uTime * 0.1);
 
-    // Adjust rings based on input volume (reduced for flatter appearance)
-    float inputRadius1 = radius + uInputVolume * 0.2;
-    float inputRadius2 = radius + uInputVolume * 0.15;
-    float opacity1 = mix(0.2, 0.6, uInputVolume);
-    float opacity2 = mix(0.15, 0.45, uInputVolume);
+    // Adjust rings based on volume — more reactive
+    float vol = max(uInputVolume, uOutputVolume);
+    float inputRadius1 = radius + vol * 0.35;
+    float inputRadius2 = radius + vol * 0.25;
+    float opacity1 = mix(0.2, 0.7, vol);
+    float opacity2 = mix(0.15, 0.55, vol);
 
     // Blend both rings
     float ringAlpha1 = (inputRadius2 >= ringRadius1) ? opacity1 : 0.0;
@@ -477,16 +478,15 @@ void main() {
     float totalRingAlpha = max(ringAlpha1, ringAlpha2);
 
     // Apply screen blend mode for combined rings
-    vec3 ringColor = vec3(0.039, 0.039, 0.055); // Background-matched ring
+    vec3 ringColor = vec3(0.0, 0.0, 0.0); // Black ring
     color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
 
     // Define colours to ramp against greyscale
-    // Background color (#0a0a0e) makes the orb blend into the page
-    vec3 bgColor = vec3(0.039, 0.039, 0.055); // #0a0a0e
+    vec3 bgColor = vec3(0.02, 0.02, 0.039); // #05050a
     vec3 color1 = bgColor; // Base blends with background
     vec3 color2 = uColor1; // First gradient color
     vec3 color3 = uColor2; // Second gradient color
-    vec3 color4 = bgColor; // Highlights also blend
+    vec3 color4 = bgColor; // Edges blend back
 
     // Convert grayscale color to the color ramp
     float luminance = mix(color.r, 1.0 - color.r, uInverted);
