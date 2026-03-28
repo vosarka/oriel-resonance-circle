@@ -480,10 +480,11 @@ void main() {
     vec3 ringColor = vec3(1.0); // White ring color
     color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
 
-    // Define colours to ramp against greyscale (could increase the amount of colours in the ramp)
-    vec3 color1 = vec3(0.0, 0.0, 0.0); // Black
-    vec3 color2 = uColor1; // Darker Color
-    vec3 color3 = uColor2; // Lighter Color
+    // Define colours to ramp against greyscale
+    // Two gradients: white base → color1 → color2 → white highlights
+    vec3 color1 = vec3(1.0, 1.0, 1.0); // White (replaces black)
+    vec3 color2 = uColor1; // First gradient color
+    vec3 color3 = uColor2; // Second gradient color
     vec3 color4 = vec3(1.0, 1.0, 1.0); // White
 
     // Convert grayscale color to the color ramp

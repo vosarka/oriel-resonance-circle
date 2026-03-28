@@ -464,7 +464,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       {/* Orb — centered, large, audio-reactive */}
       <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
         <Orb
-          colors={["#00E5FF", "#1A0A3A"]}
+          colors={["#affff1", "#ffffe8"]}
           agentState={toAgentState(orbState)}
           seed={42}
           volumeMode="manual"
