@@ -34,7 +34,7 @@ function buildSessionUpdate(): object {
       audio: {
         input: {
           transcription: {
-            model: "assemblyai/universal-streaming-multilingual",
+            model: "gpt-4o-mini-transcribe",
           },
           turn_detection: {
             type: "semantic_vad",
@@ -160,29 +160,47 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
     }
 
     let inworldReady = false;
+    let sessionConfigured = false;
 
     // ── Inworld → Client forwarding ──────────────────────────────────────
     inworldWs.on("open", () => {
-      console.log("[Realtime] Connected to Inworld");
-      inworldReady = true;
-
-      // Send session config
-      const sessionUpdate = buildSessionUpdate();
-      inworldWs.send(JSON.stringify(sessionUpdate));
-      console.log("[Realtime] Sent session.update to Inworld");
-
-      // Notify client that the session is ready
-      clientWs.send(JSON.stringify({ type: "session.ready" }));
+      console.log("[Realtime] Connected to Inworld, waiting for session.created...");
+      // Don't send session.update yet — wait for session.created from Inworld
     });
 
     inworldWs.on("message", (data) => {
       try {
         const msg = JSON.parse(data.toString());
+        console.log("[Realtime] ← Inworld event:", msg.type, msg.error ? JSON.stringify(msg.error) : "");
+
+        // Handle session lifecycle events
+        if (msg.type === "session.created" && !sessionConfigured) {
+          // Inworld is ready — now send our session config
+          sessionConfigured = true;
+          const sessionUpdate = buildSessionUpdate();
+          console.log("[Realtime] Sending session.update:", JSON.stringify(sessionUpdate));
+          inworldWs.send(JSON.stringify(sessionUpdate));
+          return; // Don't forward session.created to client
+        }
+
+        if (msg.type === "session.updated") {
+          // Session config accepted — now we're truly ready
+          inworldReady = true;
+          console.log("[Realtime] Session configured successfully");
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(JSON.stringify({ type: "session.ready" }));
+          }
+          return; // Don't forward session.updated to client
+        }
+
+        if (msg.type === "error") {
+          console.error("[Realtime] Inworld error event:", JSON.stringify(msg));
+        }
 
         // Intercept transcript events for saving to DB
         handleInworldEvent(msg, state, clientWs);
 
-        // Forward everything to the client
+        // Forward everything else to the client
         if (clientWs.readyState === WebSocket.OPEN) {
           clientWs.send(data.toString());
         }
@@ -202,7 +220,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
     });
 
     inworldWs.on("close", (code, reason) => {
-      console.log(`[Realtime] Inworld closed: ${code} ${reason}`);
+      console.log(`[Realtime] Inworld closed: ${code} ${reason.toString()}`);
       if (clientWs.readyState === WebSocket.OPEN) {
         clientWs.close(1000, "Voice service disconnected");
       }
