@@ -38,6 +38,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const audioQueueRef = useRef<Float32Array[]>([]);
   const isPlayingRef = useRef(false);
   const playbackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playbackGainRef = useRef<GainNode | null>(null);
+
+  // AnalyserNodes for audio-reactive Orb
+  const inputAnalyserRef = useRef<AnalyserNode | null>(null);
+  const outputAnalyserRef = useRef<AnalyserNode | null>(null);
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +53,34 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [transcript, currentAssistantText]);
+
+  // ── Volume getters for audio-reactive Orb ───────────────────────────────────
+
+  const getInputVolume = useCallback(() => {
+    const analyser = inputAnalyserRef.current;
+    if (!analyser) return 0;
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = (data[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.min(1, Math.sqrt(sum / data.length) * 3);
+  }, []);
+
+  const getOutputVolume = useCallback(() => {
+    const analyser = outputAnalyserRef.current;
+    if (!analyser) return 0;
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = (data[i] - 128) / 128;
+      sum += v * v;
+    }
+    return Math.min(1, Math.sqrt(sum / data.length) * 3);
+  }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
 
@@ -99,7 +132,16 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     source.buffer = buffer;
     playbackSourceRef.current = source;
 
-    source.connect(ctx.destination);
+    // Route through gain + analyser for audio-reactive Orb
+    if (!playbackGainRef.current) {
+      playbackGainRef.current = ctx.createGain();
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      outputAnalyserRef.current = analyser;
+      playbackGainRef.current.connect(analyser);
+      analyser.connect(ctx.destination);
+    }
+    source.connect(playbackGainRef.current);
 
     source.onended = () => {
       drainAudioQueue(ctx);
@@ -129,6 +171,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         const ctx = getAudioContext();
 
         const source = ctx.createMediaStreamSource(stream);
+
+        // AnalyserNode for mic input volume → audio-reactive Orb
+        const inputAnalyser = ctx.createAnalyser();
+        inputAnalyser.fftSize = 256;
+        inputAnalyserRef.current = inputAnalyser;
+        source.connect(inputAnalyser);
+
         // ScriptProcessorNode for PCM capture (4096 samples per buffer)
         const processor = ctx.createScriptProcessor(4096, 1, 1);
         processorRef.current = processor;
@@ -346,6 +395,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     audioQueueRef.current = [];
     isPlayingRef.current = false;
+    playbackGainRef.current = null;
+    inputAnalyserRef.current = null;
+    outputAnalyserRef.current = null;
     // Close audio context
     if (audioCtxRef.current) {
       audioCtxRef.current.close().catch(() => {});
@@ -409,12 +461,15 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         </span>
       </div>
 
-      {/* Orb — centered, large */}
+      {/* Orb — centered, large, audio-reactive */}
       <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
         <Orb
-          colors={["#3CD2DC", "#BDA36B"]}
+          colors={["#00E5FF", "#1A0A3A"]}
           agentState={toAgentState(orbState)}
           seed={42}
+          volumeMode="manual"
+          getInputVolume={getInputVolume}
+          getOutputVolume={getOutputVolume}
         />
       </div>
 
