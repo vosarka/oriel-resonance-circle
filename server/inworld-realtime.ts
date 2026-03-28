@@ -23,13 +23,35 @@ const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
 
 // The full session.update config sent to Inworld on connection
-function buildSessionUpdate(): object {
+async function buildSessionUpdate(userId: number): Promise<object> {
+  // Build enriched instructions with UMM context (user memory) like the text chat does
+  const promptParts: string[] = [ORIEL_SYSTEM_PROMPT];
+
+  try {
+    const { buildUMMContext } = await import("./oriel-umm");
+    const ummContext = await buildUMMContext(userId);
+    if (ummContext) promptParts.push(ummContext);
+  } catch (err) {
+    console.warn("[Realtime] Failed to load UMM context:", err);
+  }
+
+  try {
+    const { getMemoryContextForUser } = await import("./oriel-memory");
+    const memoryContext = await getMemoryContextForUser(userId);
+    if (memoryContext) promptParts.push(memoryContext);
+  } catch (err) {
+    console.warn("[Realtime] Failed to load memory context:", err);
+  }
+
+  const instructions = promptParts.filter(Boolean).join("\n\n");
+  console.log(`[Realtime] Built instructions: ${instructions.length} chars (base + UMM + memory)`);
+
   return {
     type: "session.update",
     session: {
       type: "realtime",
       model: "anthropic/claude-sonnet-4-5-20250929",
-      instructions: ORIEL_SYSTEM_PROMPT,
+      instructions,
       output_modalities: ["audio", "text"],
       audio: {
         input: {
@@ -180,11 +202,14 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
         // Handle session lifecycle events
         if (msg.type === "session.created" && !sessionConfigured) {
-          // Inworld is ready — now send our session config
+          // Inworld is ready — now send our session config with user context
           sessionConfigured = true;
-          const sessionUpdate = buildSessionUpdate();
-          console.log("[Realtime] Sending session.update:", JSON.stringify(sessionUpdate));
-          inworldWs.send(JSON.stringify(sessionUpdate));
+          buildSessionUpdate(state.userId).then((sessionUpdate) => {
+            console.log("[Realtime] Sending session.update");
+            inworldWs.send(JSON.stringify(sessionUpdate));
+          }).catch((err) => {
+            console.error("[Realtime] Failed to build session update:", err);
+          });
           return; // Don't forward session.created to client
         }
 

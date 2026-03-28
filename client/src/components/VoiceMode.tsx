@@ -389,27 +389,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         backdropFilter: "blur(20px)",
       }}
     >
-      {/* Close button */}
-      <button
-        onClick={handleClose}
-        className="absolute top-6 right-6 p-3 rounded-full transition-all z-10"
-        style={{
-          background: "rgba(255,80,80,0.1)",
-          border: "1px solid rgba(255,80,80,0.3)",
-          color: "rgba(255,80,80,0.7)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255,80,80,0.2)";
-          e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255,80,80,0.1)";
-          e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
-        }}
-        title="End voice session"
-      >
-        <Phone size={20} className="rotate-[135deg]" />
-      </button>
+      {/* Close button — bottom center */}
 
       {/* Status indicator */}
       <div className="absolute top-6 left-6 flex items-center gap-2">
@@ -504,8 +484,28 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         <div ref={transcriptEndRef} />
       </div>
 
-      {/* Bottom hint */}
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center">
+      {/* Bottom: close button + hint */}
+      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-3 z-10">
+        <button
+          onClick={handleClose}
+          className="p-4 rounded-full transition-all"
+          style={{
+            background: "rgba(255,80,80,0.1)",
+            border: "1px solid rgba(255,80,80,0.3)",
+            color: "rgba(255,80,80,0.7)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(255,80,80,0.2)";
+            e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(255,80,80,0.1)";
+            e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
+          }}
+          title="End voice session"
+        >
+          <Phone size={24} className="rotate-[135deg]" />
+        </button>
         <p
           className="font-mono text-[9px] tracking-[0.2em]"
           style={{ color: "rgba(0,188,212,0.25)" }}
@@ -513,7 +513,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           {status === "connected"
             ? "Speak naturally — ORIEL is listening"
             : status === "error"
-            ? "Tap the phone icon to close"
+            ? "Tap to end session"
             : ""}
         </p>
       </div>
