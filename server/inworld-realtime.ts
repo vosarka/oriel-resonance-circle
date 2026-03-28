@@ -236,7 +236,8 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       if (!inworldReady || inworldWs.readyState !== WebSocket.OPEN) {
         return;
       }
-      inworldWs.send(data);
+      // Inworld requires text frames (JSON), not binary — convert Buffer to string
+      inworldWs.send(data.toString());
     });
 
     clientWs.on("close", () => {
