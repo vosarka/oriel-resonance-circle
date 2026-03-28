@@ -189,11 +189,21 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
         }
 
         if (msg.type === "session.updated") {
-          // Session config accepted — now we're truly ready
-          inworldReady = true;
+          // Session config accepted — inject conversation history if resuming
           console.log("[Realtime] Session configured successfully");
-          if (clientWs.readyState === WebSocket.OPEN) {
-            clientWs.send(JSON.stringify({ type: "session.ready" }));
+
+          if (state.conversationId) {
+            injectConversationHistory(state, inworldWs).then(() => {
+              inworldReady = true;
+              if (clientWs.readyState === WebSocket.OPEN) {
+                clientWs.send(JSON.stringify({ type: "session.ready" }));
+              }
+            });
+          } else {
+            inworldReady = true;
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ type: "session.ready" }));
+            }
           }
           return; // Don't forward session.updated to client
         }
@@ -364,6 +374,47 @@ function enqueueSaveAssistant(state: SessionState): void {
       console.error("[Realtime] Failed to save assistant message:", err);
     }
   });
+}
+
+/**
+ * Load previous conversation messages from the DB and inject them into the
+ * Inworld session so ORIEL has context from earlier exchanges (text or voice).
+ */
+async function injectConversationHistory(state: SessionState, inworldWs: WebSocket): Promise<void> {
+  if (!state.conversationId) return;
+
+  try {
+    const messages = await db.getConversationMessages(state.conversationId, state.userId);
+    if (!messages || messages.length === 0) {
+      console.log("[Realtime] No prior messages to inject");
+      return;
+    }
+
+    // Limit to the most recent messages to avoid overwhelming the context
+    const recentMessages = messages.slice(-50);
+    console.log(`[Realtime] Injecting ${recentMessages.length} messages as conversation history`);
+
+    for (const msg of recentMessages) {
+      const event = {
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: [
+            {
+              type: "input_text",
+              text: msg.content,
+            },
+          ],
+        },
+      };
+      inworldWs.send(JSON.stringify(event));
+    }
+
+    console.log("[Realtime] Conversation history injected");
+  } catch (err) {
+    console.error("[Realtime] Failed to inject conversation history:", err);
+  }
 }
 
 function flushTranscripts(state: SessionState): void {

@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
 
@@ -614,17 +615,11 @@ export default function Conduit() {
             {displayMessages.length === 0 ? (
               /* Empty state */
               <div className="flex flex-col items-center justify-center h-full gap-4">
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
-                  style={{ border: "1px solid rgba(0,188,212,0.2)" }}
-                >
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{
-                      background: "rgba(0,229,255,0.5)",
-                      boxShadow: "0 0 20px rgba(0,229,255,0.3)",
-                      animation: "pulse 2s ease-in-out infinite",
-                    }}
+                <div className="w-32 h-32 md:w-40 md:h-40">
+                  <Orb
+                    colors={["#3CD2DC", "#BDA36B"]}
+                    agentState={null}
+                    seed={42}
                   />
                 </div>
                 <p
