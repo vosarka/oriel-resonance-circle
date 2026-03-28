@@ -207,7 +207,7 @@ function Scene({
     curInRef.current += (targetIn - curInRef.current) * 0.35
     curOutRef.current += (targetOut - curOutRef.current) * 0.35
 
-    const targetSpeed = 0.2 + (1 - Math.pow(curOutRef.current - 1, 2)) * 1.8
+    const targetSpeed = 0.06 + (1 - Math.pow(curOutRef.current - 1, 2)) * 0.2
     animSpeedRef.current += (targetSpeed - animSpeedRef.current) * 0.2
 
     u.uAnimation.value += delta * animSpeedRef.current
