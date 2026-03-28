@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import LivingOrb from "@/components/LivingOrb";
+import { Orb, type AgentState } from "@/components/ui/orb";
 import { X, Phone } from "lucide-react";
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
@@ -12,19 +12,27 @@ interface VoiceModeProps {
 
 type ConnectionStatus = "connecting" | "connected" | "error" | "closed";
 
+// Map our internal orb states to ElevenLabs AgentState
+function toAgentState(orbState: OrbState): AgentState {
+  switch (orbState) {
+    case "booting": return "thinking";
+    case "idle": return "listening";
+    case "processing": return "listening";
+    case "speaking": return "talking";
+  }
+}
+
 export default function VoiceMode({ onClose, conversationId, onConversationCreated }: VoiceModeProps) {
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
   const [currentAssistantText, setCurrentAssistantText] = useState("");
   const currentAssistantTextRef = useRef("");
-  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const playbackAnalyserRef = useRef<AnalyserNode | null>(null);
 
   // Audio playback queue
   const audioQueueRef = useRef<Float32Array[]>([]);
@@ -48,14 +56,6 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 24000,
       });
-
-      // Create analyser for orb reactivity
-      const analyser = audioCtxRef.current.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
-      analyser.connect(audioCtxRef.current.destination);
-      playbackAnalyserRef.current = analyser;
-      setAnalyserNode(analyser);
     }
     return audioCtxRef.current;
   }, []);
@@ -99,17 +99,25 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     source.buffer = buffer;
     playbackSourceRef.current = source;
 
-    if (playbackAnalyserRef.current) {
-      source.connect(playbackAnalyserRef.current);
-    } else {
-      source.connect(ctx.destination);
-    }
+    source.connect(ctx.destination);
 
     source.onended = () => {
       drainAudioQueue(ctx);
     };
 
     source.start();
+  }, []);
+
+  // Stop all audio playback immediately (for interruption)
+  const stopPlayback = useCallback(() => {
+    // Clear queued audio
+    audioQueueRef.current = [];
+    // Stop currently playing source
+    if (playbackSourceRef.current) {
+      try { playbackSourceRef.current.stop(); } catch {}
+      playbackSourceRef.current = null;
+    }
+    isPlayingRef.current = false;
   }, []);
 
   // ── Mic capture ─────────────────────────────────────────────────────────────
@@ -209,6 +217,8 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_started":
+        // User started speaking — interrupt ORIEL's playback immediately
+        stopPlayback();
         setOrbState("processing");
         break;
 
@@ -270,7 +280,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setStatus("error");
         break;
     }
-  }, [playAudioChunk, startMicCapture, onConversationCreated]);
+  }, [playAudioChunk, stopPlayback, startMicCapture, onConversationCreated]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
@@ -419,9 +429,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         </span>
       </div>
 
-      {/* Living Orb — centered, large */}
+      {/* Orb — centered, large */}
       <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
-        <LivingOrb state={orbState} analyserNode={analyserNode} />
+        <Orb
+          colors={["#3CD2DC", "#BDA36B"]}
+          agentState={toAgentState(orbState)}
+          seed={42}
+        />
       </div>
 
       {/* Label under orb */}
