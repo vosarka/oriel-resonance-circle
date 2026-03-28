@@ -223,12 +223,14 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "response.audio.delta":
+      case "response.output_audio.delta":
         if (msg.delta) {
           playAudioChunk(msg.delta);
         }
         break;
 
       case "response.audio_transcript.delta":
+      case "response.output_audio_transcript.delta":
         if (msg.delta) {
           setCurrentAssistantText((prev) => prev + msg.delta);
           currentAssistantTextRef.current += msg.delta;
@@ -236,6 +238,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "response.audio_transcript.done":
+      case "response.output_audio_transcript.done":
         // Finalize the assistant transcript — use ref for latest value
         setTranscript((prev) => [
           ...prev,
