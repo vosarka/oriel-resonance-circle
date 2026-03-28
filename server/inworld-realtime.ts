@@ -28,7 +28,7 @@ function buildSessionUpdate(): object {
     type: "session.update",
     session: {
       type: "realtime",
-      model: "anthropic/claude-sonnet-4-6",
+      model: "anthropic/claude-sonnet-4-5-20250929",
       instructions: ORIEL_SYSTEM_PROMPT,
       output_modalities: ["audio", "text"],
       audio: {
