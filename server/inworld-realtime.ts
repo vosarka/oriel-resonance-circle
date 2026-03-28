@@ -277,6 +277,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
 
     // Incremental assistant transcript
     case "response.audio_transcript.delta":
+    case "response.output_audio_transcript.delta":
       if (msg.delta) {
         state.currentAssistantTranscript += msg.delta;
       }
@@ -284,6 +285,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
 
     // Assistant response transcript complete
     case "response.audio_transcript.done":
+    case "response.output_audio_transcript.done":
       if (msg.transcript) {
         state.currentAssistantTranscript = msg.transcript;
       }
