@@ -19,7 +19,7 @@ import { ENV } from "./_core/env";
 import * as db from "./db";
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 
-const INWORLD_REALTIME_URL = "wss://api.inworld.ai/api/v1/realtime/session";
+const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
 
 // The full session.update config sent to Inworld on connection
@@ -148,7 +148,12 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
     let inworldWs: WebSocket;
     try {
-      inworldWs = new WebSocket(INWORLD_REALTIME_URL, {
+      // Inworld requires key (session identifier) and protocol query params
+      const sessionKey = `oriel-${user.id}-${Date.now()}`;
+      const inworldUrl = `${INWORLD_REALTIME_BASE}?key=${sessionKey}&protocol=realtime`;
+      console.log("[Realtime] Connecting to Inworld:", inworldUrl);
+
+      inworldWs = new WebSocket(inworldUrl, {
         headers: {
           Authorization: `Basic ${apiKey}`,
         },
