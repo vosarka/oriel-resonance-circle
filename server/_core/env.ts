@@ -18,4 +18,7 @@ export const ENV = {
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN ?? "",
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER ?? "",
+
+  // ─── Inworld (TTS & Realtime) ─────────────────────────────────────────
+  inworldApiKey: process.env.INWORLD_API_KEY ?? "",
 };
