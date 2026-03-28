@@ -617,7 +617,7 @@ export default function Conduit() {
               <div className="flex flex-col items-center justify-center h-full gap-4">
                 <div className="w-32 h-32 md:w-40 md:h-40">
                   <Orb
-                    colors={["#3CD2DC", "#BDA36B"]}
+                    colors={["#00E5FF", "#1A0A3A"]}
                     agentState={null}
                     seed={42}
                   />
