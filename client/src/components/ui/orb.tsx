@@ -418,8 +418,8 @@ void main() {
     float noise = flow(decomposed, radius * 0.03 - uAnimation * 0.2) - 0.5;
     theta += noise * mix(0.08, 0.25, uOutputVolume);
 
-    // Initialize the base color to white
-    vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
+    // Initialize the base color to background (#0a0a0e)
+    vec4 color = vec4(0.039, 0.039, 0.055, 1.0);
 
     // Original parameters for the ovals in polar coordinates
     float originalCenters[7] = float[7](0.0, 0.5 * PI, 1.0 * PI, 1.5 * PI, 2.0 * PI, 2.5 * PI, 3.0 * PI);
@@ -477,15 +477,16 @@ void main() {
     float totalRingAlpha = max(ringAlpha1, ringAlpha2);
 
     // Apply screen blend mode for combined rings
-    vec3 ringColor = vec3(1.0); // White ring color
+    vec3 ringColor = vec3(0.039, 0.039, 0.055); // Background-matched ring
     color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
 
     // Define colours to ramp against greyscale
-    // Two gradients: white base → color1 → color2 → white highlights
-    vec3 color1 = vec3(1.0, 1.0, 1.0); // White (replaces black)
+    // Background color (#0a0a0e) makes the orb blend into the page
+    vec3 bgColor = vec3(0.039, 0.039, 0.055); // #0a0a0e
+    vec3 color1 = bgColor; // Base blends with background
     vec3 color2 = uColor1; // First gradient color
     vec3 color3 = uColor2; // Second gradient color
-    vec3 color4 = vec3(1.0, 1.0, 1.0); // White
+    vec3 color4 = bgColor; // Highlights also blend
 
     // Convert grayscale color to the color ramp
     float luminance = mix(color.r, 1.0 - color.r, uInverted);
