@@ -44,13 +44,60 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const inputAnalyserRef = useRef<AnalyserNode | null>(null);
   const outputAnalyserRef = useRef<AnalyserNode | null>(null);
 
-  // Dynamic color shifting: idle → warm gold/dark teal, speaking → gold/bright cyan
+  // Dynamic color shifting based on output volume intensity:
+  //   idle/silent  → #002633 (dark teal, near black)
+  //   speaking     → #1935a3 (deep blue)
+  //   peak moment  → #818fc5 (bright lavender, rare)
   const COLORS_IDLE: [string, string] = ["#ffedbd", "#002633"];
-  const COLORS_SPEAKING: [string, string] = ["#ffedbd", "#94e4ff"];
   const orbColorsRef = useRef<[string, string]>(COLORS_IDLE);
+  const colorRafRef = useRef<number>(0);
 
   useEffect(() => {
-    orbColorsRef.current = orbState === "speaking" ? COLORS_SPEAKING : COLORS_IDLE;
+    if (orbState !== "speaking") {
+      orbColorsRef.current = ["#ffedbd", "#002633"];
+      if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
+      return;
+    }
+
+    // While speaking, sample output volume and shift second color
+    const pump = () => {
+      const analyser = outputAnalyserRef.current;
+      if (!analyser) {
+        orbColorsRef.current = ["#ffedbd", "#1935a3"];
+        colorRafRef.current = requestAnimationFrame(pump);
+        return;
+      }
+
+      const data = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+
+      // 3-tier color: black(#002633) → blue(#1935a3) → lavender(#818fc5)
+      let color2: string;
+      if (rms > 0.15) {
+        // Intensity peak — rare bright lavender flash
+        color2 = "#818fc5";
+      } else if (rms > 0.02) {
+        // Normal speaking — deep blue
+        color2 = "#1935a3";
+      } else {
+        // Quiet/pause — dark teal
+        color2 = "#002633";
+      }
+
+      orbColorsRef.current = ["#ffedbd", color2];
+      colorRafRef.current = requestAnimationFrame(pump);
+    };
+
+    pump();
+    return () => {
+      if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
+    };
   }, [orbState]);
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
@@ -79,7 +126,18 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   }, []);
 
   const getOutputVolume = useCallback(() => {
-    return 0;
+    const analyser = outputAnalyserRef.current;
+    if (!analyser) return 0;
+    const data = new Uint8Array(analyser.fftSize);
+    analyser.getByteTimeDomainData(data);
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) {
+      const v = (data[i] - 128) / 128;
+      sum += v * v;
+    }
+    // Gentle output: cap at 0.02 for subtle motion
+    const rms = Math.sqrt(sum / data.length);
+    return Math.min(0.02, rms * 0.5);
   }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
@@ -398,6 +456,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     playbackGainRef.current = null;
     inputAnalyserRef.current = null;
     outputAnalyserRef.current = null;
+    if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
     // Close audio context
     if (audioCtxRef.current) {
       audioCtxRef.current.close().catch(() => {});
