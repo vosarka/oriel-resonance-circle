@@ -1065,6 +1065,74 @@ export const appRouter = router({
           return { success: true };
         }),
     }),
+
+    oracles: router({
+      list: adminProcedure.query(async () => {
+        return db.getAllOracles();
+      }),
+
+      create: adminProcedure
+        .input(z.object({
+          part: z.enum(["Past", "Present", "Future"]),
+          title: z.string().min(1),
+          field: z.string().min(1),
+          content: z.string().min(1),
+          signalClarity: z.string().default("95.2%"),
+          channelStatus: z.enum(["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).default("OPEN"),
+          currentFieldSignatures: z.string().optional(),
+          encodedTrajectory: z.string().optional(),
+          convergenceZones: z.string().optional(),
+          keyInflectionPoint: z.string().optional(),
+          majorOutcomes: z.string().optional(),
+          visualStyle: z.string().optional(),
+          hashtags: z.string().optional(),
+          status: z.enum(["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed"),
+          oracleId: z.string().optional(),
+          oracleNumber: z.number().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const { oracleId: inputOracleId, oracleNumber: inputOracleNumber, ...data } = input;
+          const oracleNumber = inputOracleNumber ?? await db.getNextOracleNumber();
+          const oracleId = inputOracleId || `OX-${String(oracleNumber).padStart(4, "0")}`;
+          await db.createOracle({
+            oracleId,
+            oracleNumber,
+            ...data,
+          });
+          return { success: true, oracleId, oracleNumber };
+        }),
+
+      update: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          title: z.string().min(1).optional(),
+          field: z.string().min(1).optional(),
+          content: z.string().min(1).optional(),
+          part: z.enum(["Past", "Present", "Future"]).optional(),
+          signalClarity: z.string().optional(),
+          channelStatus: z.enum(["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).optional(),
+          currentFieldSignatures: z.string().optional(),
+          encodedTrajectory: z.string().optional(),
+          convergenceZones: z.string().optional(),
+          keyInflectionPoint: z.string().optional(),
+          majorOutcomes: z.string().optional(),
+          visualStyle: z.string().optional(),
+          hashtags: z.string().optional(),
+          status: z.enum(["Draft", "Confirmed", "Deprecated", "Prophetic"]).optional(),
+        }))
+        .mutation(async ({ input }) => {
+          const { id, ...data } = input;
+          await db.updateOracle(id, data);
+          return { success: true };
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input }) => {
+          await db.deleteOracle(input.id);
+          return { success: true };
+        }),
+    }),
   }),
 });
 
