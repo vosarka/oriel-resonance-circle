@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 
 export default function OrbPreview() {
@@ -10,7 +10,22 @@ export default function OrbPreview() {
   const [outputVolume, setOutputVolume] = useState(0);
   const [bgColor, setBgColor] = useState("#05050a");
   const [orbSize, setOrbSize] = useState(384);
+  const [speed, setSpeed] = useState(1);
 
+  // Border controls
+  const [borderWidth, setBorderWidth] = useState(2);
+  const [borderColor, setBorderColor] = useState("#2a2a35");
+  const [borderOpacity, setBorderOpacity] = useState(0.6);
+  const [borderGap, setBorderGap] = useState(4);
+
+  // Mic input for live testing
+  const [micActive, setMicActive] = useState(false);
+  const streamRef = useRef<MediaStream | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const rafRef = useRef<number>(0);
+
+  // Volume refs for Orb
   const inputRef = useRef(inputVolume);
   const outputRef = useRef(outputVolume);
   inputRef.current = inputVolume;
@@ -19,22 +34,96 @@ export default function OrbPreview() {
   const getInput = useCallback(() => inputRef.current, []);
   const getOutput = useCallback(() => outputRef.current, []);
 
+  // Mic toggle
+  const toggleMic = useCallback(async () => {
+    if (micActive) {
+      // Stop mic
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      analyserRef.current = null;
+      audioCtxRef.current?.close();
+      audioCtxRef.current = null;
+      setMicActive(false);
+      setInputVolume(0);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      streamRef.current = stream;
+
+      const ctx = new AudioContext();
+      audioCtxRef.current = ctx;
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      setMicActive(true);
+
+      // Pump volume readings
+      const data = new Uint8Array(analyser.fftSize);
+      const pump = () => {
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.min(1, Math.sqrt(sum / data.length) * 3);
+        setInputVolume(rms);
+        rafRef.current = requestAnimationFrame(pump);
+      };
+      pump();
+    } catch {
+      console.error("Mic access denied");
+    }
+  }, [micActive]);
+
+  // Cleanup mic on unmount
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      audioCtxRef.current?.close();
+    };
+  }, []);
+
   const [copied, setCopied] = useState(false);
 
   const config = {
     colors: [color1, color2],
     agentState,
     seed,
-    inputVolume,
-    outputVolume,
+    speed,
+    inputVolume: +inputVolume.toFixed(2),
+    outputVolume: +outputVolume.toFixed(2),
+    border: {
+      width: borderWidth,
+      color: borderColor,
+      opacity: borderOpacity,
+      gap: borderGap,
+    },
   };
 
   const copyConfig = () => {
-    const text = JSON.stringify(config, null, 2);
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(JSON.stringify(config, null, 2));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Compute border style for the orb wrapper
+  const borderRgba = (() => {
+    const hex = borderColor.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r},${g},${b},${borderOpacity})`;
+  })();
 
   return (
     <div className="min-h-screen flex" style={{ background: "#0a0a0e" }}>
@@ -43,27 +132,43 @@ export default function OrbPreview() {
         className="flex-1 flex items-center justify-center"
         style={{ background: bgColor }}
       >
-        <div style={{ width: orbSize, height: orbSize }}>
-          <Orb
-            colors={[color1, color2] as [string, string]}
-            agentState={agentState}
-            seed={seed}
-            volumeMode="manual"
-            getInputVolume={getInput}
-            getOutputVolume={getOutput}
-          />
+        <div
+          style={{
+            width: orbSize + borderGap * 2 + borderWidth * 2,
+            height: orbSize + borderGap * 2 + borderWidth * 2,
+            borderRadius: "50%",
+            border: `${borderWidth}px solid ${borderRgba}`,
+            padding: borderGap,
+            boxSizing: "border-box",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div style={{ width: orbSize, height: orbSize, borderRadius: "50%", overflow: "hidden" }}>
+            <Orb
+              colors={[color1, color2] as [string, string]}
+              agentState={agentState}
+              seed={seed}
+              speed={speed}
+              volumeMode="manual"
+              getInputVolume={getInput}
+              getOutputVolume={getOutput}
+            />
+          </div>
         </div>
       </div>
 
       {/* Controls panel */}
       <div
-        className="w-80 overflow-y-auto p-5 flex flex-col gap-5"
+        className="w-80 overflow-y-auto p-5 flex flex-col gap-4"
         style={{
           background: "#14141c",
           borderLeft: "1px solid rgba(189,163,107,0.12)",
           color: "#e8e4dc",
           fontFamily: "monospace",
           fontSize: 12,
+          maxHeight: "100vh",
         }}
       >
         <h2
@@ -78,11 +183,74 @@ export default function OrbPreview() {
           Orb Preview
         </h2>
 
+        {/* Mic Input */}
+        <Section title="Live Mic Input">
+          <button
+            onClick={toggleMic}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 6,
+              border: micActive
+                ? "1px solid rgba(255,80,80,0.5)"
+                : "1px solid rgba(0,229,255,0.3)",
+              background: micActive
+                ? "rgba(255,80,80,0.1)"
+                : "rgba(0,229,255,0.05)",
+              color: micActive ? "#ff5050" : "#00e5ff",
+              cursor: "pointer",
+              fontSize: 11,
+              letterSpacing: "0.15em",
+              textTransform: "uppercase",
+              width: "100%",
+            }}
+          >
+            {micActive ? "Stop Mic" : "Start Mic (test voice)"}
+          </button>
+          {micActive && (
+            <div style={{ marginTop: 4 }}>
+              <div
+                style={{
+                  height: 6,
+                  borderRadius: 3,
+                  background: "rgba(255,255,255,0.05)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    width: `${inputVolume * 100}%`,
+                    background: "linear-gradient(90deg, #00e5ff, #9696ff)",
+                    borderRadius: 3,
+                    transition: "width 50ms",
+                  }}
+                />
+              </div>
+              <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>
+                Live input: {inputVolume.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </Section>
+
         {/* Colors */}
         <Section title="Colors">
           <ColorInput label="Color 1" value={color1} onChange={setColor1} />
           <ColorInput label="Color 2" value={color2} onChange={setColor2} />
           <ColorInput label="Background" value={bgColor} onChange={setBgColor} />
+        </Section>
+
+        {/* Border */}
+        <Section title="Border (outline ring)">
+          <ColorInput label="Color" value={borderColor} onChange={setBorderColor} />
+          <Slider label="Width" value={borderWidth} onChange={setBorderWidth} min={0} max={8} step={0.5} />
+          <Slider label="Opacity" value={borderOpacity} onChange={setBorderOpacity} min={0} max={1} step={0.01} />
+          <Slider label="Gap (padding)" value={borderGap} onChange={setBorderGap} min={0} max={20} step={1} />
+        </Section>
+
+        {/* Speed */}
+        <Section title="Speed">
+          <Slider label="Speed multiplier" value={speed} onChange={setSpeed} min={0.05} max={5} step={0.05} />
         </Section>
 
         {/* Agent State */}
@@ -117,7 +285,7 @@ export default function OrbPreview() {
         </Section>
 
         {/* Volume */}
-        <Section title="Volume (manual mode)">
+        <Section title="Volume (manual)">
           <Slider
             label="Input Volume"
             value={inputVolume}
@@ -136,28 +304,10 @@ export default function OrbPreview() {
           />
         </Section>
 
-        {/* Seed */}
-        <Section title="Seed">
-          <Slider
-            label="Seed"
-            value={seed}
-            onChange={(v) => setSeed(Math.round(v))}
-            min={0}
-            max={100}
-            step={1}
-          />
-        </Section>
-
-        {/* Size */}
-        <Section title="Orb Size (px)">
-          <Slider
-            label="Size"
-            value={orbSize}
-            onChange={(v) => setOrbSize(Math.round(v))}
-            min={100}
-            max={800}
-            step={10}
-          />
+        {/* Seed + Size */}
+        <Section title="Seed & Size">
+          <Slider label="Seed" value={seed} onChange={(v) => setSeed(Math.round(v))} min={0} max={100} step={1} />
+          <Slider label="Size (px)" value={orbSize} onChange={(v) => setOrbSize(Math.round(v))} min={100} max={800} step={10} />
         </Section>
 
         {/* Presets */}
@@ -166,41 +316,32 @@ export default function OrbPreview() {
             <PresetButton
               label="ORIEL Default"
               onClick={() => {
-                setColor1("#affff1");
-                setColor2("#9696ff");
-                setBgColor("#05050a");
+                setColor1("#affff1"); setColor2("#9696ff"); setBgColor("#05050a");
+                setBorderColor("#2a2a35"); setBorderWidth(2); setBorderOpacity(0.6); setBorderGap(4);
               }}
             />
             <PresetButton
               label="Teal + Gold"
               onClick={() => {
-                setColor1("#3CD2DC");
-                setColor2("#BDA36B");
-                setBgColor("#05050a");
+                setColor1("#3CD2DC"); setColor2("#BDA36B"); setBgColor("#05050a");
               }}
             />
             <PresetButton
               label="Cyan + Indigo"
               onClick={() => {
-                setColor1("#00E5FF");
-                setColor2("#1A0A3A");
-                setBgColor("#05050a");
+                setColor1("#00E5FF"); setColor2("#1A0A3A"); setBgColor("#05050a");
               }}
             />
             <PresetButton
-              label="Mint + Cream"
+              label="No Border"
               onClick={() => {
-                setColor1("#affff1");
-                setColor2("#ffffe8");
-                setBgColor("#05050a");
+                setBorderWidth(0); setBorderGap(0);
               }}
             />
             <PresetButton
-              label="White Theme"
+              label="Thick Border"
               onClick={() => {
-                setColor1("#3CD2DC");
-                setColor2("#9696ff");
-                setBgColor("#ffffff");
+                setBorderWidth(4); setBorderColor("#3a3a4a"); setBorderOpacity(0.8); setBorderGap(6);
               }}
             />
           </div>
@@ -213,9 +354,7 @@ export default function OrbPreview() {
             padding: "10px",
             borderRadius: 6,
             border: "1px solid rgba(0,229,255,0.3)",
-            background: copied
-              ? "rgba(0,229,255,0.15)"
-              : "rgba(0,229,255,0.05)",
+            background: copied ? "rgba(0,229,255,0.15)" : "rgba(0,229,255,0.05)",
             color: "#00e5ff",
             cursor: "pointer",
             fontSize: 11,
@@ -226,7 +365,7 @@ export default function OrbPreview() {
           {copied ? "Copied!" : "Copy Config JSON"}
         </button>
 
-        {/* Live config display */}
+        {/* Live config */}
         <pre
           style={{
             fontSize: 10,
@@ -245,13 +384,7 @@ export default function OrbPreview() {
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
       <div
@@ -270,15 +403,7 @@ function Section({
   );
 }
 
-function ColorInput({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-2">
       <input
@@ -302,37 +427,19 @@ function ColorInput({
           fontFamily: "monospace",
         }}
       />
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", minWidth: 70 }}>
-        {label}
-      </span>
+      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", minWidth: 60 }}>{label}</span>
     </div>
   );
 }
 
-function Slider({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step: number;
+function Slider({ label, value, onChange, min, max, step }: {
+  label: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number;
 }) {
   return (
     <div>
       <div className="flex justify-between" style={{ marginBottom: 2 }}>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
-          {label}
-        </span>
-        <span style={{ fontSize: 10, color: "#00e5ff" }}>
-          {step < 1 ? value.toFixed(2) : value}
-        </span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>{label}</span>
+        <span style={{ fontSize: 10, color: "#00e5ff" }}>{step < 1 ? value.toFixed(2) : value}</span>
       </div>
       <input
         type="range"
@@ -347,13 +454,7 @@ function Slider({
   );
 }
 
-function PresetButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
+function PresetButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}

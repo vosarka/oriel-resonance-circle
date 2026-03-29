@@ -461,16 +461,25 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         </span>
       </div>
 
-      {/* Orb — centered, large, audio-reactive */}
-      <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
-        <Orb
-          colors={["#affff1", "#9696ff"]}
-          agentState={toAgentState(orbState)}
-          seed={42}
-          volumeMode="manual"
-          getInputVolume={getInputVolume}
-          getOutputVolume={getOutputVolume}
-        />
+      {/* Orb — centered, large, audio-reactive with border ring */}
+      <div
+        className="w-[304px] h-[304px] md:w-[400px] md:h-[400px] flex-shrink-0"
+        style={{
+          borderRadius: "50%",
+          border: "2px solid rgba(42,42,53,0.6)",
+          padding: 4,
+        }}
+      >
+        <div className="w-full h-full rounded-full overflow-hidden">
+          <Orb
+            colors={["#affff1", "#9696ff"]}
+            agentState={toAgentState(orbState)}
+            seed={42}
+            volumeMode="manual"
+            getInputVolume={getInputVolume}
+            getOutputVolume={getOutputVolume}
+          />
+        </div>
       </div>
 
       {/* Label under orb */}
