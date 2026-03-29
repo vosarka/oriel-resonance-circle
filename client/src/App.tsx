@@ -22,10 +22,12 @@ import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import OrbPreview from "./pages/OrbPreview";
 
 function Router() {
   return (
     <Switch>
+      <Route path={"/orb-preview"} component={OrbPreview} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
