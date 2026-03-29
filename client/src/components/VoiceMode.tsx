@@ -79,16 +79,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   }, []);
 
   const getOutputVolume = useCallback(() => {
-    const analyser = outputAnalyserRef.current;
-    if (!analyser) return 0;
-    const data = new Uint8Array(analyser.fftSize);
-    analyser.getByteTimeDomainData(data);
-    let sum = 0;
-    for (let i = 0; i < data.length; i++) {
-      const v = (data[i] - 128) / 128;
-      sum += v * v;
-    }
-    return Math.min(1, Math.sqrt(sum / data.length) * 3);
+    return 0;
   }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
@@ -484,7 +475,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             colorsRef={orbColorsRef}
             agentState={toAgentState(orbState)}
             seed={42}
-            speed={2.5}
+            speed={1.5}
             volumeMode="manual"
             getInputVolume={getInputVolume}
             getOutputVolume={getOutputVolume}

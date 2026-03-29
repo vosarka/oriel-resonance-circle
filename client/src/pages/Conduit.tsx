@@ -627,7 +627,7 @@ export default function Conduit() {
                       colors={["#ffedbd", "#002633"]}
                       agentState={null}
                       seed={42}
-                      speed={2.5}
+                      speed={1.5}
                     />
                   </div>
                 </div>
