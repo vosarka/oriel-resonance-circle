@@ -194,8 +194,14 @@ export default function TransmissionDetail() {
 
   // ── Parsed data ─────────────────────────────────────────────────
   const tx = transmission as any;
-  const tags =
-    typeof tx.tags === "string" ? JSON.parse(tx.tags) : tx.tags || [];
+  let tags: string[] = [];
+  if (Array.isArray(tx.tags)) {
+    tags = tx.tags;
+  } else if (typeof tx.tags === "string") {
+    try { tags = JSON.parse(tx.tags); } catch {
+      tags = tx.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+    }
+  }
   const clarity = parseFloat(tx.signalClarity?.replace("%", "") || "0");
   const statusColor = CH_COLORS[tx.channelStatus] || "#5ba4a4";
 
