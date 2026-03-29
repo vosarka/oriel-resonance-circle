@@ -46,7 +46,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
   // Dynamic color shifting: idle → warm gold/dark teal, speaking → gold/bright cyan
   const COLORS_IDLE: [string, string] = ["#ffedbd", "#002633"];
-  const COLORS_SPEAKING: [string, string] = ["#ffedbd", "#94e4ff"];
+  const COLORS_SPEAKING: [string, string] = ["#ffedbd", "#1935a3"];
   const orbColorsRef = useRef<[string, string]>(COLORS_IDLE);
 
   useEffect(() => {
