@@ -619,15 +619,15 @@ export default function Conduit() {
                   className="w-36 h-36 md:w-44 md:h-44"
                   style={{
                     borderRadius: "50%",
-                    border: "2px solid rgba(42,42,53,0.6)",
-                    padding: 4,
+                    border: "2.5px solid #10101e",
                   }}
                 >
                   <div className="w-full h-full rounded-full overflow-hidden">
                     <Orb
-                      colors={["#affff1", "#9696ff"]}
+                      colors={["#ffedbd", "#002633"]}
                       agentState={null}
                       seed={42}
+                      speed={2.5}
                     />
                   </div>
                 </div>

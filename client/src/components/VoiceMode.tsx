@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { X, Phone } from "lucide-react";
 
@@ -43,6 +43,15 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   // AnalyserNodes for audio-reactive Orb
   const inputAnalyserRef = useRef<AnalyserNode | null>(null);
   const outputAnalyserRef = useRef<AnalyserNode | null>(null);
+
+  // Dynamic color shifting: idle → warm gold/dark teal, speaking → gold/bright cyan
+  const COLORS_IDLE: [string, string] = ["#ffedbd", "#002633"];
+  const COLORS_SPEAKING: [string, string] = ["#ffedbd", "#94e4ff"];
+  const orbColorsRef = useRef<[string, string]>(COLORS_IDLE);
+
+  useEffect(() => {
+    orbColorsRef.current = orbState === "speaking" ? COLORS_SPEAKING : COLORS_IDLE;
+  }, [orbState]);
 
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
@@ -466,15 +475,16 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         className="w-[304px] h-[304px] md:w-[400px] md:h-[400px] flex-shrink-0"
         style={{
           borderRadius: "50%",
-          border: "2px solid rgba(42,42,53,0.6)",
-          padding: 4,
+          border: "2.5px solid #10101e",
         }}
       >
         <div className="w-full h-full rounded-full overflow-hidden">
           <Orb
-            colors={["#affff1", "#9696ff"]}
+            colors={COLORS_IDLE}
+            colorsRef={orbColorsRef}
             agentState={toAgentState(orbState)}
             seed={42}
+            speed={2.5}
             volumeMode="manual"
             getInputVolume={getInputVolume}
             getOutputVolume={getOutputVolume}
