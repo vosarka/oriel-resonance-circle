@@ -137,7 +137,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     // Gentle output: cap at 0.02 for subtle motion
     const rms = Math.sqrt(sum / data.length);
-    return Math.min(0.02, rms * 0.5);
+    return Math.min(0.10, rms * 0.5);
   }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
