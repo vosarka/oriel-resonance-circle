@@ -478,7 +478,7 @@ void main() {
     float totalRingAlpha = max(ringAlpha1, ringAlpha2);
 
     // Apply screen blend mode for combined rings
-    vec3 ringColor = vec3(0.0, 0.0, 0.0); // Black ring
+    vec3 ringColor = vec3(0.91, 0.894, 0.863); // #e8e4dc — site text color
     color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
 
     // Define colours to ramp against greyscale
