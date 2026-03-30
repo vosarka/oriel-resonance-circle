@@ -219,12 +219,14 @@ export default function Archive() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [activeSection, setActiveSection] = useState<"tx" | "ox">("tx");
+  const [activeThread, setActiveThread] = useState<string | null>(null);
 
   // Data
   const { data: rawTx = [], isLoading: txLoading } =
     trpc.archive.transmissions.list.useQuery();
   const { data: rawOx = [], isLoading: oxLoading } =
     trpc.archive.oracles.list.useQuery();
+  const { data: threads = [] } = trpc.archive.oracles.threads.useQuery();
 
   // Parse transmissions
   const transmissions = useMemo(
@@ -248,8 +250,22 @@ export default function Archive() {
           typeof ox.hashtags === "string"
             ? JSON.parse(ox.hashtags)
             : ox.hashtags || [],
+        parsedLinkedCodons:
+          typeof ox.linkedCodons === "string"
+            ? (() => { try { return JSON.parse(ox.linkedCodons); } catch { return []; } })()
+            : ox.linkedCodons || [],
       })),
     [rawOx],
+  );
+
+  // Rising Signals — oracles with resonanceCount >= 5
+  const risingSignals = useMemo(
+    () =>
+      oracles
+        .filter((ox: any) => (ox.resonanceCount || 0) >= 5)
+        .sort((a: any, b: any) => (b.resonanceCount || 0) - (a.resonanceCount || 0))
+        .slice(0, 3),
+    [oracles],
   );
 
   // FAZA counts
@@ -292,16 +308,24 @@ export default function Archive() {
     return result;
   }, [transmissions, activeFaza, searchQuery]);
 
-  // Filter oracles
+  // Filter oracles (search + thread)
   const filteredOracles = useMemo(() => {
-    if (!searchQuery) return oracles;
-    const q = searchQuery.toLowerCase();
-    return oracles.filter(
-      (ox: any) =>
-        ox.title.toLowerCase().includes(q) ||
-        ox.content.toLowerCase().includes(q),
-    );
-  }, [oracles, searchQuery]);
+    let result = oracles;
+    if (activeThread) {
+      result = result
+        .filter((ox: any) => ox.threadId === activeThread)
+        .sort((a: any, b: any) => (a.threadOrder || 0) - (b.threadOrder || 0));
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (ox: any) =>
+          ox.title.toLowerCase().includes(q) ||
+          ox.content.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [oracles, searchQuery, activeThread]);
 
   // Header scramble text
   const activeFazaInfo = FAZA_REGISTERS.find((f) => f.id === activeFaza);
@@ -528,6 +552,41 @@ export default function Archive() {
           </div>
         </div>
 
+        {/* ── Thread Filter (ΩX only) ─────────────────────── */}
+        {activeSection === "ox" && threads.length > 0 && (
+          <div className="px-6 md:px-12 pb-6">
+            <div className="max-w-7xl mx-auto flex gap-1.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+              <button
+                onClick={() => setActiveThread(null)}
+                className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300"
+                style={{
+                  fontSize: 9,
+                  background: !activeThread ? "rgba(91,164,164,0.08)" : "transparent",
+                  borderColor: !activeThread ? "rgba(91,164,164,0.4)" : "rgba(91,164,164,0.06)",
+                  color: !activeThread ? "#5ba4a4" : "rgba(91,164,164,0.25)",
+                }}
+              >
+                ALL THREADS
+              </button>
+              {(threads as any[]).map((t: any) => (
+                <button
+                  key={t.threadId}
+                  onClick={() => setActiveThread(t.threadId)}
+                  className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300 whitespace-nowrap"
+                  style={{
+                    fontSize: 9,
+                    background: activeThread === t.threadId ? "rgba(91,164,164,0.08)" : "transparent",
+                    borderColor: activeThread === t.threadId ? "rgba(91,164,164,0.4)" : "rgba(91,164,164,0.06)",
+                    color: activeThread === t.threadId ? "#5ba4a4" : "rgba(91,164,164,0.25)",
+                  }}
+                >
+                  {t.threadTitle} ({t.count})
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Content Grid ────────────────────────────────── */}
         <div className="px-6 md:px-12 pb-16">
           <div className="max-w-7xl mx-auto">
@@ -586,26 +645,68 @@ export default function Archive() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredOracles.map((ox: any, i: number) => (
-                  <div
-                    key={ox.id}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: `${0.06 * i}s` }}
-                  >
-                    <OracleCard
-                      id={ox.id}
-                      oxNumber={ox.oracleNumber}
-                      title={ox.title}
-                      field={ox.field}
-                      temporalDirection={ox.part}
-                      content={ox.content}
-                      hashtags={ox.hashtags}
-                      status={ox.status}
-                    />
+              <>
+                {/* Rising Signals */}
+                {risingSignals.length > 0 && !activeThread && (
+                  <div className="mb-10">
+                    <div
+                      className="font-mono uppercase tracking-widest mb-4"
+                      style={{ fontSize: 10, color: "#bda36b" }}
+                    >
+                      RISING SIGNALS
+                    </div>
+                    <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+                      {risingSignals.map((ox: any) => (
+                        <div
+                          key={ox.id}
+                          className="flex-shrink-0"
+                          style={{ width: 300, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 2 }}
+                        >
+                          <OracleCard
+                            id={ox.id}
+                            oracleId={ox.oracleId}
+                            oxNumber={ox.oracleNumber}
+                            title={ox.title}
+                            field={ox.field}
+                            temporalDirection={ox.part}
+                            content={ox.content}
+                            hashtags={ox.hashtags}
+                            status={ox.status}
+                            resonanceCount={ox.resonanceCount}
+                            linkedCodons={ox.parsedLinkedCodons}
+                            threadId={ox.threadId}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+                {/* Main oracle grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredOracles.map((ox: any, i: number) => (
+                    <div
+                      key={ox.id}
+                      className="animate-fade-in-up"
+                      style={{ animationDelay: `${0.06 * i}s` }}
+                    >
+                      <OracleCard
+                        id={ox.id}
+                        oracleId={ox.oracleId}
+                        oxNumber={ox.oracleNumber}
+                        title={ox.title}
+                        field={ox.field}
+                        temporalDirection={ox.part}
+                        content={ox.content}
+                        hashtags={ox.hashtags}
+                        status={ox.status}
+                        resonanceCount={ox.resonanceCount}
+                        linkedCodons={ox.parsedLinkedCodons}
+                        threadId={ox.threadId}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
