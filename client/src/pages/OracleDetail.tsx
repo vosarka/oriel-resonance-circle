@@ -9,6 +9,17 @@ import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 import { ResonateButton } from "@/components/ResonateButton";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+const TEMPORAL_COLORS: Record<
+  string,
+  { deep: string; light: string; glow: string }
+> = {
+  Past: { deep: "#3d2e10", light: "#92702a", glow: "rgba(146,112,42,0.3)" },
+  Present: { deep: "#2a4a5a", light: "#5ba4a4", glow: "rgba(91,164,164,0.3)" },
+  Future: { deep: "#1a0a2e", light: "#6b3fa0", glow: "rgba(107,63,160,0.3)" },
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 // Temporal color mapping
 const TEMPORAL_COLORS: Record<string, { deep: string; light: string; glow: string }> = {
   Past: {
@@ -26,6 +37,7 @@ const TEMPORAL_COLORS: Record<string, { deep: string; light: string; glow: strin
     light: "#6b3fa0",
     glow: "rgba(107, 63, 160, 0.3)",
   },
+<<<<<<< HEAD
 =======
 const TEMPORAL_COLORS: Record<
   string,
@@ -35,6 +47,9 @@ const TEMPORAL_COLORS: Record<
   Present: { deep: "#2a4a5a", light: "#5ba4a4", glow: "rgba(91,164,164,0.3)" },
   Future: { deep: "#1a0a2e", light: "#6b3fa0", glow: "rgba(107,63,160,0.3)" },
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 };
 
 const TEMPORAL_GLYPHS: Record<string, string> = {
@@ -44,6 +59,171 @@ const TEMPORAL_GLYPHS: Record<string, string> = {
 };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+function parseJson(val: any, fallback: any = []) {
+  if (!val) return fallback;
+  if (typeof val === "string") {
+    try {
+      return JSON.parse(val);
+    } catch {
+      return fallback;
+    }
+  }
+  return val;
+}
+
+// ── Thread Navigation Panel ─────────────────────────────────────────
+function ThreadNavigationPanel({
+  threadId,
+  threadTitle,
+  currentOracleId,
+}: {
+  threadId: string;
+  threadTitle: string;
+  currentOracleId: string;
+}) {
+  const { data: threadOracles = [] } =
+    trpc.archive.oracles.getByThread.useQuery(
+      { threadId },
+      { enabled: !!threadId },
+    );
+
+  // Dedupe by oracleId (since each oracle has 3 parts)
+  const uniqueOracles = useMemo(() => {
+    const seen = new Set<string>();
+    return threadOracles.filter((o: any) => {
+      if (seen.has(o.oracleId)) return false;
+      seen.add(o.oracleId);
+      return true;
+    });
+  }, [threadOracles]);
+
+  const totalParts = uniqueOracles.length;
+  const allExist = totalParts > 0;
+
+  // Check for thread synthesis
+  const synthesisOracle = threadOracles.find(
+    (o: any) => o.threadSynthesis,
+  );
+
+  return (
+    <div
+      className="p-5"
+      style={{
+        border: "1px solid rgba(91,164,164,0.15)",
+        borderRadius: 2,
+        background: "rgba(91,164,164,0.02)",
+      }}
+    >
+      <div
+        className="font-mono text-xs mb-1 tracking-widest"
+        style={{ color: "rgba(91,164,164,0.5)" }}
+      >
+        THREAD SEQUENCE
+      </div>
+      <div
+        className="mb-4"
+        style={{ color: "rgba(91,164,164,0.8)", fontSize: 15 }}
+      >
+        {threadTitle}
+      </div>
+      <div
+        className="mb-4 h-px"
+        style={{ background: "rgba(91,164,164,0.1)" }}
+      />
+
+      {/* Oracle list */}
+      <div className="space-y-2">
+        {uniqueOracles.map((o: any, i: number) => {
+          const isCurrent = o.oracleId === currentOracleId;
+          return (
+            <div key={o.oracleId} className="flex items-center gap-3">
+              <span
+                className="font-mono text-xs"
+                style={{ color: isCurrent ? "#5ba4a4" : "rgba(91,164,164,0.4)" }}
+              >
+                [●]
+              </span>
+              {isCurrent ? (
+                <span
+                  className="font-mono text-xs flex-1"
+                  style={{ color: "#5ba4a4" }}
+                >
+                  {o.oracleId} — &ldquo;{o.title}&rdquo;
+                </span>
+              ) : (
+                <Link href={`/oracle/${o.oracleId}`}>
+                  <span
+                    className="font-mono text-xs flex-1 cursor-pointer transition-colors hover:underline"
+                    style={{ color: "rgba(91,164,164,0.6)" }}
+                  >
+                    {o.oracleId} — &ldquo;{o.title}&rdquo;
+                  </span>
+                </Link>
+              )}
+              {isCurrent && (
+                <span
+                  className="font-mono"
+                  style={{ fontSize: 9, color: "#5ba4a4" }}
+                >
+                  ← CURRENT
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div
+        className="font-mono text-xs mt-4"
+        style={{ color: "rgba(91,164,164,0.35)" }}
+      >
+        Part{" "}
+        {uniqueOracles.findIndex((o: any) => o.oracleId === currentOracleId) +
+          1}{" "}
+        of {totalParts} received
+      </div>
+
+      {/* Thread Synthesis */}
+      {synthesisOracle?.threadSynthesis && allExist && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          className="mt-6 p-4"
+          style={{
+            border: "1px solid #D4AF3744",
+            borderLeft: "2px solid #D4AF37",
+            borderRadius: 2,
+            background: "rgba(212,175,55,0.03)",
+          }}
+        >
+          <div
+            className="font-mono text-xs mb-3 tracking-widest"
+            style={{ color: "#D4AF37" }}
+          >
+            THREAD SYNTHESIS — DECODED
+          </div>
+          <p
+            className="leading-relaxed italic"
+            style={{
+              color: "rgba(212,175,55,0.7)",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            {synthesisOracle.threadSynthesis}
+          </p>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+// ── Oracle Detail Page ──────────────────────────────────────────────
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 // ─────────────────────────────────────────────────────────────────
 // Thread Navigation Panel Component
 // ─────────────────────────────────────────────────────────────────
@@ -197,6 +377,7 @@ function ThreadNavigationPanel({ primaryOracle, stage }: { primaryOracle: any; s
   );
 }
 
+<<<<<<< HEAD
 =======
 function parseJson(val: any, fallback: any = []) {
   if (!val) return fallback;
@@ -360,6 +541,9 @@ function ThreadNavigationPanel({
 
 // ── Oracle Detail Page ──────────────────────────────────────────────
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 export default function OracleDetail() {
   const params = useParams();
   const [, navigate] = useLocation();
@@ -368,14 +552,24 @@ export default function OracleDetail() {
   const oracleId = params.oracleId as string;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  const [stage, setStage] = useState(0);
+
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   // Reveal stages
   const [stage, setStage] = useState(0);
 
   // Data
+<<<<<<< HEAD
 =======
   const [stage, setStage] = useState(0);
 
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const { data: oracleData = [], isLoading } =
     trpc.archive.oracles.getByOracleId.useQuery(
       { oracleId },
@@ -383,25 +577,43 @@ export default function OracleDetail() {
     );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   // Get resonance count
 =======
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+=======
+  // Get resonance count
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const { data: resonanceData } = trpc.archive.resonances.getCount.useQuery(
     { oracleId },
     { enabled: !!oracleId },
   );
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  const resonanceCount =
+    typeof resonanceData === "number" ? resonanceData : 0;
+  const isFieldConfirmed = resonanceCount >= 20;
+
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const resonanceCount = typeof resonanceData === "number" ? resonanceData : 0;
   const isFieldConfirmed = resonanceCount >= 20;
 
   // Group oracle parts by temporal direction
+<<<<<<< HEAD
 =======
   const resonanceCount =
     typeof resonanceData === "number" ? resonanceData : 0;
   const isFieldConfirmed = resonanceCount >= 20;
 
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const organizedOracles = useMemo(() => {
     const result: Record<string, any> = {
       Past: null,
@@ -410,18 +622,43 @@ export default function OracleDetail() {
     };
     oracleData.forEach((o: any) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
       if (o.part in result) {
         result[o.part] = o;
       }
 =======
       if (o.part in result) result[o.part] = o;
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+      if (o.part in result) result[o.part] = o;
+=======
+      if (o.part in result) {
+        result[o.part] = o;
+      }
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
     });
     return result;
   }, [oracleData]);
 
   const primaryOracle = oracleData[0];
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+
+  useEffect(() => {
+    if (!primaryOracle) return;
+    setStage(0);
+    setTimeout(() => setStage(1), 200);
+    setTimeout(() => setStage(2), 800);
+    setTimeout(() => setStage(3), 1400);
+    setTimeout(() => setStage(4), 2000);
+    setTimeout(() => setStage(5), 2600);
+  }, [primaryOracle?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (!oracleId || (!isLoading && oracleData.length === 0)) {
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const hasAllParts = Object.values(organizedOracles).every((v) => v !== null);
 
   // Progressive reveal animation
@@ -440,6 +677,7 @@ export default function OracleDetail() {
 
   // Loading states
   if (!oracleId) {
+<<<<<<< HEAD
 =======
 
   useEffect(() => {
@@ -454,19 +692,31 @@ export default function OracleDetail() {
 
   if (!oracleId || (!isLoading && oracleData.length === 0)) {
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
     return (
       <Layout>
         <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            <p className="font-mono mb-4" style={{ color: "rgba(91,164,164,0.4)", fontSize: 12 }}>
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             <p
               className="font-mono mb-4"
               style={{ color: "rgba(91,164,164,0.4)", fontSize: 12 }}
             >
+<<<<<<< HEAD
 =======
             <p className="font-mono mb-4" style={{ color: "rgba(91,164,164,0.4)", fontSize: 12 }}>
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
               ORACLE NOT FOUND
             </p>
             <button
@@ -475,11 +725,19 @@ export default function OracleDetail() {
               style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
             >
 <<<<<<< HEAD
+<<<<<<< HEAD
               <ArrowLeft size={12} />
               RETURN TO ARCHIVE
 =======
               <ArrowLeft size={12} /> RETURN TO ARCHIVE
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+              <ArrowLeft size={12} /> RETURN TO ARCHIVE
+=======
+              <ArrowLeft size={12} />
+              RETURN TO ARCHIVE
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             </button>
           </div>
         </div>
@@ -493,6 +751,14 @@ export default function OracleDetail() {
         <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+          <Loader2
+            className="w-5 h-5 animate-spin mx-auto mb-3"
+            style={{ color: "rgba(91,164,164,0.3)" }}
+          />
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
           <div className="text-center">
             <Loader2
               className="w-5 h-5 animate-spin mx-auto mb-3"
@@ -531,12 +797,16 @@ export default function OracleDetail() {
               RETURN TO ARCHIVE
             </button>
           </div>
+<<<<<<< HEAD
 =======
           <Loader2
             className="w-5 h-5 animate-spin mx-auto mb-3"
             style={{ color: "rgba(91,164,164,0.3)" }}
           />
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
         </div>
       </Layout>
     );
@@ -547,6 +817,85 @@ export default function OracleDetail() {
   const futureOracle = organizedOracles.Future;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+  const linkedCodons = parseJson(primaryOracle?.linkedCodons, []);
+  const matchingCodons = getMatchingCodons(linkedCodons);
+  const hasPersonalResonance = matchingCodons.length > 0;
+
+  // Helper to render a temporal section
+  const renderSection = (
+    oracle: any,
+    part: string,
+    label: string,
+    stageMin: number,
+    extraContent?: React.ReactNode,
+  ) => {
+    if (!oracle) return null;
+    const colors = TEMPORAL_COLORS[part];
+    return (
+      <AnimatePresence key={part}>
+        {stage >= stageMin && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="mb-12"
+              style={{ borderLeft: `2px solid ${colors.light}`, paddingLeft: 24 }}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <span style={{ fontSize: 18, color: colors.light }}>
+                  {TEMPORAL_GLYPHS[part]}
+                </span>
+                <h2
+                  className="font-mono tracking-wider uppercase text-sm"
+                  style={{ color: colors.light }}
+                >
+                  {label}
+                </h2>
+              </div>
+              <h3
+                className="text-2xl mb-4"
+                style={{ color: colors.light, fontFamily: "system-ui", fontWeight: 400 }}
+              >
+                {oracle.title}
+              </h3>
+              <p
+                className="leading-relaxed"
+                style={{
+                  color: `${colors.light}dd`,
+                  fontStyle: "italic",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {oracle.content}
+              </p>
+              {extraContent}
+            </motion.div>
+            <motion.div
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: 1, opacity: 1 }}
+              transition={{ duration: 0.6 }}
+              className="h-px mb-12 origin-left"
+              style={{
+                background: `linear-gradient(to right, ${colors.light}00, ${colors.light}44, ${colors.light}00)`,
+              }}
+            />
+          </>
+        )}
+      </AnimatePresence>
+    );
+  }
+
+  return (
+    <Layout>
+      <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
+
+      {/* Vignette */}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   const parseJson = (val: any, fallback: any = []) => {
     if (!val) return fallback;
     if (typeof val === "string") {
@@ -565,6 +914,7 @@ export default function OracleDetail() {
       <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
 
       {/* Vignette + animated background gradient */}
+<<<<<<< HEAD
 =======
   const linkedCodons = parseJson(primaryOracle?.linkedCodons, []);
   const matchingCodons = getMatchingCodons(linkedCodons);
@@ -642,6 +992,9 @@ export default function OracleDetail() {
 
       {/* Vignette */}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
       <AnimatePresence>
         {stage >= 1 && (
           <motion.div
@@ -659,6 +1012,17 @@ export default function OracleDetail() {
       </AnimatePresence>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      {/* Background temporal glyph */}
+      <AnimatePresence>
+        {stage >= 1 && primaryOracle && (
+          <motion.div
+            key="glyph-bg"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 0.06, scale: 1 }}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
       {/* Temporal glyph background */}
       <AnimatePresence>
         {stage >= 1 && (
@@ -666,6 +1030,7 @@ export default function OracleDetail() {
             key="temporal-glyph"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 0.08, scale: 1 }}
+<<<<<<< HEAD
 =======
       {/* Background temporal glyph */}
       <AnimatePresence>
@@ -675,6 +1040,9 @@ export default function OracleDetail() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 0.06, scale: 1 }}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             transition={{ duration: 1 }}
             className="fixed inset-0 z-0 flex items-center justify-center pointer-events-none overflow-hidden"
           >
@@ -682,12 +1050,21 @@ export default function OracleDetail() {
               style={{
                 fontSize: "40vw",
 <<<<<<< HEAD
+<<<<<<< HEAD
                 fontWeight: "300",
                 color:
                   TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
 =======
                 color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+                color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+=======
+                fontWeight: "300",
+                color:
+                  TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
               }}
             >
               {TEMPORAL_GLYPHS[primaryOracle.part || "Present"]}
@@ -697,6 +1074,12 @@ export default function OracleDetail() {
       </AnimatePresence>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+      <div className="relative z-10 min-h-screen pt-20 pb-16">
+        {/* Back nav */}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
       {/* Scan lines */}
       <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.02]">
         <div className="absolute inset-0 animate-scan-lines" />
@@ -705,10 +1088,14 @@ export default function OracleDetail() {
       {/* Content */}
       <div className="relative z-10 min-h-screen pt-20 pb-16">
         {/* Back navigation */}
+<<<<<<< HEAD
 =======
       <div className="relative z-10 min-h-screen pt-20 pb-16">
         {/* Back nav */}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
         <div className="px-6 md:px-12 mb-12">
           <div className="max-w-4xl mx-auto">
             <button
@@ -723,11 +1110,19 @@ export default function OracleDetail() {
               }
             >
 <<<<<<< HEAD
+<<<<<<< HEAD
               <ArrowLeft size={12} />
               RETURN TO ARCHIVE
 =======
               <ArrowLeft size={12} /> RETURN TO ARCHIVE
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+              <ArrowLeft size={12} /> RETURN TO ARCHIVE
+=======
+              <ArrowLeft size={12} />
+              RETURN TO ARCHIVE
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             </button>
           </div>
         </div>
@@ -735,6 +1130,70 @@ export default function OracleDetail() {
         <div className="px-6 md:px-12">
           <div className="max-w-4xl mx-auto">
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            {/* Header */}
+            <AnimatePresence>
+              {stage >= 1 && primaryOracle && (
+                <motion.div
+                  key="header"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="mb-8"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <span
+                      className="font-mono tracking-widest"
+                      style={{
+                        fontSize: 12,
+                        color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+                      }}
+                    >
+                      {primaryOracle.oracleId}
+                    </span>
+                    <div
+                      className="px-3 py-1 border font-mono"
+                      style={{
+                        fontSize: 8,
+                        borderColor: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+                        color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+                      }}
+                    >
+                      {primaryOracle.channelStatus}
+                    </div>
+                  </div>
+
+                  {/* Resonate button */}
+                  <div className="flex justify-center mb-4">
+                    <ResonateButton
+                      oracleId={oracleId}
+                      temporalColor={
+                        TEMPORAL_COLORS[primaryOracle.part || "Present"].light
+                      }
+                      size="md"
+                    />
+                  </div>
+
+                  {/* Field-Confirmed banner */}
+                  {isFieldConfirmed && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-center py-2 mb-4"
+                      style={{
+                        border: "1px solid #D4AF3744",
+                        background: "rgba(212,175,55,0.05)",
+                        color: "#D4AF37",
+                        fontSize: 10,
+                        letterSpacing: "0.15em",
+                      }}
+                    >
+                      ★ FIELD-CONFIRMED — COLLECTIVE PROPHECY ACKNOWLEDGED
+                    </motion.div>
+                  )}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             {/* Oracle ID + Channel Status */}
             <AnimatePresence>
               {stage >= 1 && (
@@ -770,6 +1229,7 @@ export default function OracleDetail() {
                   >
                     {primaryOracle.channelStatus}
                   </div>
+<<<<<<< HEAD
 =======
             {/* Header */}
             <AnimatePresence>
@@ -832,11 +1292,90 @@ export default function OracleDetail() {
                     </motion.div>
                   )}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
                 </motion.div>
               )}
             </AnimatePresence>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            {/* Temporal sections */}
+            {renderSection(
+              pastOracle,
+              "Past",
+              "PAST — THE ROOT RIDDLE",
+              2,
+              pastOracle?.currentFieldSignatures && (
+                <div
+                  className="text-xs font-mono mt-4 p-3"
+                  style={{ color: TEMPORAL_COLORS.Past.glow, border: `1px solid ${TEMPORAL_COLORS.Past.glow}`, borderRadius: 2 }}
+                >
+                  <div style={{ opacity: 0.7, marginBottom: 6 }}>FIELD SIGNATURES</div>
+                  <div>{pastOracle.currentFieldSignatures}</div>
+                </div>
+              ),
+            )}
+            {renderSection(
+              presentOracle,
+              "Present",
+              "PRESENT — THE FIELD READING",
+              3,
+              presentOracle?.encodedTrajectory && (
+                <div
+                  className="text-xs font-mono mt-4 p-3"
+                  style={{ color: TEMPORAL_COLORS.Present.glow, border: `1px solid ${TEMPORAL_COLORS.Present.glow}`, borderRadius: 2 }}
+                >
+                  <div style={{ opacity: 0.7, marginBottom: 6 }}>ENCODED TRAJECTORY</div>
+                  <div>{presentOracle.encodedTrajectory}</div>
+                </div>
+              ),
+            )}
+            {renderSection(
+              futureOracle,
+              "Future",
+              "FUTURE — THE CONVERGENCE",
+              4,
+              <>
+                {futureOracle?.convergenceZones && (
+                  <div
+                    className="text-xs font-mono mt-4 p-3"
+                    style={{ color: TEMPORAL_COLORS.Future.glow, border: `1px solid ${TEMPORAL_COLORS.Future.glow}`, borderRadius: 2 }}
+                  >
+                    <div style={{ opacity: 0.7, marginBottom: 6 }}>CONVERGENCE ZONES</div>
+                    <div>{futureOracle.convergenceZones}</div>
+                  </div>
+                )}
+                {futureOracle?.majorOutcomes && (
+                  <div
+                    className="text-xs font-mono mt-3 p-3"
+                    style={{ color: TEMPORAL_COLORS.Future.glow, border: `1px solid ${TEMPORAL_COLORS.Future.glow}`, borderRadius: 2 }}
+                  >
+                    <div style={{ opacity: 0.7, marginBottom: 6 }}>MAJOR OUTCOMES</div>
+                    <div>{futureOracle.majorOutcomes}</div>
+                  </div>
+                )}
+              </>,
+            )}
+
+            {/* Thread Navigation */}
+            <AnimatePresence>
+              {stage >= 5 && primaryOracle?.threadId && (
+                <motion.div
+                  key="thread-nav"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="mt-8 mb-12"
+                >
+                  <ThreadNavigationPanel
+                    threadId={primaryOracle.threadId}
+                    threadTitle={primaryOracle.threadTitle || primaryOracle.threadId}
+                    currentOracleId={oracleId}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             {/* Resonance Button */}
             <AnimatePresence>
               {stage >= 1 && (
@@ -851,6 +1390,7 @@ export default function OracleDetail() {
                     oracleId={primaryOracle.oracleId}
                     temporalColor={TEMPORAL_COLORS[primaryOracle.part || "Present"].light}
                     size="md"
+<<<<<<< HEAD
 =======
             {/* Temporal sections */}
             {renderSection(
@@ -925,12 +1465,49 @@ export default function OracleDetail() {
                     threadTitle={primaryOracle.threadTitle || primaryOracle.threadId}
                     currentOracleId={oracleId}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
                   />
                 </motion.div>
               )}
             </AnimatePresence>
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            {/* Linked Codons */}
+            <AnimatePresence>
+              {stage >= 5 && linkedCodons.length > 0 && (
+                <motion.div
+                  key="codons"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="mt-8 mb-8"
+                >
+                  <div
+                    className="font-mono text-xs mb-4"
+                    style={{ color: "rgba(91,164,164,0.5)" }}
+                  >
+                    LINKED CODONS
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {linkedCodons.map((codon: string, i: number) => (
+                      <div
+                        key={i}
+                        className="px-3 py-2 font-mono text-xs"
+                        style={{
+                          border: "1px solid rgba(91,164,164,0.3)",
+                          color: "rgba(91,164,164,0.6)",
+                          borderRadius: 2,
+                        }}
+                      >
+                        {codon}
+                      </div>
+                    ))}
+=======
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
             {/* Field-Confirmed Banner */}
             <AnimatePresence>
               {stage >= 1 && isFieldConfirmed && (
@@ -957,11 +1534,63 @@ export default function OracleDetail() {
                     }}
                   >
                     ★ FIELD-CONFIRMED — COLLECTIVE PROPHECY ACKNOWLEDGED
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
 
+<<<<<<< HEAD
+            {/* Personal Resonance */}
+            <AnimatePresence>
+              {stage >= 5 && user && hasPersonalResonance && (
+                <motion.div
+                  key="personal"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="mt-8 mb-8 p-4"
+                  style={{
+                    border: "1px solid #D4AF3744",
+                    borderLeft: "2px solid #D4AF37",
+                    borderRadius: 2,
+                    background: "rgba(212,175,55,0.03)",
+                  }}
+                >
+                  <div
+                    className="font-mono text-xs mb-3 tracking-widest"
+                    style={{ color: "#D4AF37" }}
+                  >
+                    PERSONAL RESONANCE
+                  </div>
+                  <p
+                    className="font-mono text-xs mb-3"
+                    style={{ color: "rgba(212,175,55,0.7)", lineHeight: 1.6 }}
+                  >
+                    Your Prime Stack activates this oracle through:
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {matchingCodons.map((codon: string, i: number) => (
+                      <div
+                        key={i}
+                        className="px-3 py-2 font-mono text-xs"
+                        style={{
+                          border: "1px solid #D4AF37",
+                          color: "#D4AF37",
+                          background: "rgba(212,175,55,0.08)",
+                          borderRadius: 2,
+                        }}
+                      >
+                        {codon}
+                      </div>
+                    ))}
+                  </div>
+                  <div
+                    className="font-mono text-xs italic"
+                    style={{ color: "rgba(212,175,55,0.6)" }}
+                  >
+                    &ldquo;This oracle speaks directly to your signal.&rdquo;
+=======
             {/* PAST Section */}
             <AnimatePresence>
               {stage >= 2 && pastOracle && (
@@ -1280,6 +1909,7 @@ export default function OracleDetail() {
                         </div>
                       ),
                     )}
+<<<<<<< HEAD
 =======
                     LINKED CODONS
                   </div>
@@ -1298,10 +1928,15 @@ export default function OracleDetail() {
                       </div>
                     ))}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
                   </div>
                 </motion.div>
               )}
             </AnimatePresence>
+<<<<<<< HEAD
+=======
 
 <<<<<<< HEAD
             {/* Personal Resonance Section */}
@@ -1422,6 +2057,7 @@ export default function OracleDetail() {
               )}
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
             </AnimatePresence>
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
           </div>
         </div>
       </div>

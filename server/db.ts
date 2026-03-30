@@ -1,10 +1,17 @@
 import { eq, desc, and, count, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 <<<<<<< HEAD
+<<<<<<< HEAD
 import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, oracleResonances, InsertOracleResonance, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
 =======
 import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances } from "../drizzle/schema";
 >>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
+=======
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances } from "../drizzle/schema";
+=======
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, oracleResonances, InsertOracleResonance, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
+>>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
