@@ -684,6 +684,11 @@ export const appRouter = router({
       list: publicProcedure.query(async () => {
         return db.getAllOracles();
       }),
+      getById: publicProcedure
+        .input(z.object({ id: z.number() }))
+        .query(async ({ input }) => {
+          return db.getOracleById(input.id);
+        }),
       getByOracleId: publicProcedure
         .input(z.object({ oracleId: z.string() }))
         .query(async ({ input }) => {
