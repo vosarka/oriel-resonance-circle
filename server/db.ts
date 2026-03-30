@@ -1,6 +1,10 @@
 import { eq, desc, and, count, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
+<<<<<<< HEAD
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances } from "../drizzle/schema";
+=======
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, oracleResonances, InsertOracleResonance, staticSignatures, InsertStaticSignature } from "../drizzle/schema";
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -552,6 +556,110 @@ export async function getTransmissionBookmarkCount(transmissionId: number) {
 
 
 // ============================================================================
+// ORACLE RESONANCE SYSTEM
+// ============================================================================
+
+export async function addOracleResonance(userId: number, oracleId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.insert(oracleResonances).values({ userId, oracleId });
+  } catch (error) {
+    console.error("[Database] Failed to add oracle resonance:", error);
+    throw error;
+  }
+}
+
+export async function removeOracleResonance(userId: number, oracleId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.delete(oracleResonances).where(
+      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
+    );
+  } catch (error) {
+    console.error("[Database] Failed to remove oracle resonance:", error);
+    throw error;
+  }
+}
+
+export async function isOracleResonated(userId: number, oracleId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const result = await db.select().from(oracleResonances).where(
+      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
+    ).limit(1);
+    return result.length > 0;
+  } catch (error) {
+    console.error("[Database] Failed to check oracle resonance:", error);
+    return false;
+  }
+}
+
+export async function getOracleResonanceCount(oracleId: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const result = await db.select().from(oracleResonances).where(eq(oracleResonances.oracleId, oracleId));
+    return result.length;
+  } catch (error) {
+    console.error("[Database] Failed to get oracle resonance count:", error);
+    return 0;
+  }
+}
+
+export async function getResonatedOracleIds(userId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const result = await db.select({ oracleId: oracleResonances.oracleId })
+      .from(oracleResonances)
+      .where(eq(oracleResonances.userId, userId));
+    return result.map(r => r.oracleId);
+  } catch (error) {
+    console.error("[Database] Failed to get resonated oracle IDs:", error);
+    return [];
+  }
+}
+
+export async function getOraclesByThread(threadId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(oracles)
+      .where(eq(oracles.threadId, threadId))
+      .orderBy(oracles.threadOrder);
+  } catch (error) {
+    console.error("[Database] Failed to get oracles by thread:", error);
+    return [];
+  }
+}
+
+export async function getThreadsWithProgress() {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const allOracles = await db.select().from(oracles)
+      .where(eq(oracles.status, "Confirmed"));
+    // Group by threadId
+    const threads: Record<string, { threadId: string; threadTitle: string; count: number; oracleIds: string[] }> = {};
+    for (const o of allOracles) {
+      if (!o.threadId) continue;
+      if (!threads[o.threadId]) {
+        threads[o.threadId] = { threadId: o.threadId, threadTitle: o.threadTitle || o.threadId, count: 0, oracleIds: [] };
+      }
+      threads[o.threadId].count++;
+      threads[o.threadId].oracleIds.push(o.oracleId);
+    }
+    return Object.values(threads);
+  } catch (error) {
+    console.error("[Database] Failed to get threads:", error);
+    return [];
+  }
+}
+
+// ============================================================================
 // VOSSARI RESONANCE CODEX - CARRIERLOCK & READINGS
 // ============================================================================
 
@@ -950,6 +1058,136 @@ export async function getLatestStaticSignature(userId: number) {
   } catch (error) {
     console.error("[Database] Failed to get latest static signature:", error);
     return null;
+  }
+}
+
+// ============================================================================
+// ORACLE RESONANCES
+// ============================================================================
+
+export async function addOracleResonance(userId: number, oracleId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.insert(oracleResonances).values({ userId, oracleId });
+  } catch (error) {
+    console.error("[Database] Failed to add oracle resonance:", error);
+    throw error;
+  }
+}
+
+export async function removeOracleResonance(userId: number, oracleId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  try {
+    await db.delete(oracleResonances).where(
+      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
+    );
+  } catch (error) {
+    console.error("[Database] Failed to remove oracle resonance:", error);
+    throw error;
+  }
+}
+
+export async function isOracleResonated(userId: number, oracleId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    const result = await db.select().from(oracleResonances).where(
+      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
+    ).limit(1);
+    return result.length > 0;
+  } catch (error) {
+    console.error("[Database] Failed to check oracle resonance:", error);
+    return false;
+  }
+}
+
+export async function getOracleResonanceCount(oracleId: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const result = await db.select({ cnt: count() }).from(oracleResonances).where(
+      eq(oracleResonances.oracleId, oracleId)
+    );
+    return result[0]?.cnt ?? 0;
+  } catch (error) {
+    console.error("[Database] Failed to get oracle resonance count:", error);
+    return 0;
+  }
+}
+
+export async function getResonatedOracleIds(userId: number): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const results = await db.select({ oracleId: oracleResonances.oracleId })
+      .from(oracleResonances)
+      .where(eq(oracleResonances.userId, userId));
+    return results.map(r => r.oracleId);
+  } catch (error) {
+    console.error("[Database] Failed to get resonated oracle IDs:", error);
+    return [];
+  }
+}
+
+// ============================================================================
+// ORACLE THREADS
+// ============================================================================
+
+export async function getOraclesByThread(threadId: string) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db.select().from(oracles)
+      .where(eq(oracles.threadId, threadId))
+      .orderBy(oracles.threadOrder);
+  } catch (error) {
+    console.error("[Database] Failed to fetch oracles by thread:", error);
+    return [];
+  }
+}
+
+export async function getThreadsWithProgress(userId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    // Get all oracles grouped by threadId, ordered by threadId
+    const allOracles = await db.select().from(oracles)
+      .where(isNull(oracles.threadId) ? undefined : eq(oracles.threadId, oracles.threadId))
+      .orderBy(oracles.threadId, oracles.threadOrder);
+
+    // Group by threadId
+    const threadsMap = new Map<string, typeof allOracles>();
+    for (const oracle of allOracles) {
+      if (oracle.threadId) {
+        if (!threadsMap.has(oracle.threadId)) {
+          threadsMap.set(oracle.threadId, []);
+        }
+        threadsMap.get(oracle.threadId)!.push(oracle);
+      }
+    }
+
+    // Convert to array and calculate progress if userId provided
+    const threads = Array.from(threadsMap.entries()).map(([threadId, threadOracles]) => {
+      let readCount = 0;
+      if (userId) {
+        // Would need to check which oracles user has read
+        // For now, just return the structure
+      }
+      return {
+        threadId,
+        threadTitle: threadOracles[0]?.threadTitle || threadId,
+        totalParts: threadOracles.length,
+        readCount,
+        oracles: threadOracles,
+      };
+    });
+
+    return threads;
+  } catch (error) {
+    console.error("[Database] Failed to fetch threads with progress:", error);
+    return [];
   }
 }
 
