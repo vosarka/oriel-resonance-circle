@@ -4,6 +4,7 @@ import { Link } from "wouter";
 import { Search, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { OracleCard } from "@/components/OracleCard";
+import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 
 // ── FAZA Register Map (VTIP Numbering) ──────────────────────────────
 const FAZA_REGISTERS = [
@@ -219,12 +220,17 @@ export default function Archive() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
   const [activeSection, setActiveSection] = useState<"tx" | "ox">("tx");
+  const [activeThread, setActiveThread] = useState<string | null>(null);
+
+  // Personal resonance hook
+  const { hasResonance } = usePersonalResonance();
 
   // Data
   const { data: rawTx = [], isLoading: txLoading } =
     trpc.archive.transmissions.list.useQuery();
   const { data: rawOx = [], isLoading: oxLoading } =
     trpc.archive.oracles.list.useQuery();
+  const { data: threads = [] } = trpc.archive.oracles.threads.useQuery();
 
   // Parse transmissions
   const transmissions = useMemo(
@@ -304,14 +310,29 @@ export default function Archive() {
 
   // Filter oracles
   const filteredOracles = useMemo(() => {
-    if (!searchQuery) return oracles;
-    const q = searchQuery.toLowerCase();
-    return oracles.filter(
-      (ox: any) =>
-        ox.title.toLowerCase().includes(q) ||
-        ox.content.toLowerCase().includes(q),
-    );
-  }, [oracles, searchQuery]);
+    let result = oracles;
+
+    // Apply thread filter if active
+    if (activeThread) {
+      result = result.filter((ox: any) => ox.threadId === activeThread);
+      // Sort by threadOrder within thread
+      result = result.sort((a: any, b: any) =>
+        (a.threadOrder || 0) - (b.threadOrder || 0)
+      );
+    }
+
+    // Apply search filter
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (ox: any) =>
+          ox.title.toLowerCase().includes(q) ||
+          ox.content.toLowerCase().includes(q),
+      );
+    }
+
+    return result;
+  }, [oracles, searchQuery, activeThread]);
 
   // Header scramble text
   const activeFazaInfo = FAZA_REGISTERS.find((f) => f.id === activeFaza);
@@ -538,6 +559,69 @@ export default function Archive() {
           </div>
         </div>
 
+        {/* ── Thread Filter Row (ΩX section only) ────────────────────– */}
+        {activeSection === "ox" && threads.length > 0 && (
+          <div className="px-6 md:px-12 pb-8">
+            <div
+              className="max-w-7xl mx-auto flex gap-1.5 overflow-x-auto pb-2"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+            >
+              <button
+                onClick={() => setActiveThread(null)}
+                className="flex-shrink-0 relative"
+              >
+                <div
+                  className="px-3 py-2.5 font-mono rounded-sm border transition-all duration-300"
+                  style={{
+                    background: !activeThread
+                      ? "rgba(91,164,164,0.08)"
+                      : "transparent",
+                    borderColor: !activeThread
+                      ? "rgba(91,164,164,0.4)"
+                      : "rgba(91,164,164,0.08)",
+                    color: !activeThread
+                      ? "#5ba4a4"
+                      : "rgba(91,164,164,0.35)",
+                    fontSize: 9,
+                  }}
+                >
+                  ALL THREADS
+                </div>
+              </button>
+
+              {threads.map((thread: any, i: number) => (
+                <button
+                  key={thread.threadId}
+                  onClick={() => setActiveThread(thread.threadId)}
+                  className="flex-shrink-0 relative"
+                >
+                  <div
+                    className="px-3 py-2.5 font-mono rounded-sm border transition-all duration-300"
+                    style={{
+                      background: activeThread === thread.threadId
+                        ? "rgba(91,164,164,0.08)"
+                        : "transparent",
+                      borderColor: activeThread === thread.threadId
+                        ? "rgba(91,164,164,0.4)"
+                        : "rgba(91,164,164,0.08)",
+                      color: activeThread === thread.threadId
+                        ? "#5ba4a4"
+                        : "rgba(91,164,164,0.35)",
+                      fontSize: 9,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {thread.threadTitle}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Content Grid ────────────────────────────────── */}
         <div className="px-6 md:px-12 pb-16">
           <div className="max-w-7xl mx-auto">
@@ -596,26 +680,104 @@ export default function Archive() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredOracles.map((ox: any, i: number) => (
-                  <div
-                    key={ox.id}
-                    className="animate-fade-in-up"
-                    style={{ animationDelay: `${0.06 * i}s` }}
-                  >
-                    <OracleCard
-                      id={ox.id}
-                      oxNumber={ox.oracleNumber}
-                      title={ox.title}
-                      field={ox.field}
-                      temporalDirection={ox.part}
-                      content={ox.content}
-                      hashtags={ox.hashtags}
-                      status={ox.status}
-                    />
-                  </div>
-                ))}
-              </div>
+              <>
+                {/* Rising Signals Section */}
+                {(() => {
+                  const risingOracles = filteredOracles
+                    .filter((ox: any) => (ox.resonanceCount || 0) >= 5)
+                    .sort((a: any, b: any) => (b.resonanceCount || 0) - (a.resonanceCount || 0))
+                    .slice(0, 3);
+
+                  return risingOracles.length > 0 ? (
+                    <div className="mb-12">
+                      <div
+                        className="font-mono uppercase tracking-widest mb-6"
+                        style={{ fontSize: 10, color: "#bda36b", letterSpacing: "0.15em" }}
+                      >
+                        RISING SIGNALS
+                      </div>
+                      <div className="flex gap-6 overflow-x-auto pb-4">
+                        {risingOracles.map((ox: any, i: number) => {
+                          const linkedCodons = ox.linkedCodons ? (typeof ox.linkedCodons === "string" ? JSON.parse(ox.linkedCodons) : ox.linkedCodons) : [];
+                          const hasPersonalResonance = hasResonance(linkedCodons);
+
+                          return (
+                            <div
+                              key={ox.id}
+                              className="flex-shrink-0 w-96 animate-fade-in-up"
+                              style={{ animationDelay: `${0.06 * i}s` }}
+                            >
+                              <div
+                                className="p-1 animate-pulse"
+                                style={{
+                                  border: hasPersonalResonance ? `1px solid #D4AF37` : `1px solid #D4AF3744`,
+                                  borderRadius: 2,
+                                  boxShadow: hasPersonalResonance
+                                    ? `0 0 20px #D4AF3722, inset 0 0 15px rgba(212, 175, 55, 0.08)`
+                                    : `0 0 20px #D4AF3711`,
+                                  borderLeft: hasPersonalResonance ? "2px solid #D4AF37" : undefined,
+                                }}
+                              >
+                                <OracleCard
+                                  id={ox.id}
+                                  oracleId={ox.oracleId}
+                                  oxNumber={ox.oracleNumber}
+                                  title={ox.title}
+                                  field={ox.field}
+                                  temporalDirection={ox.part}
+                                  content={ox.content}
+                                  hashtags={ox.hashtags ? JSON.parse(ox.hashtags) : []}
+                                  status={ox.status}
+                                  resonanceCount={ox.resonanceCount}
+                                  linkedCodons={linkedCodons}
+                                  threadId={ox.threadId}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : null;
+                })()}
+
+                {/* Main Oracle Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredOracles.map((ox: any, i: number) => {
+                    const linkedCodons = ox.linkedCodons ? (typeof ox.linkedCodons === "string" ? JSON.parse(ox.linkedCodons) : ox.linkedCodons) : [];
+                    const hasPersonalResonance = hasResonance(linkedCodons);
+
+                    return (
+                      <div
+                        key={ox.id}
+                        className="animate-fade-in-up"
+                        style={{
+                          animationDelay: `${0.06 * i}s`,
+                          ...(hasPersonalResonance && {
+                            borderLeft: "2px solid #D4AF37",
+                            paddingLeft: "12px",
+                          }),
+                        }}
+                      >
+                        <OracleCard
+                          id={ox.id}
+                          oracleId={ox.oracleId}
+                          oxNumber={ox.oracleNumber}
+                          title={ox.title}
+                          field={ox.field}
+                          temporalDirection={ox.part}
+                          content={ox.content}
+                          hashtags={ox.hashtags ? JSON.parse(ox.hashtags) : []}
+                          status={ox.status}
+                          resonanceCount={ox.resonanceCount}
+                          linkedCodons={linkedCodons}
+                          threadId={ox.threadId}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

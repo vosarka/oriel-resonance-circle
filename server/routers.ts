@@ -694,6 +694,14 @@ export const appRouter = router({
         .query(async ({ input }) => {
           return db.getOraclesByOracleId(input.oracleId);
         }),
+      getByThread: publicProcedure
+        .input(z.object({ threadId: z.string() }))
+        .query(async ({ input }) => {
+          return db.getOraclesByThread(input.threadId);
+        }),
+      threads: publicProcedure.query(async () => {
+        return db.getThreadsWithProgress();
+      }),
     }),
     bookmarks: router({
       add: protectedProcedure
@@ -724,6 +732,38 @@ export const appRouter = router({
         .input(z.object({ transmissionId: z.number() }))
         .query(async ({ input }) => {
           return db.getTransmissionBookmarkCount(input.transmissionId);
+        }),
+    }),
+    resonances: router({
+      add: protectedProcedure
+        .input(z.object({ oracleId: z.string() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("User not authenticated");
+          await db.addOracleResonance(ctx.user.id, input.oracleId);
+          return { success: true };
+        }),
+      remove: protectedProcedure
+        .input(z.object({ oracleId: z.string() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("User not authenticated");
+          await db.removeOracleResonance(ctx.user.id, input.oracleId);
+          return { success: true };
+        }),
+      isResonated: protectedProcedure
+        .input(z.object({ oracleId: z.string() }))
+        .query(async ({ input, ctx }) => {
+          if (!ctx.user) return false;
+          return db.isOracleResonated(ctx.user.id, input.oracleId);
+        }),
+      getCount: publicProcedure
+        .input(z.object({ oracleId: z.string() }))
+        .query(async ({ input }) => {
+          return db.getOracleResonanceCount(input.oracleId);
+        }),
+      getUserResonated: protectedProcedure
+        .query(async ({ ctx }) => {
+          if (!ctx.user) return [];
+          return db.getResonatedOracleIds(ctx.user.id);
         }),
     }),
   }),
@@ -1091,6 +1131,11 @@ export const appRouter = router({
           majorOutcomes: z.string().optional(),
           visualStyle: z.string().optional(),
           hashtags: z.string().optional(),
+          linkedCodons: z.string().optional(),
+          threadId: z.string().optional(),
+          threadTitle: z.string().optional(),
+          threadOrder: z.number().optional(),
+          threadSynthesis: z.string().optional(),
           status: z.enum(["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed"),
           oracleId: z.string().optional(),
           oracleNumber: z.number().optional(),
@@ -1123,6 +1168,11 @@ export const appRouter = router({
           majorOutcomes: z.string().optional(),
           visualStyle: z.string().optional(),
           hashtags: z.string().optional(),
+          linkedCodons: z.string().optional(),
+          threadId: z.string().optional(),
+          threadTitle: z.string().optional(),
+          threadOrder: z.number().optional(),
+          threadSynthesis: z.string().optional(),
           status: z.enum(["Draft", "Confirmed", "Deprecated", "Prophetic"]).optional(),
         }))
         .mutation(async ({ input }) => {

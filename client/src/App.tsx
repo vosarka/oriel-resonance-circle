@@ -23,6 +23,7 @@ import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import OracleDetail from "./pages/OracleDetail";
 import OrbPreview from "./pages/OrbPreview";
 
 function Router() {
@@ -36,7 +37,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
-      <Route path={"/oracle/:id"} component={OracleDetail} />
+      <Route path={"/oracle/:oracleId"} component={OracleDetail} />
       <Route path={"/artifacts"} component={Artifacts} />
       <Route path={"/protocol"} component={Protocol} />
       <Route path={"/conduit"} component={Conduit} />
