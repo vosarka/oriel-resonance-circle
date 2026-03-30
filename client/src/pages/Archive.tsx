@@ -236,11 +236,17 @@ export default function Archive() {
   const transmissions = useMemo(
     () =>
       rawTx
-        .map((tx: any) => ({
-          ...tx,
-          tags:
-            typeof tx.tags === "string" ? JSON.parse(tx.tags) : tx.tags || [],
-        }))
+        .map((tx: any) => {
+          let tags: string[] = [];
+          if (Array.isArray(tx.tags)) {
+            tags = tx.tags;
+          } else if (typeof tx.tags === "string") {
+            try { tags = JSON.parse(tx.tags); } catch {
+              tags = tx.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+            }
+          }
+          return { ...tx, tags };
+        })
         .sort((a: any, b: any) => a.txNumber - b.txNumber),
     [rawTx],
   );
@@ -248,13 +254,17 @@ export default function Archive() {
   // Parse oracles
   const oracles = useMemo(
     () =>
-      rawOx.map((ox: any) => ({
-        ...ox,
-        hashtags:
-          typeof ox.hashtags === "string"
-            ? JSON.parse(ox.hashtags)
-            : ox.hashtags || [],
-      })),
+      rawOx.map((ox: any) => {
+        let hashtags: string[] = [];
+        if (Array.isArray(ox.hashtags)) {
+          hashtags = ox.hashtags;
+        } else if (typeof ox.hashtags === "string") {
+          try { hashtags = JSON.parse(ox.hashtags); } catch {
+            hashtags = ox.hashtags.split(/[\s,]+/).filter(Boolean);
+          }
+        }
+        return { ...ox, hashtags };
+      }),
     [rawOx],
   );
 

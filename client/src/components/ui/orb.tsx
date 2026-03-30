@@ -20,6 +20,7 @@ type OrbProps = {
   outputVolumeRef?: React.RefObject<number>
   getInputVolume?: () => number
   getOutputVolume?: () => number
+  speed?: number
   className?: string
 }
 
@@ -36,6 +37,7 @@ export function Orb({
   outputVolumeRef,
   getInputVolume,
   getOutputVolume,
+  speed = 1,
   className,
 }: OrbProps) {
   return (
@@ -60,6 +62,7 @@ export function Orb({
           outputVolumeRef={outputVolumeRef}
           getInputVolume={getInputVolume}
           getOutputVolume={getOutputVolume}
+          speed={speed}
         />
       </Canvas>
     </div>
@@ -78,6 +81,7 @@ function Scene({
   outputVolumeRef,
   getInputVolume,
   getOutputVolume,
+  speed,
 }: {
   colors: [string, string]
   colorsRef?: React.RefObject<[string, string]>
@@ -90,6 +94,7 @@ function Scene({
   outputVolumeRef?: React.RefObject<number>
   getInputVolume?: () => number
   getOutputVolume?: () => number
+  speed: number
 }) {
   const { gl } = useThree()
   const circleRef =
@@ -98,6 +103,7 @@ function Scene({
   const targetColor1Ref = useRef(new THREE.Color(colors[0]))
   const targetColor2Ref = useRef(new THREE.Color(colors[1]))
   const animSpeedRef = useRef(0.1)
+  const speedRef = useRef(speed)
   const perlinNoiseTexture = useTexture(
     "https://storage.googleapis.com/eleven-public-cdn/images/perlin-noise.png"
   )
@@ -116,6 +122,10 @@ function Scene({
   useEffect(() => {
     modeRef.current = volumeMode
   }, [volumeMode])
+
+  useEffect(() => {
+    speedRef.current = speed
+  }, [speed])
 
   useEffect(() => {
     manualInRef.current = clamp01(
@@ -170,7 +180,6 @@ function Scene({
       if (live[1]) targetColor2Ref.current.set(live[1])
     }
     const u = mat.uniforms
-    u.uTime.value += delta * 0.5
 
     if (u.uOpacity.value < 1) {
       u.uOpacity.value = Math.min(1, u.uOpacity.value + delta * 2)
@@ -207,9 +216,11 @@ function Scene({
     curInRef.current += (targetIn - curInRef.current) * 0.35
     curOutRef.current += (targetOut - curOutRef.current) * 0.35
 
-    const targetSpeed = 0.06 + (1 - Math.pow(curOutRef.current - 1, 2)) * 0.2
+    const s = speedRef.current
+    const targetSpeed = (0.06 + (1 - Math.pow(curOutRef.current - 1, 2)) * 0.2) * s
     animSpeedRef.current += (targetSpeed - animSpeedRef.current) * 0.2
 
+    u.uTime.value += delta * 0.5 * s
     u.uAnimation.value += delta * animSpeedRef.current
     u.uInputVolume.value = curInRef.current
     u.uOutputVolume.value = curOutRef.current
@@ -478,7 +489,7 @@ void main() {
     float totalRingAlpha = max(ringAlpha1, ringAlpha2);
 
     // Apply screen blend mode for combined rings
-    vec3 ringColor = vec3(0.0, 0.0, 0.0); // Black ring
+    vec3 ringColor = vec3(0.91, 0.894, 0.863); // #e8e4dc — site text color
     color.rgb = 1.0 - (1.0 - color.rgb) * (1.0 - ringColor * totalRingAlpha);
 
     // Define colours to ramp against greyscale

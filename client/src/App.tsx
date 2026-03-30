@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import TransmissionDetail from "./pages/TransmissionDetail";
+import OracleDetail from "./pages/OracleDetail";
 import Artifacts from "./pages/Artifacts";
 import Conduit from "./pages/Conduit";
 import Protocol from "./pages/Protocol";
@@ -23,10 +24,12 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
 import OracleDetail from "./pages/OracleDetail";
+import OrbPreview from "./pages/OrbPreview";
 
 function Router() {
   return (
     <Switch>
+      <Route path={"/orb-preview"} component={OrbPreview} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/privacy"} component={PrivacyPolicy} />

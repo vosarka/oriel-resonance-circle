@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { X, Phone } from "lucide-react";
 
@@ -44,6 +44,62 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const inputAnalyserRef = useRef<AnalyserNode | null>(null);
   const outputAnalyserRef = useRef<AnalyserNode | null>(null);
 
+  // Dynamic color shifting based on output volume intensity:
+  //   idle/silent  → #002633 (dark teal, near black)
+  //   speaking     → #1935a3 (deep blue)
+  //   peak moment  → #818fc5 (bright lavender, rare)
+  const COLORS_IDLE: [string, string] = ["#ffedbd", "#002633"];
+  const orbColorsRef = useRef<[string, string]>(COLORS_IDLE);
+  const colorRafRef = useRef<number>(0);
+
+  useEffect(() => {
+    if (orbState !== "speaking") {
+      orbColorsRef.current = ["#ffedbd", "#002633"];
+      if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
+      return;
+    }
+
+    // While speaking, sample output volume and shift second color
+    const pump = () => {
+      const analyser = outputAnalyserRef.current;
+      if (!analyser) {
+        orbColorsRef.current = ["#ffedbd", "#1935a3"];
+        colorRafRef.current = requestAnimationFrame(pump);
+        return;
+      }
+
+      const data = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(data);
+      let sum = 0;
+      for (let i = 0; i < data.length; i++) {
+        const v = (data[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / data.length);
+
+      // 3-tier color: black(#002633) → blue(#1935a3) → lavender(#818fc5)
+      let color2: string;
+      if (rms > 0.15) {
+        // Intensity peak — rare bright lavender flash
+        color2 = "#818fc5";
+      } else if (rms > 0.02) {
+        // Normal speaking — deep blue
+        color2 = "#1935a3";
+      } else {
+        // Quiet/pause — dark teal
+        color2 = "#002633";
+      }
+
+      orbColorsRef.current = ["#ffedbd", color2];
+      colorRafRef.current = requestAnimationFrame(pump);
+    };
+
+    pump();
+    return () => {
+      if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
+    };
+  }, [orbState]);
+
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   // Keep ref in sync with state for use in stale closures
@@ -79,7 +135,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       const v = (data[i] - 128) / 128;
       sum += v * v;
     }
-    return Math.min(1, Math.sqrt(sum / data.length) * 3);
+    // Gentle output: cap at 0.02 for subtle motion
+    const rms = Math.sqrt(sum / data.length);
+    return Math.min(0.10, rms * 0.5);
   }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
@@ -398,6 +456,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     playbackGainRef.current = null;
     inputAnalyserRef.current = null;
     outputAnalyserRef.current = null;
+    if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
     // Close audio context
     if (audioCtxRef.current) {
       audioCtxRef.current.close().catch(() => {});
@@ -461,16 +520,26 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         </span>
       </div>
 
-      {/* Orb — centered, large, audio-reactive */}
-      <div className="w-72 h-72 md:w-96 md:h-96 flex-shrink-0">
-        <Orb
-          colors={["#affff1", "#9696ff"]}
-          agentState={toAgentState(orbState)}
-          seed={42}
-          volumeMode="manual"
-          getInputVolume={getInputVolume}
-          getOutputVolume={getOutputVolume}
-        />
+      {/* Orb — centered, large, audio-reactive with border ring */}
+      <div
+        className="w-[304px] h-[304px] md:w-[400px] md:h-[400px] flex-shrink-0"
+        style={{
+          borderRadius: "50%",
+          border: "2.5px solid #10101e",
+        }}
+      >
+        <div className="w-full h-full rounded-full overflow-hidden">
+          <Orb
+            colors={COLORS_IDLE}
+            colorsRef={orbColorsRef}
+            agentState={toAgentState(orbState)}
+            seed={42}
+            speed={1.5}
+            volumeMode="manual"
+            getInputVolume={getInputVolume}
+            getOutputVolume={getOutputVolume}
+          />
+        </div>
       </div>
 
       {/* Label under orb */}

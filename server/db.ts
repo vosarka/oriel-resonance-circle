@@ -158,6 +158,18 @@ export async function getOraclesByOracleId(oracleId: string) {
   }
 }
 
+export async function getOracleById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.select().from(oracles).where(eq(oracles.id, id));
+    return result[0] ?? null;
+  } catch (error) {
+    console.error("[Database] Failed to fetch oracle by id:", error);
+    return null;
+  }
+}
+
 export async function createOracle(data: InsertOracle) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
