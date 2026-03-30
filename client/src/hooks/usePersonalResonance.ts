@@ -4,14 +4,19 @@ import { useAuth } from "@/_core/hooks/useAuth";
 
 /**
  * Returns the user's Prime Stack codon IDs (if they have a static signature)
+<<<<<<< HEAD
  * and helper functions to check if an oracle's linkedCodons overlap.
  *
  * The Prime Stack is a structured object with 9 positions (conscious_sun, design_sun, etc.),
  * each containing a CodonPosition with a codonId like "RC34".
+=======
+ * and helpers to check if an oracle's linkedCodons overlap with their codons.
+>>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
  */
 export function usePersonalResonance() {
   const { user } = useAuth();
 
+<<<<<<< HEAD
   // Fetch user's static readings (contains primeStack)
   const { data: staticReadings = [] } = trpc.codex.getStaticReadings.useQuery(
     undefined,
@@ -43,11 +48,37 @@ export function usePersonalResonance() {
           }
         });
         return codons;
+=======
+  // Fetch user's latest static reading (contains primeStack)
+  const { data: readings } = trpc.codex.getStaticReadings.useQuery(
+    undefined,
+    { enabled: !!user },
+  );
+
+  // Extract codon IDs from the most recent primeStack
+  const userCodons = useMemo(() => {
+    if (!readings || readings.length === 0) return [];
+    const latest = readings[0];
+    if (!latest?.primeStack) return [];
+    try {
+      const stack =
+        typeof latest.primeStack === "string"
+          ? JSON.parse(latest.primeStack)
+          : latest.primeStack;
+      if (Array.isArray(stack)) {
+        return stack
+          .map((item: any) => {
+            if (typeof item === "string") return item;
+            return item?.codonId || item?.id || item?.rc || "";
+          })
+          .filter(Boolean);
+>>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
       }
       return [];
     } catch {
       return [];
     }
+<<<<<<< HEAD
   }, [staticReadings]);
 
   // Check if oracle's linkedCodons overlap with user's codons
@@ -61,6 +92,16 @@ export function usePersonalResonance() {
   };
 
   const hasResonance = (linkedCodons: string[] | undefined): boolean => {
+=======
+  }, [readings]);
+
+  const getMatchingCodons = (linkedCodons: string[]): string[] => {
+    if (!linkedCodons || !userCodons.length) return [];
+    return linkedCodons.filter((codon) => userCodons.includes(codon));
+  };
+
+  const hasResonance = (linkedCodons: string[]): boolean => {
+>>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
     return getMatchingCodons(linkedCodons).length > 0;
   };
 

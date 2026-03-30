@@ -242,6 +242,7 @@ export const oracles = mysqlTable("oracles", {
   majorOutcomes: text("majorOutcomes"),
   visualStyle: varchar("visualStyle", { length: 64 }),
   hashtags: text("hashtags"),
+<<<<<<< HEAD
   /** Collective Resonance: JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
   linkedCodons: text("linkedCodons"),
   /** Oracle Threads: Thread group identifier, e.g. "dissolution-sequence" */
@@ -253,6 +254,19 @@ export const oracles = mysqlTable("oracles", {
   /** Oracle Threads: Hidden text that unlocks when all thread parts are read */
   threadSynthesis: text("threadSynthesis"),
   /** Collective Resonance: Cached count of resonances */
+=======
+  /** JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
+  linkedCodons: text("linkedCodons"),
+  /** Thread group identifier for Oracle Threads, e.g. "dissolution-sequence" */
+  threadId: varchar("threadId", { length: 64 }),
+  /** Human-readable thread name */
+  threadTitle: varchar("threadTitle", { length: 255 }),
+  /** Order within thread (1, 2, 3...) */
+  threadOrder: int("threadOrder"),
+  /** Hidden synthesis text unlocked when all thread parts are read */
+  threadSynthesis: text("threadSynthesis"),
+  /** Cached count of user resonances for this oracle */
+>>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
   resonanceCount: int("resonanceCount").default(0).notNull(),
   status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -262,6 +276,20 @@ export const oracles = mysqlTable("oracles", {
 export type Oracle = typeof oracles.$inferSelect;
 export type InsertOracle = typeof oracles.$inferInsert;
 
+/**
+ * Oracle Resonances - Track user resonance interactions with oracles
+ * Used for Collective Resonance system (signal amplification)
+ */
+export const oracleResonances = mysqlTable("oracleResonances", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** References oracles.oracleId (the string identifier, not auto-increment id) */
+  oracleId: varchar("oracleId", { length: 64 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type OracleResonance = typeof oracleResonances.$inferSelect;
+export type InsertOracleResonance = typeof oracleResonances.$inferInsert;
 
 /**
  * User Bookmarks - Track which transmissions users have bookmarked
