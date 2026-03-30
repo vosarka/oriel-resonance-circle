@@ -1,4 +1,4 @@
-import { int, double, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+﻿import { int, double, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -242,9 +242,6 @@ export const oracles = mysqlTable("oracles", {
   majorOutcomes: text("majorOutcomes"),
   visualStyle: varchar("visualStyle", { length: 64 }),
   hashtags: text("hashtags"),
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
   /** JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
   linkedCodons: text("linkedCodons"),
   /** Thread group identifier for Oracle Threads, e.g. "dissolution-sequence" */
@@ -256,36 +253,6 @@ export const oracles = mysqlTable("oracles", {
   /** Hidden synthesis text unlocked when all thread parts are read */
   threadSynthesis: text("threadSynthesis"),
   /** Cached count of user resonances for this oracle */
-=======
->>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
-  /** Collective Resonance: JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
-  linkedCodons: text("linkedCodons"),
-  /** Oracle Threads: Thread group identifier, e.g. "dissolution-sequence" */
-  threadId: varchar("threadId", { length: 64 }),
-  /** Oracle Threads: Human-readable thread name */
-  threadTitle: varchar("threadTitle", { length: 255 }),
-  /** Oracle Threads: Order within thread (1, 2, 3...) */
-  threadOrder: int("threadOrder"),
-  /** Oracle Threads: Hidden text that unlocks when all thread parts are read */
-  threadSynthesis: text("threadSynthesis"),
-  /** Collective Resonance: Cached count of resonances */
-<<<<<<< HEAD
-=======
-  /** JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
-  linkedCodons: text("linkedCodons"),
-  /** Thread group identifier for Oracle Threads, e.g. "dissolution-sequence" */
-  threadId: varchar("threadId", { length: 64 }),
-  /** Human-readable thread name */
-  threadTitle: varchar("threadTitle", { length: 255 }),
-  /** Order within thread (1, 2, 3...) */
-  threadOrder: int("threadOrder"),
-  /** Hidden synthesis text unlocked when all thread parts are read */
-  threadSynthesis: text("threadSynthesis"),
-  /** Cached count of user resonances for this oracle */
->>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
-=======
->>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
->>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
   resonanceCount: int("resonanceCount").default(0).notNull(),
   status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -323,21 +290,6 @@ export const bookmarks = mysqlTable("bookmarks", {
 
 export type Bookmark = typeof bookmarks.$inferSelect;
 export type InsertBookmark = typeof bookmarks.$inferInsert;
-
-/**
- * Oracle Resonances - Track which oracles users have resonated with
- * Part of Collective Resonance feature - aggregates user resonances to show engagement
- */
-export const oracleResonances = mysqlTable("oracleResonances", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  /** References oracles.oracleId (not the auto-increment id) */
-  oracleId: varchar("oracleId", { length: 64 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
-
-export type OracleResonance = typeof oracleResonances.$inferSelect;
-export type InsertOracleResonance = typeof oracleResonances.$inferInsert;
 
 /**
  * User Carrierlock States - Real-time coherence measurements

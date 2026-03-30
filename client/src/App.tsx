@@ -1,4 +1,4 @@
-import { Toaster } from "@/components/ui/sonner";
+﻿import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
@@ -8,7 +8,6 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import TransmissionDetail from "./pages/TransmissionDetail";
-import OracleDetail from "./pages/OracleDetail";
 import Artifacts from "./pages/Artifacts";
 import Conduit from "./pages/Conduit";
 import Protocol from "./pages/Protocol";
@@ -23,17 +22,8 @@ import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import OrbPreview from "./pages/OrbPreview";
 import OracleDetail from "./pages/OracleDetail";
-<<<<<<< HEAD
-<<<<<<< HEAD
-import OrbPreview from "./pages/OrbPreview";
-=======
->>>>>>> bc215e8 (feat: Oracle Stream Evolution — Collective Resonance, Codex-Oracle Bridge, Oracle Threads, Visual Separation)
-=======
-=======
-import OrbPreview from "./pages/OrbPreview";
->>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
->>>>>>> 367d7bf325c161580135a2385d3ff80d2b173a0d
 
 function Router() {
   return (
