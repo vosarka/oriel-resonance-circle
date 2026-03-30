@@ -24,7 +24,10 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
 import OracleDetail from "./pages/OracleDetail";
+<<<<<<< HEAD
+=======
 import OrbPreview from "./pages/OrbPreview";
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
 
 function Router() {
   return (
