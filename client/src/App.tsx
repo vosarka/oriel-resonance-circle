@@ -8,6 +8,7 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import TransmissionDetail from "./pages/TransmissionDetail";
+import OracleDetail from "./pages/OracleDetail";
 import Artifacts from "./pages/Artifacts";
 import Conduit from "./pages/Conduit";
 import Protocol from "./pages/Protocol";
@@ -22,7 +23,11 @@ import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import OracleDetail from "./pages/OracleDetail";
+<<<<<<< HEAD
+=======
 import OrbPreview from "./pages/OrbPreview";
+>>>>>>> 343a1891232be1a4a6519ba1a61f5b7baa3b62db
 
 function Router() {
   return (
@@ -35,6 +40,7 @@ function Router() {
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
+      <Route path={"/oracle/:oracleId"} component={OracleDetail} />
       <Route path={"/artifacts"} component={Artifacts} />
       <Route path={"/protocol"} component={Protocol} />
       <Route path={"/conduit"} component={Conduit} />
