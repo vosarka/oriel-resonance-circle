@@ -1,5 +1,7 @@
 ﻿import { int, double, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
+import { index, uniqueIndex } from "drizzle-orm/mysql-core";
+
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
@@ -257,7 +259,10 @@ export const oracles = mysqlTable("oracles", {
   status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => [
+  index("idx_oracles_threadId").on(table.threadId),
+  index("idx_oracles_thread_order").on(table.threadId, table.threadOrder),
+]);
 
 export type Oracle = typeof oracles.$inferSelect;
 export type InsertOracle = typeof oracles.$inferInsert;
@@ -272,7 +277,11 @@ export const oracleResonances = mysqlTable("oracleResonances", {
   /** References oracles.oracleId (the string identifier, not auto-increment id) */
   oracleId: varchar("oracleId", { length: 64 }).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_resonances_userId").on(table.userId),
+  index("idx_resonances_oracleId").on(table.oracleId),
+  uniqueIndex("uq_user_oracle").on(table.userId, table.oracleId),
+]);
 
 export type OracleResonance = typeof oracleResonances.$inferSelect;
 export type InsertOracleResonance = typeof oracleResonances.$inferInsert;

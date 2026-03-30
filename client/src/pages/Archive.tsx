@@ -4,6 +4,8 @@ import { Link } from "wouter";
 import { Search, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { OracleCard } from "@/components/OracleCard";
+import { usePersonalResonance } from "@/hooks/usePersonalResonance";
+import { parseLinkedCodons, parseOracleHashtags } from "@/lib/oracle-utils";
 
 // ── FAZA Register Map (VTIP Numbering) ──────────────────────────────
 const FAZA_REGISTERS = [
@@ -220,6 +222,7 @@ export default function Archive() {
   const [showSearch, setShowSearch] = useState(false);
   const [activeSection, setActiveSection] = useState<"tx" | "ox">("tx");
   const [activeThread, setActiveThread] = useState<string | null>(null);
+  const { hasResonance } = usePersonalResonance();
 
   // Data
   const { data: rawTx = [], isLoading: txLoading } =
@@ -250,29 +253,26 @@ export default function Archive() {
   // Parse oracles
   const oracles = useMemo(
     () =>
-      rawOx.map((ox: any) => {
-        let hashtags: string[] = [];
-        if (Array.isArray(ox.hashtags)) {
-          hashtags = ox.hashtags;
-        } else if (typeof ox.hashtags === "string") {
-          try { hashtags = JSON.parse(ox.hashtags); } catch {
-            hashtags = ox.hashtags.split(/[\s,]+/).filter(Boolean);
-          }
-        }
-        let parsedLinkedCodons: string[] = [];
-        if (Array.isArray(ox.linkedCodons)) {
-          parsedLinkedCodons = ox.linkedCodons;
-        } else if (typeof ox.linkedCodons === "string") {
-          try {
-            parsedLinkedCodons = JSON.parse(ox.linkedCodons);
-          } catch {
-            parsedLinkedCodons = [];
-          }
-        }
-        return { ...ox, hashtags, parsedLinkedCodons };
-      }),
+      rawOx.map((ox: any) => ({
+        ...ox,
+        hashtags: parseOracleHashtags(ox.hashtags),
+        parsedLinkedCodons: parseLinkedCodons(ox.linkedCodons),
+      })),
     [rawOx],
   );
+
+  const getOracleShellStyle = (linkedCodons: string[]) => {
+    const isPersonal = hasResonance(linkedCodons);
+    if (!isPersonal) return {};
+
+    return {
+      borderLeft: "2px solid #D4AF37",
+      paddingLeft: 12,
+      borderRadius: 2,
+      boxShadow:
+        "0 0 20px rgba(212,175,55,0.12), inset 0 0 15px rgba(212,175,55,0.04)",
+    };
+  };
 
   // Rising Signals — oracles with resonanceCount >= 5
   const risingSignals = useMemo(
@@ -676,7 +676,13 @@ export default function Archive() {
                         <div
                           key={ox.id}
                           className="flex-shrink-0"
-                          style={{ width: 300, border: "1px solid rgba(212,175,55,0.15)", borderRadius: 2 }}
+                          style={{
+                            width: 300,
+                            border: "1px solid rgba(212,175,55,0.15)",
+                            borderRadius: 2,
+                            boxSizing: "border-box",
+                            ...getOracleShellStyle(ox.parsedLinkedCodons),
+                          }}
                         >
                           <OracleCard
                             id={ox.id}
@@ -703,7 +709,11 @@ export default function Archive() {
                     <div
                       key={ox.id}
                       className="animate-fade-in-up"
-                      style={{ animationDelay: `${0.06 * i}s` }}
+                      style={{
+                        animationDelay: `${0.06 * i}s`,
+                        boxSizing: "border-box",
+                        ...getOracleShellStyle(ox.parsedLinkedCodons),
+                      }}
                     >
                       <OracleCard
                         id={ox.id}

@@ -1,4 +1,5 @@
-﻿import { Link } from "wouter";
+import { motion } from "framer-motion";
+import { Link } from "wouter";
 import { ResonateButton } from "@/components/ResonateButton";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 
@@ -57,7 +58,8 @@ export function OracleCard({
   linkedCodons = [],
   threadId,
 }: OracleCardProps) {
-  const colors = TEMPORAL_COLORS[temporalDirection] || TEMPORAL_COLORS.Present;
+  const colors =
+    TEMPORAL_COLORS[temporalDirection] || TEMPORAL_COLORS.Present;
   const glyph = TEMPORAL_GLYPHS[temporalDirection] || "●";
   const { hasResonance } = usePersonalResonance();
 
@@ -69,9 +71,10 @@ export function OracleCard({
       <div
         className="group relative cursor-pointer"
         style={{
-          // Golden thread for personal resonance
           borderLeft: hasPersonal ? "2px solid #D4AF37" : "none",
-          paddingLeft: hasPersonal ? 0 : 0,
+          boxShadow: hasPersonal
+            ? "0 0 12px rgba(212,175,55,0.16)"
+            : "none",
         }}
       >
         <div
@@ -98,7 +101,6 @@ export function OracleCard({
               : "none";
           }}
         >
-          {/* Top row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <span
@@ -118,12 +120,14 @@ export function OracleCard({
               </span>
             </div>
             {hasPersonal ? (
-              <span
+              <motion.span
                 className="font-mono tracking-widest"
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2.5, repeat: Infinity }}
                 style={{ fontSize: 8, color: "#D4AF37" }}
               >
                 ⟡ PERSONAL
-              </span>
+              </motion.span>
             ) : (
               <span
                 className="font-mono tracking-widest px-2 py-0.5 rounded-sm border"
@@ -139,7 +143,6 @@ export function OracleCard({
             )}
           </div>
 
-          {/* Title */}
           <h3
             className="font-mono text-sm uppercase tracking-wider mb-1 transition-colors duration-300"
             style={{ color: "rgba(232,228,220,0.85)" }}
@@ -147,7 +150,6 @@ export function OracleCard({
             {title}
           </h3>
 
-          {/* Field */}
           <p
             className="font-mono tracking-wider mb-4"
             style={{ fontSize: 10, color: `${colors.light}44` }}
@@ -155,7 +157,6 @@ export function OracleCard({
             {field}
           </p>
 
-          {/* Content preview */}
           <p
             className="font-mono italic leading-relaxed line-clamp-2 mb-4"
             style={{ fontSize: 11, color: "rgba(232,228,220,0.3)" }}
@@ -163,8 +164,7 @@ export function OracleCard({
             &ldquo;{content}&rdquo;
           </p>
 
-          {/* Hashtags */}
-          {hashtags && hashtags.length > 0 && (
+          {hashtags.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-4">
               {hashtags.slice(0, 3).map((tag, i) => (
                 <span
@@ -178,13 +178,11 @@ export function OracleCard({
             </div>
           )}
 
-          {/* Footer */}
           <div
             className="flex items-center justify-between pt-3"
             style={{ borderTop: `1px solid ${colors.glow}` }}
           >
             <div className="flex items-center gap-3">
-              {/* Resonate button (prevent nav) */}
               <div
                 onClick={(e) => {
                   e.preventDefault();

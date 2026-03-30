@@ -32,18 +32,26 @@ export function ResonateButton({
     );
 
   const addMutation = trpc.archive.resonances.add.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
       setIsResonated(true);
-      setCount((c) => c + 1);
+      setCount(
+        typeof result?.count === "number"
+          ? result.count
+          : countData ?? count + 1,
+      );
       utils.archive.resonances.isResonated.invalidate({ oracleId });
       utils.archive.resonances.getCount.invalidate({ oracleId });
     },
   });
 
   const removeMutation = trpc.archive.resonances.remove.useMutation({
-    onSuccess: () => {
+    onSuccess: (result) => {
       setIsResonated(false);
-      setCount((c) => Math.max(0, c - 1));
+      setCount(
+        typeof result?.count === "number"
+          ? result.count
+          : Math.max(0, count - 1),
+      );
       utils.archive.resonances.isResonated.invalidate({ oracleId });
       utils.archive.resonances.getCount.invalidate({ oracleId });
     },

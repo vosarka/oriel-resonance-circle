@@ -28,6 +28,29 @@ export async function getDb() {
   return _db;
 }
 
+function hasMigrationErrorFragment(error: unknown, fragments: string[]) {
+  const message = String((error as { message?: string })?.message ?? error ?? "");
+  return fragments.some((fragment) => message.includes(fragment));
+}
+
+async function executeMigrationStep(
+  db: NonNullable<ReturnType<typeof drizzle>>,
+  sql: string,
+  ignorableFragments: string[] = [],
+  successMessage?: string,
+) {
+  try {
+    await db.execute(sql);
+    if (successMessage) {
+      console.log(successMessage);
+    }
+  } catch (error) {
+    if (!hasMigrationErrorFragment(error, ignorableFragments)) {
+      console.error("[Migrations] Error:", error);
+    }
+  }
+}
+
 /**
  * Run pending schema migrations on startup.
  * Uses IF NOT EXISTS / IF NOT so it's safe to call every boot.
@@ -39,8 +62,8 @@ export async function runMigrations() {
     return;
   }
 
-  const migrations = [
-    // 0009: conversations table + conversationId column on chatMessages
+  await executeMigrationStep(
+    db,
     `CREATE TABLE IF NOT EXISTS \`conversations\` (
       \`id\` int AUTO_INCREMENT NOT NULL,
       \`userId\` int NOT NULL,
@@ -50,35 +73,90 @@ export async function runMigrations() {
       PRIMARY KEY(\`id\`),
       INDEX \`conversations_userId_idx\` (\`userId\`)
     )`,
+    ["already exists"],
+  );
+
+  await executeMigrationStep(
+    db,
+    `ALTER TABLE \`chatMessages\` ADD COLUMN \`conversationId\` int NULL`,
+    ["Duplicate column"],
+    "[Migrations] Added conversationId column to chatMessages",
+  );
+
+  await executeMigrationStep(
+    db,
+    `CREATE INDEX \`chatMessages_conversationId_idx\` ON \`chatMessages\` (\`conversationId\`)`,
+    ["Duplicate key name", "already exists"],
+  );
+
+  const oracleMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`linkedCodons\` text NULL COMMENT 'JSON array of linked Root Codons'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`threadId\` varchar(64) NULL COMMENT 'Thread group identifier'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`threadTitle\` varchar(255) NULL COMMENT 'Human-readable thread name'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`threadOrder\` int NULL COMMENT 'Order within thread'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`threadSynthesis\` text NULL COMMENT 'Hidden synthesis unlocked when thread complete'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`resonanceCount\` int NOT NULL DEFAULT 0 COMMENT 'Cached count of resonances'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oracles_threadId\` ON \`oracles\` (\`threadId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oracles_thread_order\` ON \`oracles\` (\`threadId\`, \`threadOrder\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`oracleResonances\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`userId\` int NOT NULL,
+        \`oracleId\` varchar(64) NOT NULL COMMENT 'References oracles.oracleId',
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        INDEX \`idx_resonances_userId\` (\`userId\`),
+        INDEX \`idx_resonances_oracleId\` (\`oracleId\`),
+        UNIQUE KEY \`uq_user_oracle\` (\`userId\`, \`oracleId\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `UPDATE \`oracles\` o
+        LEFT JOIN (
+          SELECT \`oracleId\`, COUNT(*) AS \`total\`
+          FROM \`oracleResonances\`
+          GROUP BY \`oracleId\`
+        ) r ON r.\`oracleId\` = o.\`oracleId\`
+        SET o.\`resonanceCount\` = COALESCE(r.\`total\`, 0)`,
+    },
   ];
 
-  for (const sql of migrations) {
-    try {
-      await db.execute(sql);
-    } catch (error: any) {
-      // Ignore "already exists" errors
-      if (!String(error?.message).includes("already exists")) {
-        console.error("[Migrations] Error:", error);
-      }
-    }
-  }
-
-  // Add conversationId column to chatMessages if missing
-  try {
-    await db.execute(`ALTER TABLE \`chatMessages\` ADD COLUMN \`conversationId\` int NULL`);
-    console.log("[Migrations] Added conversationId column to chatMessages");
-  } catch (error: any) {
-    // Column already exists — that's fine
-    if (!String(error?.message).includes("Duplicate column")) {
-      console.error("[Migrations] Error adding conversationId:", error);
-    }
-  }
-
-  // Add index on conversationId if missing
-  try {
-    await db.execute(`CREATE INDEX \`chatMessages_conversationId_idx\` ON \`chatMessages\` (\`conversationId\`)`);
-  } catch {
-    // Index already exists — fine
+  for (const step of oracleMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
   }
 
   console.log("[Migrations] Schema sync complete");
@@ -543,24 +621,76 @@ export async function getTransmissionBookmarkCount(transmissionId: number) {
 // ORACLE RESONANCE SYSTEM
 // ============================================================================
 
-export async function addOracleResonance(userId: number, oracleId: string) {
+type OracleResonanceMutationResult = {
+  changed: boolean;
+  count: number;
+};
+
+async function syncOracleResonanceCount(database: any, oracleId: string): Promise<number> {
+  const [result] = await database
+    .select({ total: count() })
+    .from(oracleResonances)
+    .where(eq(oracleResonances.oracleId, oracleId));
+
+  const nextCount = Number(result?.total ?? 0);
+
+  await database
+    .update(oracles)
+    .set({ resonanceCount: nextCount })
+    .where(eq(oracles.oracleId, oracleId));
+
+  return nextCount;
+}
+
+export async function addOracleResonance(userId: number, oracleId: string): Promise<OracleResonanceMutationResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
-    await db.insert(oracleResonances).values({ userId, oracleId });
+    return await db.transaction(async (tx) => {
+      let changed = false;
+      try {
+        await tx.insert(oracleResonances).values({ userId, oracleId });
+        changed = true;
+      } catch (error) {
+        if (!hasMigrationErrorFragment(error, ["Duplicate entry"])) {
+          throw error;
+        }
+      }
+
+      const count = await syncOracleResonanceCount(tx, oracleId);
+      return {
+        changed,
+        count,
+      };
+    });
   } catch (error) {
     console.error("[Database] Failed to add oracle resonance:", error);
     throw error;
   }
 }
 
-export async function removeOracleResonance(userId: number, oracleId: string) {
+export async function removeOracleResonance(userId: number, oracleId: string): Promise<OracleResonanceMutationResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
-    await db.delete(oracleResonances).where(
-      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
-    );
+    return await db.transaction(async (tx) => {
+      const existing = await tx.select({ id: oracleResonances.id })
+        .from(oracleResonances)
+        .where(and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId)))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await tx.delete(oracleResonances).where(
+          and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
+        );
+      }
+
+      const count = await syncOracleResonanceCount(tx, oracleId);
+      return {
+        changed: existing.length > 0,
+        count,
+      };
+    });
   } catch (error) {
     console.error("[Database] Failed to remove oracle resonance:", error);
     throw error;
@@ -585,8 +715,19 @@ export async function getOracleResonanceCount(oracleId: string): Promise<number>
   const db = await getDb();
   if (!db) return 0;
   try {
-    const result = await db.select().from(oracleResonances).where(eq(oracleResonances.oracleId, oracleId));
-    return result.length;
+    const [cached] = await db.select({ resonanceCount: oracles.resonanceCount })
+      .from(oracles)
+      .where(eq(oracles.oracleId, oracleId))
+      .limit(1);
+
+    if (cached) {
+      return Number(cached.resonanceCount ?? 0);
+    }
+
+    const [result] = await db.select({ total: count() })
+      .from(oracleResonances)
+      .where(eq(oracleResonances.oracleId, oracleId));
+    return Number(result?.total ?? 0);
   } catch (error) {
     console.error("[Database] Failed to get oracle resonance count:", error);
     return 0;
@@ -627,16 +768,27 @@ export async function getThreadsWithProgress() {
     const allOracles = await db.select().from(oracles)
       .where(eq(oracles.status, "Confirmed"));
     // Group by threadId
-    const threads: Record<string, { threadId: string; threadTitle: string; count: number; oracleIds: string[] }> = {};
+    const threads: Record<string, { threadId: string; threadTitle: string; oracleIds: Set<string> }> = {};
     for (const o of allOracles) {
       if (!o.threadId) continue;
       if (!threads[o.threadId]) {
-        threads[o.threadId] = { threadId: o.threadId, threadTitle: o.threadTitle || o.threadId, count: 0, oracleIds: [] };
+        threads[o.threadId] = {
+          threadId: o.threadId,
+          threadTitle: o.threadTitle || o.threadId,
+          oracleIds: new Set<string>(),
+        };
       }
-      threads[o.threadId].count++;
-      threads[o.threadId].oracleIds.push(o.oracleId);
+      threads[o.threadId].oracleIds.add(o.oracleId);
     }
-    return Object.values(threads);
+    return Object.values(threads).map((thread) => {
+      const oracleIds = Array.from(thread.oracleIds);
+      return {
+        threadId: thread.threadId,
+        threadTitle: thread.threadTitle,
+        count: oracleIds.length,
+        oracleIds,
+      };
+    });
   } catch (error) {
     console.error("[Database] Failed to get threads:", error);
     return [];

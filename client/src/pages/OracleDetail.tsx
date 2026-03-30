@@ -7,6 +7,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 import { ResonateButton } from "@/components/ResonateButton";
+import { parseLinkedCodons } from "@/lib/oracle-utils";
 
 const TEMPORAL_COLORS: Record<
   string,
@@ -22,18 +23,6 @@ const TEMPORAL_GLYPHS: Record<string, string> = {
   Present: "●",
   Future: "▲",
 };
-
-function parseJson(val: any, fallback: any = []) {
-  if (!val) return fallback;
-  if (typeof val === "string") {
-    try {
-      return JSON.parse(val);
-    } catch {
-      return fallback;
-    }
-  }
-  return val;
-}
 
 // ── Thread Navigation Panel ─────────────────────────────────────────
 function ThreadNavigationPanel({
@@ -272,7 +261,7 @@ export default function OracleDetail() {
   const presentOracle = organizedOracles.Present;
   const futureOracle = organizedOracles.Future;
 
-  const linkedCodons = parseJson(primaryOracle?.linkedCodons, []);
+  const linkedCodons = parseLinkedCodons(primaryOracle?.linkedCodons);
   const matchingCodons = getMatchingCodons(linkedCodons);
   const hasPersonalResonance = matchingCodons.length > 0;
 
@@ -613,18 +602,22 @@ export default function OracleDetail() {
                   </p>
                   <div className="flex flex-wrap gap-2 mb-3">
                     {matchingCodons.map((codon: string, i: number) => (
-                      <div
+                      <motion.div
                         key={i}
                         className="px-3 py-2 font-mono text-xs"
+                        initial={{ opacity: 0, scale: 0.9, y: 6 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: i * 0.1 }}
                         style={{
                           border: "1px solid #D4AF37",
                           color: "#D4AF37",
                           background: "rgba(212,175,55,0.08)",
                           borderRadius: 2,
+                          boxShadow: "0 0 12px rgba(212,175,55,0.14)",
                         }}
                       >
                         {codon}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                   <div

@@ -734,15 +734,15 @@ export const appRouter = router({
         .input(z.object({ oracleId: z.string() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("User not authenticated");
-          await db.addOracleResonance(ctx.user.id, input.oracleId);
-          return { success: true };
+          const result = await db.addOracleResonance(ctx.user.id, input.oracleId);
+          return { success: true, ...result };
         }),
       remove: protectedProcedure
         .input(z.object({ oracleId: z.string() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("User not authenticated");
-          await db.removeOracleResonance(ctx.user.id, input.oracleId);
-          return { success: true };
+          const result = await db.removeOracleResonance(ctx.user.id, input.oracleId);
+          return { success: true, ...result };
         }),
       isResonated: protectedProcedure
         .input(z.object({ oracleId: z.string() }))
