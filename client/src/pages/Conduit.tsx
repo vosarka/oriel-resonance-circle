@@ -615,12 +615,21 @@ export default function Conduit() {
             {displayMessages.length === 0 ? (
               /* Empty state */
               <div className="flex flex-col items-center justify-center h-full gap-4">
-                <div className="w-32 h-32 md:w-40 md:h-40">
-                  <Orb
-                    colors={["#affff1", "#9696ff"]}
-                    agentState={null}
-                    seed={42}
-                  />
+                <div
+                  className="w-36 h-36 md:w-44 md:h-44"
+                  style={{
+                    borderRadius: "50%",
+                    border: "2.5px solid #10101e",
+                  }}
+                >
+                  <div className="w-full h-full rounded-full overflow-hidden">
+                    <Orb
+                      colors={["#ffedbd", "#002633"]}
+                      agentState={null}
+                      seed={42}
+                      speed={1.5}
+                    />
+                  </div>
                 </div>
                 <p
                   className="text-center max-w-sm"
