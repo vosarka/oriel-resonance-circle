@@ -3,7 +3,6 @@ import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_
 import { z } from "zod";
 import * as db from "./db";
 import * as gemini from "./gemini";
-import { chatWithORIELMistral } from "./mistral-oriel";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
 import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
@@ -238,30 +237,14 @@ export const appRouter = router({
           console.warn('[ORIEL] RGP bridge error (non-fatal):', err);
         }
 
-        // Helper to call the active LLM — Gemini primary, Mistral fallback
+        // Helper to call the active LLM — Gemini primary, Forge fallback (handled in invokeLLM)
         const callLLM = async (
           msg: string,
           history: typeof conversationHistory,
           options?: { temperature?: number },
         ) => {
-          try {
-            const geminiResponse = await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
-            if (
-              geminiResponse === "The signal is disrupted. Please try again in a moment." &&
-              process.env.MISTRAL_API_KEY
-            ) {
-              console.log("[ORIEL] Gemini returned disruption sentinel, falling back to Mistral...");
-              return await chatWithORIELMistral(msg, history, ctx.user?.id);
-            }
-            return geminiResponse;
-          } catch (geminiErr) {
-            console.error("[ORIEL] Gemini failed:", geminiErr);
-            if (process.env.MISTRAL_API_KEY) {
-              console.log("[ORIEL] Falling back to Mistral...");
-              return await chatWithORIELMistral(msg, history, ctx.user?.id);
-            }
-            throw geminiErr;
-          }
+          // Fallback logic is now handled in invokeLLM (Gemini → Forge)
+          return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
         };
 
         let response = await callLLM(fullMessage, conversationHistory);

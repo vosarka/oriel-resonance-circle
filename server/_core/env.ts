@@ -3,6 +3,8 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   isProduction: process.env.NODE_ENV === "production",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
+  forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   appBaseUrl: process.env.APP_BASE_URL ?? "",
@@ -10,11 +12,11 @@ export const ENV = {
   // ─── Better Auth ────────────────────────────────────────────────────────
   betterAuthSecret: process.env.BETTER_AUTH_SECRET ?? "",
 
-  // ─── Resend (Email OTP) ────────────────────────────────────────────────
+  // ─── Resend (Email OTP) ────────────────────────────────────────────
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFrom: process.env.RESEND_FROM ?? "",
 
-  // ─── Twilio (Phone SMS) ────────────────────────────────────────────────
+  // ─── Twilio (Phone SMS) ────────────────────────────────────────────
   twilioAccountSid: process.env.TWILIO_ACCOUNT_SID ?? "",
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN ?? "",
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER ?? "",
@@ -22,3 +24,4 @@ export const ENV = {
   // ─── Inworld (TTS & Realtime) ─────────────────────────────────────────
   inworldApiKey: process.env.INWORLD_API_KEY ?? "",
 };
+
