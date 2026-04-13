@@ -14,13 +14,15 @@
 import { Server as HttpServer, IncomingMessage } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { parse as parseUrl } from "url";
+import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "./_core/auth";
 import { ENV } from "./_core/env";
 import * as db from "./db";
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
-const VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
+const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
+const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
 
 // The full session.update config sent to Inworld on connection
 async function buildSessionUpdate(userId: number): Promise<object> {
@@ -46,28 +48,36 @@ async function buildSessionUpdate(userId: number): Promise<object> {
   const instructions = promptParts.filter(Boolean).join("\n\n");
   console.log(`[Realtime] Built instructions: ${instructions.length} chars (base + UMM + memory)`);
 
+  const user = await db.getUserById(userId);
+  const selectedVoiceId = user?.voicePreference === "deep" ? DEEP_VOICE_ID : SOPHIANIC_VOICE_ID;
+
   return {
     type: "session.update",
     session: {
       type: "realtime",
-      model: "anthropic/claude-sonnet-4-5-20250929",
+      model: "xai/grok-4.20-beta-non-reasoning",
       instructions,
       output_modalities: ["audio", "text"],
       audio: {
         input: {
           transcription: {
-            model: "gpt-4o-mini-transcribe",
+            model: "assemblyai/u3-rt-pro",
           },
           turn_detection: {
             type: "semantic_vad",
-            eagerness: "medium",
+            eagerness: "low",
             create_response: true,
             interrupt_response: true,
           },
         },
         output: {
           model: "inworld-tts-1.5-max",
-          voice: VOICE_ID,
+          voice: selectedVoiceId,
+        },
+      },
+      providerData: {
+        stt: {
+          voice_profile: false,
         },
       },
     },
@@ -88,13 +98,9 @@ interface SessionState {
  */
 async function resolveUser(req: IncomingMessage): Promise<{ id: number } | null> {
   try {
-    // Build a minimal headers object for Better Auth
-    const headers = new Headers();
-    if (req.headers.cookie) {
-      headers.set("cookie", req.headers.cookie);
-    }
-
-    const session = await auth.api.getSession({ headers });
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+    });
     if (!session?.user?.email) return null;
 
     const legacyUser = await db.getUserByEmail(session.user.email);
@@ -103,6 +109,13 @@ async function resolveUser(req: IncomingMessage): Promise<{ id: number } | null>
     console.error("[Realtime] Auth resolution failed:", err);
     return null;
   }
+}
+
+function getInworldAuthorizationValue(rawValue: string): string {
+  const trimmed = rawValue.trim();
+  return trimmed.toLowerCase().startsWith("basic ")
+    ? trimmed
+    : `Basic ${trimmed}`;
 }
 
 /**
@@ -171,13 +184,13 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
     let inworldWs: WebSocket;
     try {
       // Inworld requires key (session identifier) and protocol query params
-      const sessionKey = `oriel-${user.id}-${Date.now()}`;
+      const sessionKey = `voice-${Date.now()}`;
       const inworldUrl = `${INWORLD_REALTIME_BASE}?key=${sessionKey}&protocol=realtime`;
       console.log("[Realtime] Connecting to Inworld:", inworldUrl);
 
       inworldWs = new WebSocket(inworldUrl, {
         headers: {
-          Authorization: `Basic ${apiKey}`,
+          Authorization: getInworldAuthorizationValue(apiKey),
         },
       });
     } catch (err) {
@@ -235,6 +248,12 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
         if (msg.type === "error") {
           console.error("[Realtime] Inworld error event:", JSON.stringify(msg));
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(JSON.stringify({
+              type: "error",
+              error: msg.error?.message || msg.message || "Voice service error",
+            }));
+          }
         }
 
         // Intercept transcript events for saving to DB
@@ -262,6 +281,10 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
     inworldWs.on("close", (code, reason) => {
       console.log(`[Realtime] Inworld closed: ${code} ${reason.toString()}`);
       if (clientWs.readyState === WebSocket.OPEN) {
+        clientWs.send(JSON.stringify({
+          type: "error",
+          error: `Voice service disconnected (${code})${reason ? `: ${reason.toString()}` : ""}`,
+        }));
         clientWs.close(1000, "Voice service disconnected");
       }
     });

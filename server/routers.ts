@@ -1,6 +1,8 @@
 ﻿import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import { createHash } from "crypto";
 import * as db from "./db";
 import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
@@ -10,6 +12,17 @@ import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 import { invokeLLM } from "./_core/llm";
+import { sendPasswordRecoveryGuidanceEmail, sendPasswordResetCodeEmail } from "./_core/mailer";
+
+function normalizeEmail(email: string) {
+  return email.toLowerCase().trim();
+}
+
+function hashResetCode(email: string, code: string) {
+  return createHash("sha256")
+    .update(`${normalizeEmail(email)}:${code}`)
+    .digest("hex");
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -43,6 +56,61 @@ export const appRouter = router({
       // The client will call authClient.signOut() which hits Better Auth directly
       return { success: true } as const;
     }),
+    requestPasswordResetCode: publicProcedure
+      .input(z.object({ email: z.string().email() }))
+      .mutation(async ({ input }) => {
+        const email = normalizeEmail(input.email);
+        const baUser = await db.getBetterAuthUserByEmail(email);
+
+        if (!baUser) {
+          return { success: true } as const;
+        }
+
+        const credentialAccount = await db.getCredentialAccountForUser(baUser.id);
+        if (!credentialAccount) {
+          await sendPasswordRecoveryGuidanceEmail(email);
+          return { success: true } as const;
+        }
+
+        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const codeHash = hashResetCode(email, code);
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+        await db.storePasswordResetCode(email, codeHash, expiresAt);
+        await sendPasswordResetCodeEmail(email, code);
+        return { success: true } as const;
+      }),
+    resetPasswordWithCode: publicProcedure
+      .input(z.object({
+        email: z.string().email(),
+        code: z.string().regex(/^\d{6}$/, "Enter the 6-digit code."),
+        newPassword: z.string().min(8, "Password must be at least 8 characters."),
+      }))
+      .mutation(async ({ input }) => {
+        const email = normalizeEmail(input.email);
+        const baUser = await db.getBetterAuthUserByEmail(email);
+        if (!baUser) {
+          throw new Error("Invalid or expired reset code.");
+        }
+
+        const credentialAccount = await db.getCredentialAccountForUser(baUser.id);
+        if (!credentialAccount) {
+          throw new Error("Password reset is not available for this account.");
+        }
+
+        const storedCodeValid = await db.consumePasswordResetCode(email, hashResetCode(email, input.code));
+        if (!storedCodeValid) {
+          throw new Error("Invalid or expired reset code.");
+        }
+
+        const newPasswordHash = await bcrypt.hash(input.newPassword, 12);
+        await db.updateCredentialPassword(baUser.id, newPasswordHash);
+        const legacyUser = await db.getUserByEmail(email);
+        if (legacyUser) {
+          await db.setUserPasswordHash(legacyUser.openId, newPasswordHash);
+        }
+        return { success: true } as const;
+      }),
   }),
 
   // Archive/Signals router
@@ -300,13 +368,25 @@ export const appRouter = router({
         let conversationId = input.conversationId ?? null;
 
         if (ctx.user) {
-          // Create a conversation only when explicitly requested by client
-          if (!conversationId && input.createNewConversation) {
-            const title = input.message.length > 60
-              ? input.message.substring(0, 57) + '...'
-              : input.message;
-            const conv = await db.createConversation(ctx.user.id, title);
-            conversationId = conv?.id ?? null;
+          if (!conversationId) {
+            if (input.createNewConversation) {
+              const title = input.message.length > 60
+                ? input.message.substring(0, 57) + '...'
+                : input.message;
+              const conv = await db.createConversation(ctx.user.id, title);
+              conversationId = conv?.id ?? null;
+            } else {
+              const latestConversation = await db.getLatestConversation(ctx.user.id);
+              if (latestConversation) {
+                conversationId = latestConversation.id;
+              } else {
+                const title = input.message.length > 60
+                  ? input.message.substring(0, 57) + '...'
+                  : input.message;
+                const conv = await db.createConversation(ctx.user.id, title);
+                conversationId = conv?.id ?? null;
+              }
+            }
           }
 
           await db.saveChatMessage({ userId: ctx.user.id, conversationId, role: "user", content: input.message });

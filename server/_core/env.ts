@@ -12,6 +12,14 @@ export const ENV = {
   // ─── Better Auth ────────────────────────────────────────────────────────
   betterAuthSecret: process.env.BETTER_AUTH_SECRET ?? "",
 
+  // ─── SMTP (Password Recovery Email) ────────────────────────────────────
+  smtpHost: process.env.SMTP_HOST ?? "",
+  smtpPort: process.env.SMTP_PORT ?? "",
+  smtpUser: process.env.SMTP_USER ?? "",
+  smtpPass: process.env.SMTP_PASS ?? "",
+  smtpSecure: process.env.SMTP_SECURE ?? "",
+  authEmailFrom: process.env.AUTH_EMAIL_FROM ?? "",
+
   // ─── Resend (Email OTP) ────────────────────────────────────────────
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFrom: process.env.RESEND_FROM ?? "",
@@ -24,4 +32,3 @@ export const ENV = {
   // ─── Inworld (TTS & Realtime) ─────────────────────────────────────────
   inworldApiKey: process.env.INWORLD_API_KEY ?? "",
 };
-

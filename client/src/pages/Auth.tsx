@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { authClient } from "@/lib/auth-client";
+import { trpc } from "@/lib/trpc";
 import GeometricBackground from "@/components/GeometricBackground";
 
 // ─── Shared UI ───────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ function GoogleButton({ label, loading, onClick }: { label: string; loading: boo
 
 // ─── Email + Password Flow ──────────────────────────────────────────────────
 
-function EmailPasswordFlow({ onBack }: { onBack: () => void }) {
+function EmailPasswordFlow({ onBack, onForgotPassword }: { onBack: () => void; onForgotPassword: () => void }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -217,6 +218,196 @@ function EmailPasswordFlow({ onBack }: { onBack: () => void }) {
           {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
           {isSignUp ? "CREATE ACCOUNT" : "ENTER THE FIELD"}
         </Button>
+
+        {!isSignUp && (
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            className="w-full text-xs font-mono text-[#5ba4a4] hover:text-[#bda36b] transition-colors"
+          >
+            Forgot password?
+          </button>
+        )}
+      </form>
+    </div>
+  );
+}
+
+function ResetPasswordFlow({ onBackToSignIn }: { onBackToSignIn: () => void }) {
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
+
+  const requestResetMutation = trpc.auth.requestPasswordResetCode.useMutation();
+  const resetPasswordMutation = trpc.auth.resetPasswordWithCode.useMutation();
+
+  const handleRequestCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+
+    if (!email || !email.includes("@")) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    try {
+      await requestResetMutation.mutateAsync({ email });
+      setCodeRequested(true);
+      setInfo("If an account can be recovered this way, a reset code has been sent.");
+    } catch {
+      setError("Could not send a reset code right now.");
+    }
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+
+    if (!/^\d{6}$/.test(code)) {
+      setError("Enter the 6-digit code.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      await resetPasswordMutation.mutateAsync({
+        email,
+        code,
+        newPassword,
+      });
+      setInfo("Password updated. You can sign in now.");
+      setCode("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(onBackToSignIn, 1200);
+    } catch (err: any) {
+      setError(err?.message || "Could not reset password.");
+    }
+  };
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={onBackToSignIn}
+        className="flex items-center gap-1 text-xs font-mono text-[#6a665e] hover:text-[#5ba4a4] transition-colors mb-4"
+      >
+        <ArrowLeft className="w-3 h-3" /> Back to sign in
+      </button>
+
+      <div className="mb-4 rounded-md border border-[#bda36b]/20 bg-black/30 px-4 py-3">
+        <p className="text-xs font-mono text-[#9a968e] leading-relaxed">
+          Request a 6-digit reset code, then choose a new password.
+        </p>
+      </div>
+
+      <form onSubmit={codeRequested ? handleResetPassword : handleRequestCode} className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-email" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+            Email Address
+          </Label>
+          <Input
+            id="reset-email"
+            type="email"
+            placeholder="seeker@signal.io"
+            autoComplete="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            disabled={codeRequested}
+            className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+          />
+        </div>
+
+        {codeRequested && (
+          <>
+            <div className="space-y-1.5">
+              <Label htmlFor="reset-code" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+                Reset Code
+              </Label>
+              <Input
+                id="reset-code"
+                type="text"
+                inputMode="numeric"
+                placeholder="123456"
+                value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="reset-password" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+                New Password
+              </Label>
+              <Input
+                id="reset-password"
+                type="password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="reset-password-confirm" className="font-mono text-xs text-gray-400 uppercase tracking-widest">
+                Confirm Password
+              </Label>
+              <Input
+                id="reset-password-confirm"
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                className="bg-black/60 border-[#bda36b]/30 text-[#e8e4dc] placeholder:text-[#6a665e] font-mono focus:border-[#bda36b]"
+              />
+            </div>
+          </>
+        )}
+
+        {error && <ErrorMsg msg={error} />}
+        {info && <p className="text-sm text-[#5ba4a4] font-mono mt-1">{info}</p>}
+
+        <Button
+          type="submit"
+          disabled={requestResetMutation.isPending || resetPasswordMutation.isPending}
+          className="w-full bg-[#bda36b]/10 border border-[#bda36b]/50 text-[#bda36b] font-mono hover:bg-[#bda36b]/20 hover:border-[#bda36b] transition-all"
+        >
+          {(requestResetMutation.isPending || resetPasswordMutation.isPending) && (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          )}
+          {codeRequested ? "RESET PASSWORD" : "SEND RESET CODE"}
+        </Button>
+
+        {codeRequested && (
+          <button
+            type="button"
+            onClick={() => {
+              setCodeRequested(false);
+              setCode("");
+              setNewPassword("");
+              setConfirmPassword("");
+              setInfo("");
+              setError("");
+            }}
+            className="w-full text-xs font-mono text-[#5ba4a4] hover:text-[#bda36b] transition-colors"
+          >
+            Use a different email
+          </button>
+        )}
       </form>
     </div>
   );
@@ -224,7 +415,7 @@ function EmailPasswordFlow({ onBack }: { onBack: () => void }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type AuthMethod = "select" | "email";
+type AuthMethod = "select" | "email" | "reset";
 
 export default function Auth() {
   const [, setLocation] = useLocation();
@@ -321,7 +512,14 @@ export default function Auth() {
                 </button>
               </div>
             ) : (
-              <EmailPasswordFlow onBack={() => setMethod("select")} />
+              method === "email" ? (
+                <EmailPasswordFlow
+                  onBack={() => setMethod("select")}
+                  onForgotPassword={() => setMethod("reset")}
+                />
+              ) : (
+                <ResetPasswordFlow onBackToSignIn={() => setMethod("email")} />
+              )
             )}
           </CardContent>
         </Card>

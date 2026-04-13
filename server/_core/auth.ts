@@ -25,7 +25,10 @@ function createBetterAuthDb() {
 // ─── Better Auth instance ────────────────────────────────────────────────────
 
 export const auth = betterAuth({
-  trustedOrigins: ["http://localhost:*"],
+  trustedOrigins: [
+    "http://localhost:*",
+    ...(ENV.appBaseUrl ? [ENV.appBaseUrl] : []),
+  ],
   baseURL: ENV.appBaseUrl || `http://localhost:${process.env.PORT || 3000}`,
   basePath: "/api/auth",
   secret: ENV.betterAuthSecret || ENV.cookieSecret || (() => {

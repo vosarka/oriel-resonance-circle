@@ -1,6 +1,7 @@
 ﻿import { eq, desc, and, count, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances } from "../drizzle/schema";
+import { randomUUID } from "crypto";
+import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances, baUser, baAccount, baVerification } from "../drizzle/schema";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -419,6 +420,16 @@ export async function getUserConversations(userId: number) {
     .orderBy(desc(conversations.updatedAt));
 }
 
+export async function getLatestConversation(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(conversations)
+    .where(eq(conversations.userId, userId))
+    .orderBy(desc(conversations.updatedAt))
+    .limit(1);
+  return result[0] || null;
+}
+
 export async function migrateOrphanedMessages(userId: number) {
   const db = await getDb();
   if (!db) return;
@@ -499,6 +510,11 @@ export async function saveChatMessage(message: InsertChatMessage) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(chatMessages).values(message);
+  if (message.conversationId) {
+    await db.update(conversations)
+      .set({ updatedAt: new Date() })
+      .where(and(eq(conversations.id, message.conversationId), eq(conversations.userId, message.userId)));
+  }
 }
 
 export async function clearChatHistory(userId: number) {
@@ -640,6 +656,70 @@ async function syncOracleResonanceCount(database: any, oracleId: string): Promis
     .where(eq(oracles.oracleId, oracleId));
 
   return nextCount;
+}
+
+function passwordResetIdentifier(email: string) {
+  return `password-reset:${email.toLowerCase().trim()}`;
+}
+
+export async function getBetterAuthUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const normalizedEmail = email.toLowerCase().trim();
+  const result = await db.select().from(baUser).where(eq(baUser.email, normalizedEmail)).limit(1);
+  return result[0] || null;
+}
+
+export async function getCredentialAccountForUser(baUserId: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(baAccount)
+    .where(and(eq(baAccount.userId, baUserId), eq(baAccount.providerId, "credential")))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function storePasswordResetCode(email: string, codeHash: string, expiresAt: Date) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const identifier = passwordResetIdentifier(email);
+  await db.delete(baVerification).where(eq(baVerification.identifier, identifier));
+  await db.insert(baVerification).values({
+    id: randomUUID(),
+    identifier,
+    value: codeHash,
+    expiresAt,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+}
+
+export async function consumePasswordResetCode(email: string, codeHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const identifier = passwordResetIdentifier(email);
+  const result = await db.select().from(baVerification)
+    .where(and(eq(baVerification.identifier, identifier), eq(baVerification.value, codeHash)))
+    .limit(1);
+  const verification = result[0];
+  if (!verification) return false;
+  if (verification.expiresAt && verification.expiresAt.getTime() < Date.now()) {
+    await db.delete(baVerification).where(eq(baVerification.id, verification.id));
+    return false;
+  }
+
+  await db.delete(baVerification).where(eq(baVerification.id, verification.id));
+  return true;
+}
+
+export async function updateCredentialPassword(baUserId: string, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(baAccount)
+    .set({ password: passwordHash, updatedAt: new Date() })
+    .where(and(eq(baAccount.userId, baUserId), eq(baAccount.providerId, "credential")));
 }
 
 export async function addOracleResonance(userId: number, oracleId: string): Promise<OracleResonanceMutationResult> {

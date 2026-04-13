@@ -31,7 +31,7 @@ export default function Conduit() {
   const hasSpokenIntro = useRef(false);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
-  const [isNewConversation, setIsNewConversation] = useState(true);
+  const [isNewConversation, setIsNewConversation] = useState(false);
 
   // Web Audio API for TTS playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -104,6 +104,12 @@ export default function Conduit() {
     },
   });
 
+  useEffect(() => {
+    if (!isAuthenticated || isNewConversation || activeConversationId !== null) return;
+    if (!conversationsList || conversationsList.length === 0) return;
+    setActiveConversationId(conversationsList[0].id);
+  }, [isAuthenticated, isNewConversation, activeConversationId, conversationsList]);
+
   // Sync localMessages with active conversation or general history
   useEffect(() => {
     if (isAuthenticated && activeConversationId && activeConvData?.messages) {
@@ -113,7 +119,15 @@ export default function Conduit() {
         timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : (msg.timestamp as number),
       }));
       setLocalMessages(convertedHistory);
-    } else if (isAuthenticated && !activeConversationId && !isNewConversation && dbHistory && dbHistory.length > 0) {
+    } else if (
+      isAuthenticated &&
+      !activeConversationId &&
+      !isNewConversation &&
+      conversationsList &&
+      conversationsList.length === 0 &&
+      dbHistory &&
+      dbHistory.length > 0
+    ) {
       const convertedHistory = dbHistory.map(msg => ({
         role: msg.role,
         content: msg.content,
@@ -121,7 +135,7 @@ export default function Conduit() {
       }));
       setLocalMessages(convertedHistory);
     }
-  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId, isNewConversation]);
+  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId, isNewConversation, conversationsList]);
 
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
@@ -316,13 +330,14 @@ export default function Conduit() {
       const result = await chatMutation.mutateAsync({
         message: userMessage,
         conversationId: activeConversationId ?? undefined,
+        createNewConversation: isAuthenticated && isNewConversation,
         history: !isAuthenticated ? localMessages : undefined,
         fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
       });
 
       setAttachedFiles([]);
 
-      if (result.conversationId && !activeConversationId) {
+      if (result.conversationId && (!activeConversationId || isNewConversation)) {
         setActiveConversationId(result.conversationId);
         setIsNewConversation(false);
       }

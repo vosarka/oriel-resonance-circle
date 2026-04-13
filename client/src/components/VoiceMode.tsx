@@ -151,6 +151,20 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     return audioCtxRef.current;
   }, []);
 
+  const applyClickFade = useCallback((samples: Float32Array) => {
+    const fadeSamples = Math.min(48, Math.floor(samples.length / 2));
+    if (fadeSamples <= 0) return samples;
+
+    for (let i = 0; i < fadeSamples; i++) {
+      const fadeIn = i / fadeSamples;
+      const fadeOut = (fadeSamples - i) / fadeSamples;
+      samples[i] *= fadeIn;
+      samples[samples.length - 1 - i] *= fadeOut;
+    }
+
+    return samples;
+  }, []);
+
   const playAudioChunk = useCallback((pcm16Base64: string) => {
     const ctx = getAudioContext();
     const binaryStr = atob(pcm16Base64);
@@ -166,11 +180,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       float32[i] = int16[i] / 32768;
     }
 
-    audioQueueRef.current.push(float32);
+    audioQueueRef.current.push(applyClickFade(float32));
     if (!isPlayingRef.current) {
       drainAudioQueue(ctx);
     }
-  }, [getAudioContext]);
+  }, [applyClickFade, getAudioContext]);
 
   const drainAudioQueue = useCallback((ctx: AudioContext) => {
     if (audioQueueRef.current.length === 0) {
@@ -326,6 +340,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "input_audio_buffer.speech_started":
         // User started speaking — interrupt ORIEL's playback immediately
         stopPlayback();
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        }
         setOrbState("processing");
         break;
 
