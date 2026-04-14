@@ -190,6 +190,7 @@ export function detectOpeningPattern(response: string): OpeningPattern {
   if (/^(before i speak|let me ask|what do you)/.test(afterOriel)) return 'question_first';
   if (/^(what you describe|what you're|the pattern|this is)/.test(afterOriel)) return 'direct_insight';
   if (/^(you return|you come back|it has been|welcome back)/.test(afterOriel)) return 'recognition';
+  if (/^(i hear|i see|thank you|i feel|i witness)/.test(afterOriel)) return 'acknowledgment';
   if (afterOriel.length < 30) return 'brief_presence';
   return 'acknowledgment';
 }

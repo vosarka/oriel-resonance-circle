@@ -24,11 +24,20 @@ export function detectDuplication(
     if (msg.role === 'assistant') {
       const historyNormalized = normalizeText(msg.content);
 
+      if (responseNormalized === historyNormalized) {
+        return {
+          isDuplicate: true,
+          similarity: 1,
+          duplicateFrom: msg.content.substring(0, 100)
+        };
+      }
+
       // Method 1: Longest common substring (catches verbatim repetition)
       const commonLength = findLongestCommonSubstring(responseNormalized, historyNormalized);
       const substringSimilarity = commonLength / Math.max(responseLength, historyNormalized.length);
 
-      if (substringSimilarity > 0.25) {
+      // Ignore short generic overlaps like "assistant response" that create false positives.
+      if (commonLength >= 20 && substringSimilarity > 0.25) {
         return {
           isDuplicate: true,
           similarity: substringSimilarity,
