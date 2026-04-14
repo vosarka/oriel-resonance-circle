@@ -8,8 +8,10 @@
  */
 
 import { betterAuth } from "better-auth";
+import { verifyPassword as verifyScryptPassword } from "better-auth/crypto";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle } from "drizzle-orm/mysql2";
+import bcrypt from "bcryptjs";
 import * as schema from "../../drizzle/schema";
 import { ENV } from "./env";
 
@@ -20,6 +22,30 @@ function createBetterAuthDb() {
     throw new Error("DATABASE_URL is required for Better Auth");
   }
   return drizzle(process.env.DATABASE_URL);
+}
+
+async function hashCredentialPassword(password: string) {
+  return bcrypt.hash(password, 12);
+}
+
+async function verifyCredentialPassword({
+  password,
+  hash,
+}: {
+  password: string;
+  hash: string;
+}) {
+  // Legacy and reset passwords are stored as bcrypt hashes.
+  if (hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$")) {
+    return bcrypt.compare(password, hash);
+  }
+
+  // Better Auth defaults to scrypt for accounts created before this override.
+  if (hash.includes(":")) {
+    return verifyScryptPassword({ password, hash });
+  }
+
+  return false;
 }
 
 // ─── Better Auth instance ────────────────────────────────────────────────────
@@ -51,6 +77,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
+    password: {
+      hash: hashCredentialPassword,
+      verify: verifyCredentialPassword,
+    },
   },
 
   socialProviders: {
