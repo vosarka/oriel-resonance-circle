@@ -2,6 +2,7 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import { randomUUID } from "crypto";
 import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances, baUser, baAccount, baVerification } from "../drizzle/schema";
+import { ENV } from "./_core/env";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -18,9 +19,9 @@ let _db: ReturnType<typeof drizzle> | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {
-  if (!_db && process.env.DATABASE_URL) {
+  if (!_db && ENV.databaseUrl) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      _db = drizzle(ENV.databaseUrl);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -57,6 +58,11 @@ async function executeMigrationStep(
  * Uses IF NOT EXISTS / IF NOT so it's safe to call every boot.
  */
 export async function runMigrations() {
+  if (!ENV.runMigrations) {
+    console.log("[Migrations] Skipped — RUN_MIGRATIONS is disabled");
+    return;
+  }
+
   const db = await getDb();
   if (!db) {
     console.warn("[Migrations] Skipped — no database connection");
@@ -90,11 +96,43 @@ export async function runMigrations() {
     ["Duplicate key name", "already exists"],
   );
 
+  const transmissionMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `ALTER TABLE \`transmissions\` ADD COLUMN \`imageUrl\` text NULL COMMENT 'Optional poster/visual image for transmission cards and detail view'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`transmissions\` ADD COLUMN \`youtubeUrl\` text NULL COMMENT 'Optional YouTube source for embedded transmission visuals'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+  ];
+
+  for (const step of transmissionMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
   const oracleMigrationSteps: Array<{
     sql: string;
     ignorableFragments?: string[];
     successMessage?: string;
   }> = [
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`imageUrl\` text NULL COMMENT 'Optional poster/visual image for oracle cards and detail sections'`,
+      ignorableFragments: ["Duplicate column"],
+    },
+    {
+      sql: `ALTER TABLE \`oracles\` ADD COLUMN \`youtubeUrl\` text NULL COMMENT 'Optional YouTube source for embedded oracle visuals'`,
+      ignorableFragments: ["Duplicate column"],
+    },
     {
       sql: `ALTER TABLE \`oracles\` ADD COLUMN \`linkedCodons\` text NULL COMMENT 'JSON array of linked Root Codons'`,
       ignorableFragments: ["Duplicate column"],

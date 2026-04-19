@@ -45,6 +45,8 @@ interface TxFormData {
   coreMessage: string;
   tags: string;
   microSigil: string;
+  imageUrl: string;
+  youtubeUrl: string;
   signalClarity: string;
   channelStatus: typeof CHANNEL_STATUSES[number];
   encodedArchetype: string;
@@ -62,6 +64,8 @@ const EMPTY_FORM: TxFormData = {
   coreMessage: "",
   tags: "",
   microSigil: "◈",
+  imageUrl: "",
+  youtubeUrl: "",
   signalClarity: "98.7%",
   channelStatus: "OPEN",
   encodedArchetype: "",
@@ -78,6 +82,8 @@ interface OracleFormData {
   title: string;
   field: string;
   content: string;
+  imageUrl: string;
+  youtubeUrl: string;
   signalClarity: string;
   channelStatus: typeof ORACLE_CHANNEL_STATUSES[number];
   currentFieldSignatures: string;
@@ -97,6 +103,8 @@ const EMPTY_ORACLE_FORM: OracleFormData = {
   title: "",
   field: "",
   content: "",
+  imageUrl: "",
+  youtubeUrl: "",
   signalClarity: "95.2%",
   channelStatus: "OPEN",
   currentFieldSignatures: "",
@@ -254,6 +262,15 @@ function TxForm({ initial, onSubmit, onCancel, isLoading }: {
           <Field label="Core Message" required>
             <TextArea value={form.coreMessage} onChange={(v) => set("coreMessage", v)} placeholder="The core philosophical teaching..." rows={6} />
           </Field>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Image URL">
+              <TextInput value={form.imageUrl} onChange={(v) => set("imageUrl", v)} placeholder="https://..." />
+            </Field>
+            <Field label="YouTube URL">
+              <TextInput value={form.youtubeUrl} onChange={(v) => set("youtubeUrl", v)} placeholder="https://youtube.com/watch?v=..." />
+            </Field>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label="Tags" required>
@@ -427,6 +444,15 @@ function OracleForm({ initial, onSubmit, onCancel, isLoading }: {
           <Field label="Content" required>
             <TextArea value={form.content} onChange={(v) => set("content", v)} placeholder="The oracle content..." rows={6} />
           </Field>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field label="Image URL">
+              <TextInput value={form.imageUrl} onChange={(v) => set("imageUrl", v)} placeholder="https://...oracle-visual.jpg" />
+            </Field>
+            <Field label="YouTube URL">
+              <TextInput value={form.youtubeUrl} onChange={(v) => set("youtubeUrl", v)} placeholder="https://youtube.com/watch?v=..." />
+            </Field>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Field label="Signal Clarity">
@@ -608,6 +634,8 @@ export default function Admin() {
       coreMessage: tx.coreMessage,
       tags: tx.tags,
       microSigil: tx.microSigil,
+      imageUrl: tx.imageUrl || "",
+      youtubeUrl: tx.youtubeUrl || "",
       signalClarity: tx.signalClarity,
       channelStatus: tx.channelStatus,
       encodedArchetype: tx.encodedArchetype || "",
@@ -634,6 +662,8 @@ export default function Admin() {
       title: data.title,
       field: data.field,
       content: data.content,
+      imageUrl: data.imageUrl || undefined,
+      youtubeUrl: data.youtubeUrl || undefined,
       signalClarity: data.signalClarity,
       channelStatus: data.channelStatus,
       status: data.status,
@@ -658,6 +688,8 @@ export default function Admin() {
       title: data.title,
       field: data.field,
       content: data.content,
+      imageUrl: data.imageUrl,
+      youtubeUrl: data.youtubeUrl,
       signalClarity: data.signalClarity,
       channelStatus: data.channelStatus,
       status: data.status,
@@ -678,6 +710,8 @@ export default function Admin() {
       title: oracle.title,
       field: oracle.field,
       content: oracle.content,
+      imageUrl: oracle.imageUrl || "",
+      youtubeUrl: oracle.youtubeUrl || "",
       signalClarity: oracle.signalClarity,
       channelStatus: oracle.channelStatus,
       currentFieldSignatures: oracle.currentFieldSignatures || "",
@@ -814,6 +848,36 @@ export default function Admin() {
                     <div>
                       <span style={{ color: C.txt, fontSize: 14 }}>{tx.title}</span>
                       <span style={{ color: C.txtD, fontSize: 12, marginLeft: 8 }}>{tx.microSigil}</span>
+                      {(tx.imageUrl || tx.youtubeUrl) && (
+                        <span style={{ marginLeft: 10, display: "inline-flex", gap: 6 }}>
+                          {tx.imageUrl && (
+                            <span
+                              style={{
+                                color: C.gold,
+                                fontSize: 10,
+                                fontFamily: "'Red Hat Mono', monospace",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                              }}
+                            >
+                              IMG
+                            </span>
+                          )}
+                          {tx.youtubeUrl && (
+                            <span
+                              style={{
+                                color: C.teal,
+                                fontSize: 10,
+                                fontFamily: "'Red Hat Mono', monospace",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.06em",
+                              }}
+                            >
+                              YT
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </div>
                     <span style={{ color: C.txtS, fontSize: 12, fontFamily: "'Red Hat Mono', monospace" }}>
                       {tx.field.length > 25 ? tx.field.slice(0, 25) + "…" : tx.field}
@@ -907,7 +971,7 @@ export default function Admin() {
                 <div
                   className="grid items-center gap-4 px-4 py-2"
                   style={{
-                    gridTemplateColumns: "60px 90px 80px 1fr 160px 100px 80px",
+                    gridTemplateColumns: "60px 90px 80px 1fr 160px 90px 100px 80px",
                     borderBottom: `1px solid ${C.border}`,
                     color: C.txtD,
                     fontFamily: "'Red Hat Mono', monospace",
@@ -921,6 +985,7 @@ export default function Admin() {
                   <span>PART</span>
                   <span>TITLE</span>
                   <span>FIELD</span>
+                  <span>MEDIA</span>
                   <span>STATUS</span>
                   <span style={{ textAlign: "right" }}>ACTIONS</span>
                 </div>
@@ -930,7 +995,7 @@ export default function Admin() {
                     key={oracle.id}
                     className="grid items-center gap-4 px-4 py-3 group"
                     style={{
-                      gridTemplateColumns: "60px 90px 80px 1fr 160px 100px 80px",
+                      gridTemplateColumns: "60px 90px 80px 1fr 160px 90px 100px 80px",
                       background: C.surface,
                       borderRadius: 8,
                       border: `1px solid ${C.border}`,
@@ -953,6 +1018,12 @@ export default function Admin() {
                     </span>
                     <span style={{ color: C.txtS, fontSize: 12, fontFamily: "'Red Hat Mono', monospace" }}>
                       {oracle.field.length > 20 ? oracle.field.slice(0, 20) + "…" : oracle.field}
+                    </span>
+                    <span style={{ color: C.txtS, fontSize: 11, fontFamily: "'Red Hat Mono', monospace" }}>
+                      {oracle.imageUrl ? "IMG" : ""}
+                      {oracle.imageUrl && oracle.youtubeUrl ? " / " : ""}
+                      {oracle.youtubeUrl ? "YT" : ""}
+                      {!oracle.imageUrl && !oracle.youtubeUrl ? "—" : ""}
                     </span>
                     <span style={{
                       color: oracle.status === "Confirmed" ? C.green : oracle.status === "Draft" ? C.txtS : oracle.status === "Prophetic" ? C.cyan : C.red,

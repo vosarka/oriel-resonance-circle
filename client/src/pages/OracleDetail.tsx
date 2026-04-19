@@ -8,6 +8,10 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 import { ResonateButton } from "@/components/ResonateButton";
 import { parseLinkedCodons } from "@/lib/oracle-utils";
+import {
+  getTransmissionImageUrl,
+  getYouTubeEmbedUrl,
+} from "@/lib/transmission-media";
 
 const TEMPORAL_COLORS: Record<
   string,
@@ -275,6 +279,8 @@ export default function OracleDetail() {
   ) => {
     if (!oracle) return null;
     const colors = TEMPORAL_COLORS[part];
+    const imageUrl = getTransmissionImageUrl(oracle.imageUrl);
+    const youtubeEmbedUrl = getYouTubeEmbedUrl(oracle.youtubeUrl);
     return (
       <AnimatePresence key={part}>
         {stage >= stageMin && (
@@ -303,6 +309,46 @@ export default function OracleDetail() {
               >
                 {oracle.title}
               </h3>
+              {(imageUrl || youtubeEmbedUrl) && (
+                <div className="mb-5 space-y-4">
+                  {imageUrl && (
+                    <figure
+                      className="overflow-hidden rounded-sm border"
+                      style={{
+                        borderColor: `${colors.light}2f`,
+                        background: "rgba(5,5,8,0.85)",
+                      }}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={oracle.title}
+                        className="w-full object-cover"
+                        style={{ maxHeight: 420 }}
+                      />
+                    </figure>
+                  )}
+                  {youtubeEmbedUrl && (
+                    <div
+                      className="overflow-hidden rounded-sm border"
+                      style={{
+                        borderColor: `${colors.light}30`,
+                        background: "rgba(5,5,8,0.9)",
+                        boxShadow: `0 0 36px ${colors.glow}`,
+                      }}
+                    >
+                      <div className="relative aspect-video">
+                        <iframe
+                          src={youtubeEmbedUrl}
+                          title={`${oracle.title} video`}
+                          className="absolute inset-0 h-full w-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               <p
                 className="leading-relaxed"
                 style={{

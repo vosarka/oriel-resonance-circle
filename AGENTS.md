@@ -6,7 +6,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ```bash
 pnpm install              # Install dependencies (uses pnpm, not npm/yarn)
-pnpm dev                  # Dev server — Express + Vite HMR on same port (default :3003)
+pnpm dev                  # Dev server — Express + Vite HMR on same port (default :3000)
 pnpm build                # Production build (Vite client + esbuild server)
 pnpm start                # Run production server (requires build first)
 pnpm check                # TypeScript type-check (tsc --noEmit)
@@ -118,6 +118,7 @@ This codebase is part of the **Vos Arkana** universe. Shared equations live in `
 ## Environment Variables
 
 Required: `DATABASE_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+Recommended for local safety: `RUN_MIGRATIONS=false` unless you intentionally want startup schema changes.
 Optional: `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`.
 
 All env vars are accessed through `server/_core/env.ts` (server-side) or `VITE_*` prefixed vars (client-side).

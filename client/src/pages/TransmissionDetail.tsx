@@ -11,6 +11,10 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import {
+  getTransmissionImageUrl,
+  getYouTubeEmbedUrl,
+} from "@/lib/transmission-media";
 
 // ── Status colors ───────────────────────────────────────────────────
 const CH_COLORS: Record<string, string> = {
@@ -204,6 +208,8 @@ export default function TransmissionDetail() {
   }
   const clarity = parseFloat(tx.signalClarity?.replace("%", "") || "0");
   const statusColor = CH_COLORS[tx.channelStatus] || "#5ba4a4";
+  const imageUrl = getTransmissionImageUrl(tx.imageUrl);
+  const youtubeEmbedUrl = getYouTubeEmbedUrl(tx.youtubeUrl);
 
   return (
     <Layout>
@@ -356,6 +362,57 @@ export default function TransmissionDetail() {
                 {tx.field}
               </p>
             </div>
+
+            {(imageUrl || youtubeEmbedUrl) && (
+              <div
+                className="mb-14"
+                style={{
+                  opacity: stage >= 3 ? 1 : 0,
+                  transform: stage >= 3 ? "translateY(0)" : "translateY(12px)",
+                  transition: "all 900ms ease-out",
+                }}
+              >
+                <div className="grid gap-5">
+                  {imageUrl && (
+                    <figure
+                      className="overflow-hidden rounded-sm"
+                      style={{
+                        border: "1px solid rgba(91,164,164,0.14)",
+                        background: "rgba(10,10,14,0.7)",
+                      }}
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`${tx.title} visual`}
+                        className="w-full object-cover"
+                        style={{ maxHeight: 520 }}
+                      />
+                    </figure>
+                  )}
+
+                  {youtubeEmbedUrl && (
+                    <div
+                      className="overflow-hidden rounded-sm"
+                      style={{
+                        border: "1px solid rgba(189,163,107,0.16)",
+                        background: "rgba(10,10,14,0.7)",
+                      }}
+                    >
+                      <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                        <iframe
+                          src={youtubeEmbedUrl}
+                          title={`${tx.title} video`}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                          referrerPolicy="strict-origin-when-cross-origin"
+                          className="absolute inset-0 h-full w-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* ── Core Message ───────────────────────────────── */}
             <div

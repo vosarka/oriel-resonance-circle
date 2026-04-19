@@ -29,13 +29,15 @@ A spiritual intelligence platform built around ORIEL (Omniscient Resonant Intell
 pnpm install
 ```
 
-Create a `.env` file in the project root:
+Copy `.env.example` to `.env` in the project root and fill in your own values:
 
 ```env
 DATABASE_URL=mysql://...
 JWT_SECRET=...
 NODE_ENV=development
-PORT=3003
+PORT=3000
+RUN_MIGRATIONS=false
+APP_BASE_URL=http://localhost:3000
 
 # LLM
 GEMINI_API_KEY=...
@@ -58,7 +60,7 @@ AWS_S3_BUCKET=...
 
 For Google OAuth to work locally, add this redirect URI in Google Cloud Console:
 ```
-http://localhost:3003/api/auth/google/callback
+http://localhost:3000/api/auth/google/callback
 ```
 
 ```bash
@@ -66,12 +68,14 @@ pnpm db:push   # push schema to database
 pnpm dev       # start dev server (Express + Vite HMR on same port)
 ```
 
+`RUN_MIGRATIONS` is disabled by default in development so local boot does not automatically touch a shared database. Use `pnpm db:push` or set `RUN_MIGRATIONS=true` only when you explicitly want startup migrations.
+
 ---
 
 ## Commands
 
 ```bash
-pnpm dev          # Dev server (http://localhost:3003)
+pnpm dev          # Dev server (http://localhost:3000)
 pnpm build        # Production build
 pnpm start        # Production server (requires build)
 pnpm test         # Vitest (server-side tests)

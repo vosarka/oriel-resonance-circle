@@ -6,6 +6,7 @@ import { trpc } from "@/lib/trpc";
 import { OracleCard } from "@/components/OracleCard";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 import { parseLinkedCodons, parseOracleHashtags } from "@/lib/oracle-utils";
+import { getTransmissionPosterUrl, getYouTubeVideoId } from "@/lib/transmission-media";
 
 // ── FAZA Register Map (VTIP Numbering) ──────────────────────────────
 const FAZA_REGISTERS = [
@@ -75,6 +76,8 @@ const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
 function SignalCard({ tx, index }: { tx: any; index: number }) {
   const clarity = clarityToNumber(tx.signalClarity);
   const st = STATUS_COLORS[tx.channelStatus] || STATUS_COLORS.OPEN;
+  const posterUrl = getTransmissionPosterUrl(tx);
+  const youtubeVideoId = getYouTubeVideoId(tx.youtubeUrl);
 
   return (
     <Link href={`/transmission/${tx.id}`}>
@@ -101,6 +104,61 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
             e.currentTarget.style.boxShadow = "none";
           }}
         >
+          {posterUrl && (
+            <div
+              className="mb-4 overflow-hidden rounded-sm border"
+              style={{
+                borderColor: youtubeVideoId
+                  ? "rgba(189,163,107,0.18)"
+                  : "rgba(91,164,164,0.12)",
+                background: "#0b0b10",
+              }}
+            >
+              <div className="relative aspect-[16/9]">
+                <img
+                  src={posterUrl}
+                  alt={tx.title}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(5,5,8,0.7), rgba(5,5,8,0.08) 45%, rgba(5,5,8,0.3))",
+                  }}
+                />
+                <div className="absolute left-3 top-3 flex gap-2">
+                  {tx.imageUrl && (
+                    <span
+                      className="font-mono rounded-sm border px-2 py-1"
+                      style={{
+                        fontSize: 8,
+                        color: "#e8e4dc",
+                        borderColor: "rgba(232,228,220,0.16)",
+                        background: "rgba(5,5,8,0.5)",
+                      }}
+                    >
+                      STILL
+                    </span>
+                  )}
+                  {youtubeVideoId && (
+                    <span
+                      className="font-mono rounded-sm border px-2 py-1"
+                      style={{
+                        fontSize: 8,
+                        color: "#bda36b",
+                        borderColor: "rgba(189,163,107,0.2)",
+                        background: "rgba(5,5,8,0.55)",
+                      }}
+                    >
+                      YT VISUAL
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Top row */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
@@ -692,6 +750,8 @@ export default function Archive() {
                             field={ox.field}
                             temporalDirection={ox.part}
                             content={ox.content}
+                            imageUrl={ox.imageUrl}
+                            youtubeUrl={ox.youtubeUrl}
                             hashtags={ox.hashtags}
                             status={ox.status}
                             resonanceCount={ox.resonanceCount}
@@ -723,6 +783,8 @@ export default function Archive() {
                         field={ox.field}
                         temporalDirection={ox.part}
                         content={ox.content}
+                        imageUrl={ox.imageUrl}
+                        youtubeUrl={ox.youtubeUrl}
                         hashtags={ox.hashtags}
                         status={ox.status}
                         resonanceCount={ox.resonanceCount}

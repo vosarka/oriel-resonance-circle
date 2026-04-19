@@ -8,12 +8,15 @@ import { Bookmark } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { getTransmissionPosterUrl, getYouTubeVideoId } from "@/lib/transmission-media";
 
 export interface TransmissionCardProps {
   id: number;
   txNumber: number;
   title: string;
   field: string;
+  imageUrl?: string | null;
+  youtubeUrl?: string | null;
   signalClarity: string;
   channelStatus: "OPEN" | "RESONANT" | "COHERENT" | "PROPHETIC" | "LIVE";
   coreMessage: string;
@@ -44,6 +47,8 @@ export function TransmissionCard({
   txNumber,
   title,
   field,
+  imageUrl,
+  youtubeUrl,
   signalClarity,
   channelStatus,
   coreMessage,
@@ -55,6 +60,8 @@ export function TransmissionCard({
 }: TransmissionCardProps) {
   const { user } = useAuth();
   const [localBookmarkCount, setLocalBookmarkCount] = useState(bookmarkCount || 0);
+  const posterUrl = getTransmissionPosterUrl({ imageUrl, youtubeUrl });
+  const youtubeVideoId = getYouTubeVideoId(youtubeUrl);
 
   // Check if transmission is bookmarked
   const { data: isBookmarked } = trpc.archive.bookmarks.isBookmarked.useQuery(
@@ -132,6 +139,23 @@ export function TransmissionCard({
         </CardHeader>
 
         <CardContent className="space-y-3">
+          {posterUrl && (
+            <div className="overflow-hidden rounded-md border border-primary/15 bg-black/50">
+              <div className="relative aspect-video">
+                <img
+                  src={posterUrl}
+                  alt={title}
+                  className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                />
+                {youtubeVideoId && (
+                  <span className="absolute left-3 top-3 rounded-sm border border-amber-400/30 bg-black/60 px-2 py-1 text-[10px] font-mono text-amber-300">
+                    YT VISUAL
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Signal Metadata */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">

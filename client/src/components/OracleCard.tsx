@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { ResonateButton } from "@/components/ResonateButton";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
+import { getTransmissionPosterUrl, getYouTubeVideoId } from "@/lib/transmission-media";
 
 export interface OracleCardProps {
   id: number;
@@ -11,6 +12,8 @@ export interface OracleCardProps {
   field: string;
   temporalDirection: "Past" | "Present" | "Future";
   content: string;
+  imageUrl?: string | null;
+  youtubeUrl?: string | null;
   hashtags: string[];
   status: "Draft" | "Confirmed" | "Deprecated" | "Prophetic";
   resonanceCount?: number;
@@ -52,6 +55,8 @@ export function OracleCard({
   field,
   temporalDirection,
   content,
+  imageUrl,
+  youtubeUrl,
   hashtags,
   status,
   resonanceCount = 0,
@@ -62,6 +67,8 @@ export function OracleCard({
     TEMPORAL_COLORS[temporalDirection] || TEMPORAL_COLORS.Present;
   const glyph = TEMPORAL_GLYPHS[temporalDirection] || "●";
   const { hasResonance } = usePersonalResonance();
+  const posterUrl = getTransmissionPosterUrl({ imageUrl, youtubeUrl });
+  const youtubeVideoId = getYouTubeVideoId(youtubeUrl);
 
   const isFieldConfirmed = resonanceCount >= 20;
   const hasPersonal = hasResonance(linkedCodons);
@@ -101,6 +108,59 @@ export function OracleCard({
               : "none";
           }}
         >
+          {posterUrl && (
+            <div
+              className="mb-4 overflow-hidden rounded-sm border"
+              style={{
+                borderColor: isFieldConfirmed ? "rgba(212,175,55,0.18)" : `${colors.light}22`,
+                background: "#0b0b10",
+              }}
+            >
+              <div className="relative aspect-[16/9]">
+                <img
+                  src={posterUrl}
+                  alt={title}
+                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(5,5,8,0.76), rgba(5,5,8,0.08) 45%, rgba(5,5,8,0.34))",
+                  }}
+                />
+                <div className="absolute left-3 top-3 flex gap-2">
+                  {imageUrl && (
+                    <span
+                      className="font-mono rounded-sm border px-2 py-1"
+                      style={{
+                        fontSize: 8,
+                        color: "#e8e4dc",
+                        borderColor: "rgba(232,228,220,0.16)",
+                        background: "rgba(5,5,8,0.5)",
+                      }}
+                    >
+                      STILL
+                    </span>
+                  )}
+                  {youtubeVideoId && (
+                    <span
+                      className="font-mono rounded-sm border px-2 py-1"
+                      style={{
+                        fontSize: 8,
+                        color: "#bda36b",
+                        borderColor: "rgba(189,163,107,0.2)",
+                        background: "rgba(5,5,8,0.55)",
+                      }}
+                    >
+                      YT VISUAL
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2.5">
               <span

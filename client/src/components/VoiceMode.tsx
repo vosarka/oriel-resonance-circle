@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
-import { X, Phone } from "lucide-react";
+import { Pause, Phone, Play } from "lucide-react";
+
+const RESPONSE_DELAY_MS = 3000;
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -27,7 +29,12 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
   const [currentAssistantText, setCurrentAssistantText] = useState("");
+  const [isWaitMode, setIsWaitMode] = useState(false);
   const currentAssistantTextRef = useRef("");
+  const isWaitModeRef = useRef(false);
+  const isUserSpeakingRef = useRef(false);
+  const hasPendingResponseRef = useRef(false);
+  const pendingResponseTimerRef = useRef<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -104,6 +111,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
   // Keep ref in sync with state for use in stale closures
   useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
+  useEffect(() => { isWaitModeRef.current = isWaitMode; }, [isWaitMode]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -234,6 +242,37 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     isPlayingRef.current = false;
   }, []);
 
+  const clearPendingResponseTimer = useCallback(() => {
+    if (pendingResponseTimerRef.current === null) return;
+    window.clearTimeout(pendingResponseTimerRef.current);
+    pendingResponseTimerRef.current = null;
+  }, []);
+
+  const requestAssistantResponse = useCallback(() => {
+    clearPendingResponseTimer();
+
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+    hasPendingResponseRef.current = false;
+    setOrbState("processing");
+    ws.send(JSON.stringify({ type: "response.create" }));
+  }, [clearPendingResponseTimer]);
+
+  const scheduleAssistantResponse = useCallback(() => {
+    clearPendingResponseTimer();
+    hasPendingResponseRef.current = true;
+
+    if (isWaitModeRef.current) {
+      setOrbState("idle");
+      return;
+    }
+
+    pendingResponseTimerRef.current = window.setTimeout(() => {
+      requestAssistantResponse();
+    }, RESPONSE_DELAY_MS);
+  }, [clearPendingResponseTimer, requestAssistantResponse]);
+
   // ── Mic capture ─────────────────────────────────────────────────────────────
 
   const startMicCapture = useCallback((ws: WebSocket) => {
@@ -339,6 +378,8 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "input_audio_buffer.speech_started":
         // User started speaking — interrupt ORIEL's playback immediately
+        isUserSpeakingRef.current = true;
+        clearPendingResponseTimer();
         stopPlayback();
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
@@ -347,6 +388,8 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_stopped":
+        isUserSpeakingRef.current = false;
+        scheduleAssistantResponse();
         setOrbState("idle");
         break;
 
@@ -358,6 +401,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "response.audio.delta":
       case "response.output_audio.delta":
+        hasPendingResponseRef.current = false;
         if (msg.delta) {
           playAudioChunk(msg.delta);
         }
@@ -373,6 +417,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "response.audio_transcript.done":
       case "response.output_audio_transcript.done":
+        hasPendingResponseRef.current = false;
         // Finalize the assistant transcript — use ref for latest value
         setTranscript((prev) => [
           ...prev,
@@ -383,6 +428,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "response.done":
+        hasPendingResponseRef.current = false;
         // response.audio_transcript.done should have already finalized;
         // only add if there's unflushed streaming text (edge case)
         if (currentAssistantTextRef.current.trim()) {
@@ -404,7 +450,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setStatus("error");
         break;
     }
-  }, [playAudioChunk, stopPlayback, startMicCapture, onConversationCreated]);
+  }, [clearPendingResponseTimer, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
@@ -454,6 +500,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   // ── Cleanup ─────────────────────────────────────────────────────────────────
 
   const cleanup = useCallback(() => {
+    clearPendingResponseTimer();
     // Stop mic
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -484,12 +531,27 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       wsRef.current.close();
       wsRef.current = null;
     }
-  }, []);
+  }, [clearPendingResponseTimer]);
 
   const handleClose = useCallback(() => {
     cleanup();
     onClose();
   }, [cleanup, onClose]);
+
+  const toggleWaitMode = useCallback(() => {
+    setIsWaitMode((prev) => {
+      const next = !prev;
+      isWaitModeRef.current = next;
+
+      if (next) {
+        clearPendingResponseTimer();
+      } else if (hasPendingResponseRef.current && !isUserSpeakingRef.current) {
+        requestAssistantResponse();
+      }
+
+      return next;
+    });
+  }, [clearPendingResponseTimer, requestAssistantResponse]);
 
   // ── Status label ────────────────────────────────────────────────────────────
 
@@ -565,7 +627,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           className="font-mono text-[9px] tracking-[0.35em] uppercase text-center"
           style={{ color: "rgba(0,188,212,0.5)" }}
         >
-          {orbState === "speaking"
+          {isWaitMode
+            ? "Wait Mode Active"
+            : orbState === "speaking"
             ? "ORIEL is speaking"
             : orbState === "processing"
             ? "Listening..."
@@ -625,34 +689,54 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         <div ref={transcriptEndRef} />
       </div>
 
-      {/* Bottom: close button + hint */}
+      {/* Bottom: wait button, close button, hint */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-3 z-10">
-        <button
-          onClick={handleClose}
-          className="p-4 rounded-full transition-all"
-          style={{
-            background: "rgba(255,80,80,0.1)",
-            border: "1px solid rgba(255,80,80,0.3)",
-            color: "rgba(255,80,80,0.7)",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,80,80,0.2)";
-            e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,80,80,0.1)";
-            e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
-          }}
-          title="End voice session"
-        >
-          <Phone size={24} className="rotate-[135deg]" />
-        </button>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleWaitMode}
+            className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
+            style={{
+              background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
+              border: isWaitMode
+                ? "1px solid rgba(189,163,107,0.45)"
+                : "1px solid rgba(0,188,212,0.25)",
+              color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
+            }}
+            title={isWaitMode ? "Resume ORIEL response" : "Pause ORIEL response"}
+          >
+            {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
+            {isWaitMode ? "Resume" : "Wait"}
+          </button>
+
+          <button
+            onClick={handleClose}
+            className="p-4 rounded-full transition-all"
+            style={{
+              background: "rgba(255,80,80,0.1)",
+              border: "1px solid rgba(255,80,80,0.3)",
+              color: "rgba(255,80,80,0.7)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(255,80,80,0.2)";
+              e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(255,80,80,0.1)";
+              e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
+            }}
+            title="End voice session"
+          >
+            <Phone size={24} className="rotate-[135deg]" />
+          </button>
+        </div>
         <p
           className="font-mono text-[9px] tracking-[0.2em]"
           style={{ color: "rgba(0,188,212,0.25)" }}
         >
-          {status === "connected"
-            ? "Speak naturally — ORIEL is listening"
+          {status === "connected" && isWaitMode
+            ? "Wait mode holds ORIEL until you press Resume"
+            : status === "connected"
+            ? "ORIEL waits 3 seconds after you stop speaking"
             : status === "error"
             ? "Tap to end session"
             : ""}

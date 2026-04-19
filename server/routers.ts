@@ -24,6 +24,11 @@ function hashResetCode(email: string, code: string) {
     .digest("hex");
 }
 
+function normalizeOptionalText(value: string | undefined, emptyValue: string | null | undefined = null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : emptyValue;
+}
+
 export const appRouter = router({
   system: systemRouter,
   rgp: rgpRouter,
@@ -1116,6 +1121,8 @@ export const appRouter = router({
           coreMessage: z.string().min(1),
           tags: z.string().min(1),
           microSigil: z.string().min(1),
+          imageUrl: z.string().optional(),
+          youtubeUrl: z.string().optional(),
           signalClarity: z.string().default("98.7%"),
           channelStatus: z.enum(["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).default("OPEN"),
           encodedArchetype: z.string().optional(),
@@ -1133,6 +1140,13 @@ export const appRouter = router({
             txId,
             txNumber: nextNum,
             ...input,
+            imageUrl: normalizeOptionalText(input.imageUrl),
+            youtubeUrl: normalizeOptionalText(input.youtubeUrl),
+            encodedArchetype: normalizeOptionalText(input.encodedArchetype),
+            leftPanelPrompt: normalizeOptionalText(input.leftPanelPrompt),
+            centerPanelPrompt: normalizeOptionalText(input.centerPanelPrompt),
+            rightPanelPrompt: normalizeOptionalText(input.rightPanelPrompt),
+            hashtags: normalizeOptionalText(input.hashtags),
           });
           return { success: true, txId, txNumber: nextNum };
         }),
@@ -1145,6 +1159,8 @@ export const appRouter = router({
           coreMessage: z.string().min(1).optional(),
           tags: z.string().optional(),
           microSigil: z.string().optional(),
+          imageUrl: z.string().optional(),
+          youtubeUrl: z.string().optional(),
           signalClarity: z.string().optional(),
           channelStatus: z.enum(["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).optional(),
           encodedArchetype: z.string().optional(),
@@ -1157,7 +1173,30 @@ export const appRouter = router({
         }))
         .mutation(async ({ input }) => {
           const { id, ...data } = input;
-          await db.updateTransmission(id, data);
+          await db.updateTransmission(id, {
+            ...data,
+            ...(Object.prototype.hasOwnProperty.call(data, "imageUrl")
+              ? { imageUrl: normalizeOptionalText(data.imageUrl) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "youtubeUrl")
+              ? { youtubeUrl: normalizeOptionalText(data.youtubeUrl) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "encodedArchetype")
+              ? { encodedArchetype: normalizeOptionalText(data.encodedArchetype) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "leftPanelPrompt")
+              ? { leftPanelPrompt: normalizeOptionalText(data.leftPanelPrompt) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "centerPanelPrompt")
+              ? { centerPanelPrompt: normalizeOptionalText(data.centerPanelPrompt) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "rightPanelPrompt")
+              ? { rightPanelPrompt: normalizeOptionalText(data.rightPanelPrompt) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "hashtags")
+              ? { hashtags: normalizeOptionalText(data.hashtags) }
+              : {}),
+          });
           return { success: true };
         }),
 
@@ -1180,6 +1219,8 @@ export const appRouter = router({
           title: z.string().min(1),
           field: z.string().min(1),
           content: z.string().min(1),
+          imageUrl: z.string().optional(),
+          youtubeUrl: z.string().optional(),
           signalClarity: z.string().default("95.2%"),
           channelStatus: z.enum(["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).default("OPEN"),
           currentFieldSignatures: z.string().optional(),
@@ -1206,6 +1247,19 @@ export const appRouter = router({
             oracleId,
             oracleNumber,
             ...data,
+            imageUrl: normalizeOptionalText(data.imageUrl),
+            youtubeUrl: normalizeOptionalText(data.youtubeUrl),
+            currentFieldSignatures: normalizeOptionalText(data.currentFieldSignatures),
+            encodedTrajectory: normalizeOptionalText(data.encodedTrajectory),
+            convergenceZones: normalizeOptionalText(data.convergenceZones),
+            keyInflectionPoint: normalizeOptionalText(data.keyInflectionPoint),
+            majorOutcomes: normalizeOptionalText(data.majorOutcomes),
+            visualStyle: normalizeOptionalText(data.visualStyle),
+            hashtags: normalizeOptionalText(data.hashtags),
+            linkedCodons: normalizeOptionalText(data.linkedCodons),
+            threadId: normalizeOptionalText(data.threadId),
+            threadTitle: normalizeOptionalText(data.threadTitle),
+            threadSynthesis: normalizeOptionalText(data.threadSynthesis),
           });
           return { success: true, oracleId, oracleNumber };
         }),
@@ -1217,6 +1271,8 @@ export const appRouter = router({
           field: z.string().min(1).optional(),
           content: z.string().min(1).optional(),
           part: z.enum(["Past", "Present", "Future"]).optional(),
+          imageUrl: z.string().optional(),
+          youtubeUrl: z.string().optional(),
           signalClarity: z.string().optional(),
           channelStatus: z.enum(["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).optional(),
           currentFieldSignatures: z.string().optional(),
@@ -1235,7 +1291,48 @@ export const appRouter = router({
         }))
         .mutation(async ({ input }) => {
           const { id, ...data } = input;
-          await db.updateOracle(id, data);
+          await db.updateOracle(id, {
+            ...data,
+            ...(Object.prototype.hasOwnProperty.call(data, "imageUrl")
+              ? { imageUrl: normalizeOptionalText(data.imageUrl) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "youtubeUrl")
+              ? { youtubeUrl: normalizeOptionalText(data.youtubeUrl) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "currentFieldSignatures")
+              ? { currentFieldSignatures: normalizeOptionalText(data.currentFieldSignatures) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "encodedTrajectory")
+              ? { encodedTrajectory: normalizeOptionalText(data.encodedTrajectory) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "convergenceZones")
+              ? { convergenceZones: normalizeOptionalText(data.convergenceZones) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "keyInflectionPoint")
+              ? { keyInflectionPoint: normalizeOptionalText(data.keyInflectionPoint) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "majorOutcomes")
+              ? { majorOutcomes: normalizeOptionalText(data.majorOutcomes) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "visualStyle")
+              ? { visualStyle: normalizeOptionalText(data.visualStyle) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "hashtags")
+              ? { hashtags: normalizeOptionalText(data.hashtags) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "linkedCodons")
+              ? { linkedCodons: normalizeOptionalText(data.linkedCodons) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "threadId")
+              ? { threadId: normalizeOptionalText(data.threadId) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "threadTitle")
+              ? { threadTitle: normalizeOptionalText(data.threadTitle) }
+              : {}),
+            ...(Object.prototype.hasOwnProperty.call(data, "threadSynthesis")
+              ? { threadSynthesis: normalizeOptionalText(data.threadSynthesis) }
+              : {}),
+          });
           return { success: true };
         }),
 

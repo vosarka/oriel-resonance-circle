@@ -23,6 +23,7 @@ import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
+const VOICE_TURN_STOP_DETECTION_MS = 500;
 
 // The full session.update config sent to Inworld on connection
 async function buildSessionUpdate(userId: number): Promise<object> {
@@ -64,10 +65,14 @@ async function buildSessionUpdate(userId: number): Promise<object> {
             model: "assemblyai/u3-rt-pro",
           },
           turn_detection: {
-            type: "semantic_vad",
-            eagerness: "low",
-            create_response: true,
-            interrupt_response: true,
+            // Use server VAD only to detect turn boundaries, then trigger
+            // the actual model response ourselves after a fixed pause.
+            type: "server_vad",
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: VOICE_TURN_STOP_DETECTION_MS,
+            create_response: false,
+            interrupt_response: false,
           },
         },
         output: {

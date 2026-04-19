@@ -1,7 +1,18 @@
+const nodeEnv = process.env.NODE_ENV ?? "development";
+const runMigrationsEnv = process.env.RUN_MIGRATIONS?.toLowerCase();
+
+const resolveRunMigrations = () => {
+  if (runMigrationsEnv === "true") return true;
+  if (runMigrationsEnv === "false") return false;
+  return nodeEnv === "production";
+};
+
 export const ENV = {
+  nodeEnv,
   cookieSecret: process.env.JWT_SECRET ?? "",
   databaseUrl: process.env.DATABASE_URL ?? "",
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction: nodeEnv === "production",
+  runMigrations: resolveRunMigrations(),
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",

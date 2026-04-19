@@ -18,10 +18,10 @@ import { ENV } from "./env";
 // ─── Drizzle instance for Better Auth ────────────────────────────────────────
 
 function createBetterAuthDb() {
-  if (!process.env.DATABASE_URL) {
+  if (!ENV.databaseUrl) {
     throw new Error("DATABASE_URL is required for Better Auth");
   }
-  return drizzle(process.env.DATABASE_URL);
+  return drizzle(ENV.databaseUrl);
 }
 
 async function hashCredentialPassword(password: string) {
