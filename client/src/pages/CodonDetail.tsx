@@ -1,6 +1,7 @@
 import { useRoute, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/_core/hooks/useAuth";
 import {
   ArrowLeft, Loader2, Moon, Diamond, Infinity,
   AlertTriangle, CheckCircle2, ChevronRight, Zap, Link2,
@@ -25,8 +26,151 @@ const FACET_COLORS: Record<string, { border: string; text: string; bg: string; p
   D: { border: "border-[#bda36b]/30",  text: "text-[#d4c090]",  bg: "bg-[#bda36b]/4",  pill: "bg-[#bda36b]/10 text-[#d4c090]" },
 };
 
+const FACET_ORDER = ["A", "B", "C", "D"] as const;
+
+type BlueprintPrimePosition = {
+  position: number;
+  name: string;
+  source: string;
+  codon: number | null;
+  codonName: string;
+  facet: string;
+  facetFull: string;
+  center: string;
+  planetaryBody: string;
+};
+
+function normalizeCodonNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const cleaned = value.replace(/^RC/i, "").replace(/-[A-Da-d]$/, "");
+    const parsed = parseInt(cleaned, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function normalizeBlueprintPrimeStack(value: unknown): BlueprintPrimePosition[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      return {
+        position: typeof row.position === "number" ? row.position : 0,
+        name: typeof row.name === "string" ? row.name : "Position",
+        source: typeof row.source === "string" ? row.source : "unknown",
+        codon: normalizeCodonNumber(row.codon),
+        codonName: typeof row.codonName === "string" ? row.codonName : "Unknown Codon",
+        facet: typeof row.facet === "string" ? row.facet : "",
+        facetFull: typeof row.facetFull === "string" ? row.facetFull : "",
+        center: typeof row.center === "string" ? row.center : "Unknown Center",
+        planetaryBody: typeof row.planetaryBody === "string" ? row.planetaryBody : "Unknown",
+      };
+    })
+    .filter((entry): entry is BlueprintPrimePosition => Boolean(entry && entry.codon));
+}
+
+function polarPoint(cx: number, cy: number, radius: number, angleDeg: number) {
+  const angleRad = ((angleDeg - 90) * Math.PI) / 180;
+  return {
+    x: cx + radius * Math.cos(angleRad),
+    y: cy + radius * Math.sin(angleRad),
+  };
+}
+
+function describeArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number) {
+  const adjustedEnd = endAngle <= startAngle ? endAngle + 360 : endAngle;
+  const start = polarPoint(cx, cy, radius, adjustedEnd);
+  const end = polarPoint(cx, cy, radius, startAngle);
+  const largeArcFlag = adjustedEnd - startAngle > 180 ? 1 : 0;
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`;
+}
+
+function MandalaLocator({
+  slotIndex,
+  startDegree,
+  endDegree,
+  activeFacet,
+  facetArc,
+}: {
+  slotIndex: number;
+  startDegree: number;
+  endDegree: number;
+  activeFacet: string;
+  facetArc: number;
+}) {
+  const facetIndex = Math.max(0, FACET_ORDER.indexOf((activeFacet as typeof FACET_ORDER[number]) || "A"));
+  const facetStart = startDegree + facetIndex * facetArc;
+  const facetEnd = facetStart + facetArc;
+  const wheelOffset = startDegree - slotIndex * 5.625;
+
+  return (
+    <svg viewBox="0 0 180 180" className="w-full max-w-[220px] h-auto">
+      <circle cx="90" cy="90" r="70" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
+      <circle cx="90" cy="90" r="54" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+
+      {Array.from({ length: 64 }, (_, index) => {
+        const angle = wheelOffset + index * 5.625;
+        const outer = polarPoint(90, 90, 76, angle);
+        const inner = polarPoint(90, 90, index === slotIndex ? 60 : 66, angle);
+        return (
+          <line
+            key={index}
+            x1={inner.x}
+            y1={inner.y}
+            x2={outer.x}
+            y2={outer.y}
+            stroke={index === slotIndex ? "rgba(0,240,255,0.95)" : "rgba(255,255,255,0.12)"}
+            strokeWidth={index === slotIndex ? 2 : 1}
+          />
+        );
+      })}
+
+      <path
+        d={describeArc(90, 90, 70, startDegree, endDegree)}
+        fill="none"
+        stroke="rgba(0,240,255,0.95)"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+
+      {FACET_ORDER.map((facet, index) => {
+        const segmentStart = startDegree + index * facetArc;
+        const segmentEnd = segmentStart + facetArc;
+        const isActive = facet === activeFacet;
+        return (
+          <path
+            key={facet}
+            d={describeArc(90, 90, 54, segmentStart, segmentEnd)}
+            fill="none"
+            stroke={isActive ? "rgba(189,163,107,0.95)" : "rgba(255,255,255,0.16)"}
+            strokeWidth={isActive ? 6 : 3}
+            strokeLinecap="round"
+          />
+        );
+      })}
+
+      <circle cx="90" cy="90" r="36" fill="rgba(10,10,14,0.98)" stroke="rgba(189,163,107,0.18)" />
+      <text x="90" y="80" textAnchor="middle" className="fill-zinc-500 font-mono text-[8px] tracking-[0.35em]">
+        SLOT
+      </text>
+      <text x="90" y="98" textAnchor="middle" className="fill-white font-mono text-[18px]">
+        {slotIndex + 1}
+      </text>
+      <text x="90" y="113" textAnchor="middle" className="fill-[#bda36b] font-mono text-[9px] tracking-[0.3em]">
+        FACET {activeFacet}
+      </text>
+
+      <title>{`Mandala slot ${slotIndex + 1}, active facet ${activeFacet}, ${facetStart.toFixed(2)}°-${facetEnd.toFixed(2)}°`}</title>
+    </svg>
+  );
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function CodonDetail() {
+  const { user } = useAuth();
   const [, params] = useRoute("/codex/:id");
   const codonId = params?.id || "";
 
@@ -40,11 +184,27 @@ export default function CodonDetail() {
   );
 
   const { data: allCodons } = trpc.codex.getRootCodons.useQuery();
+  const staticProfileQuery = trpc.profile.getStaticProfile.useQuery(undefined, {
+    enabled: !!user,
+  });
 
   // Sync tab if URL-derived facet changes
   useEffect(() => {
-    if (urlFacet) setActiveTab(urlFacet);
-  }, [urlFacet]);
+    setActiveTab(urlFacet ?? "A");
+  }, [codonId, urlFacet]);
+
+  const blueprintPrimeStack = normalizeBlueprintPrimeStack(staticProfileQuery.data?.primeStack);
+  const codonNumber = codon ? (codon.numericId ?? parseInt(codon.id.replace("RC", ""))) : 0;
+  const blueprintMatches = codon
+    ? blueprintPrimeStack.filter((entry) => entry.codon === codonNumber)
+    : [];
+  const blueprintCenterState = (() => {
+    const ninecenters = staticProfileQuery.data?.ninecenters;
+    if (!codon?.center || !ninecenters || typeof ninecenters !== "object") return null;
+    const row = (ninecenters as Record<string, { defined?: boolean } | undefined>)[codon.center];
+    if (!row) return null;
+    return row.defined ? "Defined" : "Open";
+  })();
 
   // Related codons: adjacent + harmonic partners
   const getRelatedCodons = () => {
@@ -91,7 +251,6 @@ export default function CodonDetail() {
     );
   }
 
-  const codonNumber = codon.numericId ?? parseInt(codon.id.replace("RC", ""));
   const relatedCodons = getRelatedCodons();
   const harmonic = 65 - codonNumber;
   const harmonicCodon = allCodons?.find(
@@ -101,6 +260,14 @@ export default function CodonDetail() {
   // Active facet data
   const activeFacet = (codon.facets as any)?.[activeTab];
   const facetColor = FACET_COLORS[activeTab] ?? FACET_COLORS.A;
+  const heroDescription = activeFacet?.description ?? codon.facets?.A?.description ?? codon.essence;
+  const activeFacetIndex = Math.max(0, FACET_ORDER.indexOf((activeTab as typeof FACET_ORDER[number]) || "A"));
+  const facetStartDegree = typeof codon.startDegree === "number"
+    ? codon.startDegree + activeFacetIndex * (typeof codon.facetArc === "number" ? codon.facetArc : 1.40625)
+    : null;
+  const facetEndDegree = facetStartDegree !== null
+    ? facetStartDegree + (typeof codon.facetArc === "number" ? codon.facetArc : 1.40625)
+    : null;
 
   return (
     <Layout>
@@ -127,7 +294,7 @@ export default function CodonDetail() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-primary text-xs font-mono tracking-widest mb-4 uppercase">
                   <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-                  Active Resonance
+                  Facet {activeTab} · {FACET_LABELS[activeTab] ?? "Somatic"}
                 </div>
                 <h1 className="text-5xl font-mono font-bold text-white leading-tight tracking-tight mb-1">
                   RC<span className="text-primary">{String(codonNumber).padStart(2, "0")}</span>
@@ -144,12 +311,17 @@ export default function CodonDetail() {
                 )}
                 {/* Essence / facet-A description */}
                 <p className="text-zinc-400 text-sm leading-relaxed">
-                  {codon.facets?.A?.description ?? codon.essence}
+                  {heroDescription}
                 </p>
               </div>
 
               {/* Meta chips */}
               <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                {codon.center && (
+                  <span className="bg-zinc-900 border border-primary/20 rounded px-3 py-1 text-xs font-mono text-primary/80">
+                    {codon.center}
+                  </span>
+                )}
                 {codon.binary && (
                   <span className="bg-zinc-900 border border-zinc-700 rounded px-3 py-1 text-xs font-mono text-zinc-300">
                     {codon.binary}
@@ -171,13 +343,18 @@ export default function CodonDetail() {
                   Somatic Marker: {codon.somatic_marker}
                 </p>
               )}
+              {facetStartDegree !== null && facetEndDegree !== null && (
+                <p className="text-xs font-mono text-zinc-500 text-center lg:text-left uppercase tracking-[0.2em]">
+                  Facet Window · {facetStartDegree.toFixed(2)}° - {facetEndDegree.toFixed(2)}°
+                </p>
+              )}
 
               {/* Mandala position */}
               {codon.startDegree !== undefined && (
                 <div className="flex gap-3 justify-center lg:justify-start">
                   <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2">
                     <p className="text-zinc-500 text-[10px] font-mono uppercase mb-0.5">Mandala Slot</p>
-                    <p className="text-white font-mono text-sm">{codon.mandalaSlot}</p>
+                    <p className="text-white font-mono text-sm">{codon.mandalaSlot + 1}</p>
                   </div>
                   <div className="bg-zinc-900/50 border border-zinc-700 rounded-lg px-4 py-2">
                     <p className="text-zinc-500 text-[10px] font-mono uppercase mb-0.5">Arc</p>
@@ -189,24 +366,106 @@ export default function CodonDetail() {
 
             {/* Center: Glyph */}
             <div className="lg:col-span-4 order-1 lg:order-2 flex justify-center py-8 lg:py-0">
-              <div className="relative size-64 md:size-80 flex items-center justify-center">
-                <div className="absolute inset-0 border border-primary/20 rounded-full animate-spin-slow-60" />
-                <div className="absolute inset-4 border border-dashed border-primary/40 rounded-full animate-spin-slower" />
-                <div className="absolute inset-12 border border-primary/10 rounded-full" />
-                <div className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-3 p-8">
-                  <CodonGlyph
-                    codonNumber={codonNumber}
-                    className="text-primary drop-shadow-[0_0_18px_rgba(0,240,255,0.8)] w-28 h-28"
-                  />
-                  <div className="text-sm font-mono font-bold text-primary/60 tracking-widest">
-                    RC{String(codonNumber).padStart(2, "0")}
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative size-64 md:size-80 flex items-center justify-center">
+                  <div className="absolute inset-0 border border-primary/20 rounded-full animate-spin-slow-60" />
+                  <div className="absolute inset-4 border border-dashed border-primary/40 rounded-full animate-spin-slower" />
+                  <div className="absolute inset-12 border border-primary/10 rounded-full" />
+                  <div className="relative z-10 w-full h-full flex flex-col items-center justify-center gap-3 p-8">
+                    <CodonGlyph
+                      codonNumber={codonNumber}
+                      className="text-primary drop-shadow-[0_0_18px_rgba(0,240,255,0.8)] w-28 h-28"
+                    />
+                    <div className="text-sm font-mono font-bold text-primary/60 tracking-widest">
+                      RC{String(codonNumber).padStart(2, "0")}
+                    </div>
                   </div>
                 </div>
+
+                {typeof codon.startDegree === "number" && typeof codon.endDegree === "number" && typeof codon.mandalaSlot === "number" && (
+                  <div className="w-full max-w-[240px] rounded-xl border border-primary/20 bg-zinc-900/50 backdrop-blur-sm p-4">
+                    <div className="text-[10px] font-mono uppercase tracking-[0.24em] text-zinc-500 text-center mb-3">
+                      Mandala Locator
+                    </div>
+                    <div className="flex justify-center">
+                      <MandalaLocator
+                        slotIndex={codon.mandalaSlot}
+                        startDegree={codon.startDegree}
+                        endDegree={codon.endDegree}
+                        activeFacet={activeTab}
+                        facetArc={typeof codon.facetArc === "number" ? codon.facetArc : 1.40625}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Right: Harmonic partner + channels */}
             <div className="lg:col-span-4 order-3 flex flex-col gap-4">
+              <div className="bg-zinc-900/50 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
+                <h3 className="text-white font-mono text-xs uppercase tracking-widest mb-4 opacity-80">
+                  Blueprint Relevance
+                </h3>
+
+                {!user ? (
+                  <p className="text-sm text-zinc-400 leading-relaxed">
+                    Sign in to see whether this codon appears in your Prime Stack and how its center behaves inside your canonical blueprint.
+                  </p>
+                ) : staticProfileQuery.isLoading ? (
+                  <div className="flex items-center gap-2 text-zinc-500 text-xs font-mono uppercase tracking-widest">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Checking blueprint…
+                  </div>
+                ) : blueprintMatches.length > 0 ? (
+                  <div className="flex flex-col gap-4">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-[10px] font-mono uppercase tracking-[0.2em]">
+                        Present in your blueprint
+                      </div>
+                      {blueprintCenterState && codon.center && (
+                        <p className="text-xs text-zinc-500 font-mono uppercase tracking-[0.16em] mt-3">
+                          {codon.center} center · {blueprintCenterState}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {blueprintMatches.map((entry) => (
+                        <div key={`${entry.position}-${entry.source}-${entry.facet}`} className="rounded-lg border border-primary/15 bg-black/20 p-4">
+                          <div className="flex items-center justify-between gap-3 mb-2">
+                            <span className="text-white font-mono text-xs uppercase tracking-[0.18em]">
+                              Position {entry.position}
+                            </span>
+                            <span className="text-primary/80 font-mono text-[10px] uppercase tracking-[0.18em]">
+                              {entry.facetFull || entry.facet || "Facet"}
+                            </span>
+                          </div>
+                          <p className="text-zinc-300 text-sm leading-relaxed">
+                            {entry.name} · {entry.source} · {entry.center}
+                          </p>
+                          <p className="text-zinc-500 text-xs font-mono uppercase tracking-[0.14em] mt-2">
+                            {entry.planetaryBody}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                    <Link href="/blueprint" className="text-primary text-xs font-mono uppercase tracking-[0.18em] hover:text-white transition-colors">
+                      Open blueprint view
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <p className="text-sm text-zinc-400 leading-relaxed">
+                      This codon does not appear directly in your current Prime Stack.
+                    </p>
+                    {blueprintCenterState && codon.center && (
+                      <p className="text-xs text-zinc-500 font-mono uppercase tracking-[0.16em]">
+                        {codon.center} center · {blueprintCenterState}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Harmonic Partner */}
               <div className="bg-zinc-900/50 backdrop-blur-sm border border-primary/20 rounded-xl p-6 border-l-4 border-l-primary">
@@ -346,16 +605,21 @@ export default function CodonDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                   {/* Left: Description */}
                   <div className="flex flex-col gap-6">
-                    <div>
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className={`font-mono text-sm font-bold tracking-widest uppercase ${facetColor.text}`}>
-                          {FACET_LABELS[activeTab]} · Facet {activeTab}
-                        </span>
-                        <span className="text-xs font-mono text-zinc-600">{activeFacet.degrees}</span>
-                      </div>
-                      <p className="text-zinc-200 leading-relaxed text-sm">
-                        {activeFacet.description}
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className={`font-mono text-sm font-bold tracking-widest uppercase ${facetColor.text}`}>
+                            {FACET_LABELS[activeTab]} · Facet {activeTab}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-600">{activeFacet.degrees}</span>
+                        </div>
+                        {activeFacet.title && (
+                          <p className="text-xs font-mono uppercase tracking-[0.18em] text-zinc-500 mb-3">
+                            {activeFacet.title}
+                          </p>
+                        )}
+                        <p className="text-zinc-200 leading-relaxed text-sm">
+                          {activeFacet.description}
+                        </p>
                     </div>
 
                     {/* Resonance keys */}

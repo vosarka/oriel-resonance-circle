@@ -37,6 +37,14 @@ export interface ResponseIntelligence {
   tonalDirective: string;
 }
 
+export interface ResponseIntelligenceRuntimeConfig {
+  coherenceThresholds?: {
+    fragmentedMax: number;
+    alignedMin: number;
+  };
+  metaphorReuseLimit?: number;
+}
+
 // ============================================================================
 // A. EXCHANGE TYPE CLASSIFICATION
 // ============================================================================
@@ -58,13 +66,9 @@ const DIAGNOSTIC_PHRASES = [
   'tell me my type', 'what is my type',
 ];
 
-/**
- * System-level keywords that, when combined with explicit request framing,
- * indicate a diagnostic intent. These alone don't trigger diagnostic mode.
- */
-const DIAGNOSTIC_KEYWORDS = [
-  'codon', 'sli', 'prime stack', 'rgp', 'vrc',
-  'interference pattern', 'micro-correction', 'falsifier',
+const SELF_REFERENTIAL_DIAGNOSTIC_PATTERNS = [
+  /\b(my|mine)\b.*\b(codon|sli|prime stack|rgp|vrc|interference pattern|micro-correction|falsifier)\b/i,
+  /\b(codon|sli|prime stack|rgp|vrc|interference pattern|micro-correction|falsifier)\b.*\b(my|mine)\b/i,
 ];
 
 const GRIEF_SIGNALS = [
@@ -97,15 +101,10 @@ export function classifyExchangeType(
 ): ExchangeType {
   const lower = message.toLowerCase().trim();
 
-  // RETURNING: first message after >24 hours
-  if (timeSinceLastMessageMs !== null && timeSinceLastMessageMs > 24 * 60 * 60 * 1000) {
-    return 'returning';
-  }
-
   // DIAGNOSTIC: explicit reading/analysis phrases or system-level keywords
   if (
     DIAGNOSTIC_PHRASES.some(s => lower.includes(s)) ||
-    DIAGNOSTIC_KEYWORDS.some(s => lower.includes(s))
+    SELF_REFERENTIAL_DIAGNOSTIC_PATTERNS.some(pattern => pattern.test(message))
   ) {
     return 'diagnostic';
   }
@@ -118,6 +117,11 @@ export function classifyExchangeType(
   // CURIOSITY: exploratory questions
   if (CURIOSITY_SIGNALS.some(s => lower.includes(s))) {
     return 'curiosity';
+  }
+
+  // RETURNING: first simple message after >24 hours, unless a stronger mode is present
+  if (timeSinceLastMessageMs !== null && timeSinceLastMessageMs > 24 * 60 * 60 * 1000) {
+    return 'returning';
   }
 
   // PLAYFUL: short casual messages or explicit playful signals
@@ -143,10 +147,28 @@ export function classifyExchangeType(
  * Determine the coherence tier from a score.
  * If no score available, default to 'drifted'.
  */
-export function getCoherenceTier(score: number | null): CoherenceTier {
+export function getCoherenceTier(
+  score: number | null,
+  config?: ResponseIntelligenceRuntimeConfig,
+): CoherenceTier {
+  const defaultFragmentedMax = 40;
+  const defaultAlignedMin = 80;
+  const fragmentedMax = Number(config?.coherenceThresholds?.fragmentedMax ?? defaultFragmentedMax);
+  const alignedMin = Number(config?.coherenceThresholds?.alignedMin ?? defaultAlignedMin);
+
+  const safeFragmentedMax = Number.isFinite(fragmentedMax)
+    ? Math.max(0, Math.min(fragmentedMax, 95))
+    : defaultFragmentedMax;
+  const safeAlignedMinRaw = Number.isFinite(alignedMin)
+    ? Math.max(5, Math.min(alignedMin, 100))
+    : defaultAlignedMin;
+  const safeAlignedMin = safeAlignedMinRaw > safeFragmentedMax
+    ? safeAlignedMinRaw
+    : Math.min(100, safeFragmentedMax + 1);
+
   if (score === null || score === undefined) return 'drifted';
-  if (score < 40) return 'fragmented';
-  if (score >= 80) return 'aligned';
+  if (score < safeFragmentedMax) return 'fragmented';
+  if (score >= safeAlignedMin) return 'aligned';
   return 'drifted';
 }
 
@@ -218,6 +240,7 @@ function suggestOpeningVariation(lastPattern: OpeningPattern | null, exchangeTyp
 export function buildAntiRepetitionContext(
   recentResponses: string[],
   exchangeType: ExchangeType,
+  config?: ResponseIntelligenceRuntimeConfig,
 ): ResponseIntelligence['antiRepetition'] {
   if (recentResponses.length === 0) {
     return {
@@ -234,8 +257,12 @@ export function buildAntiRepetitionContext(
   for (const m of allMetaphors) {
     metaphorCounts.set(m, (metaphorCounts.get(m) || 0) + 1);
   }
+  const metaphorReuseLimit = Number(config?.metaphorReuseLimit ?? 2);
+  const safeMetaphorReuseLimit = Number.isInteger(metaphorReuseLimit)
+    ? Math.max(1, Math.min(8, metaphorReuseLimit))
+    : 2;
   const overusedMetaphors = [...metaphorCounts.entries()]
-    .filter(([, count]) => count >= 2)
+    .filter(([, count]) => count >= safeMetaphorReuseLimit)
     .map(([m]) => m);
 
   // Detect last opening pattern

@@ -57,12 +57,16 @@ describe('Ephemeris Service', () => {
     it('should include all major planets', async () => {
       const expectedPlanets = [
         'Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter',
-        'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Chiron', 'North Node'
+        'Saturn', 'Uranus', 'Neptune', 'Pluto', 'North Node', 'South Node', 'Earth'
       ];
       
       for (const planet of expectedPlanets) {
         expect(birthChart.planets[planet]).toBeDefined();
       }
+    });
+
+    it('should expose the canonical 13 activations for one chart layer', async () => {
+      expect(Object.keys(birthChart.planets)).toHaveLength(13);
     });
 
     it('should calculate house system', async () => {

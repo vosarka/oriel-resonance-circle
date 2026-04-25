@@ -1,11 +1,14 @@
 const nodeEnv = process.env.NODE_ENV ?? "development";
 const runMigrationsEnv = process.env.RUN_MIGRATIONS?.toLowerCase();
+const autonomyRuntimeEnv = process.env.ORIEL_AUTONOMY_RUNTIME?.toLowerCase();
 
 const resolveRunMigrations = () => {
   if (runMigrationsEnv === "true") return true;
   if (runMigrationsEnv === "false") return false;
-  return nodeEnv === "production";
+  return false;
 };
+
+const resolveAutonomyRuntimeEnabled = () => autonomyRuntimeEnv === "true";
 
 export const ENV = {
   nodeEnv,
@@ -13,6 +16,8 @@ export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   isProduction: nodeEnv === "production",
   runMigrations: resolveRunMigrations(),
+  // OFF by default: autonomy runtime overlays only activate when explicitly enabled.
+  enableOrielAutonomyRuntime: resolveAutonomyRuntimeEnabled(),
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",

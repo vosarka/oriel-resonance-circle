@@ -154,21 +154,35 @@ export function calculateSLI(
 /**
  * Determine facet loudness from Carrierlock state inputs.
  *
- * Maps Mental Noise / Body Tension / Emotional Turbulence to A/B/C/D amplitudes.
+ * Consciousness Lattice Unified Specification v1 §11.2:
+ * - BT highest -> A
+ * - ET highest -> B
+ * - MN highest -> C
+ * - low CS + high MN/ET -> D
+ *
+ * `coherenceScore` is optional so existing callers can remain compatible.
+ * When omitted, D is estimated from the current state load without breath bonus.
  */
 export function determineFacetLoudness(
   mentalNoise: number,
   bodyTension: number,
-  emotionalTurbulence: number
+  emotionalTurbulence: number,
+  coherenceScore?: number
 ): FacetLoudness {
-  const mn = mentalNoise / 10;
-  const bt = bodyTension / 10;
-  const et = emotionalTurbulence / 10;
+  const mn = Math.max(0, Math.min(10, mentalNoise)) / 10;
+  const bt = Math.max(0, Math.min(10, bodyTension)) / 10;
+  const et = Math.max(0, Math.min(10, emotionalTurbulence)) / 10;
 
-  const A = Math.max(0, 1 - mn) * 100;
-  const B = Math.max(0, 1 - bt) * 100;
-  const C = Math.max(0, 1 - et) * 100;
-  const D = Math.max(0, 1 - (mn + bt + et) / 3) * 100;
+  const estimatedCoherence = coherenceScore ?? Math.max(
+    0,
+    Math.min(100, 100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3))
+  );
+  const lowCoherenceFactor = (100 - estimatedCoherence) / 100;
+
+  const A = 25 + bt * 75;
+  const B = 25 + et * 75;
+  const C = 25 + mn * 75;
+  const D = 25 + Math.min(1, lowCoherenceFactor * ((mn + et) / 2)) * 75;
 
   const pairs: [FacetLetter, number][] = [['A', A], ['B', B], ['C', C], ['D', D]];
   const dominant = pairs.reduce((p, c) => (c[1] > p[1] ? c : p))[0];
@@ -254,5 +268,5 @@ export const PRIME_STACK_CONFIG: PrimeStackPosition[] = [
   { position: 6, name: 'Design Moon',         planetaryBody: 'Moon',      weight: 0.9 },
   { position: 7, name: 'True Node',           planetaryBody: 'North Node',weight: 0.7 },
   { position: 8, name: 'Design True Node',    planetaryBody: 'North Node',weight: 0.6 },
-  { position: 9, name: 'Chiron',              planetaryBody: 'Chiron',    weight: 0.5 },
+  { position: 9, name: 'Conscious South Node',planetaryBody: 'South Node',weight: 0.5 },
 ];

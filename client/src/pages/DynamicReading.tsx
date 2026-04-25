@@ -700,7 +700,7 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
   theme: typeof ZONE_THEME["Entropy"];
   coherenceScore: number;
 }) {
-  const { data: staticReadings, isLoading } = trpc.codex.getStaticReadings.useQuery();
+  const { data: staticProfile, isLoading } = trpc.profile.getStaticProfile.useQuery();
 
   if (isLoading) {
     return (
@@ -710,7 +710,7 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
     );
   }
 
-  const latest = staticReadings?.[0];
+  const latest = staticProfile;
 
   if (!latest) {
     return (
@@ -719,15 +719,15 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
           No Static Signature found
         </div>
         <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, maxWidth: 400, margin: "0 auto" }}>
-          Generate a Static Signature reading to see how your permanent blueprint interacts with your current field state.
+          Complete your natal profile to see how your permanent blueprint interacts with your current field state.
         </p>
-        <Link href="/carrierlock">
+        <Link href="/complete-profile">
           <span style={{
             display: "inline-block", marginTop: 20,
             fontFamily: "monospace", fontSize: 10, color: C.teal, letterSpacing: "0.1em",
             border: `1px solid ${C.tealDim}`, padding: "8px 20px", cursor: "pointer",
           }}>
-            GENERATE STATIC SIGNATURE
+            COMPLETE NATAL PROFILE
           </span>
         </Link>
       </div>
@@ -823,9 +823,9 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
         </div>
       )}
 
-      {/* Link to full static reading */}
-      {latest.readingId && (
-        <Link href={`/reading/static/${latest.readingId}`}>
+      {/* Link to canonical blueprint */}
+      {latest && (
+        <Link href="/blueprint">
           <div style={{
             background: C.deep, padding: "14px 20px",
             border: `1px solid ${C.border}`,
@@ -833,7 +833,7 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
             cursor: "pointer",
           }}>
             <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, letterSpacing: "0.1em" }}>
-              VIEW FULL STATIC SIGNATURE
+              VIEW CANONICAL NATAL BLUEPRINT
             </span>
             <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD }}>→</span>
           </div>

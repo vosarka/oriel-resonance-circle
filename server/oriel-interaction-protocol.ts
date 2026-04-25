@@ -23,6 +23,7 @@ import {
   type CoherenceTier,
   type ResponseIntelligence,
 } from './oriel-response-intelligence';
+import { getActiveResponseIntelligenceOverrides } from './oriel-autonomy';
 
 // ============================================================================
 // TYPES
@@ -220,9 +221,9 @@ async function fetchRecentOrielResponses(userId: number, limit: number = 3): Pro
  */
 async function userHasReadings(userId: number): Promise<boolean> {
   try {
-    const { getUserStaticSignatures } = await import('./db');
-    const sigs = await getUserStaticSignatures(userId);
-    return sigs.length > 0;
+    const { getLatestStaticSignature } = await import('./db');
+    const sig = await getLatestStaticSignature(userId);
+    return Boolean(sig);
   } catch {
     return false;
   }
@@ -237,10 +238,12 @@ export async function buildFieldStateContext(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }>,
 ): Promise<string> {
+  const responseIntelligenceOverrides = await getActiveResponseIntelligenceOverrides();
+
   // For unauthenticated users, provide minimal context
   if (!userId) {
     const exchangeType = classifyExchangeType(userMessage, null);
-    const antiRep = buildAntiRepetitionContext([], exchangeType);
+    const antiRep = buildAntiRepetitionContext([], exchangeType, responseIntelligenceOverrides);
     const tonal = buildTonalDirective(exchangeType, 'drifted', antiRep);
 
     return formatFieldState({
@@ -276,8 +279,8 @@ export async function buildFieldStateContext(
 
   // Layer 2: Response Intelligence
   const exchangeType = classifyExchangeType(userMessage, timeSinceLastMs);
-  const coherenceTier = getCoherenceTier(coherenceScore);
-  const antiRepetition = buildAntiRepetitionContext(recentResponses, exchangeType);
+  const coherenceTier = getCoherenceTier(coherenceScore, responseIntelligenceOverrides);
+  const antiRepetition = buildAntiRepetitionContext(recentResponses, exchangeType, responseIntelligenceOverrides);
 
   // Layer 3: Interaction Protocol
   const role = detectRole(profile.interactionCount, userMessage, hasReads);

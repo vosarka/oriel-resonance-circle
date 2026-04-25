@@ -10,10 +10,10 @@
 import { betterAuth } from "better-auth";
 import { verifyPassword as verifyScryptPassword } from "better-auth/crypto";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { drizzle } from "drizzle-orm/mysql2";
 import bcrypt from "bcryptjs";
 import * as schema from "../../drizzle/schema";
 import { ENV } from "./env";
+import { createDrizzleFromDatabaseUrl } from "./mysql";
 
 // ─── Drizzle instance for Better Auth ────────────────────────────────────────
 
@@ -21,7 +21,7 @@ function createBetterAuthDb() {
   if (!ENV.databaseUrl) {
     throw new Error("DATABASE_URL is required for Better Auth");
   }
-  return drizzle(ENV.databaseUrl);
+  return createDrizzleFromDatabaseUrl(ENV.databaseUrl);
 }
 
 async function hashCredentialPassword(password: string) {

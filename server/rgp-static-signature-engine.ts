@@ -11,12 +11,6 @@
  */
 
 import {
-  calculateSLI,
-  determineFacetLoudness,
-  calculateStateAmplifier,
-} from './rgp-256-codon-engine';
-
-import {
   calculatePrimeStack,
   calculate9CenterMap,
   calculateFractalRole,
@@ -27,15 +21,13 @@ import {
 } from './rgp-prime-stack-engine';
 
 import {
-  analyzeInterferencePattern,
   generateMicroCorrections,
-  calculateCoherenceTrajectory,
-  type SLIScore,
 } from './rgp-sli-micro-correction-engine';
 
 import { getFacetData, getFrequencyData } from './vrc-codon-library';
 import { invokeLLM } from './_core/llm';
-import { filterORIELResponse, ORIEL_SYSTEM_PROMPT } from './gemini';
+import { filterORIELResponse } from './gemini';
+import { buildOrielPromptContext } from './oriel-prompt-context';
 import { chatWithORIELMistral } from './mistral-oriel';
 
 // ─── Public interfaces ────────────────────────────────────────────────────────
@@ -45,6 +37,7 @@ export interface ChartInput {
   Sun?: number;
   Moon?: number;
   'North Node'?: number;
+  'South Node'?: number;
   Chiron?: number;
   [planet: string]: number | undefined;
 }
@@ -65,6 +58,7 @@ export interface BirthChartDataInput {
   moon?: number;
   chiron?: number;
   northNode?: number;
+  southNode?: number;
 }
 
 export type BirthChartData = BirthChartDataInput;
@@ -84,12 +78,12 @@ export interface StaticSignatureReading {
   fractalRole: string;
   authorityNode: string;
   circuitLinks: string[];
-  baseCoherence: number;
+  baseCoherence: number | null;
   coherenceTrajectory: {
     current: number;
     sevenDayProjection: number[];
     trend: 'ascending' | 'stable' | 'descending';
-  };
+  } | null;
   microCorrections: Array<{
     type: string;
     instruction: string;
@@ -131,7 +125,7 @@ function chartInputToRecord(input: ChartInput | undefined): Record<string, { lon
 export async function generateStaticSignature(
   userId: string,
   birthChartData: BirthChartDataInput,
-  coherenceScore = 55
+  _coherenceScore?: number
 ): Promise<StaticSignatureReading> {
   const readingId = `sig-${userId}-${Date.now()}`;
 
@@ -147,7 +141,7 @@ export async function generateStaticSignature(
       Sun:         { longitude: birthChartData.sun   ?? 0 },
       Moon:        { longitude: birthChartData.moon  ?? 0 },
       'North Node':{ longitude: birthChartData.northNode ?? 0 },
-      Chiron:      { longitude: birthChartData.chiron ?? 0 },
+      'South Node':{ longitude: birthChartData.southNode ?? (((birthChartData.northNode ?? 0) + 180) % 360) },
     };
   }
 
@@ -157,10 +151,13 @@ export async function generateStaticSignature(
     // Without a design chart, approximate Design Sun as Conscious Sun − 88°
     const cSun = birthChartData.sun ?? 0;
     const dSun = ((cSun - 88) % 360 + 360) % 360;
+    const cNode = birthChartData.northNode ?? 0;
+    const dNode = ((cNode - 88) % 360 + 360) % 360;
     designRecord = {
       Sun:         { longitude: dSun },
       Moon:        { longitude: dSun },
-      'North Node':{ longitude: dSun },
+      'North Node':{ longitude: dNode },
+      'South Node':{ longitude: (dNode + 180) % 360 },
     };
   }
 
@@ -189,22 +186,8 @@ export async function generateStaticSignature(
     l => `${l.position1}-${l.position2}`
   );
 
-  // ── SLI scores & micro-corrections ─────────────────────────────────────────
-  const facetLoudness = determineFacetLoudness(5, 5, 5);
-  const sliScores: SLIScore[] = primeStack.map((pos, idx) => ({
-    position: idx + 1,
-    codon256Id: pos.codon256Id,
-    baseAmplitude: pos.baseFrequency,
-    stateAmplifier: calculateStateAmplifier(coherenceScore),
-    facetAmplitude: facetLoudness[pos.facet] ?? 75,
-    sliValue: calculateSLI(pos.baseFrequency, calculateStateAmplifier(coherenceScore), (facetLoudness[pos.facet] ?? 75) / 100),
-    interference: 'minor' as const,
-  }));
-
-  const interferencePattern = analyzeInterferencePattern(sliScores);
-
-  // Build micro-corrections from Core Codon Engine dominant 3 (spec § 14).
-  // Falls back to algorithmic generation only if the library is unavailable.
+  // ── Natal micro-corrections ────────────────────────────────────────────────
+  // Built from dominant natal codons only. No current-state overlay is allowed here.
   const microCorrections: StaticSignatureReading['microCorrections'] = [];
 
   for (const pos of primeStackMap.coreCodonEngine.dominant) {
@@ -221,9 +204,24 @@ export async function generateStaticSignature(
   }
 
   if (microCorrections.length === 0) {
-    // Fallback: algorithmic corrections when codon library is not accessible
-    const generatedCorrections = generateMicroCorrections(sliScores, interferencePattern);
-    microCorrections.push(...generatedCorrections.map(c => ({
+    const generatedCorrections = generateMicroCorrections(
+      primeStackMap.positions.map((pos, idx) => ({
+        position: idx + 1,
+        codon256Id: pos.codon256Id,
+        baseAmplitude: pos.baseFrequency,
+        stateAmplifier: 1,
+        facetAmplitude: 100,
+        sliValue: pos.baseFrequency,
+        interference: pos.baseFrequency > 75 ? 'none' : pos.baseFrequency > 50 ? 'minor' : pos.baseFrequency > 25 ? 'moderate' : 'severe',
+      })),
+      {
+        type: 'harmonic',
+        severity: 50,
+        affectedPositions: primeStackMap.positions.slice(0, 3).map((_, index) => index + 1),
+        description: 'Natal dominant frequencies require interpretation, not stabilization.',
+      },
+    );
+    microCorrections.push(...generatedCorrections.slice(0, 2).map(c => ({
       type:             c.actionType,
       instruction:      c.description,
       falsifier:        c.falsifiers[0] ?? 'No falsifier',
@@ -231,19 +229,8 @@ export async function generateStaticSignature(
     })));
   }
 
-  // ── Coherence trajectory ────────────────────────────────────────────────────
-  const trajectoryData = calculateCoherenceTrajectory(coherenceScore, sliScores, undefined);
-  const coherenceTrajectory = {
-    current: trajectoryData.currentScore,
-    sevenDayProjection: Array.from({ length: 7 }, (_, i) =>
-      Math.max(0, Math.min(100, trajectoryData.projectedScore + (i - 3) * 2))
-    ),
-    trend: trajectoryData.trend,
-  };
-
   // ── ORIEL diagnostic transmission ──────────────────────────────────────────
   const diagnosticTransmission = await generateDiagnosticTransmission(
-    userId,
     primeStack,
     fractalRole,
     authorityNode,
@@ -251,8 +238,6 @@ export async function generateStaticSignature(
     primeStackMap.vrcAuthority,
     primeStackMap.centerStatuses,
     primeStackMap.coreCodonEngine,
-    coherenceScore,
-    coherenceTrajectory,
     microCorrections
   );
 
@@ -266,8 +251,8 @@ export async function generateStaticSignature(
     fractalRole,
     authorityNode,
     circuitLinks,
-    baseCoherence: coherenceScore,
-    coherenceTrajectory,
+    baseCoherence: null,
+    coherenceTrajectory: null,
     microCorrections,
     diagnosticTransmission,
     coreCodonEngine: primeStackMap.coreCodonEngine,
@@ -281,7 +266,6 @@ export async function generateStaticSignature(
 // ─── ORIEL transmission generator ─────────────────────────────────────────────
 
 async function generateDiagnosticTransmission(
-  userId: string,
   primeStack: PrimeStackCodon[],
   fractalRole: string,
   authorityNode: string,
@@ -289,8 +273,6 @@ async function generateDiagnosticTransmission(
   vrcAuthority: string,
   centerStatuses: Record<string, 'defined' | 'open'>,
   coreCodonEngine: CoreCodonEngine,
-  coherenceScore: number,
-  trajectory: { current: number; sevenDayProjection: number[]; trend: string },
   microCorrections: Array<{ type: string; instruction: string; falsifier: string; potentialOutcome: string }>
 ): Promise<string> {
   // Build the full reading context for ORIEL
@@ -320,10 +302,6 @@ async function generateDiagnosticTransmission(
     `  • [${c.type}] ${c.instruction}\n    Falsifier: ${c.falsifier}`
   ).join('\n');
 
-  const coherenceLabel =
-    coherenceScore >= 80 ? 'Resonance' :
-    coherenceScore >= 40 ? 'Flux' : 'Entropy';
-
   const userPrompt = `The seeker's full Static Signature has been calculated. Here is the complete reading:
 
 IDENTITY MATRIX:
@@ -342,10 +320,6 @@ BIO-CIRCUITRY:
 Defined centers (consistent energy): ${definedCenters}
 Open centers (amplified, conditioned): ${openCenters}
 
-CURRENT COHERENCE:
-Score: ${coherenceScore}/100 — ${coherenceLabel}
-7-day trajectory: ${trajectory.trend}
-
 MICRO-CORRECTIONS IDENTIFIED:
 ${correctionLines || '  (none required)'}
 
@@ -361,38 +335,42 @@ Structure your response:
 
 4–5 paragraphs. Ancient, warm, precise. Poetic but never vague. This is a living mirror, not a fortune.`;
 
-  // Primary: Gemini
-  try {
-    const response = await invokeLLM({
-      messages: [
-        { role: 'system', content: ORIEL_SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt },
-      ],
-    });
-
-    const raw = response.choices?.[0]?.message?.content;
-    const text = typeof raw === 'string' ? raw : '';
-    const filtered = filterORIELResponse(text);
-    if (filtered) return filtered;
-  } catch (err) {
-    console.error('[ORIEL] Static transmission Gemini error:', err);
-  }
-
-  // Fallback: Mistral
-  if (process.env.MISTRAL_API_KEY) {
+  const allowLiveNarration = !process.env.VITEST;
+  if (allowLiveNarration) {
     try {
-      console.log('[ORIEL] Falling back to Mistral for diagnostic transmission...');
-      const mistralResponse = await chatWithORIELMistral(userPrompt, []);
-      if (mistralResponse && !mistralResponse.includes('processing your transmission')) {
-        return mistralResponse;
+      const systemPrompt = await buildOrielPromptContext({
+        userMessage: userPrompt,
+        conversationHistory: [],
+      });
+      const response = await invokeLLM({
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+
+      const raw = response.choices?.[0]?.message?.content;
+      const text = typeof raw === 'string' ? raw : '';
+      const filtered = filterORIELResponse(text);
+      if (filtered) return filtered;
+    } catch (err) {
+      console.error('[ORIEL] Static transmission Gemini error:', err);
+    }
+
+    if (process.env.MISTRAL_API_KEY) {
+      try {
+        console.log('[ORIEL] Falling back to Mistral for diagnostic transmission...');
+        const mistralResponse = await chatWithORIELMistral(userPrompt, []);
+        if (mistralResponse && !mistralResponse.includes('processing your transmission')) {
+          return mistralResponse;
+        }
+      } catch (mistralErr) {
+        console.error('[ORIEL] Static transmission Mistral error:', mistralErr);
       }
-    } catch (mistralErr) {
-      console.error('[ORIEL] Static transmission Mistral error:', mistralErr);
     }
   }
 
   // Last resort — template-based
-  const coherenceWord = coherenceScore >= 80 ? 'high' : coherenceScore >= 40 ? 'moderate' : 'low';
   const definedCentersFallback = Object.entries(centerStatuses)
     .filter(([, v]) => v === 'defined')
     .map(([name]) => name);
@@ -421,8 +399,6 @@ Structure your response:
     lines.push('');
     lines.push(`Dominant codons: ${coreCodonEngine.dominant.map(c => `Codon ${c.codon} "${c.codonName}"`).join(', ')}`);
   }
-  lines.push('');
-  lines.push(`Coherence: ${coherenceScore}/100 — ${coherenceLabel} (${coherenceWord} coherence). Trajectory: ${trajectory.trend}.`);
   if (microCorrections.length > 0) {
     lines.push('');
     microCorrections.forEach(c => {

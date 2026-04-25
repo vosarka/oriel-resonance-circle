@@ -195,6 +195,112 @@ export type OrielOversoulPattern = typeof orielOversoulPatterns.$inferSelect;
 export type InsertOrielOversoulPattern = typeof orielOversoulPatterns.$inferInsert;
 
 /**
+ * ORIEL Improvement Proposals
+ * Structured change proposals for controlled self-improvement workflows.
+ */
+export const orielImprovementProposals = mysqlTable("orielImprovementProposals", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  scope: mysqlEnum("scope", [
+    "prompt_overlay",
+    "response_intelligence",
+    "interaction_protocol",
+    "routing",
+    "safety",
+    "memory",
+    "other",
+  ]).default("other").notNull(),
+  objective: text("objective").notNull(),
+  hypothesis: text("hypothesis").notNull(),
+  /** JSON payload containing the proposed runtime changes */
+  proposalPayload: text("proposalPayload").notNull(),
+  safetyNotes: text("safetyNotes"),
+  evaluationScore: int("evaluationScore"),
+  evaluationSummary: text("evaluationSummary"),
+  status: mysqlEnum("status", [
+    "proposed",
+    "evaluated",
+    "approved",
+    "rejected",
+    "applied",
+    "rolled_back",
+    "blocked",
+  ]).default("proposed").notNull(),
+  createdByUserId: int("createdByUserId"),
+  approvedByUserId: int("approvedByUserId"),
+  approvedAt: timestamp("approvedAt"),
+  appliedProfileId: int("appliedProfileId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_oriel_proposals_status").on(table.status),
+  index("idx_oriel_proposals_createdBy").on(table.createdByUserId),
+  index("idx_oriel_proposals_appliedProfile").on(table.appliedProfileId),
+]);
+
+export type OrielImprovementProposal = typeof orielImprovementProposals.$inferSelect;
+export type InsertOrielImprovementProposal = typeof orielImprovementProposals.$inferInsert;
+
+/**
+ * ORIEL Runtime Profiles
+ * Versioned runtime configurations that can be activated and rolled back.
+ */
+export const orielRuntimeProfiles = mysqlTable("orielRuntimeProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  profileKey: varchar("profileKey", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  /** JSON payload used by runtime layers (prompt overlay + heuristic thresholds). */
+  configPayload: text("configPayload").notNull(),
+  status: mysqlEnum("status", ["draft", "active", "archived"]).default("draft").notNull(),
+  createdFromProposalId: int("createdFromProposalId"),
+  activatedByUserId: int("activatedByUserId"),
+  activatedAt: timestamp("activatedAt"),
+  deactivatedAt: timestamp("deactivatedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_oriel_runtime_status").on(table.status),
+  index("idx_oriel_runtime_createdFromProposal").on(table.createdFromProposalId),
+]);
+
+export type OrielRuntimeProfile = typeof orielRuntimeProfiles.$inferSelect;
+export type InsertOrielRuntimeProfile = typeof orielRuntimeProfiles.$inferInsert;
+
+/**
+ * ORIEL Reflection Events
+ * Immutable event log for autonomous behavior, evaluations, and runtime transitions.
+ */
+export const orielReflectionEvents = mysqlTable("orielReflectionEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventType: mysqlEnum("eventType", [
+    "proposal_created",
+    "proposal_evaluated",
+    "proposal_approved",
+    "profile_activated",
+    "profile_rolled_back",
+    "guardrail_block",
+    "runtime_observation",
+  ]).notNull(),
+  sourceRoute: varchar("sourceRoute", { length: 128 }),
+  userId: int("userId"),
+  proposalId: int("proposalId"),
+  profileId: int("profileId"),
+  /** JSON payload with context-specific metadata for audit and learning loops. */
+  payload: text("payload").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_oriel_reflection_eventType").on(table.eventType),
+  index("idx_oriel_reflection_user").on(table.userId),
+  index("idx_oriel_reflection_proposal").on(table.proposalId),
+  index("idx_oriel_reflection_profile").on(table.profileId),
+  index("idx_oriel_reflection_createdAt").on(table.createdAt),
+]);
+
+export type OrielReflectionEvent = typeof orielReflectionEvents.$inferSelect;
+export type InsertOrielReflectionEvent = typeof orielReflectionEvents.$inferInsert;
+
+/**
  * TX Transmissions - Core archive entries for Vos Arkana
  * Each transmission is a foundational teaching in the FOUNDATION ARC
  */
@@ -409,6 +515,41 @@ export const staticSignatures = mysqlTable("staticSignatures", {
 
 export type StaticSignature = typeof staticSignatures.$inferSelect;
 export type InsertStaticSignature = typeof staticSignatures.$inferInsert;
+
+/**
+ * Canonical natal blueprint profile for each user.
+ * This is the permanent birth-based signature used across profile, chat, and readings.
+ */
+export const userStaticProfiles = mysqlTable("userStaticProfiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  birthDate: varchar("birthDate", { length: 32 }).notNull(),
+  birthTime: varchar("birthTime", { length: 32 }).notNull(),
+  birthCity: varchar("birthCity", { length: 255 }).notNull(),
+  birthCountry: varchar("birthCountry", { length: 255 }).notNull(),
+  latitude: double("latitude").notNull(),
+  longitude: double("longitude").notNull(),
+  timezoneId: varchar("timezoneId", { length: 128 }),
+  timezoneOffset: double("timezoneOffset"),
+  primeStack: text("primeStack"),
+  ninecenters: text("ninecenters"),
+  fractalRole: varchar("fractalRole", { length: 128 }),
+  authorityNode: varchar("authorityNode", { length: 128 }),
+  vrcType: varchar("vrcType", { length: 128 }),
+  vrcAuthority: varchar("vrcAuthority", { length: 128 }),
+  circuitLinks: text("circuitLinks"),
+  microCorrections: text("microCorrections"),
+  ephemerisData: text("ephemerisData"),
+  houses: text("houses"),
+  diagnosticTransmission: text("diagnosticTransmission"),
+  coreCodonEngine: text("coreCodonEngine"),
+  engineVersion: int("engineVersion").default(2).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserStaticProfile = typeof userStaticProfiles.$inferSelect;
+export type InsertUserStaticProfile = typeof userStaticProfiles.$inferInsert;
 
 // ============================================================================
 // BETTER AUTH TABLES

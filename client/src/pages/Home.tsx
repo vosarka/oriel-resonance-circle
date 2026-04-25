@@ -31,12 +31,12 @@ const STAT_ITEMS = [
 const MODULES = [
   {
     id: "RC38",
-    title: "Static Signature",
-    sub: "Resonance Codex Protocol",
-    desc: "Your full birth-coded identity — 64 Codons, 4 Facets, 9 Centers. The map of your consciousness expressed through planetary geometry at the moment of emergence.",
+    title: "Natal Blueprint",
+    sub: "Canonical Profile Protocol",
+    desc: "Your persistent birth-coded profile — 64 Codons, 4 Facets, 9 Centers. The map of your consciousness is now stored canonically and used across every ORIEL reading.",
     tag: "CONSCIOUSNESS MAPPING",
-    href: "/carrierlock",
-    cta: "INITIATE READING",
+    href: "/complete-profile",
+    cta: "ANCHOR BLUEPRINT",
     color: C.teal,
   },
   {

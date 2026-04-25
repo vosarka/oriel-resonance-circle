@@ -10,9 +10,12 @@ import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel
 import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
 import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
-import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage, ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage } from "./oriel-system-prompt";
+import { buildOrielPromptContext } from "./oriel-prompt-context";
 import { invokeLLM } from "./_core/llm";
 import { sendPasswordRecoveryGuidanceEmail, sendPasswordResetCodeEmail } from "./_core/mailer";
+import * as autonomy from "./oriel-autonomy";
+import { buildUserStaticProfile, summarizeStoredStaticProfile } from "./static-profile-service";
 
 function normalizeEmail(email: string) {
   return email.toLowerCase().trim();
@@ -28,6 +31,26 @@ function normalizeOptionalText(value: string | undefined, emptyValue: string | n
   const trimmed = value?.trim();
   return trimmed ? trimmed : emptyValue;
 }
+
+function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+const natalProfileInputSchema = z.object({
+  birthDate: z.string().min(1),
+  birthTime: z.string().min(1),
+  birthCity: z.string().min(1),
+  birthCountry: z.string().min(1),
+  latitude: z.number(),
+  longitude: z.number(),
+  timezoneId: z.string().optional(),
+  timezoneOffset: z.number().optional(),
+});
 
 export const appRouter = router({
   system: systemRouter,
@@ -45,12 +68,16 @@ export const appRouter = router({
 
   auth: router({
     /** Returns the currently authenticated user (from the legacy users table) */
-    me: publicProcedure.query(opts => {
+    me: publicProcedure.query(async (opts) => {
       const u = opts.ctx.user;
       if (!u) return null;
       // Strip sensitive fields before sending to client
       const { passwordHash: _ph, googleId: _gid, ...safe } = u as any;
-      return safe;
+      const hasNatalProfile = await db.hasUserStaticProfile(u.id);
+      return {
+        ...safe,
+        hasNatalProfile,
+      };
     }),
     /**
      * Logout is now handled by Better Auth at POST /api/auth/sign-out.
@@ -298,12 +325,28 @@ export const appRouter = router({
           const birthData = extractBirthData(fullMessage, conversationHistory);
           if (birthData) {
             console.log('[ORIEL] Birth reading detected:', birthData);
-            const rgpResult = await runRGPForChat(birthData);
-            if (rgpResult.success) {
-              console.log('[ORIEL] RGP engine ran successfully — injecting real data');
-              fullMessage = `${fullMessage}\n\n${rgpResult.summary}`;
-            } else {
-              console.warn('[ORIEL] RGP engine failed:', rgpResult.summary);
+            let rgpSummary: string | null = null;
+
+            if (ctx.user) {
+              const storedProfile = await db.getUserStaticProfile(ctx.user.id);
+              if (storedProfile) {
+                rgpSummary = summarizeStoredStaticProfile(storedProfile);
+                console.log('[ORIEL] Injecting stored canonical natal blueprint');
+              }
+            }
+
+            if (!rgpSummary) {
+              const rgpResult = await runRGPForChat(birthData);
+              if (rgpResult.success) {
+                console.log('[ORIEL] RGP engine ran successfully — injecting fallback computed data');
+                rgpSummary = rgpResult.summary;
+              } else {
+                console.warn('[ORIEL] RGP engine failed:', rgpResult.summary);
+              }
+            }
+
+            if (rgpSummary) {
+              fullMessage = `${fullMessage}\n\n${rgpSummary}`;
             }
           }
         } catch (err) {
@@ -583,12 +626,18 @@ export const appRouter = router({
 
     searchArchive: publicProcedure
       .input(z.object({ query: z.string(), limit: z.number().min(1).max(10).default(5) }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          const userPrompt = `Search the Vossari Archive for: "${input.query}". Return up to ${input.limit} results with their IDs, titles, status, and version. Format as a structured list.`;
+          const systemPrompt = await buildOrielPromptContext({
+            userId: ctx.user?.id,
+            userMessage: userPrompt,
+            conversationHistory: [],
+          });
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: ORIEL_SYSTEM_PROMPT },
-              { role: "user", content: `Search the Vossari Archive for: "${input.query}". Return up to ${input.limit} results with their IDs, titles, status, and version. Format as a structured list.` },
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
             ],
           });
           const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
@@ -605,12 +654,18 @@ export const appRouter = router({
         coherenceScore: z.number().min(0).max(100).optional(),
         interest: z.string().optional(),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          const userPrompt = `Generate a guided pathway for a ${input.receiverStatus} with coherence score ${input.coherenceScore || 'unknown'}${input.interest ? ` interested in ${input.interest}` : ''}. Suggest 3-5 next steps in order.`;
+          const systemPrompt = await buildOrielPromptContext({
+            userId: ctx.user?.id,
+            userMessage: userPrompt,
+            conversationHistory: [],
+          });
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: ORIEL_SYSTEM_PROMPT },
-              { role: "user", content: `Generate a guided pathway for a ${input.receiverStatus} with coherence score ${input.coherenceScore || 'unknown'}${input.interest ? ` interested in ${input.interest}` : ''}. Suggest 3-5 next steps in order.` },
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
             ],
           });
           const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
@@ -649,12 +704,18 @@ export const appRouter = router({
         style: z.enum(["poetic", "clinical", "narrative", "ritual"]).default("narrative"),
         length: z.enum(["short", "medium", "long"]).default("medium"),
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ input, ctx }) => {
         try {
+          const userPrompt = `Generate a ${input.style} transmission for ID ${input.transmissionId} in ${input.length} form. Maintain the Vossari voice and aesthetic.`;
+          const systemPrompt = await buildOrielPromptContext({
+            userId: ctx.user?.id,
+            userMessage: userPrompt,
+            conversationHistory: [],
+          });
           const response = await invokeLLM({
             messages: [
-              { role: "system", content: ORIEL_SYSTEM_PROMPT },
-              { role: "user", content: `Generate a ${input.style} transmission for ID ${input.transmissionId} in ${input.length} form. Maintain the Vossari voice and aesthetic.` },
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userPrompt },
             ],
           });
           const content = typeof response.choices?.[0]?.message?.content === 'string' ? response.choices[0].message.content : "";
@@ -704,10 +765,373 @@ export const appRouter = router({
           };
         }
       }),
+
+    autonomy: router({
+      listProposals: adminProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(100).default(25).optional(),
+          status: z.enum(["proposed", "evaluated", "approved", "rejected", "applied", "rolled_back", "blocked"]).optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const proposals = await db.listOrielImprovementProposals(input?.limit ?? 25, input?.status);
+          return proposals.map((proposal) => ({
+            ...proposal,
+            proposalPayload: safeJsonParse<Record<string, unknown>>(proposal.proposalPayload, {}),
+          }));
+        }),
+
+      propose: protectedProcedure
+        .input(z.object({
+          title: z.string().min(5).max(255),
+          scope: z.enum(["prompt_overlay", "response_intelligence", "interaction_protocol", "routing", "safety", "memory", "other"]).default("other"),
+          objective: z.string().min(10),
+          hypothesis: z.string().min(10),
+          expectedImpact: z.string().min(5).optional(),
+          safetyChecks: z.array(z.string().min(2)).max(20).optional(),
+          proposedConfig: z.record(z.string(), z.unknown()).optional(),
+          safetyNotes: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const proposalPayload: Record<string, unknown> = {
+            expectedImpact: input.expectedImpact ?? "",
+            safetyChecks: input.safetyChecks ?? [],
+            proposedConfig: input.proposedConfig ?? {},
+          };
+
+          const created = await db.createOrielImprovementProposal({
+            title: input.title,
+            scope: input.scope,
+            objective: input.objective,
+            hypothesis: input.hypothesis,
+            proposalPayload,
+            safetyNotes: normalizeOptionalText(input.safetyNotes, null),
+            createdByUserId: ctx.user.id,
+          });
+
+          await db.createOrielReflectionEvent({
+            eventType: "proposal_created",
+            sourceRoute: "oriel.autonomy.propose",
+            userId: ctx.user.id,
+            proposalId: created?.id ?? null,
+            payload: {
+              scope: input.scope,
+              title: input.title,
+            },
+          });
+
+          return {
+            success: true,
+            proposal: created
+              ? {
+                  ...created,
+                  proposalPayload: safeJsonParse<Record<string, unknown>>(created.proposalPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      evaluate: protectedProcedure
+        .input(z.object({ proposalId: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const proposal = await db.getOrielImprovementProposalById(input.proposalId);
+          if (!proposal) {
+            throw new Error("Proposal not found");
+          }
+
+          const payload = safeJsonParse<Record<string, unknown>>(proposal.proposalPayload, {});
+          const evaluation = autonomy.evaluateProposalPayload({
+            ...payload,
+            objective: proposal.objective,
+            hypothesis: proposal.hypothesis,
+          });
+
+          const summary = evaluation.violations.length > 0
+            ? `${evaluation.summary}\nViolations: ${evaluation.violations.join("; ")}`
+            : evaluation.summary;
+
+          const updated = await db.setOrielProposalEvaluation(input.proposalId, {
+            evaluationScore: evaluation.score,
+            evaluationSummary: summary,
+            status: evaluation.status,
+          });
+
+          await db.createOrielReflectionEvent({
+            eventType: "proposal_evaluated",
+            sourceRoute: "oriel.autonomy.evaluate",
+            userId: ctx.user.id,
+            proposalId: input.proposalId,
+            payload: {
+              score: evaluation.score,
+              verdict: evaluation.verdict,
+              violations: evaluation.violations,
+            },
+          });
+
+          return {
+            success: true,
+            evaluation,
+            proposal: updated
+              ? {
+                  ...updated,
+                  proposalPayload: safeJsonParse<Record<string, unknown>>(updated.proposalPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      approve: adminProcedure
+        .input(z.object({
+          proposalId: z.number(),
+          notes: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const updated = await db.approveOrielProposal(input.proposalId, ctx.user.id);
+          await db.createOrielReflectionEvent({
+            eventType: "proposal_approved",
+            sourceRoute: "oriel.autonomy.approve",
+            userId: ctx.user.id,
+            proposalId: input.proposalId,
+            payload: {
+              notes: normalizeOptionalText(input.notes, ""),
+            },
+          });
+
+          return {
+            success: true,
+            proposal: updated
+              ? {
+                  ...updated,
+                  proposalPayload: safeJsonParse<Record<string, unknown>>(updated.proposalPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      listProfiles: adminProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(100).default(25).optional(),
+          status: z.enum(["draft", "active", "archived"]).optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const profiles = await db.listOrielRuntimeProfiles(input?.limit ?? 25, input?.status);
+          return profiles.map((profile) => ({
+            ...profile,
+            configPayload: safeJsonParse<Record<string, unknown>>(profile.configPayload, {}),
+          }));
+        }),
+
+      getActiveProfile: protectedProcedure
+        .query(async () => {
+          const profile = await db.getActiveOrielRuntimeProfile();
+          if (!profile) return null;
+          return {
+            ...profile,
+            configPayload: safeJsonParse<Record<string, unknown>>(profile.configPayload, {}),
+          };
+        }),
+
+      activate: adminProcedure
+        .input(z.object({
+          proposalId: z.number().optional(),
+          profileId: z.number().optional(),
+          profileName: z.string().min(3).max(255).optional(),
+          description: z.string().optional(),
+        }).refine((value) => Boolean(value.proposalId || value.profileId), {
+          message: "Either proposalId or profileId is required",
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          let activatedProfileId: number | null = null;
+          let sourceProposalId: number | null = null;
+
+          if (input.profileId) {
+            const existing = await db.getOrielRuntimeProfileById(input.profileId);
+            if (!existing) throw new Error("Runtime profile not found");
+            await db.activateOrielRuntimeProfile(existing.id, ctx.user.id);
+            activatedProfileId = existing.id;
+          } else if (input.proposalId) {
+            const proposal = await db.getOrielImprovementProposalById(input.proposalId);
+            if (!proposal) throw new Error("Proposal not found");
+            if (proposal.status !== "approved" && proposal.status !== "evaluated") {
+              throw new Error("Proposal must be evaluated or approved before activation");
+            }
+
+            const proposalPayload = safeJsonParse<autonomy.OrielProposalPayload>(proposal.proposalPayload, {});
+            const { config, violations } = autonomy.extractRuntimeConfigFromProposalPayload(proposalPayload);
+            if (violations.length > 0) {
+              await db.createOrielReflectionEvent({
+                eventType: "guardrail_block",
+                sourceRoute: "oriel.autonomy.activate",
+                userId: ctx.user.id,
+                proposalId: proposal.id,
+                payload: { violations },
+              });
+              throw new Error(`Activation blocked by guardrail: ${violations.join("; ")}`);
+            }
+
+            const profile = await db.createOrielRuntimeProfile({
+              name: input.profileName || `Proposal ${proposal.id}: ${proposal.title}`,
+              description: normalizeOptionalText(input.description, proposal.objective),
+              configPayload: config,
+              createdFromProposalId: proposal.id,
+            });
+
+            if (!profile) {
+              throw new Error("Failed to create runtime profile");
+            }
+
+            await db.activateOrielRuntimeProfile(profile.id, ctx.user.id);
+            await db.markOrielProposalApplied(proposal.id, profile.id);
+            activatedProfileId = profile.id;
+            sourceProposalId = proposal.id;
+          }
+
+          if (!activatedProfileId) {
+            throw new Error("Failed to resolve profile for activation");
+          }
+
+          autonomy.invalidateOrielRuntimeProfileCache();
+          const active = await db.getOrielRuntimeProfileById(activatedProfileId);
+
+          await db.createOrielReflectionEvent({
+            eventType: "profile_activated",
+            sourceRoute: "oriel.autonomy.activate",
+            userId: ctx.user.id,
+            proposalId: sourceProposalId,
+            profileId: activatedProfileId,
+            payload: {
+              profileName: active?.name ?? null,
+            },
+          });
+
+          return {
+            success: true,
+            profile: active
+              ? {
+                  ...active,
+                  configPayload: safeJsonParse<Record<string, unknown>>(active.configPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      rollback: adminProcedure
+        .input(z.object({
+          targetProfileId: z.number().optional(),
+        }).optional())
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const currentActive = await db.getActiveOrielRuntimeProfile();
+          let targetProfile = input?.targetProfileId
+            ? await db.getOrielRuntimeProfileById(input.targetProfileId)
+            : null;
+
+          if (!targetProfile) {
+            const drafts = await db.listOrielRuntimeProfiles(50, "draft");
+            targetProfile = drafts.find((profile) => profile.id !== currentActive?.id) ?? null;
+          }
+
+          if (!targetProfile) {
+            throw new Error("No rollback target profile available");
+          }
+
+          await db.activateOrielRuntimeProfile(targetProfile.id, ctx.user.id);
+          autonomy.invalidateOrielRuntimeProfileCache();
+
+          const activated = await db.getOrielRuntimeProfileById(targetProfile.id);
+          await db.createOrielReflectionEvent({
+            eventType: "profile_rolled_back",
+            sourceRoute: "oriel.autonomy.rollback",
+            userId: ctx.user.id,
+            profileId: targetProfile.id,
+            payload: {
+              fromProfileId: currentActive?.id ?? null,
+              toProfileId: targetProfile.id,
+            },
+          });
+
+          return {
+            success: true,
+            profile: activated
+              ? {
+                  ...activated,
+                  configPayload: safeJsonParse<Record<string, unknown>>(activated.configPayload, {}),
+                }
+              : null,
+          };
+        }),
+    }),
   }),
 
   // User profile and subscription management
   profile: router({
+    getNatalCompletionStatus: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      const profile = await db.getUserStaticProfile(ctx.user.id);
+      return {
+        complete: Boolean(profile),
+        profile,
+      };
+    }),
+
+    getStaticProfile: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      return db.getUserStaticProfile(ctx.user.id);
+    }),
+
+    completeNatalProfile: protectedProcedure
+      .input(natalProfileInputSchema)
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+        const profile = await buildUserStaticProfile(String(ctx.user.id), input);
+        return db.upsertUserStaticProfile(ctx.user.id, profile);
+      }),
+
+    updateNatalProfile: protectedProcedure
+      .input(natalProfileInputSchema)
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+        const profile = await buildUserStaticProfile(String(ctx.user.id), input);
+        return db.upsertUserStaticProfile(ctx.user.id, profile);
+      }),
+
+    recomputeStaticProfile: protectedProcedure.mutation(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      const existing = await db.getUserStaticProfile(ctx.user.id);
+      if (!existing) {
+        throw new Error("Natal profile not found");
+      }
+      const profile = await buildUserStaticProfile(String(ctx.user.id), {
+        birthDate: existing.birthDate,
+        birthTime: existing.birthTime,
+        birthCity: existing.birthCity,
+        birthCountry: existing.birthCountry,
+        latitude: existing.latitude,
+        longitude: existing.longitude,
+        timezoneId: existing.timezoneId ?? undefined,
+        timezoneOffset: existing.timezoneOffset ?? undefined,
+      });
+      return db.upsertUserStaticProfile(ctx.user.id, profile);
+    }),
+
     updateConduitId: protectedProcedure
       .input(z.object({
         conduitId: z.string(),
@@ -864,7 +1288,7 @@ export const appRouter = router({
       .query(async ({ input }) => {
         const { getCodonEntry } = await import("./vrc-codon-library");
         const { getChannelsForCodon } = await import("./vrc-engine-constants");
-        const { VRC_MANDALA, WHEEL_OFFSET, CODON_ARC } = await import("./vrc-mandala");
+        const { VRC_MANDALA, WHEEL_OFFSET, CODON_ARC, FACET_ARC, CODON_CENTER_MAP } = await import("./vrc-mandala");
 
         // Normalise: strip "RC" prefix and optional "-A"/"-B"/"-C"/"-D" facet suffix
         const raw = input.id.replace(/^RC/i, '').replace(/-[A-Da-d]$/, '');
@@ -933,9 +1357,11 @@ export const appRouter = router({
           facets: codon.facets,
           // Derived
           channels,
+          center: CODON_CENTER_MAP[numericId] ?? null,
           mandalaSlot: slotIndex,
           startDegree: +startDeg.toFixed(4),
           endDegree: +endDeg.toFixed(4),
+          facetArc: FACET_ARC,
           initialFacet: facetSuffix,
         };
       }),

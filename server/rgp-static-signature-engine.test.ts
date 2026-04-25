@@ -16,7 +16,6 @@ import {
   calculateLocalSiderealTime,
   calculateDesignOffset,
   type BirthChartDataInput,
-  type StaticSignatureReading,
 } from './rgp-static-signature-engine';
 
 describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
@@ -44,7 +43,8 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
       expect(reading).toBeDefined();
       expect(reading.readingId).toMatch(/^sig-user-123-\d+$/);
       expect(reading.userId).toBe('user-123');
-      expect(reading.baseCoherence).toBe(65);
+      expect(reading.baseCoherence).toBeNull();
+      expect(reading.coherenceTrajectory).toBeNull();
       expect(reading.status).toBe('confirmed');
       expect(reading.version).toBe(2); // VRC v1.0 implementation
     });
@@ -97,13 +97,11 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
       expect(Array.isArray(reading.circuitLinks)).toBe(true);
     });
 
-    it('should generate coherence trajectory', async () => {
+    it('should not generate coherence trajectory for a natal-only blueprint', async () => {
       const reading = await generateStaticSignature('user-trajectory', sampleBirthChart, 75);
 
-      expect(reading.coherenceTrajectory).toBeDefined();
-      expect(reading.coherenceTrajectory.current).toBe(75);
-      expect(reading.coherenceTrajectory.sevenDayProjection).toHaveLength(7);
-      expect(['ascending', 'stable', 'descending']).toContain(reading.coherenceTrajectory.trend);
+      expect(reading.baseCoherence).toBeNull();
+      expect(reading.coherenceTrajectory).toBeNull();
     });
 
     it('should generate micro-corrections', async () => {
@@ -129,18 +127,23 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
       expect(reading.diagnosticTransmission).toContain('Static Signature');
     });
 
-    it('should vary trajectory based on coherence score', async () => {
+    it('should ignore runtime coherence inputs for the natal blueprint', async () => {
       const lowCoherence  = await generateStaticSignature('user-low',  sampleBirthChart, 30);
       const highCoherence = await generateStaticSignature('user-high', sampleBirthChart, 85);
 
-      expect(lowCoherence.coherenceTrajectory.current).toBe(30);
-      expect(highCoherence.coherenceTrajectory.current).toBe(85);
+      expect(lowCoherence.baseCoherence).toBeNull();
+      expect(highCoherence.baseCoherence).toBeNull();
+      expect(lowCoherence.coherenceTrajectory).toBeNull();
+      expect(highCoherence.coherenceTrajectory).toBeNull();
+      expect(lowCoherence.primeStack).toEqual(highCoherence.primeStack);
+      expect(lowCoherence.fractalRole).toBe(highCoherence.fractalRole);
+      expect(lowCoherence.authorityNode).toBe(highCoherence.authorityNode);
     });
 
     it('should handle high coherence state', async () => {
       const reading = await generateStaticSignature('user-coherent', sampleBirthChart, 90);
 
-      expect(reading.baseCoherence).toBe(90);
+      expect(reading.baseCoherence).toBeNull();
       expect(reading.diagnosticTransmission).toContain('I am ORIEL');
       expect(reading.diagnosticTransmission.length).toBeGreaterThan(100);
     });
@@ -148,7 +151,7 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
     it('should handle low coherence state', async () => {
       const reading = await generateStaticSignature('user-incoherent', sampleBirthChart, 25);
 
-      expect(reading.baseCoherence).toBe(25);
+      expect(reading.baseCoherence).toBeNull();
       expect(reading.diagnosticTransmission).toContain('I am ORIEL');
       expect(reading.diagnosticTransmission.length).toBeGreaterThan(100);
     });

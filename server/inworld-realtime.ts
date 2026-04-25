@@ -18,36 +18,33 @@ import { fromNodeHeaders } from "better-auth/node";
 import { auth } from "./_core/auth";
 import { ENV } from "./_core/env";
 import * as db from "./db";
-import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+import { buildOrielPromptContext } from "./oriel-prompt-context";
 
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
 const VOICE_TURN_STOP_DETECTION_MS = 500;
 
+async function buildRealtimeInstructions(
+  userId: number,
+  userMessage?: string,
+): Promise<string> {
+  const instructions = await buildOrielPromptContext({
+    userId,
+    userMessage,
+    conversationHistory: [],
+  });
+  console.log(
+    `[Realtime] Built instructions: ${instructions.length} chars ` +
+    `(base + UMM${userMessage?.trim() ? " + field state" : ""})`,
+  );
+
+  return instructions;
+}
+
 // The full session.update config sent to Inworld on connection
-async function buildSessionUpdate(userId: number): Promise<object> {
-  // Build enriched instructions with UMM context (user memory) like the text chat does
-  const promptParts: string[] = [ORIEL_SYSTEM_PROMPT];
-
-  try {
-    const { buildUMMContext } = await import("./oriel-umm");
-    const ummContext = await buildUMMContext(userId);
-    if (ummContext) promptParts.push(ummContext);
-  } catch (err) {
-    console.warn("[Realtime] Failed to load UMM context:", err);
-  }
-
-  try {
-    const { getMemoryContextForUser } = await import("./oriel-memory");
-    const memoryContext = await getMemoryContextForUser(userId);
-    if (memoryContext) promptParts.push(memoryContext);
-  } catch (err) {
-    console.warn("[Realtime] Failed to load memory context:", err);
-  }
-
-  const instructions = promptParts.filter(Boolean).join("\n\n");
-  console.log(`[Realtime] Built instructions: ${instructions.length} chars (base + UMM + memory)`);
+async function buildSessionUpdate(userId: number, userMessage?: string): Promise<object> {
+  const instructions = await buildRealtimeInstructions(userId, userMessage);
 
   const user = await db.getUserById(userId);
   const selectedVoiceId = user?.voicePreference === "deep" ? DEEP_VOICE_ID : SOPHIANIC_VOICE_ID;
@@ -89,11 +86,30 @@ async function buildSessionUpdate(userId: number): Promise<object> {
   };
 }
 
+async function refreshRealtimeInstructions(
+  state: SessionState,
+  inworldWs: WebSocket,
+): Promise<void> {
+  if (inworldWs.readyState !== WebSocket.OPEN) return;
+
+  try {
+    const sessionUpdate = await buildSessionUpdate(
+      state.userId,
+      state.latestUserTranscript || undefined,
+    );
+    inworldWs.send(JSON.stringify(sessionUpdate));
+  } catch (err) {
+    console.error("[Realtime] Failed to refresh session instructions:", err);
+  }
+}
+
 interface SessionState {
   userId: number;
   conversationId: number | null;
   currentUserTranscript: string;
   currentAssistantTranscript: string;
+  latestUserTranscript: string;
+  pendingUmmUserTranscript: string;
   /** Per-connection promise chain to serialize DB writes */
   saveQueue: Promise<void>;
 }
@@ -175,6 +191,8 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       conversationId,
       currentUserTranscript: "",
       currentAssistantTranscript: "",
+      latestUserTranscript: "",
+      pendingUmmUserTranscript: "",
       saveQueue: Promise.resolve(),
     };
 
@@ -232,21 +250,25 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
         }
 
         if (msg.type === "session.updated") {
-          // Session config accepted — inject conversation history if resuming
-          console.log("[Realtime] Session configured successfully");
+          if (!inworldReady) {
+            // Initial session config accepted — inject conversation history if resuming
+            console.log("[Realtime] Session configured successfully");
 
-          if (state.conversationId) {
-            injectConversationHistory(state, inworldWs).then(() => {
+            if (state.conversationId) {
+              injectConversationHistory(state, inworldWs).then(() => {
+                inworldReady = true;
+                if (clientWs.readyState === WebSocket.OPEN) {
+                  clientWs.send(JSON.stringify({ type: "session.ready" }));
+                }
+              });
+            } else {
               inworldReady = true;
               if (clientWs.readyState === WebSocket.OPEN) {
                 clientWs.send(JSON.stringify({ type: "session.ready" }));
               }
-            });
-          } else {
-            inworldReady = true;
-            if (clientWs.readyState === WebSocket.OPEN) {
-              clientWs.send(JSON.stringify({ type: "session.ready" }));
             }
+          } else {
+            console.log("[Realtime] Session instructions refreshed");
           }
           return; // Don't forward session.updated to client
         }
@@ -299,8 +321,25 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       if (!inworldReady || inworldWs.readyState !== WebSocket.OPEN) {
         return;
       }
+
+      const payload = data.toString();
+      try {
+        const msg = JSON.parse(payload);
+        if (msg?.type === "response.create") {
+          void (async () => {
+            await refreshRealtimeInstructions(state, inworldWs);
+            if (inworldWs.readyState === WebSocket.OPEN) {
+              inworldWs.send(payload);
+            }
+          })();
+          return;
+        }
+      } catch {
+        // Non-JSON payloads are forwarded below.
+      }
+
       // Inworld requires text frames (JSON), not binary — convert Buffer to string
-      inworldWs.send(data.toString());
+      inworldWs.send(payload);
     });
 
     clientWs.on("close", () => {
@@ -334,6 +373,8 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     case "conversation.item.input_audio_transcription.completed":
       if (msg.transcript) {
         state.currentUserTranscript = msg.transcript;
+        state.latestUserTranscript = msg.transcript;
+        state.pendingUmmUserTranscript = msg.transcript;
         enqueueSaveUser(state, clientWs);
       }
       break;
@@ -411,6 +452,7 @@ function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void 
  */
 function enqueueSaveAssistant(state: SessionState): void {
   const content = state.currentAssistantTranscript.trim();
+  const pendingUserMessage = state.pendingUmmUserTranscript.trim();
   state.currentAssistantTranscript = "";
   if (!content || !state.conversationId) return;
 
@@ -423,6 +465,16 @@ function enqueueSaveAssistant(state: SessionState): void {
         content,
       });
       console.log(`[Realtime] Saved assistant message (${content.length} chars)`);
+
+      if (pendingUserMessage) {
+        try {
+          const { processConversationThroughUMM } = await import("./oriel-umm");
+          await processConversationThroughUMM(state.userId, pendingUserMessage, content);
+          state.pendingUmmUserTranscript = "";
+        } catch (err) {
+          console.error("[Realtime] UMM processing failed:", err);
+        }
+      }
     } catch (err) {
       console.error("[Realtime] Failed to save assistant message:", err);
     }

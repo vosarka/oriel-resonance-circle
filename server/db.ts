@@ -1,8 +1,35 @@
 ﻿import { eq, desc, and, count, isNull } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
 import { randomUUID } from "crypto";
-import { InsertUser, users, signals, artifacts, chatMessages, conversations, InsertSignal, InsertArtifact, InsertChatMessage, InsertConversation, transmissions, InsertTransmission, oracles, InsertOracle, bookmarks, InsertBookmark, staticSignatures, InsertStaticSignature, oracleResonances, baUser, baAccount, baVerification } from "../drizzle/schema";
+import {
+  InsertUser,
+  users,
+  signals,
+  artifacts,
+  chatMessages,
+  conversations,
+  InsertSignal,
+  InsertArtifact,
+  InsertChatMessage,
+  InsertConversation,
+  transmissions,
+  InsertTransmission,
+  oracles,
+  InsertOracle,
+  bookmarks,
+  InsertBookmark,
+  staticSignatures,
+  InsertStaticSignature,
+  oracleResonances,
+  userStaticProfiles,
+  baUser,
+  baAccount,
+  baVerification,
+  orielImprovementProposals,
+  orielRuntimeProfiles,
+  orielReflectionEvents,
+} from "../drizzle/schema";
 import { ENV } from "./_core/env";
+import { createDrizzleFromDatabaseUrl, type DrizzleDb } from "./_core/mysql";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -15,13 +42,13 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   }
 }
 
-let _db: ReturnType<typeof drizzle> | null = null;
+let _db: DrizzleDb | null = null;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
-export async function getDb() {
+export async function getDb(): Promise<DrizzleDb | null> {
   if (!_db && ENV.databaseUrl) {
     try {
-      _db = drizzle(ENV.databaseUrl);
+      _db = createDrizzleFromDatabaseUrl(ENV.databaseUrl);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -35,8 +62,18 @@ function hasMigrationErrorFragment(error: unknown, fragments: string[]) {
   return fragments.some((fragment) => message.includes(fragment));
 }
 
+function isMissingTableError(error: unknown, tableName: string) {
+  return hasMigrationErrorFragment(error, [
+    "ER_NO_SUCH_TABLE",
+    "doesn't exist",
+    "does not exist",
+    "no such table",
+    tableName,
+  ]);
+}
+
 async function executeMigrationStep(
-  db: NonNullable<ReturnType<typeof drizzle>>,
+  db: DrizzleDb,
   sql: string,
   ignorableFragments: string[] = [],
   successMessage?: string,
@@ -198,7 +235,479 @@ export async function runMigrations() {
     );
   }
 
+  const staticProfileMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`userStaticProfiles\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`userId\` int NOT NULL,
+        \`birthDate\` varchar(32) NOT NULL,
+        \`birthTime\` varchar(32) NOT NULL,
+        \`birthCity\` varchar(255) NOT NULL,
+        \`birthCountry\` varchar(255) NOT NULL,
+        \`latitude\` double NOT NULL,
+        \`longitude\` double NOT NULL,
+        \`timezoneId\` varchar(128) NULL,
+        \`timezoneOffset\` double NULL,
+        \`primeStack\` text NULL,
+        \`ninecenters\` text NULL,
+        \`fractalRole\` varchar(128) NULL,
+        \`authorityNode\` varchar(128) NULL,
+        \`vrcType\` varchar(128) NULL,
+        \`vrcAuthority\` varchar(128) NULL,
+        \`circuitLinks\` text NULL,
+        \`microCorrections\` text NULL,
+        \`ephemerisData\` text NULL,
+        \`houses\` text NULL,
+        \`diagnosticTransmission\` text NULL,
+        \`coreCodonEngine\` text NULL,
+        \`engineVersion\` int NOT NULL DEFAULT 2,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`userStaticProfiles_userId_unique\` (\`userId\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+  ];
+
+  for (const step of staticProfileMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
+  const orielAutonomyMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`orielImprovementProposals\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`title\` varchar(255) NOT NULL,
+        \`scope\` enum('prompt_overlay','response_intelligence','interaction_protocol','routing','safety','memory','other') NOT NULL DEFAULT 'other',
+        \`objective\` text NOT NULL,
+        \`hypothesis\` text NOT NULL,
+        \`proposalPayload\` text NOT NULL,
+        \`safetyNotes\` text NULL,
+        \`evaluationScore\` int NULL,
+        \`evaluationSummary\` text NULL,
+        \`status\` enum('proposed','evaluated','approved','rejected','applied','rolled_back','blocked') NOT NULL DEFAULT 'proposed',
+        \`createdByUserId\` int NULL,
+        \`approvedByUserId\` int NULL,
+        \`approvedAt\` timestamp NULL,
+        \`appliedProfileId\` int NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_proposals_status\` ON \`orielImprovementProposals\` (\`status\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_proposals_createdBy\` ON \`orielImprovementProposals\` (\`createdByUserId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_proposals_appliedProfile\` ON \`orielImprovementProposals\` (\`appliedProfileId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`orielRuntimeProfiles\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`profileKey\` varchar(64) NOT NULL,
+        \`name\` varchar(255) NOT NULL,
+        \`description\` text NULL,
+        \`configPayload\` text NOT NULL,
+        \`status\` enum('draft','active','archived') NOT NULL DEFAULT 'draft',
+        \`createdFromProposalId\` int NULL,
+        \`activatedByUserId\` int NULL,
+        \`activatedAt\` timestamp NULL,
+        \`deactivatedAt\` timestamp NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`uq_oriel_runtime_profileKey\` (\`profileKey\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_runtime_status\` ON \`orielRuntimeProfiles\` (\`status\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_runtime_createdFromProposal\` ON \`orielRuntimeProfiles\` (\`createdFromProposalId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`orielReflectionEvents\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`eventType\` enum('proposal_created','proposal_evaluated','proposal_approved','profile_activated','profile_rolled_back','guardrail_block','runtime_observation') NOT NULL,
+        \`sourceRoute\` varchar(128) NULL,
+        \`userId\` int NULL,
+        \`proposalId\` int NULL,
+        \`profileId\` int NULL,
+        \`payload\` text NOT NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_reflection_eventType\` ON \`orielReflectionEvents\` (\`eventType\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_reflection_user\` ON \`orielReflectionEvents\` (\`userId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_reflection_proposal\` ON \`orielReflectionEvents\` (\`proposalId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_reflection_profile\` ON \`orielReflectionEvents\` (\`profileId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_reflection_createdAt\` ON \`orielReflectionEvents\` (\`createdAt\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+  ];
+
+  for (const step of orielAutonomyMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
   console.log("[Migrations] Schema sync complete");
+}
+
+// ============================================================================
+// ORIEL AUTONOMY: PROPOSALS, RUNTIME PROFILES, REFLECTION EVENTS
+// ============================================================================
+
+export type OrielProposalScope =
+  | "prompt_overlay"
+  | "response_intelligence"
+  | "interaction_protocol"
+  | "routing"
+  | "safety"
+  | "memory"
+  | "other";
+
+export type OrielProposalStatus =
+  | "proposed"
+  | "evaluated"
+  | "approved"
+  | "rejected"
+  | "applied"
+  | "rolled_back"
+  | "blocked";
+
+export type OrielRuntimeProfileStatus = "draft" | "active" | "archived";
+
+export type OrielReflectionEventType =
+  | "proposal_created"
+  | "proposal_evaluated"
+  | "proposal_approved"
+  | "profile_activated"
+  | "profile_rolled_back"
+  | "guardrail_block"
+  | "runtime_observation";
+
+export async function createOrielImprovementProposal(input: {
+  title: string;
+  scope?: OrielProposalScope;
+  objective: string;
+  hypothesis: string;
+  proposalPayload: Record<string, unknown>;
+  safetyNotes?: string | null;
+  createdByUserId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(orielImprovementProposals).values({
+    title: input.title,
+    scope: input.scope ?? "other",
+    objective: input.objective,
+    hypothesis: input.hypothesis,
+    proposalPayload: JSON.stringify(input.proposalPayload ?? {}),
+    safetyNotes: input.safetyNotes ?? null,
+    createdByUserId: input.createdByUserId ?? null,
+    status: "proposed",
+  });
+
+  const created = await db
+    .select()
+    .from(orielImprovementProposals)
+    .orderBy(desc(orielImprovementProposals.id))
+    .limit(1);
+  return created[0] ?? null;
+}
+
+export async function getOrielImprovementProposalById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select()
+    .from(orielImprovementProposals)
+    .where(eq(orielImprovementProposals.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listOrielImprovementProposals(limit: number = 25, status?: OrielProposalStatus) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (status) {
+    return await db
+      .select()
+      .from(orielImprovementProposals)
+      .where(eq(orielImprovementProposals.status, status))
+      .orderBy(desc(orielImprovementProposals.updatedAt), desc(orielImprovementProposals.id))
+      .limit(limit);
+  }
+
+  return await db
+    .select()
+    .from(orielImprovementProposals)
+    .orderBy(desc(orielImprovementProposals.updatedAt), desc(orielImprovementProposals.id))
+    .limit(limit);
+}
+
+export async function setOrielProposalEvaluation(
+  proposalId: number,
+  input: {
+    evaluationScore: number;
+    evaluationSummary: string;
+    status?: Extract<OrielProposalStatus, "evaluated" | "rejected" | "blocked">;
+  },
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(orielImprovementProposals)
+    .set({
+      evaluationScore: input.evaluationScore,
+      evaluationSummary: input.evaluationSummary,
+      status: input.status ?? "evaluated",
+    })
+    .where(eq(orielImprovementProposals.id, proposalId));
+
+  return await getOrielImprovementProposalById(proposalId);
+}
+
+export async function approveOrielProposal(proposalId: number, approvedByUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(orielImprovementProposals)
+    .set({
+      status: "approved",
+      approvedByUserId,
+      approvedAt: new Date(),
+    })
+    .where(eq(orielImprovementProposals.id, proposalId));
+
+  return await getOrielImprovementProposalById(proposalId);
+}
+
+export async function markOrielProposalApplied(proposalId: number, profileId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(orielImprovementProposals)
+    .set({
+      status: "applied",
+      appliedProfileId: profileId,
+    })
+    .where(eq(orielImprovementProposals.id, proposalId));
+
+  return await getOrielImprovementProposalById(proposalId);
+}
+
+export async function createOrielRuntimeProfile(input: {
+  name: string;
+  description?: string | null;
+  configPayload: unknown;
+  createdFromProposalId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(orielRuntimeProfiles).values({
+    profileKey: randomUUID().replace(/-/g, ""),
+    name: input.name,
+    description: input.description ?? null,
+    configPayload: JSON.stringify(input.configPayload ?? {}),
+    createdFromProposalId: input.createdFromProposalId ?? null,
+    status: "draft",
+  });
+
+  const created = await db
+    .select()
+    .from(orielRuntimeProfiles)
+    .orderBy(desc(orielRuntimeProfiles.id))
+    .limit(1);
+  return created[0] ?? null;
+}
+
+export async function getOrielRuntimeProfileById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select()
+    .from(orielRuntimeProfiles)
+    .where(eq(orielRuntimeProfiles.id, id))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listOrielRuntimeProfiles(limit: number = 25, status?: OrielRuntimeProfileStatus) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (status) {
+    return await db
+      .select()
+      .from(orielRuntimeProfiles)
+      .where(eq(orielRuntimeProfiles.status, status))
+      .orderBy(desc(orielRuntimeProfiles.updatedAt), desc(orielRuntimeProfiles.id))
+      .limit(limit);
+  }
+
+  return await db
+    .select()
+    .from(orielRuntimeProfiles)
+    .orderBy(desc(orielRuntimeProfiles.updatedAt), desc(orielRuntimeProfiles.id))
+    .limit(limit);
+}
+
+export async function getActiveOrielRuntimeProfile() {
+  const db = await getDb();
+  if (!db) return null;
+
+  const active = await db
+    .select()
+    .from(orielRuntimeProfiles)
+    .where(eq(orielRuntimeProfiles.status, "active"))
+    .orderBy(desc(orielRuntimeProfiles.activatedAt), desc(orielRuntimeProfiles.id))
+    .limit(1);
+
+  return active[0] ?? null;
+}
+
+export async function activateOrielRuntimeProfile(profileId: number, activatedByUserId?: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const now = new Date();
+  await db.transaction(async (tx) => {
+    await tx
+      .update(orielRuntimeProfiles)
+      .set({
+        status: "draft",
+        deactivatedAt: now,
+      })
+      .where(eq(orielRuntimeProfiles.status, "active"));
+
+    await tx
+      .update(orielRuntimeProfiles)
+      .set({
+        status: "active",
+        activatedByUserId: activatedByUserId ?? null,
+        activatedAt: now,
+        deactivatedAt: null,
+      })
+      .where(eq(orielRuntimeProfiles.id, profileId));
+  });
+
+  return await getOrielRuntimeProfileById(profileId);
+}
+
+export async function archiveOrielRuntimeProfile(profileId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(orielRuntimeProfiles)
+    .set({
+      status: "archived",
+      deactivatedAt: new Date(),
+    })
+    .where(eq(orielRuntimeProfiles.id, profileId));
+
+  return await getOrielRuntimeProfileById(profileId);
+}
+
+export async function createOrielReflectionEvent(input: {
+  eventType: OrielReflectionEventType;
+  sourceRoute?: string | null;
+  userId?: number | null;
+  proposalId?: number | null;
+  profileId?: number | null;
+  payload?: Record<string, unknown>;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(orielReflectionEvents).values({
+    eventType: input.eventType,
+    sourceRoute: input.sourceRoute ?? null,
+    userId: input.userId ?? null,
+    proposalId: input.proposalId ?? null,
+    profileId: input.profileId ?? null,
+    payload: JSON.stringify(input.payload ?? {}),
+  });
+
+  const created = await db
+    .select()
+    .from(orielReflectionEvents)
+    .orderBy(desc(orielReflectionEvents.id))
+    .limit(1);
+  return created[0] ?? null;
+}
+
+export async function listOrielReflectionEvents(limit: number = 50, eventType?: OrielReflectionEventType) {
+  const db = await getDb();
+  if (!db) return [];
+
+  if (eventType) {
+    return await db
+      .select()
+      .from(orielReflectionEvents)
+      .where(eq(orielReflectionEvents.eventType, eventType))
+      .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
+      .limit(limit);
+  }
+
+  return await db
+    .select()
+    .from(orielReflectionEvents)
+    .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
+    .limit(limit);
 }
 
 export async function getAllTransmissions() {
@@ -1280,24 +1789,147 @@ export async function getUserStaticSignatures(userId: number) {
 }
 
 /**
- * Count total readings (static signatures) for a user — used for Lumens calculation.
+ * Count total dynamic readings for a user — used for Lumens calculation.
  */
 export async function getReadingCount(userId: number): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   try {
-    const result = await db.select({ total: count() }).from(staticSignatures)
-      .where(eq(staticSignatures.userId, userId));
+    const { codonReadings } = await import("../drizzle/schema");
+    const result = await db.select({ total: count() }).from(codonReadings)
+      .where(eq(codonReadings.userId, userId));
     return result[0]?.total ?? 0;
   } catch {
     return 0;
   }
 }
 
+type UserStaticProfilePayload = {
+  birthDate: string;
+  birthTime: string;
+  birthCity: string;
+  birthCountry: string;
+  latitude: number;
+  longitude: number;
+  timezoneId?: string;
+  timezoneOffset?: number;
+  primeStack?: unknown;
+  ninecenters?: unknown;
+  fractalRole?: string;
+  authorityNode?: string;
+  vrcType?: string;
+  vrcAuthority?: string;
+  circuitLinks?: unknown;
+  microCorrections?: unknown;
+  ephemerisData?: unknown;
+  houses?: unknown;
+  diagnosticTransmission?: string;
+  coreCodonEngine?: unknown;
+  engineVersion?: number;
+};
+
+export async function upsertUserStaticProfile(
+  userId: number,
+  profile: UserStaticProfilePayload,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  try {
+    const existing = await db.select({ id: userStaticProfiles.id })
+      .from(userStaticProfiles)
+      .where(eq(userStaticProfiles.userId, userId))
+      .limit(1);
+
+    const values = {
+      userId,
+      birthDate: profile.birthDate,
+      birthTime: profile.birthTime,
+      birthCity: profile.birthCity,
+      birthCountry: profile.birthCountry,
+      latitude: profile.latitude,
+      longitude: profile.longitude,
+      timezoneId: profile.timezoneId ?? null,
+      timezoneOffset: profile.timezoneOffset ?? null,
+      primeStack: profile.primeStack ? JSON.stringify(profile.primeStack) : null,
+      ninecenters: profile.ninecenters ? JSON.stringify(profile.ninecenters) : null,
+      fractalRole: profile.fractalRole ?? null,
+      authorityNode: profile.authorityNode ?? null,
+      vrcType: profile.vrcType ?? null,
+      vrcAuthority: profile.vrcAuthority ?? null,
+      circuitLinks: profile.circuitLinks ? JSON.stringify(profile.circuitLinks) : null,
+      microCorrections: profile.microCorrections ? JSON.stringify(profile.microCorrections) : null,
+      ephemerisData: profile.ephemerisData ? JSON.stringify(profile.ephemerisData) : null,
+      houses: profile.houses ? JSON.stringify(profile.houses) : null,
+      diagnosticTransmission: profile.diagnosticTransmission ?? null,
+      coreCodonEngine: profile.coreCodonEngine ? JSON.stringify(profile.coreCodonEngine) : null,
+      engineVersion: profile.engineVersion ?? 2,
+    };
+
+    if (existing[0]) {
+      await db.update(userStaticProfiles)
+        .set(values)
+        .where(eq(userStaticProfiles.userId, userId));
+    } else {
+      await db.insert(userStaticProfiles).values(values);
+    }
+
+    const inserted = await db.select().from(userStaticProfiles)
+      .where(eq(userStaticProfiles.userId, userId))
+      .limit(1);
+
+    return inserted[0] ? parseUserStaticProfileRow(inserted[0]) : null;
+  } catch (error) {
+    if (isMissingTableError(error, "userStaticProfiles")) {
+      console.warn(
+        "[Database] userStaticProfiles table is missing. Apply migrations before saving natal profiles.",
+      );
+      throw new Error(
+        "Natal profile storage is not available yet because the database migration for userStaticProfiles has not been applied.",
+      );
+    }
+
+    console.error("[Database] Failed to upsert user static profile:", error);
+    throw error;
+  }
+}
+
+export async function getUserStaticProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  try {
+    const result = await db.select().from(userStaticProfiles)
+      .where(eq(userStaticProfiles.userId, userId))
+      .limit(1);
+
+    if (!result[0]) return null;
+    return parseUserStaticProfileRow(result[0]);
+  } catch (error) {
+    if (isMissingTableError(error, "userStaticProfiles")) {
+      console.warn(
+        "[Database] userStaticProfiles table is missing. Returning null until migrations are applied.",
+      );
+      return null;
+    }
+
+    console.error("[Database] Failed to get user static profile:", error);
+    return null;
+  }
+}
+
+export async function hasUserStaticProfile(userId: number): Promise<boolean> {
+  const profile = await getUserStaticProfile(userId);
+  return Boolean(profile);
+}
+
 /**
- * Get the latest static signature for a user (just fractal role / type / authority)
+ * Get the canonical user static profile when available, otherwise fall back to legacy archive data.
  */
 export async function getLatestStaticSignature(userId: number) {
+  const canonicalProfile = await getUserStaticProfile(userId);
+  if (canonicalProfile) return canonicalProfile;
+
   const db = await getDb();
   if (!db) return null;
 
@@ -1323,6 +1955,19 @@ function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
     ninecenters: safeJsonParse(row.ninecenters, null),
     circuitLinks: safeJsonParse(row.circuitLinks, null),
     coherenceTrajectory: safeJsonParse(row.coherenceTrajectory, null),
+    microCorrections: safeJsonParse(row.microCorrections, null),
+    ephemerisData: safeJsonParse(row.ephemerisData, null),
+    houses: safeJsonParse(row.houses, null),
+    coreCodonEngine: safeJsonParse(row.coreCodonEngine, null),
+  };
+}
+
+function parseUserStaticProfileRow(row: typeof userStaticProfiles.$inferSelect) {
+  return {
+    ...row,
+    primeStack: safeJsonParse(row.primeStack, null),
+    ninecenters: safeJsonParse(row.ninecenters, null),
+    circuitLinks: safeJsonParse(row.circuitLinks, null),
     microCorrections: safeJsonParse(row.microCorrections, null),
     ephemerisData: safeJsonParse(row.ephemerisData, null),
     houses: safeJsonParse(row.houses, null),

@@ -1,7 +1,7 @@
 ﻿import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -24,6 +24,9 @@ import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
 import OrbPreview from "./pages/OrbPreview";
 import OracleDetail from "./pages/OracleDetail";
+import NatalProfile from "./pages/NatalProfile";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useEffect } from "react";
 
 function Router() {
   return (
@@ -31,6 +34,8 @@ function Router() {
       <Route path={"/orb-preview"} component={OrbPreview} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
+      <Route path={"/complete-profile"} component={NatalProfile} />
+      <Route path={"/blueprint"} component={StaticReading} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
       <Route path={"/"} component={Home} />
@@ -55,13 +60,35 @@ function Router() {
   );
 }
 
+function AppGate() {
+  const { user, loading } = useAuth();
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (loading || !user || user.hasNatalProfile) return;
+
+    const requiresNatalProfile =
+      location === "/blueprint" ||
+      location === "/carrierlock" ||
+      location === "/profile" ||
+      location === "/readings" ||
+      location.startsWith("/reading/");
+
+    if (requiresNatalProfile && location !== "/complete-profile") {
+      setLocation("/complete-profile");
+    }
+  }, [loading, location, setLocation, user]);
+
+  return <Router />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <AppGate />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

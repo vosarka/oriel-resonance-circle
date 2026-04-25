@@ -7,21 +7,21 @@ import {
 import { trpc } from "@/lib/trpc";
 
 /**
- * Returns the user's Prime Stack codon IDs (if they have a static signature)
+ * Returns the user's Prime Stack codon IDs (if they have a canonical natal profile)
  * and helpers to check if an oracle's linkedCodons overlap with their codons.
  */
 export function usePersonalResonance() {
   const { user } = useAuth();
 
-  const { data: readings } = trpc.codex.getStaticReadings.useQuery(
+  const { data: profile } = trpc.profile.getStaticProfile.useQuery(
     undefined,
     { enabled: !!user },
   );
 
   const userCodons = useMemo(() => {
-    if (!readings?.length) return [];
-    return extractPrimeStackCodonIds(readings[0]?.primeStack);
-  }, [readings]);
+    if (!profile?.primeStack) return [];
+    return extractPrimeStackCodonIds(profile.primeStack);
+  }, [profile]);
 
   const getMatchingCodons = (
     linkedCodons: string[] | null | undefined,

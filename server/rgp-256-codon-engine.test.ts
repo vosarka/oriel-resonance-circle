@@ -148,24 +148,29 @@ describe('RGP 256-Codon Resolution Engine', () => {
       expect(loudness.D).toBeGreaterThan(0);
     });
 
-    it('should return all facets at 100 when noise is zero', () => {
+    it('should keep a non-zero baseline when noise is zero', () => {
       const loudness = determineFacetLoudness(0, 0, 0);
-      expect(loudness.A).toBe(100);
-      expect(loudness.B).toBe(100);
-      expect(loudness.C).toBe(100);
-      expect(loudness.D).toBe(100);
+      expect(loudness.A).toBe(25);
+      expect(loudness.B).toBe(25);
+      expect(loudness.C).toBe(25);
+      expect(loudness.D).toBe(25);
     });
 
-    it('should reduce facet amplitude with noise', () => {
+    it('should raise body-linked facet amplitude with body tension', () => {
       const lowNoise  = determineFacetLoudness(0, 0, 0);
       const highNoise = determineFacetLoudness(10, 10, 10);
-      expect(lowNoise.A).toBeGreaterThan(highNoise.A);
+      expect(lowNoise.A).toBeLessThan(highNoise.A);
     });
 
-    it('should map mental noise to Shadow (A) reduction', () => {
+    it('should map mental noise to Facet C prioritization', () => {
       const noMentalNoise   = determineFacetLoudness(0, 5, 5);
       const highMentalNoise = determineFacetLoudness(10, 5, 5);
-      expect(noMentalNoise.A).toBeGreaterThan(highMentalNoise.A);
+      expect(noMentalNoise.C).toBeLessThan(highMentalNoise.C);
+    });
+
+    it('should prioritize facet A when body tension is dominant', () => {
+      const loudness = determineFacetLoudness(2, 9, 3);
+      expect(loudness.dominant).toBe('A');
     });
   });
 

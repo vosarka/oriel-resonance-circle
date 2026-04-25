@@ -358,6 +358,9 @@ export default function Profile() {
   const sigilQuery = trpc.codex.getProfileSigil.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+  const staticProfileQuery = trpc.profile.getStaticProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
 
   useEffect(() => {
     if (!loading && !isAuthenticated) setLocation("/");
@@ -390,6 +393,10 @@ export default function Profile() {
   const vrcType = sigilQuery.data?.vrcType || null;
   const vrcAuthority = sigilQuery.data?.vrcAuthority || null;
   const identity = getFractalIdentity(fractalRole || vrcType);
+  const blueprintPrimeStack = Array.isArray(staticProfileQuery.data?.primeStack)
+    ? staticProfileQuery.data.primeStack as Array<{ codonName?: string; codon?: string | number; center?: string }>
+    : [];
+  const blueprintPrime = blueprintPrimeStack[0];
 
   const handleCopy = () => {
     try {
@@ -601,6 +608,72 @@ export default function Profile() {
               </div>
               <Field label="SYSTEM ID" value={`#${user.id}`} />
             </Section>
+
+            <div id="blueprint">
+              <Section title="CANONICAL NATAL BLUEPRINT" accentBorder>
+                {staticProfileQuery.isLoading ? (
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.12em" }}>
+                    LOADING BLUEPRINT…
+                  </div>
+                ) : staticProfileQuery.data ? (
+                  <>
+                    <Field
+                      label="NATAL ORIGIN"
+                      value={`${staticProfileQuery.data.birthDate} · ${staticProfileQuery.data.birthTime} · ${staticProfileQuery.data.birthCity}, ${staticProfileQuery.data.birthCountry}`}
+                      accent
+                    />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                      <Field label="VRC TYPE" value={staticProfileQuery.data.vrcType || "UNKNOWN"} accent />
+                      <Field label="VRC AUTHORITY" value={staticProfileQuery.data.vrcAuthority || staticProfileQuery.data.authorityNode || "UNKNOWN"} />
+                    </div>
+                    <Field label="FRACTAL ROLE" value={staticProfileQuery.data.fractalRole || "UNKNOWN"} />
+                    <Field
+                      label="PRIME CODON"
+                      value={blueprintPrime
+                        ? `${blueprintPrime.codonName || "UNKNOWN"} · Codon ${blueprintPrime.codon ?? "?"} · ${blueprintPrime.center || "Unknown center"}`
+                        : "UNAVAILABLE"}
+                    />
+                    <div style={{ marginTop: 20 }}>
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 10 }}>
+                        STATIC TRANSMISSION
+                      </div>
+                      <div style={{
+                        padding: "16px",
+                        background: C.surface,
+                        border: `1px solid ${C.border}`,
+                        fontFamily: "monospace",
+                        fontSize: 10,
+                        color: C.txtS,
+                        lineHeight: 1.9,
+                        whiteSpace: "pre-wrap" as const,
+                      }}>
+                        {staticProfileQuery.data.diagnosticTransmission || "No stored transmission available."}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: 18 }}>
+                      <Link href="/blueprint">
+                        <span style={{
+                          display: "inline-block",
+                          padding: "10px 16px",
+                          border: `1px solid ${C.goldDim}`,
+                          color: C.gold,
+                          fontFamily: "monospace",
+                          fontSize: 10,
+                          letterSpacing: "0.14em",
+                          cursor: "pointer",
+                        }}>
+                          OPEN FULL STATIC SIGNATURE
+                        </span>
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8 }}>
+                    No natal blueprint has been stored yet. Complete the natal onboarding flow to anchor the canonical static profile.
+                  </div>
+                )}
+              </Section>
+            </div>
 
             {/* All tiers display */}
             <Section title="SIGNAL LEVELS">

@@ -1,6 +1,6 @@
 import { Mistral } from "@mistralai/mistralai";
-import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 import { filterORIELResponse } from "./gemini";
+import { buildOrielPromptContext } from "./oriel-prompt-context";
 
 const client = new Mistral({
   apiKey: process.env.MISTRAL_API_KEY || "",
@@ -34,29 +34,11 @@ export async function chatWithORIELMistral(
   conversationHistory: Array<{ role: string; content: string }> = [],
   userId?: number
 ): Promise<string> {
-  // Build complete system prompt: Base + UMM context + Field State (v3.0)
-  const promptParts: string[] = [ORIEL_SYSTEM_PROMPT];
-
-  if (userId) {
-    try {
-      const { buildUMMContext } = await import("./oriel-umm");
-      const ummContext = await buildUMMContext(userId);
-      if (ummContext) promptParts.push(ummContext);
-    } catch {
-      // UMM context is additive — not critical
-    }
-  }
-
-  // Field State context (Response Intelligence + Interaction Protocol)
-  try {
-    const { buildFieldStateContext } = await import("./oriel-interaction-protocol");
-    const fieldState = await buildFieldStateContext(userId, userMessage, conversationHistory);
-    if (fieldState) promptParts.push(fieldState);
-  } catch {
-    // Field state is additive — not critical
-  }
-
-  const systemPrompt = promptParts.filter(Boolean).join("\n\n");
+  const systemPrompt = await buildOrielPromptContext({
+    userId,
+    userMessage,
+    conversationHistory,
+  });
 
   const inputs = [
     ...conversationHistory.map((m) => ({

@@ -9,7 +9,8 @@
  */
 
 import { invokeLLM } from './_core/llm';
-import { filterORIELResponse, ORIEL_SYSTEM_PROMPT } from './gemini';
+import { filterORIELResponse } from './gemini';
+import { buildOrielPromptContext } from './oriel-prompt-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -95,9 +96,13 @@ Keep it to 3–4 paragraphs. Precise. Poetic but not vague. Grounded in the actu
   }
 
   try {
+    const systemPrompt = await buildOrielPromptContext({
+      userMessage: userPrompt,
+      conversationHistory: [],
+    });
     const response = await invokeLLM({
       messages: [
-        { role: 'system', content: ORIEL_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
     });

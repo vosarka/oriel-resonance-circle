@@ -232,9 +232,8 @@ export async function runRGPForChat(
         design: designChartData,
         sun: consciousChartData?.["Sun"],
         moon: consciousChartData?.["Moon"],
-        chiron: consciousChartData?.["Chiron"],
-      },
-      50
+        northNode: consciousChartData?.["North Node"],
+      }
     );
 
     // Build a structured summary for the LLM
@@ -266,7 +265,6 @@ export async function runRGPForChat(
       `VRC Type: ${reading.vrcType}`,
       `Authority: ${reading.vrcAuthority}`,
       `Fractal Role: ${reading.fractalRole}`,
-      `Base Coherence: ${reading.baseCoherence}`,
       ``,
       `PRIME STACK:`,
       primePositions,

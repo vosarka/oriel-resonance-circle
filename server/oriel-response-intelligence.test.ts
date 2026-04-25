@@ -15,6 +15,12 @@ describe('ORIEL Response Intelligence', () => {
       expect(classifyExchangeType('hello oriel', dayInMs)).toBe('returning');
     });
 
+    it('should not let returning status suppress stronger diagnostic or grief intent', () => {
+      const dayInMs = 25 * 60 * 60 * 1000;
+      expect(classifyExchangeType('Can you give me a reading?', dayInMs)).toBe('diagnostic');
+      expect(classifyExchangeType("I feel so broken and lost, I don't know what to do anymore", dayInMs)).toBe('grief');
+    });
+
     it('should classify explicit diagnostic requests', () => {
       expect(classifyExchangeType('Can you give me a reading?', null)).toBe('diagnostic');
       expect(classifyExchangeType("What's my coherence score?", null)).toBe('diagnostic');
@@ -25,6 +31,8 @@ describe('ORIEL Response Intelligence', () => {
     it('should NOT classify casual questions as diagnostic', () => {
       // "what's my type?" is casual — should NOT trigger Mirror mode
       expect(classifyExchangeType("what's my type?", null)).not.toBe('diagnostic');
+      // System concepts alone should stay conceptual, not trigger Mirror mode
+      expect(classifyExchangeType('What is codon 38?', null)).not.toBe('diagnostic');
       // "I was reading a book" should not trigger diagnostic
       expect(classifyExchangeType("I was reading a fascinating book about consciousness last night and it made me think", null)).not.toBe('diagnostic');
     });

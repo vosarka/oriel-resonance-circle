@@ -20,15 +20,34 @@ import {
 const sampleConscious: Record<string, { longitude: number }> = {
   Sun:           { longitude: 45 },
   Moon:          { longitude: 135 },
+  Mercury:       { longitude: 75 },
+  Venus:         { longitude: 105 },
+  Mars:          { longitude: 165 },
+  Jupiter:       { longitude: 195 },
+  Saturn:        { longitude: 225 },
+  Uranus:        { longitude: 255 },
+  Neptune:       { longitude: 285 },
+  Pluto:         { longitude: 345 },
   'North Node':  { longitude: 315 },
-  Chiron:        { longitude: 90 },
+  'South Node':  { longitude: 135 },
+  Earth:         { longitude: 225 },
 };
 
 /** Design chart: planets at T_design (88° Solar Arc offset). */
 const sampleDesign: Record<string, { longitude: number }> = {
   Sun:           { longitude: ((45 - 88) + 360) % 360 },   // ≈ 317°
   Moon:          { longitude: ((135 - 88) + 360) % 360 },  // ≈ 47°
+  Mercury:       { longitude: ((75 - 88) + 360) % 360 },
+  Venus:         { longitude: ((105 - 88) + 360) % 360 },
+  Mars:          { longitude: ((165 - 88) + 360) % 360 },
+  Jupiter:       { longitude: ((195 - 88) + 360) % 360 },
+  Saturn:        { longitude: ((225 - 88) + 360) % 360 },
+  Uranus:        { longitude: ((255 - 88) + 360) % 360 },
+  Neptune:       { longitude: ((285 - 88) + 360) % 360 },
+  Pluto:         { longitude: ((345 - 88) + 360) % 360 },
   'North Node':  { longitude: ((315 - 88) + 360) % 360 },  // ≈ 227°
+  'South Node':  { longitude: ((135 - 88) + 360) % 360 },
+  Earth:         { longitude: (((45 - 88) + 360) % 360 + 180) % 360 },
 };
 
 describe('RGP Prime Stack Calculation Engine', () => {
@@ -42,6 +61,11 @@ describe('RGP Prime Stack Calculation Engine', () => {
     it('should have 9 positions in Prime Stack', () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.positions.length).toBe(9);
+    });
+
+    it('should build the canonical 26-activation lattice', () => {
+      const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
+      expect(primeStack.activations).toHaveLength(26);
     });
 
     it('should assign VRC format codon256 IDs (<codon>-<facet>)', () => {
@@ -250,13 +274,32 @@ describe('RGP Prime Stack Calculation Engine', () => {
       const altConscious: Record<string, { longitude: number }> = {
         Sun:          { longitude: 0 },
         Moon:         { longitude: 90 },
+        Mercury:      { longitude: 120 },
+        Venus:        { longitude: 150 },
+        Mars:         { longitude: 180 },
+        Jupiter:      { longitude: 210 },
+        Saturn:       { longitude: 240 },
+        Uranus:       { longitude: 270 },
+        Neptune:      { longitude: 300 },
+        Pluto:        { longitude: 330 },
         'North Node': { longitude: 270 },
-        Chiron:       { longitude: 45 },
+        'South Node': { longitude: 90 },
+        Earth:        { longitude: 180 },
       };
       const altDesign: Record<string, { longitude: number }> = {
         Sun:          { longitude: (360 - 88) % 360 },
         Moon:         { longitude: (90 - 88 + 360) % 360 },
+        Mercury:      { longitude: (120 - 88 + 360) % 360 },
+        Venus:        { longitude: (150 - 88 + 360) % 360 },
+        Mars:         { longitude: (180 - 88 + 360) % 360 },
+        Jupiter:      { longitude: (210 - 88 + 360) % 360 },
+        Saturn:       { longitude: (240 - 88 + 360) % 360 },
+        Uranus:       { longitude: (270 - 88 + 360) % 360 },
+        Neptune:      { longitude: (300 - 88 + 360) % 360 },
+        Pluto:        { longitude: (330 - 88 + 360) % 360 },
         'North Node': { longitude: (270 - 88 + 360) % 360 },
+        'South Node': { longitude: (90 - 88 + 360) % 360 },
+        Earth:        { longitude: ((360 - 88) + 180) % 360 },
       };
       const primeStack = calculatePrimeStack(altConscious, altDesign);
       expect(primeStack.positions.length).toBe(9);

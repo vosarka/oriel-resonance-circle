@@ -15,10 +15,10 @@
  */
 
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/mysql2";
 import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { users, baUser, baAccount } from "../../drizzle/schema";
+import { createDrizzleFromDatabaseUrl } from "../_core/mysql";
 
 async function migrate() {
   if (!process.env.DATABASE_URL) {
@@ -26,7 +26,7 @@ async function migrate() {
     process.exit(1);
   }
 
-  const db = drizzle(process.env.DATABASE_URL);
+  const db = createDrizzleFromDatabaseUrl(process.env.DATABASE_URL);
 
   console.log("Fetching existing users...");
   const allUsers = await db.select({

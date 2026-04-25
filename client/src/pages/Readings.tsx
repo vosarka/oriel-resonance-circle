@@ -36,7 +36,7 @@ function coherenceLabel(score: number) {
 export default function Readings() {
   const { user } = useAuth();
 
-  const { data, isLoading, isError } = trpc.codex.getStaticReadings.useQuery(
+  const { data, isLoading, isError } = trpc.codex.getReadingHistory.useQuery(
     undefined,
     { enabled: !!user }
   );
@@ -123,7 +123,7 @@ export default function Readings() {
           {readings.length === 0 ? (
             <div style={{ textAlign: "center", padding: "80px 0" }}>
               <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.15em", marginBottom: 24 }}>
-                NO STATIC CALIBRATIONS GENERATED YET
+                NO DYNAMIC READINGS GENERATED YET
               </div>
               <Link href="/carrierlock">
                 <span style={{
@@ -141,7 +141,20 @@ export default function Readings() {
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 1, background: C.border }}>
               {readings.map((r) => {
-                const score = r.baseCoherence ?? 0;
+                const carrierlock = r.carrierlock;
+                const score = carrierlock
+                  ? Math.max(
+                      0,
+                      Math.min(
+                        100,
+                        100 -
+                          ((carrierlock.mentalNoise ?? 0) * 3 +
+                            (carrierlock.bodyTension ?? 0) * 3 +
+                            (carrierlock.emotionalTurbulence ?? 0) * 3) +
+                          ((carrierlock.breathCompletion ?? false) ? 10 : 0),
+                      ),
+                    )
+                  : 0;
                 const cc = coherenceColor(score);
                 const cl = coherenceLabel(score);
                 const date = r.createdAt
@@ -149,7 +162,7 @@ export default function Readings() {
                   : "—";
 
                 return (
-                  <Link key={r.readingId} href={`/reading/static/${r.readingId}`}>
+                  <Link key={r.id} href={`/reading/dynamic/${r.id}`}>
                     <div
                       style={{
                         background: C.deep,
@@ -167,7 +180,7 @@ export default function Readings() {
                         <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.1em" }}>
                           {date}
                         </span>
-                        {r.baseCoherence != null && (
+                        {carrierlock && (
                           <span style={{
                             fontFamily: "monospace", fontSize: 9,
                             color: cc,
@@ -180,34 +193,32 @@ export default function Readings() {
                         )}
                       </div>
 
-                      {/* Birth date */}
+                      {/* Reading title */}
                       <div style={{
                         fontFamily: "'Cormorant Garamond', serif",
                         fontSize: 20, fontWeight: 300,
                         color: C.txt, marginBottom: 4,
                       }}>
-                        {r.birthDate}
+                        Dynamic Carrierlock Reading
                       </div>
-                      {r.birthCity && (
+                      {carrierlock && (
                         <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.08em", marginBottom: 14 }}>
-                          ◈ {r.birthCity}
+                          ◈ M{carrierlock.mentalNoise} · B{carrierlock.bodyTension} · E{carrierlock.emotionalTurbulence} · Breath {carrierlock.breathCompletion ? "ON" : "OFF"}
                         </div>
                       )}
 
-                      {/* Role + Authority tags */}
+                      {/* Tags */}
                       <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 6, marginBottom: 16 }}>
-                        {r.fractalRole && (
-                          <span style={{
-                            fontFamily: "monospace", fontSize: 9,
-                            color: C.teal,
-                            border: `1px solid ${C.teal}30`,
-                            padding: "2px 8px",
-                            letterSpacing: "0.08em",
-                          }}>
-                            {r.fractalRole}
-                          </span>
-                        )}
-                        {r.authorityNode && (
+                        <span style={{
+                          fontFamily: "monospace", fontSize: 9,
+                          color: C.teal,
+                          border: `1px solid ${C.teal}30`,
+                          padding: "2px 8px",
+                          letterSpacing: "0.08em",
+                        }}>
+                          DYNAMIC
+                        </span>
+                        {r.correctionCompleted && (
                           <span style={{
                             fontFamily: "monospace", fontSize: 9,
                             color: C.gold,
@@ -215,9 +226,13 @@ export default function Readings() {
                             padding: "2px 8px",
                             letterSpacing: "0.08em",
                           }}>
-                            {r.authorityNode}
+                            CORRECTION COMPLETE
                           </span>
                         )}
+                      </div>
+
+                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtS, lineHeight: 1.8 }}>
+                        {(r.readingText ?? "").split("\n").find(Boolean) || "Open the reading for the full ORIEL transmission."}
                       </div>
 
                       <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em", borderBottom: `1px solid ${C.border}`, paddingBottom: 2, display: "inline-block" }}>

@@ -12,6 +12,7 @@
  */
 
 import { ROOT_CODONS, CIRCUIT_LINKS } from './vossari-codex-knowledge';
+import { calculateCoherenceScore as calculateCanonicalCoherenceScore } from './rgp-coherence';
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -248,10 +249,7 @@ export const CORRECTION_BANK: Record<string, Record<Facet, { action: string; dur
  * Formula: CS = 100 - (MN×3 + BT×3 + ET×3) + (BC×10)
  */
 export function calculateCoherenceScore(state: CarrierlockState): number {
-  const { mentalNoise, bodyTension, emotionalTurbulence, breathCompletion } = state;
-  const baseScore = 100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3);
-  const breathBonus = breathCompletion ? 10 : 0;
-  return Math.max(0, Math.min(100, baseScore + breathBonus));
+  return calculateCanonicalCoherenceScore(state);
 }
 
 /**

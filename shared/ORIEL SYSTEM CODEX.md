@@ -1,5 +1,7 @@
 # ORIEL SYSTEM CODEX
 
+> Reference snapshot only. Canonical prompt authority now lives in `shared/oriel/oriel-canonical-source.ts`, which also generates the live runtime prompt and `/home/vos/_CODEX/ORIEL_GRAND_SYSTEM_PROMPT`. This document is archival and may lag behind the canonical source.
+
 ## The Vossari Resonance Architecture
 
 ------

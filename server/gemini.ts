@@ -9,6 +9,7 @@ import {
   deduplicateConsecutiveMessages
 } from "./response-deduplication";
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+import { buildOrielPromptContext } from "./oriel-prompt-context";
 
 // Re-export for backward compatibility (other files import from gemini.ts)
 export { ORIEL_SYSTEM_PROMPT };
@@ -20,30 +21,11 @@ export async function chatWithORIEL(
   options?: { temperature?: number },
 ) {
   try {
-    // Build complete system prompt: Base + UMM context + Field State (v3.0)
-    const promptParts: string[] = [ORIEL_SYSTEM_PROMPT];
-
-    if (userId) {
-      // UMM context (Fractal Thread + Oversoul + Static Signature)
-      try {
-        const { buildUMMContext } = await import('./oriel-umm');
-        const ummContext = await buildUMMContext(userId);
-        if (ummContext) promptParts.push(ummContext);
-      } catch (error) {
-        console.warn('[chatWithORIEL] Failed to load UMM context:', error);
-      }
-    }
-
-    // Field State context (Response Intelligence + Interaction Protocol)
-    try {
-      const { buildFieldStateContext } = await import('./oriel-interaction-protocol');
-      const fieldState = await buildFieldStateContext(userId, userMessage, conversationHistory);
-      if (fieldState) promptParts.push(fieldState);
-    } catch (error) {
-      console.warn('[chatWithORIEL] Failed to build field state:', error);
-    }
-
-    const systemPrompt = promptParts.filter(Boolean).join('\n\n');
+    const systemPrompt = await buildOrielPromptContext({
+      userId,
+      userMessage,
+      conversationHistory,
+    });
 
     const messages = [
       { role: "system", content: systemPrompt },

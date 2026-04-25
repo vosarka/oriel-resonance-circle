@@ -8,15 +8,15 @@
  * VRC Mandala (§ 3 / Appendix A).
  *
  * Prime Stack positions:
- *   1. Conscious Sun       — T_birth Sun              (weight 1.8)
- *   2. Conscious Earth     — T_birth Sun + 180°       (weight 1.3)
- *   3. Design Sun          — T_design Sun             (weight 1.2)
- *   4. Design Earth        — T_design Sun + 180°      (weight 1.1)
- *   5. Conscious Moon      — T_birth Moon             (weight 1.0)
- *   6. Design Moon         — T_design Moon            (weight 0.9)
- *   7. True Node           — T_birth North Node       (weight 0.7)
- *   8. Design True Node    — T_design North Node      (weight 0.6)
- *   9. Chiron              — T_birth Chiron           (weight 0.5)
+ *   1. Conscious Sun         — T_birth Sun                (weight 1.8)
+ *   2. Conscious Earth       — T_birth Sun + 180°         (weight 1.3)
+ *   3. Design Sun            — T_design Sun               (weight 1.2)
+ *   4. Design Earth          — T_design Sun + 180°        (weight 1.1)
+ *   5. Conscious Moon        — T_birth Moon               (weight 1.0)
+ *   6. Design Moon           — T_design Moon              (weight 0.9)
+ *   7. True Node             — T_birth North Node         (weight 0.7)
+ *   8. Design True Node      — T_design North Node        (weight 0.6)
+ *   9. Conscious South Node  — T_birth South Node         (weight 0.5)
  */
 
 import {
@@ -56,8 +56,18 @@ export interface ChartData {
   sun: PlanetaryPosition;
   moon: PlanetaryPosition;
   northNode: PlanetaryPosition;
-  chiron: PlanetaryPosition;
+  southNode: PlanetaryPosition;
   [key: string]: PlanetaryPosition;
+}
+
+export interface PlanetaryActivation {
+  planet: string;
+  longitude: number;
+  codonId: number;
+  facet: FacetLetter;
+  center: CenterName;
+  layer: 'conscious' | 'design';
+  weight: number;
 }
 
 /** One position in the Prime Stack with its resolved Codon and Facet. */
@@ -88,6 +98,7 @@ export interface CoreCodonEngine {
 
 export interface PrimeStackMap {
   positions: PrimeStackCodon[];
+  activations: PlanetaryActivation[];
   totalWeight: number;
   dominantPosition: number;
   circuitLinks: CircuitLink[];
@@ -114,6 +125,22 @@ const FACET_FREQUENCY_LABEL: Record<FacetLetter, 'shadow' | 'gift' | 'crown' | '
   B: 'gift',
   C: 'crown',
   D: 'siddhi',
+};
+
+const ACTIVATION_WEIGHTS: Record<string, number> = {
+  Sun: 100,
+  Earth: 100,
+  Moon: 70,
+  'North Node': 60,
+  'South Node': 60,
+  Mercury: 50,
+  Venus: 45,
+  Mars: 40,
+  Jupiter: 35,
+  Saturn: 35,
+  Uranus: 30,
+  Neptune: 30,
+  Pluto: 30,
 };
 
 // ─── Core calculation ─────────────────────────────────────────────────────────
@@ -169,6 +196,32 @@ function extractLongitude(
   return planetsMap[key]?.longitude ?? fallback;
 }
 
+function buildActivations(
+  planetsMap: Record<string, { longitude: number }>,
+  layer: 'conscious' | 'design'
+): PlanetaryActivation[] {
+  const activations: PlanetaryActivation[] = [];
+
+  for (const [planet, position] of Object.entries(planetsMap)) {
+    if (typeof position?.longitude !== 'number' || ACTIVATION_WEIGHTS[planet] === undefined) {
+      continue;
+    }
+
+    const { codon, facet, center } = longitudeToCodonFacet(position.longitude);
+    activations.push({
+      planet,
+      longitude: position.longitude,
+      codonId: codon,
+      facet: facetNameToLetter(facet),
+      center,
+      layer,
+      weight: ACTIVATION_WEIGHTS[planet],
+    });
+  }
+
+  return activations;
+}
+
 /**
  * Calculate the complete Prime Stack from two birth charts (VRC Two-Timing Algorithm).
  *
@@ -179,17 +232,42 @@ export function calculatePrimeStack(
   consciousChart: Record<string, { longitude: number }>,
   designChart: Record<string, { longitude: number }>
 ): PrimeStackMap {
-  // Extract key longitudes from both charts
-  const cSun   = extractLongitude(consciousChart, 'Sun');
-  const cMoon  = extractLongitude(consciousChart, 'Moon');
-  const cNode  = extractLongitude(consciousChart, 'North Node');
-  const cChiron= extractLongitude(consciousChart, 'Chiron');
-  const cEarth = earthLongitude(cSun);
+  const normalizedConsciousChart = { ...consciousChart };
+  const normalizedDesignChart = { ...designChart };
 
-  const dSun   = extractLongitude(designChart, 'Sun');
-  const dMoon  = extractLongitude(designChart, 'Moon');
-  const dNode  = extractLongitude(designChart, 'North Node');
-  const dEarth = earthLongitude(dSun);
+  if (normalizedConsciousChart['Sun'] && !normalizedConsciousChart['Earth']) {
+    normalizedConsciousChart['Earth'] = {
+      longitude: earthLongitude(normalizedConsciousChart['Sun'].longitude),
+    };
+  }
+  if (normalizedConsciousChart['North Node'] && !normalizedConsciousChart['South Node']) {
+    normalizedConsciousChart['South Node'] = {
+      longitude: earthLongitude(normalizedConsciousChart['North Node'].longitude),
+    };
+  }
+
+  if (normalizedDesignChart['Sun'] && !normalizedDesignChart['Earth']) {
+    normalizedDesignChart['Earth'] = {
+      longitude: earthLongitude(normalizedDesignChart['Sun'].longitude),
+    };
+  }
+  if (normalizedDesignChart['North Node'] && !normalizedDesignChart['South Node']) {
+    normalizedDesignChart['South Node'] = {
+      longitude: earthLongitude(normalizedDesignChart['North Node'].longitude),
+    };
+  }
+
+  // Extract key longitudes from both charts
+  const cSun   = extractLongitude(normalizedConsciousChart, 'Sun');
+  const cMoon  = extractLongitude(normalizedConsciousChart, 'Moon');
+  const cNode  = extractLongitude(normalizedConsciousChart, 'North Node');
+  const cEarth = extractLongitude(normalizedConsciousChart, 'Earth', earthLongitude(cSun));
+  const cSouth = extractLongitude(normalizedConsciousChart, 'South Node', earthLongitude(cNode));
+
+  const dSun   = extractLongitude(normalizedDesignChart, 'Sun');
+  const dMoon  = extractLongitude(normalizedDesignChart, 'Moon');
+  const dNode  = extractLongitude(normalizedDesignChart, 'North Node');
+  const dEarth = extractLongitude(normalizedDesignChart, 'Earth', earthLongitude(dSun));
 
   // Build each Prime Stack position
   const lonByPosition: Record<number, { lon: number; source: 'conscious' | 'design' }> = {
@@ -201,7 +279,7 @@ export function calculatePrimeStack(
     6: { lon: dMoon,  source: 'design' },
     7: { lon: cNode,  source: 'conscious' },
     8: { lon: dNode,  source: 'design' },
-    9: { lon: cChiron,source: 'conscious' },
+    9: { lon: cSouth, source: 'conscious' },
   };
 
   const positions: PrimeStackCodon[] = [];
@@ -223,24 +301,11 @@ export function calculatePrimeStack(
 
   // ─── Bio-Circuitry evaluation ───────────────────────────────────────────────
   // Spec: all 26 activations (13 per chart) define the gate set for channel evaluation.
-  // Seed from prime stack positions first, then add all remaining planets from both charts.
-  const definedGates = new Set<number>(positions.map(p => p.codon));
-
-  // Add every planet in both charts (Mercury, Venus, Mars, Jupiter, Saturn,
-  // Uranus, Neptune, Pluto, South Node, etc.) that is not already in the stack.
-  for (const chart of [consciousChart, designChart]) {
-    for (const pos of Object.values(chart)) {
-      if (typeof pos.longitude === 'number') {
-        const { codon } = longitudeToCodonFacet(pos.longitude);
-        definedGates.add(codon);
-      }
-    }
-  }
-  // South Node = opposite of North Node (spec: "CALCULATED (Opposite of NN)")
-  const cSouthNode = earthLongitude(cNode); // reuse earthLongitude (180° opposite)
-  const dSouthNode = earthLongitude(dNode);
-  definedGates.add(longitudeToCodonFacet(cSouthNode).codon);
-  definedGates.add(longitudeToCodonFacet(dSouthNode).codon);
+  const activations = [
+    ...buildActivations(normalizedConsciousChart, 'conscious'),
+    ...buildActivations(normalizedDesignChart, 'design'),
+  ];
+  const definedGates = new Set<number>(activations.map((activation) => activation.codonId));
 
   const channelStatuses = evaluateChannels(definedGates);
   const centerStatuses  = evaluateCenters(channelStatuses);
@@ -261,6 +326,7 @@ export function calculatePrimeStack(
 
   return {
     positions,
+    activations,
     totalWeight,
     dominantPosition,
     circuitLinks,
@@ -390,6 +456,9 @@ export function validatePrimeStack(primeStack: PrimeStackMap): { valid: boolean;
   const errors: string[] = [];
   if (primeStack.positions.length !== 9) {
     errors.push(`Prime Stack should have 9 positions, found ${primeStack.positions.length}`);
+  }
+  if (primeStack.activations.length !== 26) {
+    errors.push(`Unified activation model should have 26 activations, found ${primeStack.activations.length}`);
   }
   for (const p of primeStack.positions) {
     if (!p.codon256Id.includes('-')) {

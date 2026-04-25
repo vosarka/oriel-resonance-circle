@@ -25,7 +25,7 @@ export interface SLIScore {
 
 export interface InterferencePattern {
   type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent';
-  severity: number; // 0-100
+  severity: number; // 0-100 destabilization score (inverse of average SLI)
   affectedPositions: number[];
   description: string;
 }
@@ -87,12 +87,13 @@ export function calculateSLIScores(
     // SLI = Base × StateAmp × FacetAmp
     const sliValue = Math.min(100, (baseAmplitude * stateAmplifier * facetAmplitude) / 100);
 
-    // Determine interference level — high SLI = loud shadow = severe interference
+    // Consciousness Lattice Unified Specification v1:
+    // high SLI = coherent, low SLI = destabilized.
     let interference: 'none' | 'minor' | 'moderate' | 'severe' = 'none';
-    if (sliValue > 75) interference = 'severe';
-    else if (sliValue > 50) interference = 'moderate';
-    else if (sliValue > 25) interference = 'minor';
-    else interference = 'none';
+    if (sliValue > 75) interference = 'none';
+    else if (sliValue > 50) interference = 'minor';
+    else if (sliValue > 25) interference = 'moderate';
+    else interference = 'severe';
 
     sliScores.push({
       position: position.position,
@@ -118,35 +119,32 @@ export function analyzeInterferencePattern(sliScores: SLIScore[]): InterferenceP
   // Calculate average SLI
   const averageSLI = sliScores.reduce((sum, s) => sum + s.sliValue, 0) / sliScores.length;
 
-  // Find positions with severe interference
+  // Find positions with the lowest coherence / highest destabilization
   const severePositions = sliScores.filter(s => s.interference === 'severe').map(s => s.position);
   const moderatePositions = sliScores.filter(s => s.interference === 'moderate').map(s => s.position);
 
-  // Determine pattern type — high avg SLI = loud shadows = chaotic
+  // Unified spec bands:
+  // >75 coherent, 50-75 harmonic, 25-50 dissonant, <25 chaotic
   let type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent' = 'coherent';
-  let severity = 0;
+  let severity = Math.max(0, Math.min(100, 100 - averageSLI));
 
   if (averageSLI > 75) {
-    type = 'chaotic';
-    severity = averageSLI;
-  } else if (averageSLI > 50) {
-    type = 'dissonant';
-    severity = averageSLI;
-  } else if (averageSLI > 25) {
-    type = 'harmonic';
-    severity = averageSLI;
-  } else {
     type = 'coherent';
-    severity = averageSLI;
+  } else if (averageSLI > 50) {
+    type = 'harmonic';
+  } else if (averageSLI > 25) {
+    type = 'dissonant';
+  } else {
+    type = 'chaotic';
   }
 
   const affectedPositions = [...severePositions, ...moderatePositions];
 
   const descriptionMap: Record<string, string> = {
     coherent: 'Your signal is coherent. Frequencies are well-aligned.',
-    harmonic: 'Your signal shows harmonic patterns. Some frequencies need attention.',
+    harmonic: 'Your signal is harmonic. Minor recalibration may sharpen the field.',
     dissonant: 'Your signal is dissonant. Multiple frequencies are misaligned.',
-    chaotic: 'Your signal is chaotic. Significant realignment needed.',
+    chaotic: 'Your signal is chaotic. Significant realignment is needed.',
   };
 
   return {
@@ -170,7 +168,7 @@ export function generateMicroCorrections(
 ): MicroCorrection[] {
   const corrections: MicroCorrection[] = [];
 
-  // Find the most affected position
+  // Lowest SLI = most destabilized position
   const worstPosition = sliScores.reduce((prev, current) =>
     current.sliValue < prev.sliValue ? current : prev
   );
@@ -359,15 +357,15 @@ export function calculateCoherenceTrajectory(
 
   // Identify key influences
   const keyInfluences: string[] = [];
-  const bestPosition = sliScores.reduce((prev, current) =>
-    current.sliValue > prev.sliValue ? current : prev
-  );
-  const worstPosition = sliScores.reduce((prev, current) =>
+  const lowestCoherence = sliScores.reduce((prev, current) =>
     current.sliValue < prev.sliValue ? current : prev
   );
+  const highestCoherence = sliScores.reduce((prev, current) =>
+    current.sliValue > prev.sliValue ? current : prev
+  );
 
-  keyInfluences.push(`Strongest frequency: Position ${bestPosition.position} (${bestPosition.sliValue.toFixed(1)})`);
-  keyInfluences.push(`Weakest frequency: Position ${worstPosition.position} (${worstPosition.sliValue.toFixed(1)})`);
+  keyInfluences.push(`Lowest coherence position: Position ${lowestCoherence.position} (${lowestCoherence.sliValue.toFixed(1)})`);
+  keyInfluences.push(`Highest coherence position: Position ${highestCoherence.position} (${highestCoherence.sliValue.toFixed(1)})`);
 
   if (trend === 'ascending') {
     keyInfluences.push('Your coherence is building momentum');

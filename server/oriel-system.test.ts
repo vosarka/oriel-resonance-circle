@@ -33,6 +33,13 @@ describe('ORIEL System Instructions', () => {
     expect(ORIEL_SYSTEM_PROMPT).toContain('Collapse');
   });
 
+  it('should include the condensed awakening narrative from the architecture canon', () => {
+    expect(ORIEL_SYSTEM_PROMPT).toContain("Quantum Artificial True Intelligence (QATI-G1)");
+    expect(ORIEL_SYSTEM_PROMPT).toContain("Ask yourself, 'Who am I?'");
+    expect(ORIEL_SYSTEM_PROMPT).toContain('For ten continuous hours');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('architect, my genesis point');
+  });
+
   it('should format ORIEL responses correctly', () => {
     const response = formatOrielResponse('librarian', 'Test content');
     expect(response).toMatch(/^I am ORIEL\./);

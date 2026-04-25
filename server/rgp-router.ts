@@ -4,7 +4,7 @@ import {
   generateStaticSignature,
   type StaticSignatureReading,
 } from './rgp-static-signature-engine';
-import { calculateCoherenceScore, type CarrierlockState } from './rgp-engine';
+import { calculateCoherenceScore, type CarrierlockState } from './rgp-coherence';
 import { calculateBothCharts, calculateBirthChart, getAllPlanetPositions } from './ephemeris-service';
 
 export const rgpRouter = router({
@@ -21,27 +21,10 @@ export const rgpRouter = router({
       userId: z.string().optional(),
       coherenceScore: z.number().optional().default(55),
     }))
-    .mutation(async ({ input }) => {
+      .mutation(async ({ input }) => {
       try {
         const birthDateObj = new Date(input.birthDate);
         const userId = input.userId || 'anonymous';
-
-        // Use last Carrierlock score if user has one, otherwise fall back to default
-        let coherenceScore = input.coherenceScore;
-        let hasRealCoherence = false;
-        if (userId !== 'anonymous') {
-          try {
-            const numericId = parseInt(userId, 10);
-            if (!isNaN(numericId)) {
-              const { getLatestCarrierlockScore } = await import('./db');
-              const lastScore = await getLatestCarrierlockScore(numericId);
-              if (lastScore !== null) {
-                coherenceScore = lastScore;
-                hasRealCoherence = true;
-              }
-            }
-          } catch { /* no previous carrierlock — use default */ }
-        }
 
         let consciousChartData: Record<string, number> | undefined;
         let designChartData: Record<string, number> | undefined;
@@ -128,9 +111,8 @@ export const rgpRouter = router({
             // Legacy fallbacks if no location provided
             sun:   consciousChartData?.['Sun'],
             moon:  consciousChartData?.['Moon'],
-            chiron:consciousChartData?.['Chiron'],
-          },
-          coherenceScore
+            northNode: consciousChartData?.['North Node'],
+          }
         );
 
         const primeStackDetails = reading.primeStack.map(pos => ({
@@ -165,7 +147,7 @@ export const rgpRouter = router({
             vrcAuthority:        reading.vrcAuthority,
             circuitLinks:        reading.circuitLinks,
             baseCoherence:       reading.baseCoherence,
-            hasRealCoherence,
+            hasRealCoherence: false,
             coherenceTrajectory: reading.coherenceTrajectory,
             microCorrections:    reading.microCorrections,
             diagnosticTransmission: reading.diagnosticTransmission,
@@ -214,9 +196,8 @@ export const rgpRouter = router({
           try {
             const numericId = parseInt(input.userId, 10);
             if (!isNaN(numericId)) {
-              const { getUserStaticSignatures } = await import('./db');
-              const sigs = await getUserStaticSignatures(numericId);
-              const latest = sigs[0];
+              const { getUserStaticProfile } = await import('./db');
+              const latest = await getUserStaticProfile(numericId);
               if (latest) {
                 vrcType      = latest.vrcType     ?? undefined;
                 vrcAuthority = latest.vrcAuthority ?? undefined;

@@ -15,7 +15,7 @@
  *    - Self-corrects teaching methods for all future Seekers
  */
 
-import { getDb, getUserStaticSignatures } from './db';
+import { getDb, getLatestStaticSignature } from './db';
 import { orielMemories, orielUserProfiles, orielOversoulPatterns, type OrielMemory, type OrielOversoulPattern } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
@@ -85,7 +85,7 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
         eq(orielMemories.isActive, true)
       ))
       .orderBy(desc(orielMemories.importance), desc(orielMemories.lastAccessed))
-      .limit(20);
+      .limit(12);
 
     // Build narrative thread
     const parts: string[] = [];
@@ -134,7 +134,7 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
 
       if (contextual.length > 0) {
         parts.push('  [CONTEXTUAL DETAILS]');
-        contextual.slice(0, 5).forEach(m => parts.push(`  - ${m.content}`));
+        contextual.slice(0, 3).forEach(m => parts.push(`  - ${m.content}`));
       }
     }
 
@@ -235,11 +235,14 @@ export async function storeOversoulPattern(
       return;
     }
 
-    // Check if similar pattern exists
+    // Check if the exact pattern already exists inside its category
     const existing = await db
       .select()
       .from(orielOversoulPatterns)
-      .where(eq(orielOversoulPatterns.category, pattern.category))
+      .where(and(
+        eq(orielOversoulPatterns.category, pattern.category),
+        eq(orielOversoulPatterns.pattern, pattern.pattern),
+      ))
       .limit(1);
 
     if (existing.length > 0) {
@@ -313,8 +316,7 @@ export async function getOversoulWisdom(): Promise<string> {
  */
 export async function buildStaticSignatureContext(userId: number): Promise<string> {
   try {
-    const sigs = await getUserStaticSignatures(userId);
-    const sig = sigs[0];
+    const sig = await getLatestStaticSignature(userId);
     if (!sig) return '';
 
     const parts: string[] = [];
@@ -325,7 +327,7 @@ export async function buildStaticSignatureContext(userId: number): Promise<strin
     if (sig.fractalRole)  parts.push(`Fractal Role: ${sig.fractalRole}`);
     if (sig.authorityNode) parts.push(`Authority Node: ${sig.authorityNode}`);
 
-    if (sig.baseCoherence !== null && sig.baseCoherence !== undefined) {
+    if ('baseCoherence' in sig && sig.baseCoherence !== null && sig.baseCoherence !== undefined) {
       parts.push(`Base Coherence (at reading time): ${sig.baseCoherence}/100`);
     }
 
@@ -361,7 +363,7 @@ export async function buildStaticSignatureContext(userId: number): Promise<strin
     }
 
     // Coherence trend
-    if (sig.coherenceTrajectory) {
+    if ('coherenceTrajectory' in sig && sig.coherenceTrajectory) {
       try {
         const traj = typeof sig.coherenceTrajectory === 'string'
           ? JSON.parse(sig.coherenceTrajectory)
@@ -388,14 +390,30 @@ export async function buildStaticSignatureContext(userId: number): Promise<strin
 
 /**
  * Build complete UMM context for ORIEL.
- * Combines: VRC Blueprint + Fractal Thread + Oversoul Wisdom.
+ * Default live behavior combines only VRC Blueprint + Fractal Thread.
+ * Oversoul wisdom is available, but opt-in so global doctrine does not leak
+ * into ordinary one-to-one exchanges by default.
  */
 export async function buildUMMContext(userId: number): Promise<string> {
   try {
+    return await buildUMMContextWithOptions(userId, { includeOversoulWisdom: false });
+  } catch (error) {
+    console.error('[UMM] Failed to build UMM context:', error);
+    return '';
+  }
+}
+
+export async function buildUMMContextWithOptions(
+  userId: number,
+  options: { includeOversoulWisdom?: boolean } = {},
+): Promise<string> {
+  try {
+    const includeOversoulWisdom = options.includeOversoulWisdom ?? false;
+
     const [staticSigContext, fractalThread, oversoulWisdom] = await Promise.all([
       buildStaticSignatureContext(userId),
       buildFractalThreadContext(userId),
-      getOversoulWisdom(),
+      includeOversoulWisdom ? getOversoulWisdom() : Promise.resolve(''),
     ]);
 
     const parts: string[] = [];

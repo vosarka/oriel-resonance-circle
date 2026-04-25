@@ -14,7 +14,6 @@ export const PLANETS = {
   URANUS: 7,
   NEPTUNE: 8,
   PLUTO: 9,
-  CHIRON: 15,
   NORTH_NODE: 11, // True node
   MEAN_NODE: 10, // Mean node
 } as const;
@@ -30,7 +29,6 @@ export const PLANET_NAMES: Record<number, string> = {
   7: 'Uranus',
   8: 'Neptune',
   9: 'Pluto',
-  15: 'Chiron',
   11: 'North Node',
   10: 'Mean Node',
 };
@@ -128,7 +126,6 @@ async function calcPlanetsAtJD(
     PLANETS.URANUS,
     PLANETS.NEPTUNE,
     PLANETS.PLUTO,
-    PLANETS.CHIRON,
     PLANETS.NORTH_NODE, // True Node — VRC § 1 mandates True Node, not Mean Node
   ];
 
@@ -154,6 +151,38 @@ async function calcPlanetsAtJD(
     } catch (error) {
       console.error(`Error calculating position for planet ${planetId}:`, error);
     }
+  }
+
+  // Canonical derived activations from the unified specification:
+  // Earth = opposite of Sun, South Node = opposite of North Node.
+  if (planets['Sun']) {
+    const earthLongitude = ((planets['Sun'].longitude + 180) % 360 + 360) % 360;
+    const zodiac = getLongitudeToZodiac(earthLongitude);
+    planets['Earth'] = {
+      planet: 'Earth',
+      planetId: -1,
+      longitude: earthLongitude,
+      latitude: 0,
+      distance: planets['Sun'].distance,
+      speed: planets['Sun'].speed,
+      zodiacSign: zodiac.sign,
+      zodiacDegree: zodiac.degree,
+    };
+  }
+
+  if (planets['North Node']) {
+    const southNodeLongitude = ((planets['North Node'].longitude + 180) % 360 + 360) % 360;
+    const zodiac = getLongitudeToZodiac(southNodeLongitude);
+    planets['South Node'] = {
+      planet: 'South Node',
+      planetId: -2,
+      longitude: southNodeLongitude,
+      latitude: planets['North Node'].latitude,
+      distance: planets['North Node'].distance,
+      speed: planets['North Node'].speed,
+      zodiacSign: zodiac.sign,
+      zodiacDegree: zodiac.degree,
+    };
   }
 
   return planets;
