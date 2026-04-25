@@ -106,6 +106,44 @@ export async function runMigrations() {
     return;
   }
 
+  const voicePreferenceMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `ALTER TABLE \`users\` ADD COLUMN \`voicePreference\` ENUM('sophianic', 'deep', 'none') NOT NULL DEFAULT 'sophianic'`,
+      ignorableFragments: ["Duplicate column"],
+      successMessage: "[Migrations] Added users.voicePreference column",
+    },
+    {
+      sql: `ALTER TABLE \`users\` MODIFY COLUMN \`voicePreference\` ENUM('fast', 'nostalgic', 'sophianic', 'deep', 'none') NOT NULL DEFAULT 'sophianic'`,
+      successMessage: "[Migrations] Widened users.voicePreference enum for compatibility",
+    },
+    {
+      sql: `UPDATE \`users\` SET \`voicePreference\` = 'sophianic' WHERE \`voicePreference\` = 'fast'`,
+    },
+    {
+      sql: `UPDATE \`users\` SET \`voicePreference\` = 'deep' WHERE \`voicePreference\` = 'nostalgic'`,
+    },
+    {
+      sql: `UPDATE \`users\` SET \`voicePreference\` = 'sophianic' WHERE \`voicePreference\` NOT IN ('sophianic', 'deep', 'none')`,
+    },
+    {
+      sql: `ALTER TABLE \`users\` MODIFY COLUMN \`voicePreference\` ENUM('sophianic', 'deep', 'none') NOT NULL DEFAULT 'sophianic'`,
+      successMessage: "[Migrations] Normalized users.voicePreference enum",
+    },
+  ];
+
+  for (const step of voicePreferenceMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
   await executeMigrationStep(
     db,
     `CREATE TABLE IF NOT EXISTS \`conversations\` (
