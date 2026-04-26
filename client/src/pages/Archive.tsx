@@ -1,4 +1,4 @@
-﻿import Layout from "@/components/Layout";
+﻿import VossArchiveShell from "@/components/VossArchiveShell";
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
 import { Search, Loader2 } from "lucide-react";
@@ -421,48 +421,171 @@ export default function Archive() {
   const ambientTx = transmissions[ambientIndex] as any | undefined;
 
   return (
-    <Layout>
-      {/* ── Background ────────────────────────────────────── */}
-      <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.03]">
-        <div className="absolute inset-0 animate-scan-lines" />
-      </div>
+    <VossArchiveShell>
+      <style>{`
+        .archive-page {
+          min-height: 100vh;
+          padding: 88px 30px 86px;
+        }
 
-      <div className="relative z-10 min-h-screen">
+        .archive-page-inner {
+          width: min(1440px, 100%);
+          margin: 0 auto;
+        }
+
+        .archive-hero {
+          margin-bottom: 28px;
+          padding: clamp(28px, 4vw, 46px);
+          border: 1px solid var(--voss-border);
+          background:
+            radial-gradient(circle at 84% 18%, rgba(121, 228, 234, 0.085), transparent 32%),
+            linear-gradient(135deg, rgba(15, 15, 21, 0.9), rgba(8, 8, 12, 0.64));
+          box-shadow: 0 26px 90px rgba(0, 0, 0, 0.3);
+          backdrop-filter: blur(18px);
+        }
+
+        .archive-hero-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 24px;
+        }
+
+        .archive-page .archive-kicker {
+          margin-bottom: 12px;
+          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--voss-cyan);
+        }
+
+        .archive-page .archive-title {
+          margin: 0;
+          font-family: "Cormorant Garamond", Georgia, serif;
+          font-size: clamp(42px, 6vw, 82px);
+          font-weight: 300;
+          line-height: 0.94;
+          letter-spacing: -0.03em;
+          color: var(--voss-ivory);
+        }
+
+        .archive-page .archive-rule {
+          width: min(560px, 100%);
+          height: 1px;
+          margin: 22px 0 0;
+          background: linear-gradient(90deg, var(--voss-gold), var(--voss-cyan), transparent);
+        }
+
+        .archive-subtitle {
+          margin-top: 14px;
+          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-size: 10px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: rgba(154, 150, 142, 0.82);
+        }
+
+        .archive-search-button {
+          display: grid;
+          place-items: center;
+          width: 42px;
+          height: 42px;
+          border: 1px solid rgba(121, 228, 234, 0.24);
+          background: rgba(121, 228, 234, 0.045);
+          color: var(--voss-teal);
+          transition: border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+        }
+
+        .archive-search-button:hover,
+        .archive-search-button.is-active {
+          border-color: rgba(121, 228, 234, 0.48);
+          color: var(--voss-cyan);
+          box-shadow: 0 0 24px rgba(121, 228, 234, 0.1);
+        }
+
+        .archive-search-input {
+          width: min(480px, 100%);
+          margin-top: 24px;
+          padding: 12px 2px;
+          border: 0;
+          border-bottom: 1px solid rgba(121, 228, 234, 0.28);
+          outline: none;
+          background: transparent;
+          color: var(--voss-cyan);
+          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-size: 12px;
+          letter-spacing: 0.1em;
+        }
+
+        .archive-filter-panel,
+        .archive-tabs-panel {
+          margin-bottom: 24px;
+          padding: 16px;
+          border: 1px solid var(--voss-border-soft);
+          background: rgba(10, 10, 14, 0.58);
+          backdrop-filter: blur(14px);
+        }
+
+        .archive-filter-strip {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          padding-bottom: 2px;
+          scrollbar-width: none;
+        }
+
+        .archive-tab-row {
+          display: flex;
+          gap: 26px;
+          border-bottom: 1px solid rgba(189, 163, 107, 0.1);
+        }
+
+        .archive-content-panel {
+          padding: 6px 0 0;
+        }
+
+        @media (max-width: 760px) {
+          .archive-page {
+            padding: 74px 16px 72px;
+          }
+
+          .archive-hero-row {
+            flex-direction: column;
+          }
+
+          .archive-tab-row {
+            gap: 14px;
+            overflow-x: auto;
+          }
+        }
+      `}</style>
+      <div className="archive-page">
+        <div className="archive-page-inner">
         {/* ── Header ──────────────────────────────────────── */}
-        <div className="pt-24 pb-6 px-6 md:px-12">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-start justify-between">
+        <div className="archive-hero">
+          <div>
+            <div className="archive-hero-row">
               <div>
                 <div
-                  className="font-mono uppercase tracking-widest mb-3 animate-fade-in-up"
-                  style={{ fontSize: 10, color: "rgba(189,163,107,0.35)" }}
+                  className="archive-kicker animate-fade-in-up"
                 >
-                  ARKIVA VOS
+                  VOSS ARKIVA · TRANSMISSION ARCHIVE
                 </div>
                 <h1
-                  className="font-mono text-2xl md:text-4xl tracking-wider uppercase animate-fade-in-up"
-                  style={{ color: "#bda36b", animationDelay: "0.1s" }}
+                  className="archive-title animate-fade-in-up"
+                  style={{ animationDelay: "0.1s" }}
                 >
                   {scrambledHeader}
                 </h1>
                 <div
-                  className="mt-4 max-w-md animate-fade-in-up"
-                  style={{
-                    height: 1,
-                    background:
-                      "linear-gradient(to right, rgba(189,163,107,0.35), rgba(91,164,164,0.2), transparent)",
-                    animationDelay: "0.2s",
-                  }}
+                  className="archive-rule animate-fade-in-up"
+                  style={{ animationDelay: "0.2s" }}
                 />
                 {activeFaza !== "all" && activeFazaInfo?.subtitle && (
                   <p
-                    className="font-mono mt-3 tracking-widest uppercase animate-fade-in-up"
-                    style={{
-                      fontSize: 10,
-                      color: "rgba(91,164,164,0.25)",
-                      animationDelay: "0.25s",
-                    }}
+                    className="archive-subtitle animate-fade-in-up"
+                    style={{ animationDelay: "0.25s" }}
                   >
                     {fazaCounts[activeFaza] || 0} TRANSMISSIONS ·{" "}
                     {activeFazaInfo.subtitle}
@@ -473,8 +596,8 @@ export default function Archive() {
               {/* Search toggle */}
               <button
                 onClick={() => setShowSearch(!showSearch)}
-                className="mt-2 p-2 transition-colors"
-                style={{ color: showSearch ? "#5ba4a4" : "rgba(91,164,164,0.25)" }}
+                className={`archive-search-button ${showSearch ? "is-active" : ""}`}
+                aria-label="Toggle archive search"
               >
                 <Search size={16} />
               </button>
@@ -489,11 +612,7 @@ export default function Archive() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="SCAN FREQUENCY..."
                   autoFocus
-                  className="w-full max-w-md bg-transparent font-mono text-sm py-2 px-1 outline-none"
-                  style={{
-                    borderBottom: "1px solid rgba(91,164,164,0.2)",
-                    color: "#5ba4a4",
-                  }}
+                  className="archive-search-input"
                 />
               </div>
             )}
@@ -501,14 +620,10 @@ export default function Archive() {
         </div>
 
         {/* ── FAZA Spectrum ────────────────────────────────── */}
-        <div className="px-6 md:px-12 pb-8">
-          <div className="max-w-7xl mx-auto">
+        <div className="archive-filter-panel">
+          <div>
             <div
-              className="flex gap-1.5 overflow-x-auto pb-2"
-              style={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-              }}
+              className="archive-filter-strip"
             >
               {FAZA_REGISTERS.map((faza, i) => {
                 const isActive = activeFaza === faza.id;
@@ -586,10 +701,9 @@ export default function Archive() {
         </div>
 
         {/* ── Section Tabs ────────────────────────────────── */}
-        <div className="px-6 md:px-12 pb-8">
+        <div className="archive-tabs-panel">
           <div
-            className="max-w-7xl mx-auto flex gap-8"
-            style={{ borderBottom: "1px solid rgba(91,164,164,0.06)" }}
+            className="archive-tab-row"
           >
             <button
               onClick={() => setActiveSection("tx")}
@@ -628,8 +742,8 @@ export default function Archive() {
 
         {/* ── Thread Filter (ΩX only) ─────────────────────── */}
         {activeSection === "ox" && threads.length > 0 && (
-          <div className="px-6 md:px-12 pb-6">
-            <div className="max-w-7xl mx-auto flex gap-1.5 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+          <div className="archive-filter-panel">
+            <div className="archive-filter-strip">
               <button
                 onClick={() => setActiveThread(null)}
                 className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300"
@@ -662,8 +776,8 @@ export default function Archive() {
         )}
 
         {/* ── Content Grid ────────────────────────────────── */}
-        <div className="px-6 md:px-12 pb-16">
-          <div className="max-w-7xl mx-auto">
+        <div className="archive-content-panel">
+          <div>
             {activeSection === "tx" ? (
               txLoading ? (
                 <div className="flex items-center justify-center py-32">
@@ -802,10 +916,10 @@ export default function Archive() {
         {/* ── Ambient Signal Footer ───────────────────────── */}
         {ambientTx && activeSection === "tx" && (
           <div
-            className="px-6 md:px-12 py-10"
+            className="py-10"
             style={{ borderTop: "1px solid rgba(91,164,164,0.04)" }}
           >
-            <div className="max-w-7xl mx-auto">
+            <div>
               <div className="overflow-hidden">
                 <div
                   className="font-mono uppercase tracking-widest mb-2"
@@ -836,7 +950,8 @@ export default function Archive() {
             </div>
           </div>
         )}
+        </div>
       </div>
-    </Layout>
+    </VossArchiveShell>
   );
 }
