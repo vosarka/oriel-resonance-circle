@@ -205,12 +205,12 @@ export default function Codex() {
           <div>
             <div className="codex-hero-row">
               <div>
-                <div className="codex-kicker">VOSS ARKIVA · RESONANCE CODEX</div>
+                <div className="codex-kicker">FIELD INDEX · 64 ROOT CODONS</div>
                 <h1 className="codex-title">
-                  Voss Arkiva Codex
+                  The Vossari Resonance Codex
                 </h1>
                 <p className="codex-subtitle">
-                  64 ROOT CODONS · GENETIC ARCHITECTURE OF CONSCIOUSNESS
+                  A living map of codons, facets, centers, and resonance architecture.
                 </p>
               </div>
               <button

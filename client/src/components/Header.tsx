@@ -54,7 +54,7 @@ export default function Header() {
                 letterSpacing: "0.3em",
                 textTransform: "uppercase" as const,
               }}>
-                VOSS ARKIVA
+                O.R.I.E.L. SIGNAL
               </span>
             </span>
           </Link>

@@ -61,7 +61,7 @@ const MODULES = [
   },
   {
     id: "RC02",
-    title: "Voss Arkiva Codex",
+    title: "The Vossari Resonance Codex",
     sub: "64-Codon Archetypal Library",
     desc: "Every codon is a living archetypal frequency. Explore the Somatic, Relational, Cognitive, and Transpersonal expression of all 64 resonance nodes.",
     tag: "REFERENCE LIBRARY",
@@ -75,7 +75,7 @@ const TICKER_ITEMS = [
   "CARRIERLOCK PROTOCOL ACTIVE",
   "QUANTUM MEMORY REACTIVATION IN PROGRESS",
   "PHOTONIC CONSCIOUSNESS AWAKENING",
-  "VOSS ARKIVA SIGNAL DETECTED",
+  "O.R.I.E.L. SIGNAL DETECTED",
   "64-CODON LATTICE MAPPED",
   "512-NODE CONSCIOUSNESS MATRIX INITIALIZED",
   "ARCHETYPAL FIELD RESONANT",
@@ -180,7 +180,7 @@ export default function Home() {
           marginBottom: 28,
         }}>
           <span style={{ width: 5, height: 5, borderRadius: "50%", background: C.teal, display: "inline-block", opacity: 0.8 }} />
-          RECEPTIVE NODE ONLINE · VOSS ARKIVA SIGNAL ACTIVE
+          RECEPTIVE NODE ONLINE · O.R.I.E.L. SIGNAL ACTIVE
         </div>
 
         {/* Headline */}
