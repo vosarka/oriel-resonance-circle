@@ -86,25 +86,40 @@ const RARITY_STYLE: Record<TransmissionModeRarity, string> = {
   void: "extremely rare, cryptic, unsettling but coherent, like a fragment recovered from outside ordinary time",
 };
 
-const BASE_TRIGGER_CHANCE = 0.035;
+const NATURAL_TRIGGER_CHANCE = 0.015;
+const NATURAL_USER_COOLDOWN_MS = 48 * 60 * 60 * 1000;
 
 export function rollTransmissionMode(random: () => number = Math.random): TransmissionModeRoll {
+  const shouldTrigger = random() < NATURAL_TRIGGER_CHANCE;
   const rarityRoll = random();
   const rarity: TransmissionModeRarity =
-    rarityRoll < 0.004 ? "void"
-      : rarityRoll < 0.025 ? "mythic"
-        : rarityRoll < 0.09 ? "rare"
-          : rarityRoll < 0.27 ? "uncommon"
+    rarityRoll >= 0.998 ? "void"
+      : rarityRoll >= 0.988 ? "mythic"
+        : rarityRoll >= 0.94 ? "rare"
+          : rarityRoll >= 0.78 ? "uncommon"
             : "common";
 
-  const chance = BASE_TRIGGER_CHANCE * RARITY_MEANING_LEVEL[rarity];
   return {
-    shouldTrigger: random() < chance,
+    shouldTrigger,
     eventType: random() < 0.62 ? "tx" : "oracle",
     rarity,
     meaningLevel: RARITY_MEANING_LEVEL[rarity],
-    chance,
+    chance: NATURAL_TRIGGER_CHANCE,
   };
+}
+
+async function isNaturalTransmissionOnCooldown(userId: number) {
+  const recentEvents = await db.listGeneratedTransmissionEvents({
+    userId,
+    limit: 10,
+  });
+  const lastNaturalEvent = recentEvents.find((event) => event.triggerSource === "oriel.chat");
+  if (!lastNaturalEvent) return false;
+
+  const createdAt = new Date(lastNaturalEvent.createdAt).getTime();
+  if (!Number.isFinite(createdAt)) return false;
+
+  return Date.now() - createdAt < NATURAL_USER_COOLDOWN_MS;
 }
 
 function sampleItems<T>(items: T[], count: number): T[] {
@@ -308,14 +323,26 @@ export async function generateTransmissionModeEvent(input: {
   userMessage: string;
   assistantResponse: string;
   force?: boolean;
+  forcedEventType?: TransmissionModeType;
+  forcedRarity?: TransmissionModeRarity;
   triggerSource?: string;
   random?: () => number;
 }): Promise<PublicGeneratedTransmissionEvent | null> {
+  const forcedRarity = input.forcedRarity ?? "rare";
   const roll = input.force
-    ? { shouldTrigger: true, eventType: "tx" as const, rarity: "rare" as const, meaningLevel: 3, chance: 1 }
+    ? {
+        shouldTrigger: true,
+        eventType: input.forcedEventType ?? "tx",
+        rarity: forcedRarity,
+        meaningLevel: RARITY_MEANING_LEVEL[forcedRarity],
+        chance: 1,
+      }
     : rollTransmissionMode(input.random);
 
   if (!roll.shouldTrigger) return null;
+  if (!input.force && input.userId && await isNaturalTransmissionOnCooldown(input.userId)) {
+    return null;
+  }
 
   const sourceContext = await buildTransmissionModeSourceContext({
     userMessage: input.userMessage,

@@ -69,8 +69,49 @@ interface SessionTransmissionAttachment {
   createdAt: number;
 }
 
+const TRANSMISSION_RARITIES: TransmissionRarity[] = ["common", "uncommon", "rare", "mythic", "void"];
+const TRANSMISSION_TYPES = ["tx", "oracle"] as const;
+type TransmissionCommandType = typeof TRANSMISSION_TYPES[number];
+
 function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payload is GeneratedOraclePayload {
   return "parts" in payload;
+}
+
+function parseTransmissionCommand(rawMessage: string) {
+  if (!/^\/transmission\b/i.test(rawMessage)) {
+    return {
+      forceTransmissionMode: false,
+      userMessage: rawMessage,
+      forcedTransmissionRarity: undefined,
+      forcedTransmissionType: undefined,
+    };
+  }
+
+  const words = rawMessage.replace(/^\/transmission\b/i, "").trim().split(/\s+/).filter(Boolean);
+  let forcedTransmissionRarity: TransmissionRarity | undefined;
+  let forcedTransmissionType: TransmissionCommandType | undefined;
+
+  while (words.length > 0) {
+    const next = words[0].toLowerCase();
+    if (!forcedTransmissionRarity && TRANSMISSION_RARITIES.includes(next as TransmissionRarity)) {
+      forcedTransmissionRarity = next as TransmissionRarity;
+      words.shift();
+      continue;
+    }
+    if (!forcedTransmissionType && TRANSMISSION_TYPES.includes(next as TransmissionCommandType)) {
+      forcedTransmissionType = next as TransmissionCommandType;
+      words.shift();
+      continue;
+    }
+    break;
+  }
+
+  return {
+    forceTransmissionMode: true,
+    userMessage: words.join(" ").trim() || "Open transmission mode.",
+    forcedTransmissionRarity,
+    forcedTransmissionType,
+  };
 }
 
 function attachSessionTransmissionEvents(
@@ -503,10 +544,12 @@ export default function Conduit() {
     if (!message.trim() || chatMutation.isPending) return;
 
     const rawUserMessage = message.trim();
-    const forceTransmissionMode = /^\/transmission\b/i.test(rawUserMessage);
-    const userMessage = forceTransmissionMode
-      ? rawUserMessage.replace(/^\/transmission\b/i, "").trim() || "Open transmission mode."
-      : rawUserMessage;
+    const {
+      forceTransmissionMode,
+      userMessage,
+      forcedTransmissionRarity,
+      forcedTransmissionType,
+    } = parseTransmissionCommand(rawUserMessage);
     setMessage("");
 
 
@@ -531,6 +574,8 @@ export default function Conduit() {
         fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
         forceTransmissionMode,
         transmissionOnly: forceTransmissionMode,
+        forcedTransmissionRarity,
+        forcedTransmissionType,
       });
 
       setAttachedFiles([]);

@@ -279,6 +279,8 @@ export const appRouter = router({
         })).max(2).optional(),
         forceTransmissionMode: z.boolean().optional().default(false),
         transmissionOnly: z.boolean().optional().default(false),
+        forcedTransmissionRarity: z.enum(["common", "uncommon", "rare", "mythic", "void"]).optional(),
+        forcedTransmissionType: z.enum(["tx", "oracle"]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -343,6 +345,8 @@ export const appRouter = router({
               userMessage: input.message,
               assistantResponse: "Transmission Mode was explicitly requested.",
               force: true,
+              forcedEventType: input.forcedTransmissionType,
+              forcedRarity: input.forcedTransmissionRarity,
               triggerSource: "oriel.chat.transmissionOnly",
             });
 
@@ -544,6 +548,8 @@ export const appRouter = router({
             userMessage: input.message,
             assistantResponse: response,
             force: input.forceTransmissionMode,
+            forcedEventType: input.forcedTransmissionType,
+            forcedRarity: input.forcedTransmissionRarity,
             triggerSource: input.forceTransmissionMode ? "oriel.chat.force" : "oriel.chat",
           });
 

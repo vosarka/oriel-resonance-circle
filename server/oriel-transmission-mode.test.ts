@@ -11,7 +11,7 @@ function sequenceRandom(values: number[]) {
 
 describe("ORIEL transmission mode", () => {
   it("does not trigger when the roll misses the chance window", () => {
-    const roll = rollTransmissionMode(sequenceRandom([0.9, 0.99, 0.2]));
+    const roll = rollTransmissionMode(sequenceRandom([0.9, 0.5, 0.2]));
 
     expect(roll.shouldTrigger).toBe(false);
     expect(roll.rarity).toBe("common");
@@ -20,7 +20,7 @@ describe("ORIEL transmission mode", () => {
   });
 
   it("can roll a void oracle event", () => {
-    const roll = rollTransmissionMode(sequenceRandom([0.001, 0.01, 0.9]));
+    const roll = rollTransmissionMode(sequenceRandom([0.001, 0.999, 0.9]));
 
     expect(roll.shouldTrigger).toBe(true);
     expect(roll.rarity).toBe("void");
