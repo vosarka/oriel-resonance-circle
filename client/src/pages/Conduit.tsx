@@ -39,10 +39,14 @@ interface GeneratedOraclePayload {
   channelStatus: string;
   parts: Array<{
     part: "Past" | "Present" | "Future";
+    field?: string;
     content: string;
+    currentFieldSignatures?: string;
     encodedTrajectory: string;
+    convergenceZones?: string;
     keyInflectionPoint: string;
     majorOutcomes: string;
+    caption?: string;
   }>;
   linkedCodons: string[];
   threadTitle: string | null;
@@ -188,8 +192,11 @@ function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) 
               <p className="font-mono text-[9px] tracking-[0.24em] uppercase mb-1" style={{ color: accent }}>
                 {part.part}
               </p>
-              <p className="text-sm leading-relaxed" style={{ color: "rgba(220,240,255,0.82)" }}>
-                {part.content}
+              <p
+                className="font-mono text-[10px] leading-relaxed whitespace-pre-line"
+                style={{ color: "rgba(220,240,255,0.82)" }}
+              >
+                {part.caption ?? part.content}
               </p>
             </div>
           ))}

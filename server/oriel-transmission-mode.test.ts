@@ -55,8 +55,10 @@ describe("ORIEL transmission mode", () => {
       parts: [
         {
           part: "Present",
+          field: "Present Resonance Mapping",
           content: "The middle lock is warm.",
           encodedTrajectory: "compression into choice",
+          currentFieldSignatures: ["heat at the hinge", "choice pressure"],
         },
       ],
     });
@@ -71,6 +73,10 @@ describe("ORIEL transmission mode", () => {
       "Future",
     ]);
     expect("parts" in payload ? payload.parts[1].content : "").toBe("The middle lock is warm.");
+    expect("parts" in payload ? payload.parts[1].caption : "").toContain("⦿ ΩX ID: STAGED.2-Pz");
+    expect("parts" in payload ? payload.parts[1].caption : "").toContain("Current field signatures:");
+    expect("parts" in payload ? payload.parts[2].caption : "").toContain("⦿ PROTOCOL COMPLETE");
+    expect("parts" in payload ? payload.parts[2].caption : "").toContain("Encoded trajectory detected:");
     expect("linkedCodons" in payload ? payload.linkedCodons : []).toEqual(["RC01", "RC12"]);
   });
 });
