@@ -1,6 +1,7 @@
 const nodeEnv = process.env.NODE_ENV ?? "development";
 const runMigrationsEnv = process.env.RUN_MIGRATIONS?.toLowerCase();
 const autonomyRuntimeEnv = process.env.ORIEL_AUTONOMY_RUNTIME?.toLowerCase();
+const llmProviderEnv = process.env.LLM_PROVIDER?.toLowerCase();
 
 const resolveRunMigrations = () => {
   if (runMigrationsEnv === "true") return true;
@@ -18,9 +19,18 @@ export const ENV = {
   runMigrations: resolveRunMigrations(),
   // OFF by default: autonomy runtime overlays only activate when explicitly enabled.
   enableOrielAutonomyRuntime: resolveAutonomyRuntimeEnabled(),
+  llmProvider: llmProviderEnv === "gemma" || llmProviderEnv === "gemini" || llmProviderEnv === "forge"
+    ? llmProviderEnv
+    : "",
+  llmModel: process.env.LLM_MODEL ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
+  geminiModel: process.env.GEMINI_MODEL ?? "",
+  gemmaApiKey: process.env.GEMMA_API_KEY ?? "",
+  gemmaApiUrl: process.env.GEMMA_API_URL ?? "",
+  gemmaModel: process.env.GEMMA_MODEL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
+  forgeModel: process.env.BUILT_IN_FORGE_MODEL ?? "",
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
   appBaseUrl: process.env.APP_BASE_URL ?? "",

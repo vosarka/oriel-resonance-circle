@@ -171,6 +171,28 @@ const normalizeMessage = (message: Message) => {
   };
 };
 
+const buildProviderMessages = (messages: Message[]) => {
+  const normalizedMessages = messages.map(normalizeMessage);
+  const noReasoningDirective = {
+    role: "system",
+    content:
+      "Do not include hidden reasoning, chain-of-thought, scratchpad notes, or tags such as <thought>, <think>, <reasoning>, or <analysis> in the final answer. Return only the user-facing response.",
+  };
+
+  const firstMessage = normalizedMessages[0];
+  if (firstMessage?.role === "system" && typeof firstMessage.content === "string") {
+    return [
+      {
+        ...firstMessage,
+        content: `${firstMessage.content}\n\n${noReasoningDirective.content}`,
+      },
+      ...normalizedMessages.slice(1),
+    ];
+  }
+
+  return [noReasoningDirective, ...normalizedMessages];
+};
+
 const normalizeToolChoice = (
   toolChoice: ToolChoice | undefined,
   tools: Tool[] | undefined
@@ -215,15 +237,30 @@ const resolveGeminiUrl = () =>
 
 const resolveGeminiKey = () => ENV.geminiApiKey;
 
+const resolveGeminiModel = () => ENV.llmModel || ENV.geminiModel || "gemini-2.5-flash";
+
+const resolveGemmaUrl = () =>
+  ENV.gemmaApiUrl || "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+
+const resolveGemmaKey = () => ENV.gemmaApiKey || ENV.geminiApiKey;
+
+const resolveGemmaModel = () => ENV.llmModel || ENV.gemmaModel || "gemma-4-31b-it";
+
 const resolveForgeUrl = () => ENV.forgeApiUrl;
 
 const resolveForgeKey = () => ENV.forgeApiKey;
 
+const resolveForgeModel = () => ENV.llmModel || ENV.forgeModel || "gemini-2.5-flash";
+
+const isLocalUrl = (url: string) => url.includes("localhost") || url.includes("127.0.0.1");
+
 const assertApiKey = () => {
   const geminiKey = resolveGeminiKey();
+  const gemmaKey = resolveGemmaKey();
+  const gemmaUrl = resolveGemmaUrl();
   const forgeKey = resolveForgeKey();
-  if (!geminiKey && !forgeKey) {
-    throw new Error("No LLM API key configured. Set GEMINI_API_KEY or BUILT_IN_FORGE_API_KEY in your .env file.");
+  if (!gemmaKey && !geminiKey && !forgeKey && !isLocalUrl(gemmaUrl)) {
+    throw new Error("No LLM API key configured. Set GEMMA_API_KEY, GEMINI_API_KEY, BUILT_IN_FORGE_API_KEY, or point GEMMA_API_URL at a local OpenAI-compatible server.");
   }
 };
 
@@ -287,13 +324,12 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     response_format,
   } = params;
 
-  const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
-    messages: messages.map(normalizeMessage),
+  const basePayload: Record<string, unknown> = {
+    messages: buildProviderMessages(messages),
   };
 
   if (tools && tools.length > 0) {
-    payload.tools = tools;
+    basePayload.tools = tools;
   }
 
   const normalizedToolChoice = normalizeToolChoice(
@@ -301,13 +337,13 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     tools
   );
   if (normalizedToolChoice) {
-    payload.tool_choice = normalizedToolChoice;
+    basePayload.tool_choice = normalizedToolChoice;
   }
 
-  payload.max_tokens = 8192;
+  basePayload.max_tokens = 8192;
 
   if (temperature !== undefined) {
-    payload.temperature = temperature;
+    basePayload.temperature = temperature;
   }
 
   const normalizedResponseFormat = normalizeResponseFormat({
@@ -318,63 +354,84 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   });
 
   if (normalizedResponseFormat) {
-    payload.response_format = normalizedResponseFormat;
+    basePayload.response_format = normalizedResponseFormat;
   }
 
-  // Try Gemini first
-  const geminiKey = resolveGeminiKey();
-  if (geminiKey) {
+  const invokeProvider = async (provider: {
+    name: string;
+    url: string;
+    key?: string;
+    model: string;
+  }) => {
+    console.log(`[LLM] Attempting ${provider.name} API call with model ${provider.model}...`);
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+    if (provider.key) {
+      headers.authorization = `Bearer ${provider.key}`;
+    }
+
+    const response = await fetch(provider.url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        ...basePayload,
+        model: provider.model,
+      }),
+    });
+
+    if (response.ok) {
+      console.log(`[LLM] ${provider.name} API succeeded`);
+      return (await response.json()) as InvokeResult;
+    }
+
+    const errorText = await response.text();
+    throw new Error(`${provider.name} failed: ${response.status} ${response.statusText} – ${errorText}`);
+  };
+
+  const gemmaProvider = {
+    name: "Gemma",
+    url: resolveGemmaUrl(),
+    key: resolveGemmaKey(),
+    model: resolveGemmaModel(),
+  };
+  const geminiProvider = {
+    name: "Gemini",
+    url: resolveGeminiUrl(),
+    key: resolveGeminiKey(),
+    model: resolveGeminiModel(),
+  };
+  const forgeProvider = {
+    name: "Forge",
+    url: resolveForgeUrl(),
+    key: resolveForgeKey(),
+    model: resolveForgeModel(),
+  };
+
+  const selectedProvider = ENV.llmProvider;
+  const providers = selectedProvider === "gemma"
+    ? [gemmaProvider, geminiProvider, forgeProvider]
+    : selectedProvider === "forge"
+      ? [forgeProvider, gemmaProvider, geminiProvider]
+      : selectedProvider === "gemini"
+        ? [geminiProvider, gemmaProvider, forgeProvider]
+        : [geminiProvider, forgeProvider];
+
+  let lastError: unknown = null;
+  for (const provider of providers) {
+    if (!provider.url || (!provider.key && !isLocalUrl(provider.url))) {
+      continue;
+    }
+
     try {
-      console.log('[LLM] Attempting Gemini API call...');
-      const response = await fetch(resolveGeminiUrl(), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${geminiKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        console.log('[LLM] Gemini API succeeded');
-        return (await response.json()) as InvokeResult;
-      }
-
-      const errorText = await response.text();
-      console.warn(`[LLM] Gemini failed: ${response.status} ${response.statusText}`, errorText);
-    } catch (geminiErr) {
-      console.error('[LLM] Gemini API error:', geminiErr);
+      return await invokeProvider(provider);
+    } catch (error) {
+      lastError = error;
+      console.warn(`[LLM] ${provider.name} API error:`, error);
     }
   }
 
-  // Fallback to Forge API
-  const forgeKey = resolveForgeKey();
-  const forgeUrl = resolveForgeUrl();
-  if (forgeKey && forgeUrl) {
-    try {
-      console.log('[LLM] Falling back to Forge API...');
-      const response = await fetch(forgeUrl, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${forgeKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        console.log('[LLM] Forge API succeeded');
-        return (await response.json()) as InvokeResult;
-      }
-
-      const errorText = await response.text();
-      console.error(`[LLM] Forge failed: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`);
-    } catch (forgeErr) {
-      console.error('[LLM] Forge API error:', forgeErr);
-      throw forgeErr;
-    }
-  }
-
-  throw new Error('No LLM API available: both Gemini and Forge are unavailable');
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("No LLM API available: all configured providers failed or are unavailable");
 }

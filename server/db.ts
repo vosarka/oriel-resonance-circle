@@ -27,6 +27,8 @@ import {
   orielImprovementProposals,
   orielRuntimeProfiles,
   orielReflectionEvents,
+  generatedTransmissionEvents,
+  InsertGeneratedTransmissionEvent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { createDrizzleFromDatabaseUrl, type DrizzleDb } from "./_core/mysql";
@@ -432,6 +434,63 @@ export async function runMigrations() {
     );
   }
 
+  const transmissionModeMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`generatedTransmissionEvents\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`eventKey\` varchar(64) NOT NULL,
+        \`userId\` int NULL,
+        \`conversationId\` int NULL,
+        \`eventType\` enum('tx','oracle') NOT NULL,
+        \`rarity\` enum('common','uncommon','rare','mythic','void') NOT NULL,
+        \`meaningLevel\` int NOT NULL DEFAULT 1,
+        \`triggerSource\` varchar(128) NOT NULL DEFAULT 'oriel.chat',
+        \`status\` enum('generated','revealed','saved','promoted','discarded') NOT NULL DEFAULT 'generated',
+        \`payload\` text NOT NULL,
+        \`sourceContext\` text NOT NULL,
+        \`promotedArchiveId\` varchar(64) NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`uq_generated_transmission_eventKey\` (\`eventKey\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_generated_transmission_user\` ON \`generatedTransmissionEvents\` (\`userId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_generated_transmission_conversation\` ON \`generatedTransmissionEvents\` (\`conversationId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_generated_transmission_type\` ON \`generatedTransmissionEvents\` (\`eventType\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_generated_transmission_rarity\` ON \`generatedTransmissionEvents\` (\`rarity\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_generated_transmission_status\` ON \`generatedTransmissionEvents\` (\`status\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+  ];
+
+  for (const step of transmissionModeMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
   console.log("[Migrations] Schema sync complete");
 }
 
@@ -746,6 +805,144 @@ export async function listOrielReflectionEvents(limit: number = 50, eventType?: 
     .from(orielReflectionEvents)
     .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
     .limit(limit);
+}
+
+export async function getOrielAutonomyHealthStats() {
+  const db = await getDb();
+  if (!db) {
+    return {
+      proposalCount: 0,
+      runtimeProfileCount: 0,
+      reflectionEventCount: 0,
+      runtimeObservationCount: 0,
+      activeProfile: null,
+    };
+  }
+
+  const [proposalRows, profileRows, eventRows, observationRows, activeProfile] = await Promise.all([
+    db.select({ value: count() }).from(orielImprovementProposals),
+    db.select({ value: count() }).from(orielRuntimeProfiles),
+    db.select({ value: count() }).from(orielReflectionEvents),
+    db
+      .select({ value: count() })
+      .from(orielReflectionEvents)
+      .where(eq(orielReflectionEvents.eventType, "runtime_observation")),
+    getActiveOrielRuntimeProfile(),
+  ]);
+
+  return {
+    proposalCount: proposalRows[0]?.value ?? 0,
+    runtimeProfileCount: profileRows[0]?.value ?? 0,
+    reflectionEventCount: eventRows[0]?.value ?? 0,
+    runtimeObservationCount: observationRows[0]?.value ?? 0,
+    activeProfile,
+  };
+}
+
+// ============================================================================
+// ORIEL TRANSMISSION MODE: GENERATED EVENT STAGING
+// ============================================================================
+
+export type GeneratedTransmissionEventType = "tx" | "oracle";
+export type GeneratedTransmissionRarity = "common" | "uncommon" | "rare" | "mythic" | "void";
+export type GeneratedTransmissionStatus = "generated" | "revealed" | "saved" | "promoted" | "discarded";
+
+export async function createGeneratedTransmissionEvent(input: {
+  eventKey: string;
+  userId?: number | null;
+  conversationId?: number | null;
+  eventType: GeneratedTransmissionEventType;
+  rarity: GeneratedTransmissionRarity;
+  meaningLevel: number;
+  triggerSource?: string;
+  payload: Record<string, unknown>;
+  sourceContext: Record<string, unknown>;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(generatedTransmissionEvents).values({
+    eventKey: input.eventKey,
+    userId: input.userId ?? null,
+    conversationId: input.conversationId ?? null,
+    eventType: input.eventType,
+    rarity: input.rarity,
+    meaningLevel: input.meaningLevel,
+    triggerSource: input.triggerSource ?? "oriel.chat",
+    status: "generated",
+    payload: JSON.stringify(input.payload ?? {}),
+    sourceContext: JSON.stringify(input.sourceContext ?? {}),
+  } satisfies InsertGeneratedTransmissionEvent);
+
+  const created = await db
+    .select()
+    .from(generatedTransmissionEvents)
+    .where(eq(generatedTransmissionEvents.eventKey, input.eventKey))
+    .limit(1);
+  return created[0] ?? null;
+}
+
+export async function listGeneratedTransmissionEvents(input: {
+  limit?: number;
+  status?: GeneratedTransmissionStatus;
+  userId?: number;
+} = {}) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = Math.max(1, Math.min(input.limit ?? 50, 200));
+
+  if (input.status && input.userId) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(and(
+        eq(generatedTransmissionEvents.status, input.status),
+        eq(generatedTransmissionEvents.userId, input.userId),
+      ))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  if (input.status) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(eq(generatedTransmissionEvents.status, input.status))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  if (input.userId) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(eq(generatedTransmissionEvents.userId, input.userId))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  return db
+    .select()
+    .from(generatedTransmissionEvents)
+    .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+    .limit(limit);
+}
+
+export async function markGeneratedTransmissionEventStatus(
+  id: number,
+  status: GeneratedTransmissionStatus,
+  promotedArchiveId?: string | null,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(generatedTransmissionEvents)
+    .set({
+      status,
+      promotedArchiveId: promotedArchiveId ?? null,
+    })
+    .where(eq(generatedTransmissionEvents.id, id));
 }
 
 export async function getAllTransmissions() {

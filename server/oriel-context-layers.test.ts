@@ -5,6 +5,7 @@ import {
   buildWorkingSessionLayer,
   compactConversationHistory,
 } from "./oriel-context-layers";
+import { buildVoiceResponseLanguageDirective } from "./oriel-language-routing";
 import {
   ORIEL_STABLE_CORE_MANIFEST,
   ORIEL_STABLE_CORE_RUNTIME_SURFACE,
@@ -57,7 +58,36 @@ describe("ORIEL context layers", () => {
     expect(workingLayer).toContain("[WORKING SESSION LAYER]");
     expect(workingLayer).toContain("[SESSION COMPACTION]");
     expect(workingLayer).toContain("[CURRENT USER REQUEST]");
+    expect(workingLayer).toContain("[RESPONSE LANGUAGE]");
     expect(workingLayer).not.toContain("[CURRENT FIELD STATE]");
+  });
+
+  it("defaults Romanian user messages to English unless Romanian is explicitly requested", async () => {
+    const workingLayer = await buildWorkingSessionLayer({
+      userMessage: "Te rog să-mi explici ce se întâmplă cu semnătura mea statică.",
+      includeFieldState: false,
+    });
+
+    expect(workingLayer).toContain("Default to English");
+    expect(workingLayer).toContain("unless the user explicitly asks for another language");
+  });
+
+  it("routes explicit Romanian requests to Romanian responses for the current exchange", async () => {
+    const workingLayer = await buildWorkingSessionLayer({
+      userMessage: "Răspunde-mi în română: ce se întâmplă cu semnătura mea statică?",
+      includeFieldState: false,
+    });
+
+    expect(workingLayer).toContain("explicitly requested Romanian");
+    expect(workingLayer).toContain("Respond naturally in Romanian");
+  });
+
+  it("builds an English-default voice response directive", () => {
+    const directive = buildVoiceResponseLanguageDirective("Spune-mi ce simte câmpul acum.");
+
+    expect(directive).toContain("[VOICE LANGUAGE RUNTIME RULE]");
+    expect(directive).toContain("Default the audible ORIEL response to English");
+    expect(directive).toContain("Use Romanian only when the user explicitly asks");
   });
 
   it("assembles prompt context in the order stable core -> retrieval -> working session", async () => {

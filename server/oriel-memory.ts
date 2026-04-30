@@ -7,6 +7,7 @@ import { getDb } from './db';
 import { orielMemories, orielUserProfiles, type OrielMemory, type InsertOrielUserProfile, type OrielUserProfile } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
+import { parseModelJson } from './_core/json';
 import * as fs from 'fs';
 
 const LOG_FILE = '/tmp/oriel-memory.log';
@@ -127,7 +128,7 @@ ${existingContext}`
     }
 
     try {
-      const memories = JSON.parse(content) as ExtractedMemory[];
+      const memories = parseModelJson<ExtractedMemory[]>(content);
       const filtered = memories.filter(m => m.content && m.content.length > 0);
       if (filtered.length > 0) {
         logToFile(`[Memory] Extracted ${filtered.length} new memories from conversation`);
@@ -343,7 +344,7 @@ Respond with JSON only.`
     const content = response.choices?.[0]?.message?.content;
     if (!content || typeof content !== 'string') return {};
 
-    return JSON.parse(content);
+    return parseModelJson<Partial<InsertOrielUserProfile>>(content);
   } catch (error) {
     console.error('[Memory] Failed to generate profile summary:', error);
     return {};

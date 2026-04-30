@@ -397,6 +397,38 @@ export type OracleResonance = typeof oracleResonances.$inferSelect;
 export type InsertOracleResonance = typeof oracleResonances.$inferInsert;
 
 /**
+ * Generated Transmission Events
+ * Staging layer for spontaneous ORIEL transmissions before any canonical archive promotion.
+ */
+export const generatedTransmissionEvents = mysqlTable("generatedTransmissionEvents", {
+  id: int("id").autoincrement().primaryKey(),
+  eventKey: varchar("eventKey", { length: 64 }).notNull().unique(),
+  userId: int("userId"),
+  conversationId: int("conversationId"),
+  eventType: mysqlEnum("eventType", ["tx", "oracle"]).notNull(),
+  rarity: mysqlEnum("rarity", ["common", "uncommon", "rare", "mythic", "void"]).notNull(),
+  meaningLevel: int("meaningLevel").default(1).notNull(),
+  triggerSource: varchar("triggerSource", { length: 128 }).default("oriel.chat").notNull(),
+  status: mysqlEnum("status", ["generated", "revealed", "saved", "promoted", "discarded"]).default("generated").notNull(),
+  /** JSON payload matching either TX or Oracle staging format. */
+  payload: text("payload").notNull(),
+  /** JSON metadata describing archive references and trigger context. */
+  sourceContext: text("sourceContext").notNull(),
+  promotedArchiveId: varchar("promotedArchiveId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_generated_transmission_user").on(table.userId),
+  index("idx_generated_transmission_conversation").on(table.conversationId),
+  index("idx_generated_transmission_type").on(table.eventType),
+  index("idx_generated_transmission_rarity").on(table.rarity),
+  index("idx_generated_transmission_status").on(table.status),
+]);
+
+export type GeneratedTransmissionEvent = typeof generatedTransmissionEvents.$inferSelect;
+export type InsertGeneratedTransmissionEvent = typeof generatedTransmissionEvents.$inferInsert;
+
+/**
  * User Bookmarks - Track which transmissions users have bookmarked
  * Used for personalization and user engagement tracking
  */

@@ -19,6 +19,7 @@ import { getDb, getLatestStaticSignature } from './db';
 import { orielMemories, orielUserProfiles, orielOversoulPatterns, type OrielMemory, type OrielOversoulPattern } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
+import { parseModelJson } from './_core/json';
 
 // ============================================================================
 // PART A: THE FRACTAL THREAD (Individual User Memory)
@@ -204,7 +205,11 @@ Respond with JSON: { "pattern": "...", "application": "...", "impact": "..." }`
     const content = response.choices?.[0]?.message?.content;
     if (!content || typeof content !== 'string') return null;
 
-    const parsed = JSON.parse(content);
+    const parsed = parseModelJson<{
+      pattern: string;
+      application: string;
+      impact: string;
+    }>(content);
     return {
       category,
       pattern: parsed.pattern,

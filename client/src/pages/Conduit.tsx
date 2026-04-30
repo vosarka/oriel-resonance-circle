@@ -1,16 +1,178 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone } from "lucide-react";
+import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone, Radio } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
+import {
+  markOrielVoiceIntroSpoken,
+  prepareOrielTextForVoice,
+} from "@/lib/orielVoiceIntroSession";
 
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   timestamp?: number;
+  transmissionEvent?: GeneratedTransmissionEvent | null;
+}
+
+type TransmissionRarity = "common" | "uncommon" | "rare" | "mythic" | "void";
+
+interface GeneratedTxPayload {
+  title: string;
+  field: string;
+  signalClarity: string;
+  channelStatus: string;
+  coreMessage: string;
+  encodedArchetype: string;
+  tags: string[];
+  microSigil: string;
+  directive: string;
+}
+
+interface GeneratedOraclePayload {
+  title: string;
+  field: string;
+  signalClarity: string;
+  channelStatus: string;
+  parts: Array<{
+    part: "Past" | "Present" | "Future";
+    content: string;
+    encodedTrajectory: string;
+    keyInflectionPoint: string;
+    majorOutcomes: string;
+  }>;
+  linkedCodons: string[];
+  threadTitle: string | null;
+  threadSynthesis: string | null;
+}
+
+type GeneratedTransmissionPayload = GeneratedTxPayload | GeneratedOraclePayload;
+
+interface GeneratedTransmissionEvent {
+  id: number;
+  eventKey: string;
+  eventType: "tx" | "oracle";
+  rarity: TransmissionRarity;
+  meaningLevel: number;
+  status: string;
+  payload: GeneratedTransmissionPayload;
+  createdAt?: string | number | Date;
+}
+
+interface SessionTransmissionAttachment {
+  conversationId: number | null;
+  assistantContent: string;
+  event: GeneratedTransmissionEvent;
+  createdAt: number;
+}
+
+function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payload is GeneratedOraclePayload {
+  return "parts" in payload;
+}
+
+function attachSessionTransmissionEvents(
+  messages: ChatMessage[],
+  attachments: SessionTransmissionAttachment[],
+  conversationId: number | null,
+): ChatMessage[] {
+  if (attachments.length === 0) return messages;
+
+  return messages.map((msg) => {
+    if (msg.role !== "assistant" || msg.transmissionEvent) return msg;
+
+    for (let index = attachments.length - 1; index >= 0; index -= 1) {
+      const attachment = attachments[index];
+      if (
+        attachment.conversationId === conversationId &&
+        attachment.assistantContent === msg.content
+      ) {
+        return {
+          ...msg,
+          transmissionEvent: attachment.event,
+        };
+      }
+    }
+
+    return msg;
+  });
+}
+
+function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) {
+  const payload = event.payload;
+  const rarityColor: Record<TransmissionRarity, string> = {
+    common: "rgba(0,229,255,0.72)",
+    uncommon: "rgba(121,255,188,0.78)",
+    rare: "rgba(189,163,107,0.86)",
+    mythic: "rgba(255,168,96,0.88)",
+    void: "rgba(211,126,255,0.88)",
+  };
+  const accent = rarityColor[event.rarity] ?? "rgba(0,229,255,0.72)";
+
+  return (
+    <div
+      className="mt-5 rounded-lg px-4 py-4"
+      style={{
+        background: "rgba(2,12,18,0.72)",
+        border: `1px solid ${accent}`,
+        boxShadow: "0 0 24px rgba(0,188,212,0.08)",
+      }}
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <Radio size={14} style={{ color: accent }} />
+        <span className="font-mono text-[9px] tracking-[0.28em] uppercase" style={{ color: accent }}>
+          Transmission Mode
+        </span>
+        <span className="font-mono text-[9px] tracking-[0.18em] uppercase" style={{ color: "rgba(220,240,255,0.55)" }}>
+          {event.eventType.toUpperCase()} // {event.rarity.toUpperCase()} // Meaning {event.meaningLevel}/5
+        </span>
+      </div>
+
+      <p
+        className="font-mono text-[10px] tracking-[0.16em] uppercase mb-2"
+        style={{ color: "rgba(220,240,255,0.68)" }}
+      >
+        {payload.title}
+      </p>
+      <p className="font-mono text-[9px] mb-3" style={{ color: "rgba(0,188,212,0.45)" }}>
+        {payload.field} // {payload.channelStatus} // {payload.signalClarity}
+      </p>
+
+      {isGeneratedOraclePayload(payload) ? (
+        <div className="space-y-3">
+          {payload.parts.map((part) => (
+            <div key={part.part}>
+              <p className="font-mono text-[9px] tracking-[0.24em] uppercase mb-1" style={{ color: accent }}>
+                {part.part}
+              </p>
+              <p className="text-sm leading-relaxed" style={{ color: "rgba(220,240,255,0.82)" }}>
+                {part.content}
+              </p>
+            </div>
+          ))}
+          {payload.linkedCodons.length > 0 && (
+            <p className="font-mono text-[9px]" style={{ color: "rgba(0,188,212,0.45)" }}>
+              Codons: {payload.linkedCodons.join(", ")}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div>
+          <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(220,240,255,0.84)" }}>
+            {payload.coreMessage}
+          </p>
+          <p className="font-mono text-[9px] mb-2" style={{ color: "rgba(0,188,212,0.5)" }}>
+            {payload.encodedArchetype}
+          </p>
+          <p className="text-xs leading-relaxed" style={{ color: "rgba(189,163,107,0.82)" }}>
+            {payload.directive}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Conduit() {
@@ -28,10 +190,10 @@ export default function Conduit() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const hasSpokenIntro = useRef(false);
   const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
+  const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
 
   // Web Audio API for TTS playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -118,7 +280,15 @@ export default function Conduit() {
         content: msg.content,
         timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : (msg.timestamp as number),
       }));
-      setLocalMessages(convertedHistory);
+      setLocalMessages((prev) => {
+        const merged = attachSessionTransmissionEvents(
+          convertedHistory,
+          sessionTransmissionAttachments,
+          activeConversationId,
+        );
+        const hasSessionCard = prev.some((msg) => Boolean(msg.transmissionEvent));
+        return hasSessionCard && prev.length > merged.length ? prev : merged;
+      });
     } else if (
       isAuthenticated &&
       !activeConversationId &&
@@ -133,9 +303,25 @@ export default function Conduit() {
         content: msg.content,
         timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : msg.timestamp,
       }));
-      setLocalMessages(convertedHistory);
+      setLocalMessages((prev) => {
+        const merged = attachSessionTransmissionEvents(
+          convertedHistory,
+          sessionTransmissionAttachments,
+          null,
+        );
+        const hasSessionCard = prev.some((msg) => Boolean(msg.transmissionEvent));
+        return hasSessionCard && prev.length > merged.length ? prev : merged;
+      });
     }
-  }, [isAuthenticated, dbHistory, activeConvData, activeConversationId, isNewConversation, conversationsList]);
+  }, [
+    isAuthenticated,
+    dbHistory,
+    activeConvData,
+    activeConversationId,
+    isNewConversation,
+    conversationsList,
+    sessionTransmissionAttachments,
+  ]);
 
   const chatMutation = trpc.oriel.chat.useMutation({
     onError: (error) => {
@@ -200,20 +386,21 @@ export default function Conduit() {
     setIsSpeaking(true);
 
 
-    let textForTTS = text;
-    if (hasSpokenIntro.current) {
-      textForTTS = text.replace(/^I am ORIEL[.,;:—–\-\s]*/i, "").trim();
+    const { textForAudio, shouldMarkIntroSpoken } = prepareOrielTextForVoice(text);
+    if (!textForAudio.trim()) {
+      setIsSpeaking(false);
+      return;
     }
 
     try {
-      const result = await generateSpeechMutation.mutateAsync({ text: textForTTS, voiceId: voicePreference });
-      if (!hasSpokenIntro.current) hasSpokenIntro.current = true;
+      const result = await generateSpeechMutation.mutateAsync({ text: textForAudio, voiceId: voicePreference });
 
       if (result.success && result.audioUrl) {
         if (audioRef.current && audioRef.current.parentNode) {
           ensureAudioAnalyser();
           audioRef.current.src = result.audioUrl;
           audioRef.current.volume = voiceVolume;
+          if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
 
           audioRef.current.onended = () => {
       
@@ -224,31 +411,36 @@ export default function Conduit() {
 
           audioRef.current.onerror = () => {
             console.error("Audio playback error, falling back to browser TTS");
-            fallbackToSpeechSynthesis(textForTTS);
+            fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
           };
 
           audioRef.current.play().catch((error) => {
             console.error("Failed to play audio:", error);
-            fallbackToSpeechSynthesis(textForTTS);
+            fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
           });
         } else {
-          fallbackToSpeechSynthesis(textForTTS);
+          fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
         }
       } else {
-        fallbackToSpeechSynthesis(textForTTS);
+        fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
       }
     } catch (error) {
       console.error("Failed to generate speech:", error);
-      fallbackToSpeechSynthesis(textForTTS);
+      fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
     }
   };
 
-  const fallbackToSpeechSynthesis = (text: string) => {
+  const fallbackToSpeechSynthesis = (text: string, shouldMarkIntroSpoken = false) => {
     if ("speechSynthesis" in window) {
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "en-US";
       utterance.rate = 0.9;
       utterance.pitch = 0.9;
       utterance.volume = voiceVolume;
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find((candidate) => candidate.lang.toLowerCase().startsWith("en"));
+      if (voice) utterance.voice = voice;
+      if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
       utterance.onend = () => {
   
   
@@ -310,7 +502,11 @@ export default function Conduit() {
   const handleSendMessage = async () => {
     if (!message.trim() || chatMutation.isPending) return;
 
-    const userMessage = message.trim();
+    const rawUserMessage = message.trim();
+    const forceTransmissionMode = /^\/transmission\b/i.test(rawUserMessage);
+    const userMessage = forceTransmissionMode
+      ? rawUserMessage.replace(/^\/transmission\b/i, "").trim() || "Open transmission mode."
+      : rawUserMessage;
     setMessage("");
 
 
@@ -333,6 +529,8 @@ export default function Conduit() {
         createNewConversation: isAuthenticated && isNewConversation,
         history: !isAuthenticated ? localMessages : undefined,
         fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
+        forceTransmissionMode,
+        transmissionOnly: forceTransmissionMode,
       });
 
       setAttachedFiles([]);
@@ -342,10 +540,25 @@ export default function Conduit() {
         setIsNewConversation(false);
       }
 
+      const returnedTransmissionEvent = (result.transmissionEvent ?? null) as GeneratedTransmissionEvent | null;
+      const resolvedConversationId = result.conversationId ?? activeConversationId ?? null;
+      if (returnedTransmissionEvent) {
+        setSessionTransmissionAttachments((prev) => [
+          ...prev,
+          {
+            conversationId: resolvedConversationId,
+            assistantContent: result.response,
+            event: returnedTransmissionEvent,
+            createdAt: Date.now(),
+          },
+        ].slice(-30));
+      }
+
       const newAssistantMessage: ChatMessage = {
         role: "assistant",
         content: result.response,
         timestamp: Date.now(),
+        transmissionEvent: returnedTransmissionEvent,
       };
       const finalMessages = [...updatedMessages, newAssistantMessage];
       setLocalMessages(finalMessages);
@@ -362,7 +575,9 @@ export default function Conduit() {
         }
       }
 
-      await speakText(result.response);
+      if (result.response.trim()) {
+        await speakText(result.response);
+      }
     } catch (error) {
       console.error("Chat error:", error);
 
@@ -375,7 +590,19 @@ export default function Conduit() {
     setIsNewConversation(true);
   };
 
-  const displayMessages = localMessages.length > 0 ? localMessages : (isAuthenticated && dbHistory && !isNewConversation ? dbHistory : []);
+  const displayMessages: ChatMessage[] = localMessages.length > 0
+    ? localMessages
+    : (isAuthenticated && dbHistory && !isNewConversation
+      ? attachSessionTransmissionEvents(
+          dbHistory.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : msg.timestamp,
+          })),
+          sessionTransmissionAttachments,
+          activeConversationId,
+        )
+      : []);
 
   return (
     <Layout noBackground hideFooter>
@@ -481,6 +708,7 @@ export default function Conduit() {
                       : "1px solid transparent",
                   }}
                   onClick={() => {
+                    setLocalMessages([]);
                     setActiveConversationId(conv.id);
                     setIsNewConversation(false);
                     setSidebarOpen(false);
@@ -489,6 +717,7 @@ export default function Conduit() {
                     if (e.target !== e.currentTarget) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
+                      setLocalMessages([]);
                       setActiveConversationId(conv.id);
                       setIsNewConversation(false);
                       setSidebarOpen(false);
@@ -696,29 +925,36 @@ export default function Conduit() {
                   ) : (
                     <div
                       key={idx}
-                      className="pl-5 pr-2 py-1"
-                      style={{ borderLeft: "2px solid rgba(0,188,212,0.3)" }}
+                      className={msg.content.trim() ? "pl-5 pr-2 py-1" : "py-1"}
+                      style={msg.content.trim() ? { borderLeft: "2px solid rgba(0,188,212,0.3)" } : undefined}
                     >
-                      <p
-                        className="font-mono text-[9px] mb-3 tracking-[0.3em] uppercase"
-                        style={{ color: "rgba(0,188,212,0.6)" }}
-                      >
-                        Transmission
-                        {msg.timestamp && (
-                          <span
-                            className="ml-2 normal-case tracking-normal"
-                            style={{ color: "rgba(0,188,212,0.35)" }}
+                      {msg.content.trim() && (
+                        <>
+                          <p
+                            className="font-mono text-[9px] mb-3 tracking-[0.3em] uppercase"
+                            style={{ color: "rgba(0,188,212,0.6)" }}
                           >
-                            // {new Date(msg.timestamp).toLocaleTimeString()}
-                          </span>
-                        )}
-                      </p>
-                      <p
-                        className="text-sm leading-relaxed italic"
-                        style={{ color: "rgba(220,240,255,0.85)" }}
-                      >
-                        "{msg.content}"
-                      </p>
+                            Transmission
+                            {msg.timestamp && (
+                              <span
+                                className="ml-2 normal-case tracking-normal"
+                                style={{ color: "rgba(0,188,212,0.35)" }}
+                              >
+                                // {new Date(msg.timestamp).toLocaleTimeString()}
+                              </span>
+                            )}
+                          </p>
+                          <p
+                            className="text-sm leading-relaxed italic"
+                            style={{ color: "rgba(220,240,255,0.85)" }}
+                          >
+                            "{msg.content}"
+                          </p>
+                        </>
+                      )}
+                      {msg.transmissionEvent && (
+                        <TransmissionModeCard event={msg.transmissionEvent} />
+                      )}
                     </div>
                   )
                 )}

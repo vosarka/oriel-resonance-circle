@@ -1,4 +1,5 @@
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
+import { buildResponseLanguageDirective } from "./oriel-language-routing";
 import {
   ORIEL_STABLE_CORE_SOURCE_FILES,
   buildStableCoreManifestSummary,
@@ -104,6 +105,8 @@ export async function buildWorkingSessionLayer({
     parts.push("[CURRENT USER REQUEST]");
     parts.push(trimInline(userMessage, 500));
   }
+
+  parts.push(buildResponseLanguageDirective(userMessage, conversationHistory));
 
   if (includeFieldState && userMessage?.trim()) {
     try {

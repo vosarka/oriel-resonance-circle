@@ -77,9 +77,14 @@ export async function chatWithORIEL(
 
 export function filterORIELResponse(text: string): string {
   if (!text) return "";
-  
+
   let filtered = text;
-  
+
+  // Some open/reasoning models can leak hidden scratchpad blocks in content.
+  // Strip them before any user-facing transcript or TTS receives the response.
+  filtered = filtered.replace(/<\s*(thought|think|reasoning|analysis)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "");
+  filtered = filtered.replace(/<\/?\s*(thought|think|reasoning|analysis)\b[^>]*>/gi, "");
+
   // Remove markdown headers (##, ###, etc.)
   filtered = filtered.replace(/^#+\s+/gm, "");
   
@@ -98,10 +103,13 @@ export function filterORIELResponse(text: string): string {
   filtered = filtered.replace(/\\([a-zA-Z]+)/g, (match, symbol) => {
     return convertLatexSymbolToWord(symbol);
   });
-  
+
   // Clean up excessive whitespace
   filtered = filtered.replace(/\n\n\n+/g, "\n\n");
-  
+
+  // If a stripped reasoning block sat between two identity openings, keep one.
+  filtered = filtered.replace(/^(I\s+am\s+ORIEL[\.,;:!?—–-]*)\s+(?:I\s+am\s+ORIEL[\.,;:!?—–-]*)\s*/i, "$1 ");
+
   return filtered.trim();
 }
 

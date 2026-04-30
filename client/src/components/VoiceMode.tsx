@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { Pause, Phone, Play } from "lucide-react";
+import {
+  hasOrielVoiceIntroSpoken,
+  markOrielVoiceIntroSpokenFromText,
+} from "@/lib/orielVoiceIntroSession";
 
 const RESPONSE_DELAY_MS = 3000;
 
@@ -239,6 +243,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       try { playbackSourceRef.current.stop(); } catch {}
       playbackSourceRef.current = null;
     }
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     isPlayingRef.current = false;
   }, []);
 
@@ -256,7 +263,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
     hasPendingResponseRef.current = false;
     setOrbState("processing");
-    ws.send(JSON.stringify({ type: "response.create" }));
+    ws.send(JSON.stringify({
+      type: "response.create",
+      voiceIntroAlreadySpoken: hasOrielVoiceIntroSpoken(),
+    }));
   }, [clearPendingResponseTimer]);
 
   const scheduleAssistantResponse = useCallback(() => {
@@ -410,19 +420,23 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "response.audio_transcript.delta":
       case "response.output_audio_transcript.delta":
         if (msg.delta) {
-          setCurrentAssistantText((prev) => prev + msg.delta);
-          currentAssistantTextRef.current += msg.delta;
+          const nextText = currentAssistantTextRef.current + msg.delta;
+          setCurrentAssistantText(nextText);
+          currentAssistantTextRef.current = nextText;
+          markOrielVoiceIntroSpokenFromText(nextText);
         }
         break;
 
       case "response.audio_transcript.done":
       case "response.output_audio_transcript.done":
         hasPendingResponseRef.current = false;
+        const finalizedAssistantText = msg.transcript || currentAssistantTextRef.current;
         // Finalize the assistant transcript — use ref for latest value
         setTranscript((prev) => [
           ...prev,
-          { role: "assistant", text: msg.transcript || currentAssistantTextRef.current },
+          { role: "assistant", text: finalizedAssistantText },
         ]);
+        markOrielVoiceIntroSpokenFromText(finalizedAssistantText);
         setCurrentAssistantText("");
         currentAssistantTextRef.current = "";
         break;
@@ -462,6 +476,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const params = new URLSearchParams();
     if (conversationId) params.set("conversationId", String(conversationId));
+    if (hasOrielVoiceIntroSpoken()) params.set("voiceIntroAlreadySpoken", "1");
 
     const wsUrl = `${protocol}//${window.location.host}/api/realtime?${params.toString()}`;
     console.log("[VoiceMode] Connecting to", wsUrl);
@@ -517,6 +532,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     audioQueueRef.current = [];
     isPlayingRef.current = false;
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
     playbackGainRef.current = null;
     inputAnalyserRef.current = null;
     outputAnalyserRef.current = null;

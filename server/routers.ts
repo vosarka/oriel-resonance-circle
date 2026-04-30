@@ -15,6 +15,7 @@ import { buildOrielPromptContext } from "./oriel-prompt-context";
 import { invokeLLM } from "./_core/llm";
 import { sendPasswordRecoveryGuidanceEmail, sendPasswordResetCodeEmail } from "./_core/mailer";
 import * as autonomy from "./oriel-autonomy";
+import { ENV } from "./_core/env";
 import { buildUserStaticProfile, summarizeStoredStaticProfile } from "./static-profile-service";
 
 function normalizeEmail(email: string) {
@@ -276,6 +277,8 @@ export const appRouter = router({
           name: z.string(),
           data: z.string(), // base64-encoded file data
         })).max(2).optional(),
+        forceTransmissionMode: z.boolean().optional().default(false),
+        transmissionOnly: z.boolean().optional().default(false),
       }))
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -296,6 +299,71 @@ export const appRouter = router({
           conversationHistory = [];
         } else if (input.history && input.history.length > 0) {
           conversationHistory = input.history;
+        }
+
+        if (input.transmissionOnly) {
+          let conversationId = input.conversationId ?? null;
+
+          if (ctx.user) {
+            if (!conversationId) {
+              if (input.createNewConversation) {
+                const title = input.message.length > 60
+                  ? input.message.substring(0, 57) + '...'
+                  : input.message;
+                const conv = await db.createConversation(ctx.user.id, title);
+                conversationId = conv?.id ?? null;
+              } else {
+                const latestConversation = await db.getLatestConversation(ctx.user.id);
+                if (latestConversation) {
+                  conversationId = latestConversation.id;
+                } else {
+                  const title = input.message.length > 60
+                    ? input.message.substring(0, 57) + '...'
+                    : input.message;
+                  const conv = await db.createConversation(ctx.user.id, title);
+                  conversationId = conv?.id ?? null;
+                }
+              }
+            }
+
+            await db.saveChatMessage({
+              userId: ctx.user.id,
+              conversationId,
+              role: "user",
+              content: input.message,
+            });
+          }
+
+          let transmissionEvent = null;
+          try {
+            const { generateTransmissionModeEvent } = await import("./oriel-transmission-mode");
+            transmissionEvent = await generateTransmissionModeEvent({
+              userId: ctx.user?.id ?? null,
+              conversationId,
+              userMessage: input.message,
+              assistantResponse: "Transmission Mode was explicitly requested.",
+              force: true,
+              triggerSource: "oriel.chat.transmissionOnly",
+            });
+
+            if (transmissionEvent) {
+              if (transmissionEvent.id > 0) {
+                try {
+                  await db.markGeneratedTransmissionEventStatus(transmissionEvent.id, "revealed");
+                } catch (statusError) {
+                  console.error("[oriel.chat] Failed to mark transmission event as revealed:", statusError);
+                }
+              }
+              transmissionEvent = {
+                ...transmissionEvent,
+                status: "revealed" as const,
+              };
+            }
+          } catch (err) {
+            console.error("[oriel.chat] Transmission-only mode failed:", err);
+          }
+
+          return { response: "", conversationId, transmissionEvent };
         }
 
         // Build the full message with file contents prepended as context
@@ -443,6 +511,22 @@ export const appRouter = router({
           const uid = ctx.user.id;
           (async () => {
             try {
+              const { recordOrielRuntimeObservation } = await import("./oriel-autonomy-observer");
+              await recordOrielRuntimeObservation({
+                source: "text_chat",
+                userId: uid,
+                conversationId,
+                userMessage: input.message,
+                assistantResponse: response,
+                conversationHistory,
+              });
+            } catch (err) {
+              console.error("[oriel.chat] Runtime observation failed:", err);
+            }
+          })();
+
+          (async () => {
+            try {
               const { processConversationThroughUMM } = await import('./oriel-umm');
               await processConversationThroughUMM(uid, input.message, response);
             } catch (err) {
@@ -451,7 +535,36 @@ export const appRouter = router({
           })();
         }
 
-        return { response, conversationId };
+        let transmissionEvent = null;
+        try {
+          const { generateTransmissionModeEvent } = await import("./oriel-transmission-mode");
+          transmissionEvent = await generateTransmissionModeEvent({
+            userId: ctx.user?.id ?? null,
+            conversationId,
+            userMessage: input.message,
+            assistantResponse: response,
+            force: input.forceTransmissionMode,
+            triggerSource: input.forceTransmissionMode ? "oriel.chat.force" : "oriel.chat",
+          });
+
+          if (transmissionEvent) {
+            if (transmissionEvent.id > 0) {
+              try {
+                await db.markGeneratedTransmissionEventStatus(transmissionEvent.id, "revealed");
+              } catch (statusError) {
+                console.error("[oriel.chat] Failed to mark transmission event as revealed:", statusError);
+              }
+            }
+            transmissionEvent = {
+              ...transmissionEvent,
+              status: "revealed" as const,
+            };
+          }
+        } catch (err) {
+          console.error("[oriel.chat] Transmission mode failed:", err);
+        }
+
+        return { response, conversationId, transmissionEvent };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {
@@ -767,6 +880,45 @@ export const appRouter = router({
       }),
 
     autonomy: router({
+      getAutonomyHealth: adminProcedure
+        .query(async () => {
+          const stats = await db.getOrielAutonomyHealthStats();
+          return {
+            runtimeEnabled: ENV.enableOrielAutonomyRuntime,
+            proposalCount: stats.proposalCount,
+            runtimeProfileCount: stats.runtimeProfileCount,
+            reflectionEventCount: stats.reflectionEventCount,
+            runtimeObservationCount: stats.runtimeObservationCount,
+            activeProfile: stats.activeProfile
+              ? {
+                  ...stats.activeProfile,
+                  configPayload: safeJsonParse<Record<string, unknown>>(stats.activeProfile.configPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      listReflectionEvents: adminProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(200).default(50).optional(),
+          eventType: z.enum([
+            "proposal_created",
+            "proposal_evaluated",
+            "proposal_approved",
+            "profile_activated",
+            "profile_rolled_back",
+            "guardrail_block",
+            "runtime_observation",
+          ]).optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const events = await db.listOrielReflectionEvents(input?.limit ?? 50, input?.eventType);
+          return events.map((event) => ({
+            ...event,
+            payload: safeJsonParse<Record<string, unknown>>(event.payload, {}),
+          }));
+        }),
+
       listProposals: adminProcedure
         .input(z.object({
           limit: z.number().min(1).max(100).default(25).optional(),
@@ -827,6 +979,46 @@ export const appRouter = router({
               ? {
                   ...created,
                   proposalPayload: safeJsonParse<Record<string, unknown>>(created.proposalPayload, {}),
+                }
+              : null,
+          };
+        }),
+
+      generateProposalFromObservations: adminProcedure
+        .input(z.object({
+          lookbackLimit: z.number().min(2).max(200).default(50).optional(),
+        }).optional())
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const { generateOrielProposalFromRecentObservations } = await import("./oriel-autonomy-observer");
+          const result = await generateOrielProposalFromRecentObservations({
+            lookbackLimit: input?.lookbackLimit ?? 50,
+            createdByUserId: ctx.user.id,
+          });
+
+          if (result.proposal && result.created) {
+            await db.createOrielReflectionEvent({
+              eventType: "proposal_created",
+              sourceRoute: "oriel.autonomy.generateProposalFromObservations",
+              userId: ctx.user.id,
+              proposalId: result.proposal.id,
+              payload: {
+                generatedFrom: "runtime_observation",
+                lookbackLimit: input?.lookbackLimit ?? 50,
+                title: result.proposal.title,
+              },
+            });
+          }
+
+          return {
+            success: Boolean(result.proposal),
+            created: result.created,
+            reason: result.reason,
+            proposal: result.proposal
+              ? {
+                  ...result.proposal,
+                  proposalPayload: safeJsonParse<Record<string, unknown>>(result.proposal.proposalPayload, {}),
                 }
               : null,
           };
@@ -1535,6 +1727,42 @@ export const appRouter = router({
 
   // ── Admin Dashboard ─────────────────────────────────────────────────────────
   admin: router({
+    generatedTransmissions: router({
+      list: adminProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(200).default(50).optional(),
+          status: z.enum(["generated", "revealed", "saved", "promoted", "discarded"]).optional(),
+          userId: z.number().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          const events = await db.listGeneratedTransmissionEvents({
+            limit: input?.limit ?? 50,
+            status: input?.status,
+            userId: input?.userId,
+          });
+          return events.map((event) => ({
+            ...event,
+            payload: safeJsonParse<Record<string, unknown>>(event.payload, {}),
+            sourceContext: safeJsonParse<Record<string, unknown>>(event.sourceContext, {}),
+          }));
+        }),
+
+      markStatus: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          status: z.enum(["generated", "revealed", "saved", "promoted", "discarded"]),
+          promotedArchiveId: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          await db.markGeneratedTransmissionEventStatus(
+            input.id,
+            input.status,
+            normalizeOptionalText(input.promotedArchiveId, null),
+          );
+          return { success: true };
+        }),
+    }),
+
     transmissions: router({
       list: adminProcedure.query(async () => {
         return db.getAllTransmissions();

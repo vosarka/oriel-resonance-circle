@@ -19,15 +19,19 @@ import { auth } from "./_core/auth";
 import { ENV } from "./_core/env";
 import * as db from "./db";
 import { buildOrielPromptContext } from "./oriel-prompt-context";
+import { buildVoiceResponseLanguageDirective } from "./oriel-language-routing";
+import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intro";
 
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
+const STT_MODEL_ID = process.env.INWORLD_REALTIME_STT_MODEL || "assemblyai/whisper-rt";
 const VOICE_TURN_STOP_DETECTION_MS = 500;
 
 async function buildRealtimeInstructions(
   userId: number,
   userMessage?: string,
+  voiceIntroAlreadySpoken = false,
 ): Promise<string> {
   const instructions = await buildOrielPromptContext({
     userId,
@@ -39,12 +43,24 @@ async function buildRealtimeInstructions(
     `(base + UMM${userMessage?.trim() ? " + field state" : ""})`,
   );
 
-  return instructions;
+  return [
+    instructions,
+    buildVoiceResponseLanguageDirective(userMessage),
+    buildOrielVoiceIntroRuntimeDirective(voiceIntroAlreadySpoken),
+  ].join("\n\n");
 }
 
 // The full session.update config sent to Inworld on connection
-async function buildSessionUpdate(userId: number, userMessage?: string): Promise<object> {
-  const instructions = await buildRealtimeInstructions(userId, userMessage);
+async function buildSessionUpdate(
+  userId: number,
+  userMessage?: string,
+  voiceIntroAlreadySpoken = false,
+): Promise<object> {
+  const instructions = await buildRealtimeInstructions(
+    userId,
+    userMessage,
+    voiceIntroAlreadySpoken,
+  );
 
   const user = await db.getUserById(userId);
   const selectedVoiceId = user?.voicePreference === "deep" ? DEEP_VOICE_ID : SOPHIANIC_VOICE_ID;
@@ -59,7 +75,8 @@ async function buildSessionUpdate(userId: number, userMessage?: string): Promise
       audio: {
         input: {
           transcription: {
-            model: "assemblyai/u3-rt-pro",
+            model: STT_MODEL_ID,
+            prompt: "The speaker may use Romanian or English. Transcribe Romanian accurately with diacritics when present, and preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
           },
           turn_detection: {
             // Use server VAD only to detect turn boundaries, then trigger
@@ -96,6 +113,7 @@ async function refreshRealtimeInstructions(
     const sessionUpdate = await buildSessionUpdate(
       state.userId,
       state.latestUserTranscript || undefined,
+      state.voiceIntroAlreadySpoken,
     );
     inworldWs.send(JSON.stringify(sessionUpdate));
   } catch (err) {
@@ -110,6 +128,7 @@ interface SessionState {
   currentAssistantTranscript: string;
   latestUserTranscript: string;
   pendingUmmUserTranscript: string;
+  voiceIntroAlreadySpoken: boolean;
   /** Per-connection promise chain to serialize DB writes */
   saveQueue: Promise<void>;
 }
@@ -137,6 +156,11 @@ function getInworldAuthorizationValue(rawValue: string): string {
   return trimmed.toLowerCase().startsWith("basic ")
     ? trimmed
     : `Basic ${trimmed}`;
+}
+
+function isTruthyQueryFlag(value: unknown): boolean {
+  const normalized = Array.isArray(value) ? value[0] : value;
+  return normalized === "1" || normalized === "true";
 }
 
 /**
@@ -193,6 +217,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       currentAssistantTranscript: "",
       latestUserTranscript: "",
       pendingUmmUserTranscript: "",
+      voiceIntroAlreadySpoken: isTruthyQueryFlag(query.voiceIntroAlreadySpoken),
       saveQueue: Promise.resolve(),
     };
 
@@ -240,7 +265,11 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
         if (msg.type === "session.created" && !sessionConfigured) {
           // Inworld is ready — now send our session config with user context
           sessionConfigured = true;
-          buildSessionUpdate(state.userId).then((sessionUpdate) => {
+          buildSessionUpdate(
+            state.userId,
+            undefined,
+            state.voiceIntroAlreadySpoken,
+          ).then((sessionUpdate) => {
             console.log("[Realtime] Sending session.update");
             inworldWs.send(JSON.stringify(sessionUpdate));
           }).catch((err) => {
@@ -326,10 +355,12 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       try {
         const msg = JSON.parse(payload);
         if (msg?.type === "response.create") {
+          state.voiceIntroAlreadySpoken = state.voiceIntroAlreadySpoken || msg.voiceIntroAlreadySpoken === true;
           void (async () => {
             await refreshRealtimeInstructions(state, inworldWs);
             if (inworldWs.readyState === WebSocket.OPEN) {
-              inworldWs.send(payload);
+              const { voiceIntroAlreadySpoken: _voiceIntroAlreadySpoken, ...responseCreate } = msg;
+              inworldWs.send(JSON.stringify(responseCreate));
             }
           })();
           return;
@@ -467,6 +498,20 @@ function enqueueSaveAssistant(state: SessionState): void {
       console.log(`[Realtime] Saved assistant message (${content.length} chars)`);
 
       if (pendingUserMessage) {
+        try {
+          const { recordOrielRuntimeObservation } = await import("./oriel-autonomy-observer");
+          await recordOrielRuntimeObservation({
+            source: "voice_realtime",
+            userId: state.userId,
+            conversationId: state.conversationId,
+            userMessage: pendingUserMessage,
+            assistantResponse: content,
+            conversationHistory: [],
+          });
+        } catch (err) {
+          console.error("[Realtime] Runtime observation failed:", err);
+        }
+
         try {
           const { processConversationThroughUMM } = await import("./oriel-umm");
           await processConversationThroughUMM(state.userId, pendingUserMessage, content);
