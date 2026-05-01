@@ -928,6 +928,76 @@ export async function listGeneratedTransmissionEvents(input: {
     .limit(limit);
 }
 
+export async function listGeneratedTransmissionEventsByConversation(input: {
+  conversationId: number;
+  eventType?: GeneratedTransmissionEventType;
+  rarity?: GeneratedTransmissionRarity;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = Math.max(1, Math.min(input.limit ?? 50, 200));
+
+  if (input.eventType && input.rarity) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(and(
+        eq(generatedTransmissionEvents.conversationId, input.conversationId),
+        eq(generatedTransmissionEvents.eventType, input.eventType),
+        eq(generatedTransmissionEvents.rarity, input.rarity),
+      ))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  if (input.eventType) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(and(
+        eq(generatedTransmissionEvents.conversationId, input.conversationId),
+        eq(generatedTransmissionEvents.eventType, input.eventType),
+      ))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  if (input.rarity) {
+    return db
+      .select()
+      .from(generatedTransmissionEvents)
+      .where(and(
+        eq(generatedTransmissionEvents.conversationId, input.conversationId),
+        eq(generatedTransmissionEvents.rarity, input.rarity),
+      ))
+      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .limit(limit);
+  }
+
+  return db
+    .select()
+    .from(generatedTransmissionEvents)
+    .where(eq(generatedTransmissionEvents.conversationId, input.conversationId))
+    .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+    .limit(limit);
+}
+
+export async function updateGeneratedTransmissionEventPayload(
+  id: number,
+  payload: Record<string, unknown>,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(generatedTransmissionEvents)
+    .set({
+      payload: JSON.stringify(payload ?? {}),
+    })
+    .where(eq(generatedTransmissionEvents.id, id));
+}
+
 export async function markGeneratedTransmissionEventStatus(
   id: number,
   status: GeneratedTransmissionStatus,

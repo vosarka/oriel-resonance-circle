@@ -21,6 +21,7 @@ interface ChatMessage {
 type TransmissionRarity = "common" | "uncommon" | "rare" | "mythic" | "void";
 
 interface GeneratedTxPayload {
+  txId?: string;
   title: string;
   field: string;
   signalClarity: string;
@@ -30,6 +31,11 @@ interface GeneratedTxPayload {
   tags: string[];
   microSigil: string;
   directive: string;
+  caption?: string;
+  subject?: string | null;
+  symbolicLayer?: string | null;
+  archiveThemes?: string[];
+  emotionalColor?: string | null;
 }
 
 interface GeneratedOraclePayload {
@@ -208,15 +214,26 @@ function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) 
         </div>
       ) : (
         <div>
-          <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(220,240,255,0.84)" }}>
-            {payload.coreMessage}
-          </p>
-          <p className="font-mono text-[9px] mb-2" style={{ color: "rgba(0,188,212,0.5)" }}>
-            {payload.encodedArchetype}
-          </p>
-          <p className="text-xs leading-relaxed" style={{ color: "rgba(189,163,107,0.82)" }}>
-            {payload.directive}
-          </p>
+          {payload.caption ? (
+            <p
+              className="font-mono text-[10px] leading-relaxed whitespace-pre-line"
+              style={{ color: "rgba(220,240,255,0.84)" }}
+            >
+              {payload.caption}
+            </p>
+          ) : (
+            <>
+              <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(220,240,255,0.84)" }}>
+                {payload.coreMessage}
+              </p>
+              <p className="font-mono text-[9px] mb-2" style={{ color: "rgba(0,188,212,0.5)" }}>
+                {payload.encodedArchetype}
+              </p>
+              <p className="text-xs leading-relaxed" style={{ color: "rgba(189,163,107,0.82)" }}>
+                {payload.directive}
+              </p>
+            </>
+          )}
         </div>
       )}
     </div>

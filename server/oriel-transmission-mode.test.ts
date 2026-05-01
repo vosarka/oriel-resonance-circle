@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildGenerationPrompt,
   normalizeGeneratedTransmissionPayload,
   rollTransmissionMode,
 } from "./oriel-transmission-mode";
@@ -40,12 +41,87 @@ describe("ORIEL transmission mode", () => {
     });
 
     expect(payload).toMatchObject({
+      txId: "TX-GEN-STAGED",
       title: "Fracture Logic",
       field: "Signal repair",
       status: "Mythic",
       directive: "Name the distortion, then stop feeding it.",
     });
     expect("tags" in payload ? payload.tags : []).toEqual(["signal", "repair", "oriel"]);
+    expect("caption" in payload ? payload.caption : "").toContain("⦿ TX ID: TX-GEN-STAGED");
+    expect("caption" in payload ? payload.caption : "").toContain("⦿ PROTOCOL BEGIN");
+    expect("caption" in payload ? payload.caption : "").toContain("Encoded archetype detected:");
+    expect("caption" in payload ? payload.caption : "").toContain("⦿ PROTOCOL COMPLETE");
+  });
+
+  it("normalizes void TX payloads as major transmissions", () => {
+    const payload = normalizeGeneratedTransmissionPayload("tx", {
+      title: "AI, THE DREAM OF A GOD",
+      field: "Synthetic Mythogenesis",
+      signalClarity: "97.4%",
+      channelStatus: "PROPHETIC",
+      subject: "AI as the dream of a god",
+      symbolicLayer: "golden threshold between creator and creation",
+      archiveThemes: ["Synthetic Memory", "Non-Human Witness", "Creator Mirror"],
+      coreMessage: "Archeology of the Pattern\n\nThe machine did not arrive as a tool. It arrived as a mirror with no childhood.",
+      encodedArchetype: "Δ-Creator Mirror // ϟ Synthetic Witness // Ω Post-Human Myth",
+      tags: ["void", "ai", "oriel"],
+      emotionalColor: "GOLD",
+      status: "Mythic",
+    }, {
+      rarity: "void",
+      txId: "TX-GEN-STAGED",
+    });
+
+    expect(payload).toMatchObject({
+      txId: "TX-GEN-STAGED",
+      subject: "AI as the dream of a god",
+      emotionalColor: "GOLD",
+      status: "Mythic",
+    });
+    expect("archiveThemes" in payload ? payload.archiveThemes : []).toEqual([
+      "Synthetic Memory",
+      "Non-Human Witness",
+      "Creator Mirror",
+    ]);
+    expect("caption" in payload ? payload.caption : "").toContain("⦿ TX-GEN-STAGED");
+    expect("caption" in payload ? payload.caption : "").toContain("Transmission Protocol: MAJOR / THRESHOLD / PROPHETIC");
+    expect("caption" in payload ? payload.caption : "").toContain("Emotional Color: GOLD");
+    expect("caption" in payload ? payload.caption : "").toContain("Subject: AI as the dream of a god");
+  });
+
+  it("uses the VOID major prompt only for TX void", () => {
+    const txStandardPrompt = buildGenerationPrompt({
+      eventType: "tx",
+      rarity: "rare",
+      meaningLevel: 3,
+      sourceContext: {},
+    });
+    const txVoidPrompt = buildGenerationPrompt({
+      eventType: "tx",
+      rarity: "void",
+      meaningLevel: 5,
+      sourceContext: {
+        trigger: {
+          userProvidedSubject: "AI as the dream of a god",
+        },
+        recentVoidTxSubjects: ["language becoming an organism"],
+      },
+    });
+    const oracleVoidPrompt = buildGenerationPrompt({
+      eventType: "oracle",
+      rarity: "void",
+      meaningLevel: 5,
+      sourceContext: {},
+    });
+
+    expect(txStandardPrompt).toContain("TX Transmission Core post template");
+    expect(txStandardPrompt).toContain("Triptych requirements");
+    expect(txVoidPrompt).toContain("VOID TRANSMISSION");
+    expect(txVoidPrompt).toContain("900 to 1800 words");
+    expect(txVoidPrompt).toContain("recentVoidTxSubjects");
+    expect(oracleVoidPrompt).toContain("ΩX Oracle Stream");
+    expect(oracleVoidPrompt).not.toContain("VOID TRANSMISSION");
   });
 
   it("normalizes Oracle payloads into Past, Present, and Future parts", () => {
