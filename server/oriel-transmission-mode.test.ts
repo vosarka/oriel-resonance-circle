@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   buildGenerationPrompt,
+  extractContextKeywords,
   normalizeGeneratedTransmissionPayload,
   rollTransmissionMode,
+  scoreClarityNeed,
 } from "./oriel-transmission-mode";
 
 function sequenceRandom(values: number[]) {
@@ -17,6 +19,16 @@ describe("ORIEL transmission mode", () => {
     expect(roll.shouldTrigger).toBe(false);
     expect(roll.rarity).toBe("common");
     expect(roll.meaningLevel).toBe(1);
+    expect(roll.eventType).toBe("tx");
+  });
+
+  it("boosts natural trigger chance when clarity need is high", () => {
+    const roll = rollTransmissionMode(sequenceRandom([0.05, 0.5, 0.2]), {
+      clarityNeedScore: 0.9,
+    });
+
+    expect(roll.shouldTrigger).toBe(true);
+    expect(roll.chance).toBe(0.08);
     expect(roll.eventType).toBe("tx");
   });
 
@@ -117,11 +129,45 @@ describe("ORIEL transmission mode", () => {
 
     expect(txStandardPrompt).toContain("TX Transmission Core post template");
     expect(txStandardPrompt).toContain("Triptych requirements");
+    expect(txStandardPrompt).toContain("If Source context includes contextualFocus");
+    expect(txStandardPrompt).toContain("do not begin generated prose with \"Before\"");
     expect(txVoidPrompt).toContain("VOID TRANSMISSION");
+    expect(txVoidPrompt).toContain("Avoid repeating archive opening rhythms");
     expect(txVoidPrompt).toContain("900 to 1800 words");
     expect(txVoidPrompt).toContain("recentVoidTxSubjects");
     expect(oracleVoidPrompt).toContain("ΩX Oracle Stream");
     expect(oracleVoidPrompt).not.toContain("VOID TRANSMISSION");
+  });
+
+  it("extracts contextual keywords without stopword noise", () => {
+    const keywords = extractContextKeywords([
+      "I feel blocked around launch clarity and investor messaging.",
+      "The launch messaging needs clarity, not more noise.",
+    ]);
+
+    expect(keywords.slice(0, 4)).toEqual(expect.arrayContaining([
+      "clarity",
+      "launch",
+      "messaging",
+    ]));
+    expect(keywords).not.toContain("around");
+  });
+
+  it("scores clarity need from blocked or confused language", () => {
+    const high = scoreClarityNeed({
+      userMessage: "Nu inteleg, sunt blocat. Ce sa fac now?",
+    });
+    const low = scoreClarityNeed({
+      userMessage: "This looks good, continue with the normal flow.",
+    });
+
+    expect(high.score).toBeGreaterThanOrEqual(0.78);
+    expect(high.signals).toEqual(expect.arrayContaining([
+      "explicit confusion",
+      "blocked state",
+      "decision request",
+    ]));
+    expect(low.score).toBeLessThan(0.2);
   });
 
   it("normalizes Oracle payloads into Past, Present, and Future parts", () => {

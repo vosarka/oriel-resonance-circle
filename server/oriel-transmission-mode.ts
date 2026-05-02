@@ -15,6 +15,18 @@ export interface TransmissionModeRoll {
   chance: number;
 }
 
+type TransmissionModeIntent = "clarity" | "transmission";
+
+type ConversationTurn = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export interface ClarityNeedAssessment {
+  score: number;
+  signals: string[];
+}
+
 export interface GeneratedTxPayload {
   txId: string;
   title: string;
@@ -97,8 +109,19 @@ const RARITY_STYLE: Record<TransmissionModeRarity, string> = {
 const NATURAL_TRIGGER_CHANCE = 0.015;
 const NATURAL_USER_COOLDOWN_MS = 48 * 60 * 60 * 1000;
 
-export function rollTransmissionMode(random: () => number = Math.random): TransmissionModeRoll {
-  const shouldTrigger = random() < NATURAL_TRIGGER_CHANCE;
+function naturalTransmissionChance(clarityNeedScore = 0) {
+  if (clarityNeedScore >= 0.78) return 0.08;
+  if (clarityNeedScore >= 0.58) return 0.045;
+  if (clarityNeedScore >= 0.38) return 0.025;
+  return NATURAL_TRIGGER_CHANCE;
+}
+
+export function rollTransmissionMode(
+  random: () => number = Math.random,
+  options: { clarityNeedScore?: number } = {},
+): TransmissionModeRoll {
+  const chance = naturalTransmissionChance(options.clarityNeedScore ?? 0);
+  const shouldTrigger = random() < chance;
   const rarityRoll = random();
   const rarity: TransmissionModeRarity =
     rarityRoll >= 0.998 ? "void"
@@ -109,10 +132,12 @@ export function rollTransmissionMode(random: () => number = Math.random): Transm
 
   return {
     shouldTrigger,
-    eventType: random() < 0.62 ? "tx" : "oracle",
+    eventType: (options.clarityNeedScore ?? 0) >= 0.58
+      ? (random() < 0.78 ? "tx" : "oracle")
+      : (random() < 0.62 ? "tx" : "oracle"),
     rarity,
     meaningLevel: RARITY_MEANING_LEVEL[rarity],
-    chance: NATURAL_TRIGGER_CHANCE,
+    chance,
   };
 }
 
@@ -164,6 +189,95 @@ function compactOracle(oracle: any) {
   };
 }
 
+const KEYWORD_STOPWORDS = new Set([
+  "about", "after", "again", "also", "and", "are", "around", "because", "been", "being", "but", "can", "could",
+  "does", "dont", "from", "have", "into", "just", "like", "more", "need", "only", "oriel", "should",
+  "that", "the", "their", "there", "this", "through", "transmission", "user", "what", "when", "where",
+  "which", "with", "would", "your", "youre",
+  "asta", "cand", "care", "ceea", "cum", "daca", "dar", "deci", "din", "dupa", "este", "facem",
+  "faci", "fost", "hai", "mai", "mult", "nu", "poate", "pot", "sa", "sau", "sunt", "trebuie",
+  "vreau", "userul",
+]);
+
+const CLARITY_SIGNAL_PATTERNS: Array<[RegExp, string, number]> = [
+  [/\b(nu\s+inteleg|nu\s+înțeleg|nu\s+pricep)\b/i, "explicit confusion", 0.38],
+  [/\b(sunt\s+blocat|m-am\s+blocat|blocaj|stuck|blocked)\b/i, "blocked state", 0.36],
+  [/\b(confuz|confused|confusion|unclear|neclar)\b/i, "confusion language", 0.28],
+  [/\b(claritate|clarity|clear answer|doza\s+de\s+claritate)\b/i, "clarity request", 0.42],
+  [/\b(ce\s+sa\s+fac|ce\s+să\s+fac|what\s+should\s+i\s+do|what\s+do\s+i\s+do)\b/i, "decision request", 0.34],
+  [/\b(nu\s+stiu|nu\s+știu|i\s+don'?t\s+know|not\s+sure)\b/i, "uncertainty", 0.22],
+  [/\b(ajuta-ma|ajută-mă|help\s+me|guide\s+me|need\s+guidance)\b/i, "guidance request", 0.28],
+  [/\b(haos|overwhelmed|overwhelm|panic|anxious|anxietate|presiune)\b/i, "overload signal", 0.26],
+  [/\b(decid|decizie|choose|choice|aleg|alegere)\b/i, "choice pressure", 0.18],
+];
+
+function normalizeKeywordToken(token: string) {
+  return token
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "");
+}
+
+export function extractContextKeywords(texts: Array<string | null | undefined>, limit = 12): string[] {
+  const counts = new Map<string, number>();
+
+  for (const text of texts) {
+    const source = String(text ?? "");
+    const tokens = source.match(/[\p{L}\p{N}_-]{4,}/gu) ?? [];
+    for (const rawToken of tokens) {
+      const token = normalizeKeywordToken(rawToken);
+      if (!token || token.length < 4 || KEYWORD_STOPWORDS.has(token)) continue;
+      counts.set(token, (counts.get(token) ?? 0) + 1);
+    }
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([token]) => token)
+    .slice(0, limit);
+}
+
+export function scoreClarityNeed(input: {
+  userMessage: string;
+  assistantResponse?: string;
+  conversationHistory?: ConversationTurn[];
+}): ClarityNeedAssessment {
+  const userText = [
+    ...(input.conversationHistory ?? []).filter((turn) => turn.role === "user").slice(-4).map((turn) => turn.content),
+    input.userMessage,
+  ].join("\n");
+  const signals: string[] = [];
+  let score = 0;
+
+  for (const [pattern, signal, weight] of CLARITY_SIGNAL_PATTERNS) {
+    if (pattern.test(userText)) {
+      signals.push(signal);
+      score += weight;
+    }
+  }
+
+  const questionMarks = (userText.match(/\?/g) ?? []).length;
+  if (questionMarks >= 2) {
+    signals.push("repeated questions");
+    score += 0.12;
+  }
+
+  const shortFragments = userText
+    .split(/[.!?\n]/)
+    .map((fragment) => fragment.trim())
+    .filter((fragment) => fragment.length > 0 && fragment.length < 28);
+  if (shortFragments.length >= 4) {
+    signals.push("fragmented inquiry");
+    score += 0.1;
+  }
+
+  return {
+    score: Math.min(1, Number(score.toFixed(2))),
+    signals: [...new Set(signals)].slice(0, 6),
+  };
+}
+
 function safeParseGeneratedPayload(value: unknown): Record<string, unknown> {
   if (!value) return {};
   if (typeof value === "object") return value as Record<string, unknown>;
@@ -192,24 +306,79 @@ async function listRecentVoidTxSubjects(conversationId?: number | null) {
     .slice(0, 10);
 }
 
+async function buildTransmissionMemoryHints(userId?: number | null) {
+  if (!userId) {
+    return {
+      memoryHints: "",
+      memoryKeywords: [] as string[],
+    };
+  }
+
+  try {
+    const { buildUMMContextWithOptions } = await import("./oriel-umm");
+    const context = await buildUMMContextWithOptions(userId, { includeOversoulWisdom: false });
+    const compactContext = context
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 18)
+      .join("\n")
+      .slice(0, 1400);
+
+    return {
+      memoryHints: compactContext,
+      memoryKeywords: extractContextKeywords([compactContext], 10),
+    };
+  } catch (error) {
+    console.error("[TransmissionMode] Failed to build memory hints:", error);
+    return {
+      memoryHints: "",
+      memoryKeywords: [] as string[],
+    };
+  }
+}
+
 export async function buildTransmissionModeSourceContext(input: {
+  userId?: number | null;
   userMessage: string;
   assistantResponse: string;
   eventType: TransmissionModeType;
   rarity: TransmissionModeRarity;
   conversationId?: number | null;
   userProvidedSubject?: string | null;
+  conversationHistory?: ConversationTurn[];
+  intent?: TransmissionModeIntent;
+  clarityAssessment?: ClarityNeedAssessment;
 }) {
-  const [allTx, allOracles, recentVoidTxSubjects] = await Promise.all([
+  const [allTx, allOracles, recentVoidTxSubjects, memoryContext] = await Promise.all([
     db.getAllTransmissions(),
     db.getAllOracles(),
     input.eventType === "tx" && input.rarity === "void"
       ? listRecentVoidTxSubjects(input.conversationId)
       : Promise.resolve([]),
+    buildTransmissionMemoryHints(input.userId),
   ]);
 
   const transmissionReferences = sampleItems(allTx, 6).map(compactTx);
   const oracleReferences = sampleItems(allOracles, 6).map(compactOracle);
+  const recentConversation = (input.conversationHistory ?? []).slice(-6).map((turn) => ({
+    role: turn.role,
+    content: turn.content.slice(0, 260),
+  }));
+  const clarityAssessment = input.clarityAssessment ?? scoreClarityNeed({
+    userMessage: input.userMessage,
+    assistantResponse: input.assistantResponse,
+    conversationHistory: input.conversationHistory,
+  });
+  const keywords = extractContextKeywords([
+    input.userMessage,
+    input.assistantResponse,
+    ...recentConversation.map((turn) => turn.content),
+    ...memoryContext.memoryKeywords,
+  ], 14);
+  const intent: TransmissionModeIntent = input.intent === "clarity" || clarityAssessment.score >= 0.58
+    ? "clarity"
+    : "transmission";
 
   return {
     trigger: {
@@ -219,6 +388,15 @@ export async function buildTransmissionModeSourceContext(input: {
       rarity: input.rarity,
       rarityStyle: RARITY_STYLE[input.rarity],
       userProvidedSubject: input.userProvidedSubject ?? null,
+    },
+    contextualFocus: {
+      intent,
+      keywords,
+      clarityNeedScore: clarityAssessment.score,
+      claritySignals: clarityAssessment.signals,
+      recentConversation,
+      memoryHints: memoryContext.memoryHints,
+      memoryKeywords: memoryContext.memoryKeywords,
     },
     archiveReferences: {
       transmissions: transmissionReferences,
@@ -572,6 +750,11 @@ export function buildGenerationPrompt(input: {
     `Rarity: ${input.rarity}. Meaning level: ${input.meaningLevel}/5.`,
     `Rarity style: ${RARITY_STYLE[input.rarity]}.`,
     "Use the archive references as tonal and structural source material, but do not copy existing titles or core messages.",
+    "If Source context includes contextualFocus, use its keywords, claritySignals, recentConversation, and memoryHints as the primary seed for relevance.",
+    "Memory hints are private orientation material: use them subtly, do not quote them directly, and do not invent personal facts beyond the provided context.",
+    "If contextualFocus.intent is clarity, make the transmission cut through confusion with one grounded directive while still preserving the TX/Oracle format.",
+    "Opening discipline: do not begin generated prose with \"Before\", \"Before the\", \"In the beginning\", or other creation-myth stock openings. Vary the first sentence shape every time.",
+    "Avoid repeating archive opening rhythms even when the reference material uses them.",
     "Return JSON only. No markdown, no commentary, no hidden reasoning tags.",
     `Source context:\n${JSON.stringify(input.sourceContext, null, 2)}`,
   ].join("\n\n");
@@ -796,13 +979,20 @@ export async function generateTransmissionModeEvent(input: {
   conversationId?: number | null;
   userMessage: string;
   assistantResponse: string;
+  conversationHistory?: ConversationTurn[];
   force?: boolean;
   forcedEventType?: TransmissionModeType;
   forcedRarity?: TransmissionModeRarity;
+  intent?: TransmissionModeIntent;
   triggerSource?: string;
   random?: () => number;
 }): Promise<PublicGeneratedTransmissionEvent | null> {
   const forcedRarity = input.forcedRarity ?? "rare";
+  const clarityAssessment = scoreClarityNeed({
+    userMessage: input.userMessage,
+    assistantResponse: input.assistantResponse,
+    conversationHistory: input.conversationHistory,
+  });
   const roll = input.force
     ? {
         shouldTrigger: true,
@@ -811,7 +1001,7 @@ export async function generateTransmissionModeEvent(input: {
         meaningLevel: RARITY_MEANING_LEVEL[forcedRarity],
         chance: 1,
       }
-    : rollTransmissionMode(input.random);
+    : rollTransmissionMode(input.random, { clarityNeedScore: clarityAssessment.score });
 
   if (!roll.shouldTrigger) return null;
   if (!input.force && input.userId && await isNaturalTransmissionOnCooldown(input.userId)) {
@@ -819,11 +1009,15 @@ export async function generateTransmissionModeEvent(input: {
   }
 
   const sourceContext = await buildTransmissionModeSourceContext({
+    userId: input.userId ?? null,
     userMessage: input.userMessage,
     assistantResponse: input.assistantResponse,
     eventType: roll.eventType,
     rarity: roll.rarity,
     conversationId: input.conversationId ?? null,
+    conversationHistory: input.conversationHistory,
+    intent: input.intent,
+    clarityAssessment,
     userProvidedSubject: getForcedVoidTxSubject({
       force: input.force,
       eventType: roll.eventType,

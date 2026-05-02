@@ -281,6 +281,7 @@ export const appRouter = router({
         transmissionOnly: z.boolean().optional().default(false),
         forcedTransmissionRarity: z.enum(["common", "uncommon", "rare", "mythic", "void"]).optional(),
         forcedTransmissionType: z.enum(["tx", "oracle"]).optional(),
+        transmissionIntent: z.enum(["clarity"]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
@@ -336,6 +337,17 @@ export const appRouter = router({
             });
           }
 
+          let transmissionConversationHistory = conversationHistory;
+          if (ctx.user && conversationId && transmissionConversationHistory.length === 0) {
+            const history = await db.getConversationMessages(conversationId, ctx.user.id);
+            transmissionConversationHistory = history.slice(-6).map(msg => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.role === 'assistant' && msg.content.length > 300
+                ? msg.content.substring(0, 300) + '...'
+                : msg.content,
+            }));
+          }
+
           let transmissionEvent = null;
           try {
             const { generateTransmissionModeEvent } = await import("./oriel-transmission-mode");
@@ -344,9 +356,11 @@ export const appRouter = router({
               conversationId,
               userMessage: input.message,
               assistantResponse: "Transmission Mode was explicitly requested.",
+              conversationHistory: transmissionConversationHistory,
               force: true,
               forcedEventType: input.forcedTransmissionType,
               forcedRarity: input.forcedTransmissionRarity,
+              intent: input.transmissionIntent,
               triggerSource: "oriel.chat.transmissionOnly",
             });
 
@@ -547,9 +561,11 @@ export const appRouter = router({
             conversationId,
             userMessage: input.message,
             assistantResponse: response,
+            conversationHistory,
             force: input.forceTransmissionMode,
             forcedEventType: input.forcedTransmissionType,
             forcedRarity: input.forcedTransmissionRarity,
+            intent: input.transmissionIntent,
             triggerSource: input.forceTransmissionMode ? "oriel.chat.force" : "oriel.chat",
           });
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
+import { SignalInterferenceGate, useTransmissionTrigger } from "@/components/SignalInterferenceGate";
 import {
   markOrielVoiceIntroSpoken,
   prepareOrielTextForVoice,
@@ -88,12 +89,24 @@ function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payloa
 }
 
 function parseTransmissionCommand(rawMessage: string) {
+  if (/^\/clarity\b/i.test(rawMessage)) {
+    const userMessage = rawMessage.replace(/^\/clarity\b/i, "").trim();
+    return {
+      forceTransmissionMode: true,
+      userMessage: userMessage || "Open a contextual clarity transmission.",
+      forcedTransmissionRarity: "rare" as TransmissionRarity,
+      forcedTransmissionType: "tx" as TransmissionCommandType,
+      transmissionIntent: "clarity" as const,
+    };
+  }
+
   if (!/^\/transmission\b/i.test(rawMessage)) {
     return {
       forceTransmissionMode: false,
       userMessage: rawMessage,
       forcedTransmissionRarity: undefined,
       forcedTransmissionType: undefined,
+      transmissionIntent: undefined,
     };
   }
 
@@ -121,6 +134,7 @@ function parseTransmissionCommand(rawMessage: string) {
     userMessage: words.join(" ").trim() || "Open transmission mode.",
     forcedTransmissionRarity,
     forcedTransmissionType,
+    transmissionIntent: undefined,
   };
 }
 
@@ -259,6 +273,7 @@ export default function Conduit() {
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
   const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
+  const transmissionGate = useTransmissionTrigger({ duration: 1200 });
 
   // Web Audio API for TTS playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -565,7 +580,7 @@ export default function Conduit() {
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim() || chatMutation.isPending) return;
+    if (!message.trim() || chatMutation.isPending || transmissionGate.isInterfering) return;
 
     const rawUserMessage = message.trim();
     const {
@@ -573,7 +588,11 @@ export default function Conduit() {
       userMessage,
       forcedTransmissionRarity,
       forcedTransmissionType,
+      transmissionIntent,
     } = parseTransmissionCommand(rawUserMessage);
+    if (forceTransmissionMode) {
+      transmissionGate.startAcquiring();
+    }
     setMessage("");
 
 
@@ -600,6 +619,7 @@ export default function Conduit() {
         transmissionOnly: forceTransmissionMode,
         forcedTransmissionRarity,
         forcedTransmissionType,
+        transmissionIntent,
       });
 
       setAttachedFiles([]);
@@ -621,6 +641,14 @@ export default function Conduit() {
             createdAt: Date.now(),
           },
         ].slice(-30));
+      }
+
+      if (forceTransmissionMode) {
+        if (returnedTransmissionEvent) {
+          await transmissionGate.lock();
+        } else {
+          transmissionGate.cancel();
+        }
       }
 
       const newAssistantMessage: ChatMessage = {
@@ -649,6 +677,9 @@ export default function Conduit() {
       }
     } catch (error) {
       console.error("Chat error:", error);
+      if (forceTransmissionMode) {
+        transmissionGate.cancel();
+      }
 
     }
   };
@@ -676,6 +707,9 @@ export default function Conduit() {
   return (
     <Layout noBackground hideFooter>
       <GeometricBackground />
+
+      {/* Signal Interference Gate */}
+      <SignalInterferenceGate {...transmissionGate.gateProps} />
 
       {/* Voice Mode overlay */}
       {voiceMode && (
@@ -1166,7 +1200,7 @@ export default function Conduit() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                 placeholder="Enter your query into the light..."
-                disabled={chatMutation.isPending || isSpeaking}
+                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
                 className="flex-1 bg-transparent font-mono text-sm outline-none px-4 py-3 rounded transition-all"
                 style={{
                   background: "rgba(0,188,212,0.04)",
@@ -1181,7 +1215,7 @@ export default function Conduit() {
               {/* File attach */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={chatMutation.isPending || isSpeaking || attachedFiles.length >= 2}
+                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || attachedFiles.length >= 2}
                 title={attachedFiles.length >= 2 ? "Max 2 files" : "Attach file"}
                 className="p-3 rounded transition-all"
                 style={{
@@ -1197,7 +1231,7 @@ export default function Conduit() {
               {/* Voice input (speech-to-text for typing) */}
               <button
                 onClick={handleVoiceInput}
-                disabled={chatMutation.isPending || isSpeaking}
+                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
                 title="Voice input"
                 className="p-3 rounded transition-all"
                 style={{
@@ -1213,7 +1247,7 @@ export default function Conduit() {
               {isAuthenticated && (
                 <button
                   onClick={() => setVoiceMode(true)}
-                  disabled={chatMutation.isPending || isSpeaking}
+                  disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
                   title="Voice channel — speak with ORIEL"
                   className="p-3 rounded transition-all"
                   style={{
@@ -1237,17 +1271,17 @@ export default function Conduit() {
               {/* Send */}
               <button
                 onClick={handleSendMessage}
-                disabled={chatMutation.isPending || isSpeaking || !message.trim()}
+                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || !message.trim()}
                 title="Channel"
                 className="px-5 py-3 rounded font-mono text-xs tracking-[0.25em] uppercase transition-all"
                 style={{
                   background: "rgba(0,188,212,0.1)",
                   border: "1px solid rgba(0,188,212,0.35)",
                   color: "rgba(0,229,255,0.8)",
-                  opacity: chatMutation.isPending || isSpeaking || !message.trim() ? 0.4 : 1,
+                  opacity: chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || !message.trim() ? 0.4 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!chatMutation.isPending && !isSpeaking && message.trim()) {
+                  if (!chatMutation.isPending && !isSpeaking && !transmissionGate.isInterfering && message.trim()) {
                     (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.2)";
                     (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
                   }

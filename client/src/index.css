@@ -204,6 +204,284 @@
   animation: noise 2s infinite;
 }
 
+/* Signal Interference Gate — restrained threshold effect before transmissions open. */
+.signal-interference-gate {
+  --signal-gold: #e1c68b;
+  --signal-white: #f2ead2;
+  --signal-red: rgba(255, 76, 76, 0.18);
+  --signal-blue: rgba(86, 178, 255, 0.16);
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+  pointer-events: auto;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(225, 198, 139, 0.11), transparent 23%),
+    radial-gradient(circle at 50% 52%, rgba(242, 234, 210, 0.05), transparent 31%),
+    linear-gradient(180deg, rgba(8, 7, 6, 0.96), rgba(5, 5, 5, 0.92));
+  color: var(--signal-white);
+}
+
+.signal-interference-gate.is-acquiring {
+  opacity: 1;
+  animation: signalAcquireHold 1500ms ease-in-out infinite;
+}
+
+.signal-interference-gate.is-locking {
+  animation: signalGateFade var(--signal-gate-duration, 1200ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.signal-interference-field,
+.signal-interference-scanlines,
+.signal-interference-chromatic {
+  position: absolute;
+  inset: 0;
+}
+
+.signal-interference-field {
+  opacity: 0.22;
+  mix-blend-mode: screen;
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 320 320' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E"),
+    linear-gradient(90deg, transparent 0 48%, rgba(225, 198, 139, 0.16) 49%, transparent 51% 100%);
+  animation: signalNoiseShift 180ms steps(2) infinite;
+}
+
+.signal-interference-scanlines {
+  opacity: 0.36;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      rgba(242, 234, 210, 0.055) 0,
+      rgba(242, 234, 210, 0.055) 1px,
+      transparent 1px,
+      transparent 5px
+    );
+  transform: translateZ(0);
+  animation: signalScanDrift 620ms linear infinite;
+}
+
+.signal-interference-chromatic {
+  opacity: 0.42;
+  background:
+    linear-gradient(90deg, var(--signal-red), transparent 13%, transparent 87%, var(--signal-blue)),
+    radial-gradient(circle at 52% 50%, transparent 0 18%, rgba(225, 198, 139, 0.08) 19%, transparent 28%);
+  filter: blur(0.35px);
+  animation: signalChromaticSplit 160ms steps(2) infinite;
+}
+
+.signal-interference-band {
+  position: absolute;
+  left: -8vw;
+  right: -8vw;
+  opacity: 0;
+  border-top: 1px solid rgba(225, 198, 139, 0.28);
+  border-bottom: 1px solid rgba(242, 234, 210, 0.08);
+  background:
+    linear-gradient(90deg, transparent, rgba(225, 198, 139, 0.18), transparent),
+    rgba(5, 5, 5, 0.28);
+  box-shadow: 0 0 18px rgba(225, 198, 139, 0.08);
+  transform: translateX(0);
+  animation: signalTearBand 170ms steps(2) 1 both;
+}
+
+.signal-interference-gate.is-acquiring .signal-interference-band {
+  animation: signalTearBandHold 2100ms steps(2) infinite both;
+}
+
+.signal-interference-fragment {
+  position: absolute;
+  opacity: 0;
+  color: rgba(225, 198, 139, 0.78);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(8px, 1.35vw, 11px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-shadow:
+    1px 0 0 rgba(255, 76, 76, 0.16),
+    -1px 0 0 rgba(86, 178, 255, 0.16),
+    0 0 14px rgba(225, 198, 139, 0.18);
+  animation: signalFragmentFlash 150ms steps(2) 1 both;
+}
+
+.signal-interference-gate.is-acquiring .signal-interference-fragment {
+  animation: signalFragmentHold 2600ms steps(2) infinite both;
+}
+
+.signal-interference-glyph {
+  position: absolute;
+  opacity: 0;
+  color: rgba(225, 198, 139, 0.26);
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(36px, 12vw, 120px);
+  line-height: 1;
+  text-shadow: 0 0 28px rgba(225, 198, 139, 0.13);
+  animation: signalGlyphFlash var(--signal-gate-duration, 1200ms) steps(1) 1 both;
+}
+
+.signal-interference-glyph-a {
+  left: 18%;
+  top: 20%;
+  animation-delay: 120ms;
+}
+
+.signal-interference-glyph-b {
+  right: 16%;
+  top: 38%;
+  animation-delay: 340ms;
+}
+
+.signal-interference-glyph-c {
+  left: 45%;
+  bottom: 16%;
+  animation-delay: 560ms;
+}
+
+.signal-interference-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  animation: signalLockMoment var(--signal-gate-duration, 1200ms) cubic-bezier(0.22, 1, 0.36, 1) 1 both;
+}
+
+.signal-interference-gate.is-acquiring .signal-interference-lock {
+  opacity: 1;
+  animation: signalAcquireText 1500ms ease-in-out infinite;
+}
+
+.signal-interference-lock span {
+  border: 1px solid rgba(225, 198, 139, 0.34);
+  background: rgba(5, 5, 5, 0.48);
+  box-shadow:
+    0 0 0 1px rgba(242, 234, 210, 0.04) inset,
+    0 0 32px rgba(225, 198, 139, 0.09);
+  color: rgba(242, 234, 210, 0.9);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: clamp(9px, 2vw, 12px);
+  letter-spacing: 0.42em;
+  padding: 0.82rem 1rem 0.82rem 1.36rem;
+  text-transform: uppercase;
+}
+
+@keyframes signalGateFade {
+  0% { opacity: 0; filter: contrast(1.08) brightness(0.9); }
+  10% { opacity: 1; }
+  32% { filter: contrast(1.34) brightness(1.04); }
+  72% { opacity: 1; filter: contrast(1.12) brightness(1); }
+  100% { opacity: 0; filter: contrast(1) brightness(0.76); }
+}
+
+@keyframes signalAcquireHold {
+  0%, 100% { filter: contrast(1.04) brightness(0.9); }
+  50% { filter: contrast(1.16) brightness(1.01); }
+}
+
+@keyframes signalNoiseShift {
+  0% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-1.2%, 0.8%, 0); }
+  100% { transform: translate3d(0.7%, -1.1%, 0); }
+}
+
+@keyframes signalScanDrift {
+  from { transform: translateY(0); }
+  to { transform: translateY(5px); }
+}
+
+@keyframes signalChromaticSplit {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(1px); }
+}
+
+@keyframes signalTearBand {
+  0% { opacity: 0; transform: translateX(0) scaleX(1); }
+  34% { opacity: 0.9; transform: translateX(var(--signal-band-shift, 22px)) scaleX(1.018); }
+  100% { opacity: 0; transform: translateX(calc(var(--signal-band-shift, 22px) * -0.36)) scaleX(1); }
+}
+
+@keyframes signalTearBandHold {
+  0%, 66%, 100% { opacity: 0; transform: translateX(0) scaleX(1); }
+  70% { opacity: 0.48; transform: translateX(calc(var(--signal-band-shift, 22px) * 0.55)) scaleX(1.01); }
+  74% { opacity: 0; transform: translateX(calc(var(--signal-band-shift, 22px) * -0.22)) scaleX(1); }
+}
+
+@keyframes signalFragmentFlash {
+  0% { opacity: 0; transform: translateY(2px); }
+  28% { opacity: 0.82; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-2px); }
+}
+
+@keyframes signalFragmentHold {
+  0%, 42%, 100% { opacity: 0; transform: translateY(2px); }
+  47%, 53% { opacity: 0.62; transform: translateY(0); }
+  58% { opacity: 0; transform: translateY(-2px); }
+}
+
+@keyframes signalGlyphFlash {
+  0%, 20%, 100% { opacity: 0; transform: scale(0.98); }
+  24%, 28% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes signalLockMoment {
+  0%, 54% { opacity: 0; transform: scale(0.982); }
+  64%, 82% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.006); }
+}
+
+@keyframes signalAcquireText {
+  0%, 100% { opacity: 0.62; transform: scale(0.992); }
+  50% { opacity: 0.94; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-interference-gate {
+    animation: signalReducedGate var(--signal-gate-duration, 1200ms) ease-out forwards;
+  }
+
+  .signal-interference-gate.is-acquiring {
+    opacity: 1;
+    animation: none;
+  }
+
+  .signal-interference-field,
+  .signal-interference-scanlines,
+  .signal-interference-chromatic,
+  .signal-interference-band,
+  .signal-interference-fragment,
+  .signal-interference-glyph {
+    animation: none;
+    opacity: 0;
+  }
+
+  .signal-interference-lock {
+    animation: signalReducedLock var(--signal-gate-duration, 1200ms) ease-out forwards;
+  }
+
+  .signal-interference-gate.is-acquiring .signal-interference-lock {
+    opacity: 1;
+    animation: signalReducedAcquire 1800ms ease-in-out infinite;
+  }
+}
+
+@keyframes signalReducedGate {
+  0% { opacity: 0; }
+  18%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes signalReducedLock {
+  0%, 24% { opacity: 0; }
+  42%, 76% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes signalReducedAcquire {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
 /* Portal container glow effect */
 .portal-container {
   transition: all 0.3s ease;
