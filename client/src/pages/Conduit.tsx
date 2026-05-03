@@ -336,7 +336,7 @@ export default function Conduit() {
   });
 
   const { data: activeConvData, refetch: refetchActiveConv } = trpc.oriel.getConversation.useQuery(
-    { id: activeConversationId! },
+    { id: activeConversationId ?? 0 },
     { enabled: isAuthenticated && activeConversationId !== null, retry: false }
   );
 
@@ -718,7 +718,9 @@ export default function Conduit() {
             setVoiceMode(false);
             refetchConversations();
             refetchHistory();
-            refetchActiveConv();
+            if (activeConversationId !== null) {
+              refetchActiveConv();
+            }
           }}
           conversationId={activeConversationId}
           onConversationCreated={(id) => {

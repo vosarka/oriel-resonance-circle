@@ -25,6 +25,7 @@ import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intr
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
+const REALTIME_MODEL_ID = process.env.INWORLD_REALTIME_MODEL || "google-ai-studio/gemini-2.5-flash";
 const STT_MODEL_ID = process.env.INWORLD_REALTIME_STT_MODEL || "assemblyai/whisper-rt";
 const VOICE_TURN_STOP_DETECTION_MS = 500;
 
@@ -69,7 +70,7 @@ async function buildSessionUpdate(
     type: "session.update",
     session: {
       type: "realtime",
-      model: "xai/grok-4.20-beta-non-reasoning",
+      model: REALTIME_MODEL_ID,
       instructions,
       output_modalities: ["audio", "text"],
       audio: {

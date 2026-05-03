@@ -7,6 +7,7 @@ import {
 } from "@/lib/orielVoiceIntroSession";
 
 const RESPONSE_DELAY_MS = 3000;
+const RESPONSE_TIMEOUT_MS = 20000;
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -39,6 +40,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const isUserSpeakingRef = useRef(false);
   const hasPendingResponseRef = useRef(false);
   const pendingResponseTimerRef = useRef<number | null>(null);
+  const responseWatchdogTimerRef = useRef<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -255,8 +257,15 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     pendingResponseTimerRef.current = null;
   }, []);
 
+  const clearResponseWatchdog = useCallback(() => {
+    if (responseWatchdogTimerRef.current === null) return;
+    window.clearTimeout(responseWatchdogTimerRef.current);
+    responseWatchdogTimerRef.current = null;
+  }, []);
+
   const requestAssistantResponse = useCallback(() => {
     clearPendingResponseTimer();
+    clearResponseWatchdog();
 
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
@@ -267,7 +276,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       type: "response.create",
       voiceIntroAlreadySpoken: hasOrielVoiceIntroSpoken(),
     }));
-  }, [clearPendingResponseTimer]);
+    responseWatchdogTimerRef.current = window.setTimeout(() => {
+      console.warn("[VoiceMode] No realtime response received after response.create");
+      hasPendingResponseRef.current = false;
+      setOrbState("idle");
+      setStatus("error");
+    }, RESPONSE_TIMEOUT_MS);
+  }, [clearPendingResponseTimer, clearResponseWatchdog]);
 
   const scheduleAssistantResponse = useCallback(() => {
     clearPendingResponseTimer();
@@ -390,6 +405,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         // User started speaking — interrupt ORIEL's playback immediately
         isUserSpeakingRef.current = true;
         clearPendingResponseTimer();
+        clearResponseWatchdog();
         stopPlayback();
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
@@ -406,11 +422,16 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "conversation.item.input_audio_transcription.completed":
         if (msg.transcript) {
           setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
+          if (!hasPendingResponseRef.current) {
+            isUserSpeakingRef.current = false;
+            scheduleAssistantResponse();
+          }
         }
         break;
 
       case "response.audio.delta":
       case "response.output_audio.delta":
+        clearResponseWatchdog();
         hasPendingResponseRef.current = false;
         if (msg.delta) {
           playAudioChunk(msg.delta);
@@ -419,6 +440,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "response.audio_transcript.delta":
       case "response.output_audio_transcript.delta":
+        clearResponseWatchdog();
         if (msg.delta) {
           const nextText = currentAssistantTextRef.current + msg.delta;
           setCurrentAssistantText(nextText);
@@ -429,6 +451,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "response.audio_transcript.done":
       case "response.output_audio_transcript.done":
+        clearResponseWatchdog();
         hasPendingResponseRef.current = false;
         const finalizedAssistantText = msg.transcript || currentAssistantTextRef.current;
         // Finalize the assistant transcript — use ref for latest value
@@ -442,6 +465,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "response.done":
+        clearResponseWatchdog();
         hasPendingResponseRef.current = false;
         // response.audio_transcript.done should have already finalized;
         // only add if there's unflushed streaming text (edge case)
@@ -460,11 +484,12 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "error":
+        clearResponseWatchdog();
         console.error("[VoiceMode] Server error:", msg.error);
         setStatus("error");
         break;
     }
-  }, [clearPendingResponseTimer, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
+  }, [clearPendingResponseTimer, clearResponseWatchdog, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
@@ -516,6 +541,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
   const cleanup = useCallback(() => {
     clearPendingResponseTimer();
+    clearResponseWatchdog();
     // Stop mic
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
@@ -549,7 +575,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       wsRef.current.close();
       wsRef.current = null;
     }
-  }, [clearPendingResponseTimer]);
+  }, [clearPendingResponseTimer, clearResponseWatchdog]);
 
   const handleClose = useCallback(() => {
     cleanup();
