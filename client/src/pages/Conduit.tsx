@@ -279,6 +279,7 @@ export default function Conduit() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const voiceAudioCtxRef = useRef<AudioContext | null>(null);
 
   const ensureAudioAnalyser = () => {
     if (!audioRef.current) return;
@@ -297,6 +298,26 @@ export default function Conduit() {
       analyserRef.current.connect(audioCtx.destination);
     }
     if (audioCtx.state === "suspended") audioCtx.resume();
+  };
+
+  const openVoiceMode = () => {
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextCtor) {
+        const existing = voiceAudioCtxRef.current;
+        if (!existing || existing.state === "closed") {
+          voiceAudioCtxRef.current = new AudioContextCtor({ sampleRate: 24000 });
+        }
+        if (voiceAudioCtxRef.current?.state === "suspended") {
+          void voiceAudioCtxRef.current.resume().catch((err) => {
+            console.warn("[VoiceMode] Primed AudioContext resume failed:", err);
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[VoiceMode] Could not prime AudioContext:", err);
+    }
+    setVoiceMode(true);
   };
 
   // Load local history and voice preference from localStorage on mount
@@ -723,6 +744,7 @@ export default function Conduit() {
             }
           }}
           conversationId={activeConversationId}
+          audioContext={voiceAudioCtxRef.current}
           onConversationCreated={(id) => {
             setActiveConversationId(id);
             setIsNewConversation(false);
@@ -1248,7 +1270,7 @@ export default function Conduit() {
               {/* Voice mode (Inworld Realtime) */}
               {isAuthenticated && (
                 <button
-                  onClick={() => setVoiceMode(true)}
+                  onClick={openVoiceMode}
                   disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
                   title="Voice channel — speak with ORIEL"
                   className="p-3 rounded transition-all"

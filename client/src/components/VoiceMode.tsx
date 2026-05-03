@@ -14,6 +14,7 @@ interface VoiceModeProps {
   onClose: () => void;
   conversationId: number | null;
   onConversationCreated: (id: number) => void;
+  audioContext?: AudioContext | null;
 }
 
 type ConnectionStatus = "connecting" | "connected" | "error" | "closed";
@@ -28,7 +29,7 @@ function toAgentState(orbState: OrbState): AgentState {
   }
 }
 
-export default function VoiceMode({ onClose, conversationId, onConversationCreated }: VoiceModeProps) {
+export default function VoiceMode({ onClose, conversationId, onConversationCreated, audioContext }: VoiceModeProps) {
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
@@ -41,9 +42,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const pendingResponseTimerRef = useRef<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(audioContext ?? null);
   const streamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const hasLoggedAudioChunkRef = useRef(false);
 
   // Audio playback queue
   const audioQueueRef = useRef<Float32Array[]>([]);
@@ -287,9 +289,17 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
   const startMicCapture = useCallback((ws: WebSocket) => {
     navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true } })
-      .then((stream) => {
+      .then(async (stream) => {
         streamRef.current = stream;
         const ctx = getAudioContext();
+        if (ctx.state === "suspended") {
+          try {
+            await ctx.resume();
+          } catch (err) {
+            console.warn("[VoiceMode] AudioContext resume failed:", err);
+          }
+        }
+        console.log(`[VoiceMode] Mic capture active (${ctx.sampleRate}Hz, ${ctx.state})`);
 
         const source = ctx.createMediaStreamSource(stream);
 
@@ -337,6 +347,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             binary += String.fromCharCode(bytes[i]);
           }
           const base64 = btoa(binary);
+          if (!hasLoggedAudioChunkRef.current) {
+            hasLoggedAudioChunkRef.current = true;
+            console.log(`[VoiceMode] Sending mic audio to Inworld (${pcmData.length} PCM16 samples/chunk)`);
+          }
 
           ws.send(JSON.stringify({
             type: "input_audio_buffer.append",
@@ -387,6 +401,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_started":
+        console.log("[VoiceMode] Speech started");
         // User started speaking — interrupt ORIEL's playback immediately
         isUserSpeakingRef.current = true;
         clearPendingResponseTimer();
@@ -398,6 +413,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_stopped":
+        console.log("[VoiceMode] Speech stopped");
         isUserSpeakingRef.current = false;
         scheduleAssistantResponse();
         setOrbState("idle");
@@ -405,6 +421,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "conversation.item.input_audio_transcription.completed":
         if (msg.transcript) {
+          console.log("[VoiceMode] User transcript:", msg.transcript);
           setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
         }
         break;
