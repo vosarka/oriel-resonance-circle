@@ -18,6 +18,7 @@ interface VoiceModeProps {
 }
 
 type ConnectionStatus = "connecting" | "connected" | "error" | "closed";
+type AssistantTextStream = "audio_transcript" | "output_text";
 
 // Map our internal orb states to ElevenLabs AgentState
 function toAgentState(orbState: OrbState): AgentState {
@@ -29,13 +30,29 @@ function toAgentState(orbState: OrbState): AgentState {
   }
 }
 
+function extractConversationItemTranscript(item: any): string {
+  const content = Array.isArray(item?.content) ? item.content : [];
+  return content
+    .map((part: any) => {
+      if (typeof part?.transcript === "string") return part.transcript;
+      if (typeof part?.text === "string") return part.text;
+      return "";
+    })
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+}
+
 export default function VoiceMode({ onClose, conversationId, onConversationCreated }: VoiceModeProps) {
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [currentUserText, setCurrentUserText] = useState("");
   const [currentAssistantText, setCurrentAssistantText] = useState("");
   const [isWaitMode, setIsWaitMode] = useState(false);
+  const currentUserTextRef = useRef("");
   const currentAssistantTextRef = useRef("");
+  const assistantTextStreamRef = useRef<AssistantTextStream | null>(null);
   const isWaitModeRef = useRef(false);
   const isUserSpeakingRef = useRef(false);
   const hasPendingResponseRef = useRef(false);
@@ -116,6 +133,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   // Keep ref in sync with state for use in stale closures
+  useEffect(() => { currentUserTextRef.current = currentUserText; }, [currentUserText]);
   useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
   useEffect(() => { isWaitModeRef.current = isWaitMode; }, [isWaitMode]);
 
@@ -263,6 +281,31 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     responseWatchdogTimerRef.current = null;
   }, []);
 
+  const appendAssistantDelta = useCallback((stream: AssistantTextStream, delta: string) => {
+    if (assistantTextStreamRef.current && assistantTextStreamRef.current !== stream) return;
+    assistantTextStreamRef.current = stream;
+
+    const nextText = currentAssistantTextRef.current + delta;
+    setCurrentAssistantText(nextText);
+    currentAssistantTextRef.current = nextText;
+    markOrielVoiceIntroSpokenFromText(nextText);
+  }, []);
+
+  const finalizeAssistantTranscript = useCallback((text: string) => {
+    const finalized = text.trim();
+    if (finalized) {
+      setTranscript((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant" && last.text.trim() === finalized) return prev;
+        return [...prev, { role: "assistant", text: finalized }];
+      });
+      markOrielVoiceIntroSpokenFromText(finalized);
+    }
+    setCurrentAssistantText("");
+    currentAssistantTextRef.current = "";
+    assistantTextStreamRef.current = null;
+  }, []);
+
   const requestAssistantResponse = useCallback(() => {
     clearPendingResponseTimer();
     clearResponseWatchdog();
@@ -297,6 +340,24 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       requestAssistantResponse();
     }, RESPONSE_DELAY_MS);
   }, [clearPendingResponseTimer, requestAssistantResponse]);
+
+  const finalizeUserTranscript = useCallback((text: string) => {
+    const finalized = text.trim();
+    if (!finalized) return;
+
+    setTranscript((prev) => {
+      const last = prev[prev.length - 1];
+      if (last?.role === "user" && last.text.trim() === finalized) return prev;
+      return [...prev, { role: "user", text: finalized }];
+    });
+    setCurrentUserText("");
+    currentUserTextRef.current = "";
+
+    if (!hasPendingResponseRef.current) {
+      isUserSpeakingRef.current = false;
+      scheduleAssistantResponse();
+    }
+  }, [scheduleAssistantResponse]);
 
   // ── Mic capture ─────────────────────────────────────────────────────────────
 
@@ -406,6 +467,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         isUserSpeakingRef.current = true;
         clearPendingResponseTimer();
         clearResponseWatchdog();
+        assistantTextStreamRef.current = null;
         stopPlayback();
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
@@ -419,15 +481,25 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setOrbState("idle");
         break;
 
-      case "conversation.item.input_audio_transcription.completed":
-        if (msg.transcript) {
-          setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
-          if (!hasPendingResponseRef.current) {
-            isUserSpeakingRef.current = false;
-            scheduleAssistantResponse();
-          }
+      case "conversation.item.input_audio_transcription.delta":
+        if (msg.delta) {
+          const nextText = currentUserTextRef.current + msg.delta;
+          setCurrentUserText(nextText);
+          currentUserTextRef.current = nextText;
         }
         break;
+
+      case "conversation.item.input_audio_transcription.completed":
+        finalizeUserTranscript(msg.transcript || currentUserTextRef.current);
+        break;
+
+      case "conversation.item.done": {
+        const itemText = extractConversationItemTranscript(msg.item);
+        if (msg.item?.role === "user" && itemText) {
+          finalizeUserTranscript(itemText);
+        }
+        break;
+      }
 
       case "response.audio.delta":
       case "response.output_audio.delta":
@@ -442,10 +514,14 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "response.output_audio_transcript.delta":
         clearResponseWatchdog();
         if (msg.delta) {
-          const nextText = currentAssistantTextRef.current + msg.delta;
-          setCurrentAssistantText(nextText);
-          currentAssistantTextRef.current = nextText;
-          markOrielVoiceIntroSpokenFromText(nextText);
+          appendAssistantDelta("audio_transcript", msg.delta);
+        }
+        break;
+
+      case "response.output_text.delta":
+        clearResponseWatchdog();
+        if (msg.delta) {
+          appendAssistantDelta("output_text", msg.delta);
         }
         break;
 
@@ -453,15 +529,17 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       case "response.output_audio_transcript.done":
         clearResponseWatchdog();
         hasPendingResponseRef.current = false;
-        const finalizedAssistantText = msg.transcript || currentAssistantTextRef.current;
-        // Finalize the assistant transcript — use ref for latest value
-        setTranscript((prev) => [
-          ...prev,
-          { role: "assistant", text: finalizedAssistantText },
-        ]);
-        markOrielVoiceIntroSpokenFromText(finalizedAssistantText);
-        setCurrentAssistantText("");
-        currentAssistantTextRef.current = "";
+        if (!assistantTextStreamRef.current || assistantTextStreamRef.current === "audio_transcript") {
+          finalizeAssistantTranscript(msg.transcript || currentAssistantTextRef.current);
+        }
+        break;
+
+      case "response.output_text.done":
+        clearResponseWatchdog();
+        hasPendingResponseRef.current = false;
+        if (!assistantTextStreamRef.current || assistantTextStreamRef.current === "output_text") {
+          finalizeAssistantTranscript(msg.text || currentAssistantTextRef.current);
+        }
         break;
 
       case "response.done":
@@ -470,17 +548,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         // response.audio_transcript.done should have already finalized;
         // only add if there's unflushed streaming text (edge case)
         if (currentAssistantTextRef.current.trim()) {
-          setTranscript((prev) => {
-            const last = prev[prev.length - 1];
-            // Avoid duplicate if the same text was just added
-            if (last?.role === "assistant" && last.text === currentAssistantTextRef.current.trim()) {
-              return prev;
-            }
-            return [...prev, { role: "assistant", text: currentAssistantTextRef.current }];
-          });
-          setCurrentAssistantText("");
-          currentAssistantTextRef.current = "";
+          finalizeAssistantTranscript(currentAssistantTextRef.current);
         }
+        assistantTextStreamRef.current = null;
         break;
 
       case "error":
@@ -489,7 +559,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setStatus("error");
         break;
     }
-  }, [clearPendingResponseTimer, clearResponseWatchdog, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
+  }, [appendAssistantDelta, clearPendingResponseTimer, clearResponseWatchdog, finalizeAssistantTranscript, finalizeUserTranscript, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
@@ -558,6 +628,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     audioQueueRef.current = [];
     isPlayingRef.current = false;
+    setCurrentUserText("");
+    currentUserTextRef.current = "";
+    setCurrentAssistantText("");
+    currentAssistantTextRef.current = "";
+    assistantTextStreamRef.current = null;
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
@@ -711,6 +786,24 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             </p>
           </div>
         ))}
+
+        {/* Current streaming user transcript */}
+        {currentUserText && (
+          <div className="mb-3">
+            <span
+              className="font-mono text-[8px] tracking-[0.3em] uppercase block mb-1"
+              style={{ color: "rgba(0,188,212,0.5)" }}
+            >
+              You
+            </span>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "rgba(0,229,255,0.52)" }}
+            >
+              {currentUserText}
+            </p>
+          </div>
+        )}
 
         {/* Current streaming assistant text */}
         {currentAssistantText && (
