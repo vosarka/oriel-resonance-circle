@@ -25,8 +25,7 @@ import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intr
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
-const REALTIME_MODEL_ID = process.env.INWORLD_REALTIME_MODEL || "google-ai-studio/gemini-2.5-flash";
-const STT_MODEL_ID = process.env.INWORLD_REALTIME_STT_MODEL || "soniox/stt-rt-v4";
+const STT_MODEL_ID = process.env.INWORLD_REALTIME_STT_MODEL || "assemblyai/whisper-rt";
 const VOICE_TURN_STOP_DETECTION_MS = 500;
 
 async function buildRealtimeInstructions(
@@ -70,7 +69,7 @@ async function buildSessionUpdate(
     type: "session.update",
     session: {
       type: "realtime",
-      model: REALTIME_MODEL_ID,
+      model: "xai/grok-4.20-beta-non-reasoning",
       instructions,
       output_modalities: ["audio", "text"],
       audio: {
@@ -127,12 +126,9 @@ interface SessionState {
   conversationId: number | null;
   currentUserTranscript: string;
   currentAssistantTranscript: string;
-  assistantTranscriptSource: "audio_transcript" | "output_text" | null;
   latestUserTranscript: string;
   pendingUmmUserTranscript: string;
   voiceIntroAlreadySpoken: boolean;
-  lastQueuedUserTranscript: string;
-  lastQueuedAssistantTranscript: string;
   /** Per-connection promise chain to serialize DB writes */
   saveQueue: Promise<void>;
 }
@@ -219,12 +215,9 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       conversationId,
       currentUserTranscript: "",
       currentAssistantTranscript: "",
-      assistantTranscriptSource: null,
       latestUserTranscript: "",
       pendingUmmUserTranscript: "",
       voiceIntroAlreadySpoken: isTruthyQueryFlag(query.voiceIntroAlreadySpoken),
-      lastQueuedUserTranscript: "",
-      lastQueuedAssistantTranscript: "",
       saveQueue: Promise.resolve(),
     };
 
@@ -407,17 +400,6 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
   if (!type) return;
 
   switch (type) {
-    case "conversation.item.done": {
-      const transcript = extractConversationItemTranscript(msg.item);
-      if (msg.item?.role === "user" && transcript) {
-        state.currentUserTranscript = transcript;
-        state.latestUserTranscript = transcript;
-        state.pendingUmmUserTranscript = transcript;
-        enqueueSaveUser(state, clientWs);
-      }
-      break;
-    }
-
     // User's speech has been transcribed
     case "conversation.item.input_audio_transcription.completed":
       if (msg.transcript) {
@@ -431,15 +413,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     // Incremental assistant transcript
     case "response.audio_transcript.delta":
     case "response.output_audio_transcript.delta":
-      if (msg.delta && (!state.assistantTranscriptSource || state.assistantTranscriptSource === "audio_transcript")) {
-        state.assistantTranscriptSource = "audio_transcript";
-        state.currentAssistantTranscript += msg.delta;
-      }
-      break;
-
-    case "response.output_text.delta":
-      if (msg.delta && (!state.assistantTranscriptSource || state.assistantTranscriptSource === "output_text")) {
-        state.assistantTranscriptSource = "output_text";
+      if (msg.delta) {
         state.currentAssistantTranscript += msg.delta;
       }
       break;
@@ -447,19 +421,10 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     // Assistant response transcript complete
     case "response.audio_transcript.done":
     case "response.output_audio_transcript.done":
-      if ((!state.assistantTranscriptSource || state.assistantTranscriptSource === "audio_transcript") && msg.transcript) {
-        state.assistantTranscriptSource = "audio_transcript";
+      if (msg.transcript) {
         state.currentAssistantTranscript = msg.transcript;
-        enqueueSaveAssistant(state);
       }
-      break;
-
-    case "response.output_text.done":
-      if ((!state.assistantTranscriptSource || state.assistantTranscriptSource === "output_text") && msg.text) {
-        state.assistantTranscriptSource = "output_text";
-        state.currentAssistantTranscript = msg.text;
-        enqueueSaveAssistant(state);
-      }
+      enqueueSaveAssistant(state);
       break;
 
     // Alternative: full response done
@@ -472,19 +437,6 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
   }
 }
 
-function extractConversationItemTranscript(item: any): string {
-  const content = Array.isArray(item?.content) ? item.content : [];
-  const parts = content
-    .map((part: any) => {
-      if (typeof part?.transcript === "string") return part.transcript;
-      if (typeof part?.text === "string") return part.text;
-      return "";
-    })
-    .filter(Boolean);
-
-  return parts.join(" ").trim();
-}
-
 /**
  * Enqueue a user message save onto the per-connection promise chain.
  * Captures and clears the transcript before awaiting I/O to prevent races.
@@ -493,8 +445,6 @@ function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void 
   const content = state.currentUserTranscript.trim();
   state.currentUserTranscript = "";
   if (!content) return;
-  if (content === state.lastQueuedUserTranscript) return;
-  state.lastQueuedUserTranscript = content;
 
   state.saveQueue = state.saveQueue.then(async () => {
     try {
@@ -535,10 +485,7 @@ function enqueueSaveAssistant(state: SessionState): void {
   const content = state.currentAssistantTranscript.trim();
   const pendingUserMessage = state.pendingUmmUserTranscript.trim();
   state.currentAssistantTranscript = "";
-  state.assistantTranscriptSource = null;
   if (!content || !state.conversationId) return;
-  if (content === state.lastQueuedAssistantTranscript) return;
-  state.lastQueuedAssistantTranscript = content;
 
   state.saveQueue = state.saveQueue.then(async () => {
     try {
