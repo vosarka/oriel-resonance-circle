@@ -156,10 +156,10 @@ export default function TermsOfService() {
               <p className="text-gray-400">
                 Questions about these Terms:{" "}
                 <a
-                  href="mailto:flowa2771@gmail.com"
+                  href="mailto:contact@orielsignal.space"
                   className="text-[#00F0FF] hover:underline font-mono"
                 >
-                  flowa2771@gmail.com
+                  contact@orielsignal.space
                 </a>
               </p>
             </section>

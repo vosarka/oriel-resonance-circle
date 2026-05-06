@@ -171,10 +171,10 @@ export default function PrivacyPolicy() {
               <p className="text-gray-400">
                 For privacy-related requests or questions, contact us at:{" "}
                 <a
-                  href="mailto:flowa2771@gmail.com"
+                  href="mailto:contact@orielsignal.space"
                   className="text-[#00F0FF] hover:underline font-mono"
                 >
-                  flowa2771@gmail.com
+                  contact@orielsignal.space
                 </a>
               </p>
             </section>
