@@ -166,6 +166,32 @@ describe('RGP SLI and Micro-Correction Engine', () => {
       }
     });
 
+    it('maps higher SLI to louder shadow interference', () => {
+      const primeStack = {
+        ...samplePrimeStack,
+        positions: [
+          { ...samplePrimeStack.positions[0], position: 1, codon256Id: '80-A', weightedFrequency: 80 },
+          { ...samplePrimeStack.positions[1], position: 2, codon256Id: '60-B', weightedFrequency: 60 },
+          { ...samplePrimeStack.positions[2], position: 3, codon256Id: '40-C', weightedFrequency: 40 },
+          { ...samplePrimeStack.positions[3], position: 4, codon256Id: '20-D', weightedFrequency: 20 },
+        ],
+      } as unknown as PrimeStackMap;
+
+      const sliScores = calculateSLIScores(primeStack, 1, {
+        A: 100,
+        B: 100,
+        C: 100,
+        D: 100,
+      });
+
+      expect(sliScores.map((score) => score.interference)).toEqual([
+        'severe',
+        'moderate',
+        'minor',
+        'none',
+      ]);
+    });
+
     it('should apply state amplifier correctly', () => {
       const facetAmplitudes = { A: 100, B: 100, C: 100, D: 100 };
       const sliScores1 = calculateSLIScores(samplePrimeStack, 1.0, facetAmplitudes);
@@ -196,6 +222,26 @@ describe('RGP SLI and Micro-Correction Engine', () => {
 
       expect(pattern.severity).toBeGreaterThanOrEqual(0);
       expect(pattern.severity).toBeLessThanOrEqual(100);
+    });
+
+    it('maps higher average SLI to stronger interference patterns', () => {
+      const score = (
+        sliValue: number,
+        interference: 'none' | 'minor' | 'moderate' | 'severe'
+      ) => [{
+        position: 1,
+        codon256Id: '1-A',
+        baseAmplitude: sliValue,
+        stateAmplifier: 1,
+        facetAmplitude: 100,
+        sliValue,
+        interference,
+      }];
+
+      expect(analyzeInterferencePattern(score(80, 'severe')).type).toBe('chaotic');
+      expect(analyzeInterferencePattern(score(60, 'moderate')).type).toBe('dissonant');
+      expect(analyzeInterferencePattern(score(40, 'minor')).type).toBe('harmonic');
+      expect(analyzeInterferencePattern(score(20, 'none')).type).toBe('coherent');
     });
 
     it('should identify affected positions', () => {
@@ -238,7 +284,7 @@ describe('RGP SLI and Micro-Correction Engine', () => {
     });
 
     it('should generate different corrections for different patterns', () => {
-      // Under the current unified spec, low SLI bands are treated as more destabilized.
+      // Shadow Loudness semantics: higher SLI bands are more destabilized.
       const higherBandPattern = analyzeInterferencePattern(
         calculateSLIScores(samplePrimeStack, 0.9, { A: 90, B: 90, C: 90, D: 90 })
       );
@@ -255,18 +301,34 @@ describe('RGP SLI and Micro-Correction Engine', () => {
         lowerBandPattern
       );
 
-      expect(lowerBandCorrections.length).toBeGreaterThanOrEqual(higherBandCorrections.length);
+      expect(higherBandCorrections.length).toBeGreaterThanOrEqual(lowerBandCorrections.length);
     });
 
-    it('should target the lowest SLI position as the worst interference', () => {
+    it('should target the highest SLI position as the worst interference', () => {
       const sliScores = [
-        { position: 1, codon256Id: 'RC01-A', baseAmplitude: 40, stateAmplifier: 1, facetAmplitude: 50, sliValue: 20, interference: 'severe' as const },
-        { position: 2, codon256Id: 'RC02-B', baseAmplitude: 80, stateAmplifier: 1, facetAmplitude: 100, sliValue: 80, interference: 'none' as const },
+        { position: 1, codon256Id: 'RC01-A', baseAmplitude: 40, stateAmplifier: 1, facetAmplitude: 50, sliValue: 20, interference: 'none' as const },
+        { position: 2, codon256Id: 'RC02-B', baseAmplitude: 80, stateAmplifier: 1, facetAmplitude: 100, sliValue: 80, interference: 'severe' as const },
       ];
       const pattern = analyzeInterferencePattern(sliScores);
       const corrections = generateMicroCorrections(sliScores, pattern);
 
-      expect(corrections.every((correction) => correction.targetCodon === 'RC01-A')).toBe(true);
+      expect(corrections.every((correction) => correction.targetCodon === 'RC02-B')).toBe(true);
+    });
+
+    it('should prefer codon/facet library micro-corrections for the loudest position', () => {
+      const sliScores = [
+        { position: 1, codon256Id: 'RC01-A', baseAmplitude: 90, stateAmplifier: 1, facetAmplitude: 100, sliValue: 90, interference: 'severe' as const },
+        { position: 2, codon256Id: 'RC02-B', baseAmplitude: 40, stateAmplifier: 1, facetAmplitude: 50, sliValue: 20, interference: 'none' as const },
+      ];
+      const pattern = analyzeInterferencePattern(sliScores);
+      const corrections = generateMicroCorrections(sliScores, pattern);
+
+      expect(corrections[0]).toMatchObject({
+        id: 'micro-library-1-A',
+        targetCodon: 'RC01-A',
+      });
+      expect(corrections[0].description).toContain('Kinetic Discharge');
+      expect(corrections[0].falsifiers[0]).toContain('Depressive Lethargy');
     });
   });
 
@@ -295,16 +357,16 @@ describe('RGP SLI and Micro-Correction Engine', () => {
       }
     });
 
-    it('should reference the lowest SLI position in the primary falsifier', () => {
+    it('should reference the highest SLI position in the primary falsifier', () => {
       const sliScores = [
-        { position: 3, codon256Id: 'RC03-C', baseAmplitude: 30, stateAmplifier: 1, facetAmplitude: 50, sliValue: 15, interference: 'severe' as const },
-        { position: 7, codon256Id: 'RC07-C', baseAmplitude: 90, stateAmplifier: 1, facetAmplitude: 100, sliValue: 90, interference: 'none' as const },
+        { position: 3, codon256Id: 'RC03-C', baseAmplitude: 30, stateAmplifier: 1, facetAmplitude: 50, sliValue: 15, interference: 'none' as const },
+        { position: 7, codon256Id: 'RC07-C', baseAmplitude: 90, stateAmplifier: 1, facetAmplitude: 100, sliValue: 90, interference: 'severe' as const },
       ];
       const pattern = analyzeInterferencePattern(sliScores);
       const falsifiers = generateFalsifiers(sliScores, pattern);
 
-      expect(falsifiers[0]).toContain('position 3');
-      expect(falsifiers[0]).toContain('RC03-C');
+      expect(falsifiers[0]).toContain('position 7');
+      expect(falsifiers[0]).toContain('RC07-C');
     });
   });
 
@@ -361,8 +423,8 @@ describe('RGP SLI and Micro-Correction Engine', () => {
       const sliScores = calculateSLIScores(samplePrimeStack, 1.0, facetAmplitudes);
       const trajectory = calculateCoherenceTrajectory(60, sliScores, 55);
 
-      expect(trajectory.keyInfluences[0]).toContain('Lowest coherence position');
-      expect(trajectory.keyInfluences[1]).toContain('Highest coherence position');
+      expect(trajectory.keyInfluences[0]).toContain('Highest shadow loudness position');
+      expect(trajectory.keyInfluences[1]).toContain('Lowest shadow loudness position');
     });
   });
 
@@ -458,7 +520,6 @@ describe('RGP SLI and Micro-Correction Engine', () => {
 
   describe('Integration Tests', () => {
     it('should handle high coherence state', () => {
-      // The unified spec bands currently classify low-SLI states as chaotic/dissonant.
       const facetAmplitudes = { A: 95, B: 95, C: 95, D: 95 };
       const transmission = generateDiagnosticTransmission(
         'reading-high',
@@ -469,7 +530,7 @@ describe('RGP SLI and Micro-Correction Engine', () => {
       );
 
       expect(transmission.coherenceScore).toBe(90);
-      expect(['chaotic', 'dissonant']).toContain(transmission.interferencePattern.type);
+      expect(['coherent', 'harmonic']).toContain(transmission.interferencePattern.type);
       expect(transmission.microCorrections.length).toBeGreaterThan(0);
     });
 
@@ -484,7 +545,7 @@ describe('RGP SLI and Micro-Correction Engine', () => {
       );
 
       expect(transmission.coherenceScore).toBe(25);
-      expect(['coherent', 'harmonic']).toContain(transmission.interferencePattern.type);
+      expect(['chaotic', 'dissonant']).toContain(transmission.interferencePattern.type);
       expect(transmission.microCorrections.length).toBeGreaterThan(0);
     });
 

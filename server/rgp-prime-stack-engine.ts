@@ -84,8 +84,8 @@ export interface PrimeStackCodon {
   facetFull: string;        // Somatic/Relational/Cognitive/Transpersonal
   codon256Id: string;       // e.g. "38-A"
   center: CenterName;
-  baseFrequency: number;    // 0–100
-  weightedFrequency: number;// 0–100 after weight
+  baseFrequency: number;    // 0–100 local codon-arc position
+  weightedFrequency: number;// 0–180 weighted amplitude for ranking/SLI
   // Keep legacy fields for UI backwards compatibility
   rootCodonId: string;      // e.g. "RC38" (legacy format)
   frequency: 'shadow' | 'gift' | 'crown' | 'siddhi'; // legacy facet label
@@ -143,6 +143,8 @@ const ACTIVATION_WEIGHTS: Record<string, number> = {
   Pluto: 30,
 };
 
+const REQUIRED_CHART_PLANETS = Object.keys(ACTIVATION_WEIGHTS);
+
 // ─── Core calculation ─────────────────────────────────────────────────────────
 
 /**
@@ -194,6 +196,22 @@ function extractLongitude(
   fallback = 0
 ): number {
   return planetsMap[key]?.longitude ?? fallback;
+}
+
+function assertCompleteChart(
+  label: 'conscious' | 'design',
+  planetsMap: Record<string, { longitude: number }>
+) {
+  const failures = REQUIRED_CHART_PLANETS.filter((planet) => {
+    const longitude = planetsMap[planet]?.longitude;
+    return !Number.isFinite(longitude);
+  });
+
+  if (failures.length > 0) {
+    throw new Error(
+      `Incomplete ${label} Prime Stack chart: missing or non-finite ${failures.join(', ')}`
+    );
+  }
 }
 
 function buildActivations(
@@ -257,6 +275,9 @@ export function calculatePrimeStack(
     };
   }
 
+  assertCompleteChart('conscious', normalizedConsciousChart);
+  assertCompleteChart('design', normalizedDesignChart);
+
   // Extract key longitudes from both charts
   const cSun   = extractLongitude(normalizedConsciousChart, 'Sun');
   const cMoon  = extractLongitude(normalizedConsciousChart, 'Moon');
@@ -310,7 +331,7 @@ export function calculatePrimeStack(
   const channelStatuses = evaluateChannels(definedGates);
   const centerStatuses  = evaluateCenters(channelStatuses);
   const vrcType         = determineType(centerStatuses, channelStatuses);
-  const vrcAuthority    = determineAuthority(centerStatuses);
+  const vrcAuthority    = determineAuthority(centerStatuses, vrcType);
 
   // ─── Core Codon Engine (spec § 14): 3 dominant + 3 supporting ───────────────
   const sortedByWeight = [...positions].sort(

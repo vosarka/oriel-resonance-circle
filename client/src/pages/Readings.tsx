@@ -236,7 +236,7 @@ export default function Readings() {
                       </div>
 
                       <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em", borderBottom: `1px solid ${C.border}`, paddingBottom: 2, display: "inline-block" }}>
-                        VIEW READING →
+                        {readings.length > 1 ? "VIEW / COMPARE →" : "VIEW READING →"}
                       </div>
                     </div>
                   </Link>

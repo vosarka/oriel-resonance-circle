@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import {
   calculateCoherenceScore,
   calculateStateAmplifier,
@@ -6,10 +6,27 @@ import {
   calculateSLI,
   generateStaticSignature,
   generateDynamicReading,
+  LEGACY_RGP_ENGINE_DO_NOT_USE_IN_PRODUCTION,
 } from './rgp-engine';
 import { ROOT_CODONS } from './vossari-codex-knowledge';
 
 describe('RGP Engine', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('is explicitly marked as legacy-only', () => {
+    expect(LEGACY_RGP_ENGINE_DO_NOT_USE_IN_PRODUCTION).toBe(true);
+  });
+
+  it('blocks legacy diagnostic execution in production', async () => {
+    const engine = await import('./rgp-engine');
+    vi.stubEnv('NODE_ENV', 'production');
+
+    expect(() => (engine as any).assertLegacyRgpEngineAllowed('test caller'))
+      .toThrow(/Legacy RGP engine is disabled in production.*test caller/);
+  });
+
   describe('Coherence Score Calculation', () => {
     it('should calculate coherence score correctly with formula CS = 100 - (MN×3 + BT×3 + ET×3) + (BC×10)', () => {
       // Low noise state

@@ -1,6 +1,18 @@
 /**
+ * @deprecated Legacy-only RGP prototype.
+ *
+ * Production VRC/RGP flows must use:
+ * - ephemeris-service.ts for Swiss Ephemeris chart calculation
+ * - vrc-mandala.ts for Mandala, centers, type, authority, and channels
+ * - rgp-prime-stack-engine.ts for static Prime Stack/lattice output
+ * - rgp-sli-micro-correction-engine.ts for dynamic SLI diagnostics
+ *
+ * This file is retained only for backwards-compatible tests and historical
+ * reference. Do not import it from production routes, profile generation, or UI
+ * code.
+ *
  * RGP (Resonance Genetics Protocol) Calculation Engine
- * Based on VRC v1.3 Protocols and Dual-Engine Assessment Architecture
+ * Based on legacy VRC v1.3 prototype assumptions
  * 
  * This engine implements:
  * - 256-codon resolution (64 Root Codons × 4 Facets)
@@ -13,6 +25,19 @@
 
 import { ROOT_CODONS, CIRCUIT_LINKS } from './vossari-codex-knowledge';
 import { calculateCoherenceScore as calculateCanonicalCoherenceScore } from './rgp-coherence';
+
+export const LEGACY_RGP_ENGINE_DO_NOT_USE_IN_PRODUCTION = true;
+
+export function assertLegacyRgpEngineAllowed(caller = 'unknown caller'): void {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    process.env.ALLOW_LEGACY_RGP_ENGINE !== 'true'
+  ) {
+    throw new Error(
+      `Legacy RGP engine is disabled in production. Caller: ${caller}. Use ephemeris-service, vrc-mandala, rgp-prime-stack-engine, and rgp-sli-micro-correction-engine instead.`
+    );
+  }
+}
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -355,6 +380,7 @@ export function calculateTemporalDepth(birthDate: Date): number {
  * Uses deterministic calculation based on birth date/time
  */
 export function generatePrimeStack(birthDate: Date, birthTime?: string): PrimeStack {
+  assertLegacyRgpEngineAllowed('generatePrimeStack');
   const designOffset = calculateDesignOffset(birthDate);
   
   // Calculate base longitude from birth date (simplified astronomical calculation)
@@ -782,6 +808,7 @@ export function generateStaticSignature(
   birthTime?: string,
   birthLocation?: string
 ): StaticSignature {
+  assertLegacyRgpEngineAllowed('generateStaticSignature');
   const designOffset = calculateDesignOffset(birthDate);
   const temporalDepth = calculateTemporalDepth(birthDate);
   const primeStack = generatePrimeStack(birthDate, birthTime);
@@ -833,6 +860,7 @@ export function generateDynamicReading(
   carrierlockState: CarrierlockState,
   staticSignature: StaticSignature
 ): DynamicReading {
+  assertLegacyRgpEngineAllowed('generateDynamicReading');
   const coherenceScore = calculateCoherenceScore(carrierlockState);
   const stateAmplifier = calculateStateAmplifier(coherenceScore);
   const dominantFacet = determineDominantFacet(carrierlockState, coherenceScore);
@@ -884,6 +912,7 @@ export function generateCompleteDiagnostic(
   birthLocation: string | undefined,
   carrierlockState: CarrierlockState
 ): { staticSignature: StaticSignature; dynamicReading: DynamicReading } {
+  assertLegacyRgpEngineAllowed('generateCompleteDiagnostic');
   const staticSignature = generateStaticSignature(birthDate, birthTime, birthLocation);
   const dynamicReading = generateDynamicReading(carrierlockState, staticSignature);
   

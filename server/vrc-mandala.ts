@@ -143,8 +143,7 @@ export type CenterName =
 
 /**
  * Maps each of the 64 Codon numbers to its Center.
- * Derived from the Human Design Bodygraph (which the VRC Bio-Circuitry mirrors).
- * NOTE: Verify against VRC Bio-Circuitry diagram image when available.
+ * Source of truth: Consciousness Lattice Unified Specification v1, Part VI.
  */
 export const CODON_CENTER_MAP: Record<number, CenterName> = {
   // Crown (Head)
@@ -156,10 +155,11 @@ export const CODON_CENTER_MAP: Record<number, CenterName> = {
   // Throat
   62: 'Throat', 23: 'Throat', 56: 'Throat', 35: 'Throat', 12: 'Throat',
   45: 'Throat', 16: 'Throat', 31: 'Throat',  8: 'Throat', 33: 'Throat',
-  20: 'Throat', 13: 'Throat',  7: 'Throat',  1: 'Throat',
+  20: 'Throat',
 
   // G-Self
   25: 'G-Self', 46: 'G-Self', 15: 'G-Self', 10: 'G-Self', 2: 'G-Self',
+  1: 'G-Self', 7: 'G-Self', 13: 'G-Self',
 
   // Heart / Ego
   21: 'Heart', 40: 'Heart', 26: 'Heart', 51: 'Heart',
@@ -171,10 +171,11 @@ export const CODON_CENTER_MAP: Record<number, CenterName> = {
   // Sacral
   34: 'Sacral', 5: 'Sacral', 14: 'Sacral', 29: 'Sacral',
   59: 'Sacral', 9: 'Sacral', 3: 'Sacral', 42: 'Sacral', 27: 'Sacral',
+  50: 'Sacral',
 
   // Spleen
-  48: 'Spleen', 57: 'Spleen', 44: 'Spleen', 50: 'Spleen',
-  32: 'Spleen', 28: 'Spleen', 18: 'Spleen',
+  48: 'Spleen', 57: 'Spleen', 44: 'Spleen', 32: 'Spleen', 28: 'Spleen',
+  18: 'Spleen',
 
   // Root
   58: 'Root', 38: 'Root', 54: 'Root', 53: 'Root',
@@ -389,16 +390,22 @@ export function determineType(
 /**
  * Determine VRC Authority using priority hierarchy (VRC § 7).
  *
- *   Priority: Solar Plexus > Sacral > Spleen > Ego/Heart > G-Center > None/Outer > Environment
+ *   Priority: Solar Plexus > Sacral > Spleen > Ego/Heart > G-Center
+ *             > None/Outer for Reflectors
+ *             > Environment for mental/no-inner cases
  */
 export function determineAuthority(
-  centers: Record<CenterName, 'defined' | 'open'>
+  centers: Record<CenterName, 'defined' | 'open'>,
+  vrcType?: VrcType
 ): VrcAuthority {
   if (centers['Solar Plexus'] === 'defined') return 'Solar Plexus';
   if (centers['Sacral'] === 'defined') return 'Sacral';
   if (centers['Spleen'] === 'defined') return 'Spleen';
   if (centers['Heart'] === 'defined') return 'Ego/Heart';
   if (centers['G-Self'] === 'defined') return 'G-Center';
-  if (centers['Crown'] === 'defined' || centers['Ajna'] === 'defined') return 'None/Outer';
+  const allCentersOpen = Object.values(centers).every(s => s === 'open');
+  if (vrcType === 'Reflector' || allCentersOpen) {
+    return 'None/Outer';
+  }
   return 'Environment';
 }

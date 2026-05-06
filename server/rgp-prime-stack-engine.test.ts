@@ -13,6 +13,7 @@ import {
   validatePrimeStack,
   generatePrimeStackSummary,
 } from './rgp-prime-stack-engine';
+import { calculateBothCharts } from './ephemeris-service';
 
 // ─── Sample charts ────────────────────────────────────────────────────────────
 
@@ -50,6 +51,15 @@ const sampleDesign: Record<string, { longitude: number }> = {
   Earth:         { longitude: (((45 - 88) + 360) % 360 + 180) % 360 },
 };
 
+function chartToLongitudeMap(chart: { planets: Record<string, { longitude: number }> }) {
+  return Object.fromEntries(
+    Object.entries(chart.planets).map(([planet, position]) => [
+      planet,
+      { longitude: position.longitude },
+    ])
+  );
+}
+
 describe('RGP Prime Stack Calculation Engine', () => {
   describe('Prime Stack Calculation', () => {
     it('should calculate Prime Stack from two charts', () => {
@@ -66,6 +76,43 @@ describe('RGP Prime Stack Calculation Engine', () => {
     it('should build the canonical 26-activation lattice', () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.activations).toHaveLength(26);
+    });
+
+    it('rejects missing conscious chart bodies instead of defaulting to zero longitudes', () => {
+      const incompleteConscious = { ...sampleConscious };
+      delete incompleteConscious.Moon;
+
+      expect(() => calculatePrimeStack(incompleteConscious, sampleDesign))
+        .toThrow(/Incomplete conscious Prime Stack chart.*Moon/);
+    });
+
+    it('rejects non-finite design chart longitudes before resolving positions', () => {
+      const invalidDesign = {
+        ...sampleDesign,
+        Sun: { longitude: Number.NaN },
+      };
+
+      expect(() => calculatePrimeStack(sampleConscious, invalidDesign))
+        .toThrow(/Incomplete design Prime Stack chart.*Sun/);
+    });
+
+    it('should build 26 activations from the real ephemeris validation vector', async () => {
+      const charts = await calculateBothCharts(
+        new Date('2024-01-01'),
+        '12:00:00',
+        0,
+        0,
+        0
+      );
+      const primeStack = calculatePrimeStack(
+        chartToLongitudeMap(charts.conscious),
+        chartToLongitudeMap(charts.design)
+      );
+
+      expect(primeStack.activations).toHaveLength(26);
+      expect(primeStack.positions).toHaveLength(9);
+      expect(primeStack.positions[0].codon).toBe(38);
+      expect(primeStack.positions[2].codon).toBe(57);
     });
 
     it('should assign VRC format codon256 IDs (<codon>-<facet>)', () => {
@@ -95,7 +142,21 @@ describe('RGP Prime Stack Calculation Engine', () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const position of primeStack.positions) {
         expect(position.weightedFrequency).toBeGreaterThanOrEqual(0);
+        expect(position.weightedFrequency).toBeLessThanOrEqual(180);
       }
+    });
+
+    it('should allow weighted amplitudes above 100 for high-weight positions', () => {
+      const highBaseConscious = {
+        ...sampleConscious,
+        Sun: { longitude: 16.8 },
+      };
+      const primeStack = calculatePrimeStack(highBaseConscious, sampleDesign);
+      const consciousSun = primeStack.positions.find((position) => position.position === 1);
+
+      expect(consciousSun?.baseFrequency).toBeGreaterThan(95);
+      expect(consciousSun?.weightedFrequency).toBeGreaterThan(100);
+      expect(consciousSun?.weightedFrequency).toBeLessThanOrEqual(180);
     });
 
     it('should identify dominant position (1–9)', () => {

@@ -5,7 +5,99 @@ import {
   type StaticSignatureReading,
 } from './rgp-static-signature-engine';
 import { calculateCoherenceScore, type CarrierlockState } from './rgp-coherence';
-import { calculateBothCharts, calculateBirthChart, getAllPlanetPositions } from './ephemeris-service';
+import { calculateBothCharts } from './ephemeris-service';
+import {
+  calculateStateAmplifier,
+  determineFacetLoudness,
+  type FacetLetter,
+} from './rgp-256-codon-engine';
+import {
+  analyzeInterferencePattern,
+  calculateSLIScores,
+  generateFalsifiers,
+  generateMicroCorrections,
+  type SLIScore,
+} from './rgp-sli-micro-correction-engine';
+import type { PrimeStackCodon, PrimeStackMap } from './rgp-prime-stack-engine';
+
+const FACET_LETTERS: FacetLetter[] = ['A', 'B', 'C', 'D'];
+
+function isFacetLetter(value: unknown): value is FacetLetter {
+  return typeof value === 'string' && FACET_LETTERS.includes(value as FacetLetter);
+}
+
+function normalizeStoredPrimeStack(value: unknown): PrimeStackCodon[] | null {
+  if (!Array.isArray(value) || value.length !== 9) return null;
+
+  const positions = value.map((entry): PrimeStackCodon | null => {
+    if (!entry || typeof entry !== 'object') return null;
+    const row = entry as Record<string, unknown>;
+    const rawCodon = row.codon ?? row.codonId ?? row.rootCodonId;
+    const codon = typeof rawCodon === 'number'
+      ? rawCodon
+      : parseInt(String(rawCodon ?? '').replace(/^RC/i, ''), 10);
+    const rawFacet = row.facet;
+    const facetFromId = typeof row.codon256Id === 'string'
+      ? row.codon256Id.match(/-([ABCD])$/)?.[1]
+      : undefined;
+    const facet = isFacetLetter(rawFacet) ? rawFacet : facetFromId;
+    const position = typeof row.position === 'number' ? row.position : NaN;
+    const weightedFrequency = typeof row.weightedFrequency === 'number'
+      ? row.weightedFrequency
+      : typeof row.baseFrequency === 'number'
+        ? row.baseFrequency
+        : NaN;
+
+    if (!Number.isFinite(codon) || codon < 1 || codon > 64) return null;
+    if (!isFacetLetter(facet)) return null;
+    if (!Number.isFinite(position)) return null;
+    if (!Number.isFinite(weightedFrequency)) return null;
+
+    return {
+      ...(row as unknown as PrimeStackCodon),
+      position,
+      codon,
+      facet,
+      codon256Id: `${codon}-${facet}`,
+      weightedFrequency,
+      baseFrequency: typeof row.baseFrequency === 'number' ? row.baseFrequency : weightedFrequency,
+      weight: typeof row.weight === 'number' ? row.weight : 1,
+      codonName: typeof row.codonName === 'string' ? row.codonName : `Codon ${codon}`,
+      name: typeof row.name === 'string' ? row.name : `Position ${position}`,
+    } as PrimeStackCodon;
+  });
+
+  if (positions.some(position => position === null)) return null;
+  return positions as PrimeStackCodon[];
+}
+
+function buildPrimeStackMapForDynamic(positions: PrimeStackCodon[]): PrimeStackMap {
+  return {
+    positions,
+    activations: [],
+    totalWeight: positions.reduce((sum, position) => sum + (position.weight ?? 0), 0),
+    dominantPosition: positions[0]?.position ?? 1,
+    circuitLinks: [],
+    coreCodonEngine: {
+      dominant: positions.slice(0, 3),
+      supporting: positions.slice(3, 6),
+    },
+    channelStatuses: [],
+    centerStatuses: {} as PrimeStackMap['centerStatuses'],
+    vrcType: 'Reflector',
+    vrcAuthority: 'None/Outer',
+  };
+}
+
+function confidenceForInterference(interference: SLIScore['interference']) {
+  if (interference === 'severe') return 0.9;
+  if (interference === 'moderate') return 0.7;
+  return 0.5;
+}
+
+function sliScoreKey(score: SLIScore) {
+  return `${score.position}:${score.codon256Id}`;
+}
 
 export const rgpRouter = router({
   staticSignature: publicProcedure
@@ -26,92 +118,83 @@ export const rgpRouter = router({
         const birthDateObj = new Date(input.birthDate);
         const userId = input.userId || 'anonymous';
 
-        let consciousChartData: Record<string, number> | undefined;
-        let designChartData: Record<string, number> | undefined;
+        let consciousChartData: Record<string, number>;
+        let designChartData: Record<string, number>;
         let ephemerisData: object | null = null;
 
         // Resolve coordinates — prefer structured fields, fall back to raw string
         const hasStructured = input.birthLatitude !== undefined && input.birthLongitude !== undefined;
         const hasRawString  = input.birthTime && input.birthLocation;
 
-        if (input.birthTime && (hasStructured || hasRawString)) {
-          try {
-            let latitude: number, longitude: number, timezone: number;
-
-            if (hasStructured) {
-              latitude  = input.birthLatitude!;
-              longitude = input.birthLongitude!;
-              timezone  = input.birthTimezoneOffset ?? 0;
-            } else {
-              const locationParts = input.birthLocation!.split(',');
-              latitude  = parseFloat(locationParts[0]);
-              longitude = parseFloat(locationParts[1]);
-              timezone  = locationParts[2] ? parseFloat(locationParts[2]) : 0;
-            }
-
-            if (!isNaN(latitude) && !isNaN(longitude)) {
-              // VRC § 2: Calculate BOTH Conscious (T_birth) and Design (T_design) charts
-              const { conscious, design } = await calculateBothCharts(
-                birthDateObj,
-                input.birthTime,
-                latitude,
-                longitude,
-                timezone
-              );
-
-              // Build planet name → longitude maps for each chart
-              consciousChartData = {};
-              for (const [name, pos] of Object.entries(conscious.planets)) {
-                consciousChartData[name] = pos.longitude;
-              }
-
-              designChartData = {};
-              for (const [name, pos] of Object.entries(design.planets)) {
-                designChartData[name] = pos.longitude;
-              }
-
-              ephemerisData = {
-                conscious: {
-                  jd: conscious.jd,
-                  planets: Object.values(conscious.planets).map(p => ({
-                    name: p.planet,
-                    longitude: p.longitude,
-                    zodiacSign: p.zodiacSign,
-                    zodiacDegree: p.zodiacDegree,
-                  })),
-                },
-                design: {
-                  jd: design.jd,
-                  planets: Object.values(design.planets).map(p => ({
-                    name: p.planet,
-                    longitude: p.longitude,
-                    zodiacSign: p.zodiacSign,
-                    zodiacDegree: p.zodiacDegree,
-                  })),
-                },
-              };
-            }
-          } catch (error) {
-            console.error('[Ephemeris] Failed to calculate charts:', error);
-            // Fall back to legacy flat-field mode
-          }
+        if (!input.birthTime || (!hasStructured && !hasRawString)) {
+          throw new Error('Exact birth time and coordinates are required for a confirmed Static Signature.');
         }
+
+        let latitude: number, longitude: number, timezone: number;
+
+        if (hasStructured) {
+          latitude  = input.birthLatitude!;
+          longitude = input.birthLongitude!;
+          timezone  = input.birthTimezoneOffset ?? 0;
+        } else {
+          const locationParts = input.birthLocation!.split(',');
+          latitude  = parseFloat(locationParts[0]);
+          longitude = parseFloat(locationParts[1]);
+          timezone  = locationParts[2] ? parseFloat(locationParts[2]) : 0;
+        }
+
+        if (isNaN(latitude) || isNaN(longitude)) {
+          throw new Error('Valid birth latitude and longitude are required for a confirmed Static Signature.');
+        }
+
+        // VRC § 2: Calculate BOTH Conscious (T_birth) and Design (T_design) charts.
+        const { conscious, design } = await calculateBothCharts(
+          birthDateObj,
+          input.birthTime,
+          latitude,
+          longitude,
+          timezone
+        );
+
+        // Build planet name → longitude maps for each chart.
+        consciousChartData = {};
+        for (const [name, pos] of Object.entries(conscious.planets)) {
+          consciousChartData[name] = pos.longitude;
+        }
+
+        designChartData = {};
+        for (const [name, pos] of Object.entries(design.planets)) {
+          designChartData[name] = pos.longitude;
+        }
+
+        ephemerisData = {
+          conscious: {
+            jd: conscious.jd,
+            planets: Object.values(conscious.planets).map(p => ({
+              name: p.planet,
+              longitude: p.longitude,
+              zodiacSign: p.zodiacSign,
+              zodiacDegree: p.zodiacDegree,
+            })),
+          },
+          design: {
+            jd: design.jd,
+            planets: Object.values(design.planets).map(p => ({
+              name: p.planet,
+              longitude: p.longitude,
+              zodiacSign: p.zodiacSign,
+              zodiacDegree: p.zodiacDegree,
+            })),
+          },
+        };
 
         const reading = await generateStaticSignature(
           userId,
           {
             birthDate: birthDateObj,
             birthTime: input.birthTime,
-            conscious: consciousChartData
-              ? Object.fromEntries(Object.entries(consciousChartData))
-              : undefined,
-            design: designChartData
-              ? Object.fromEntries(Object.entries(designChartData))
-              : undefined,
-            // Legacy fallbacks if no location provided
-            sun:   consciousChartData?.['Sun'],
-            moon:  consciousChartData?.['Moon'],
-            northNode: consciousChartData?.['North Node'],
+            conscious: Object.fromEntries(Object.entries(consciousChartData)),
+            design: Object.fromEntries(Object.entries(designChartData)),
           }
         );
 
@@ -145,13 +228,18 @@ export const rgpRouter = router({
             authorityNode:       reading.authorityNode,
             vrcType:             reading.vrcType,
             vrcAuthority:        reading.vrcAuthority,
+            activations:         reading.activations,
+            channelStatuses:     reading.channelStatuses,
             circuitLinks:        reading.circuitLinks,
+            legacyCircuitLinks:  reading.legacyCircuitLinks,
             baseCoherence:       reading.baseCoherence,
             hasRealCoherence: false,
             coherenceTrajectory: reading.coherenceTrajectory,
             microCorrections:    reading.microCorrections,
             diagnosticTransmission: reading.diagnosticTransmission,
             coreCodonEngine:     reading.coreCodonEngine,
+            specVersion:         reading.specVersion,
+            calculationStatus:   reading.calculationStatus,
           },
         };
       } catch (error) {
@@ -184,6 +272,19 @@ export const rgpRouter = router({
         };
 
         const coherenceScore = calculateCoherenceScore(state);
+        const stateAmplifier = calculateStateAmplifier(coherenceScore);
+        const facetLoudness = determineFacetLoudness(
+          input.mentalNoise,
+          input.bodyTension,
+          input.emotionalTurbulence,
+          coherenceScore
+        );
+        const facetAmplitudes = {
+          A: facetLoudness.A,
+          B: facetLoudness.B,
+          C: facetLoudness.C,
+          D: facetLoudness.D,
+        };
 
         // ── Personalise with user's static signature if available ─────────────
         let vrcType: string | undefined;
@@ -191,6 +292,7 @@ export const rgpRouter = router({
         let fractalRole: string | undefined;
         let primeCodonName: string | undefined;
         let primeCodonCenter: string | undefined;
+        let primeStackPositions: PrimeStackCodon[] | null = null;
 
         if (input.userId) {
           try {
@@ -207,6 +309,7 @@ export const rgpRouter = router({
                     const stack = Array.isArray(latest.primeStack)
                       ? latest.primeStack
                       : JSON.parse(String(latest.primeStack));
+                    primeStackPositions = normalizeStoredPrimeStack(stack);
                     const prime = Array.isArray(stack) ? stack[0] : null;
                     if (prime) {
                       primeCodonName   = prime.codonName ?? undefined;
@@ -221,6 +324,47 @@ export const rgpRouter = router({
           }
         }
 
+        if (!primeStackPositions) {
+          return {
+            success: false,
+            requiresStaticProfile: true,
+            error: 'Create your natal profile before opening a Carrierlock SLI diagnostic.',
+          };
+        }
+
+        const primeStackMap = buildPrimeStackMapForDynamic(primeStackPositions);
+        const sliScoreRows = calculateSLIScores(primeStackMap, stateAmplifier, facetAmplitudes);
+        const interferencePattern = analyzeInterferencePattern(sliScoreRows);
+        const microCorrections = generateMicroCorrections(sliScoreRows, interferencePattern);
+        const falsifiers = generateFalsifiers(sliScoreRows, interferencePattern);
+        const flaggedScores = [...sliScoreRows]
+          .sort((a, b) => b.sliValue - a.sliValue)
+          .slice(0, 3);
+        const flaggedCodons = flaggedScores.map(score => score.codon256Id);
+        const sliScores = Object.fromEntries(
+          sliScoreRows.map(score => [sliScoreKey(score), Number(score.sliValue.toFixed(2))])
+        );
+        const activeFacets = Object.fromEntries(
+          flaggedScores.map(score => [
+            score.codon256Id,
+            score.codon256Id.match(/-([ABCD])$/)?.[1] ?? '',
+          ]).filter(([, facet]) => Boolean(facet))
+        );
+        const confidenceLevels = Object.fromEntries(
+          flaggedScores.map(score => [
+            score.codon256Id,
+            confidenceForInterference(score.interference),
+          ])
+        );
+        const primaryScore = flaggedScores[0];
+        const primaryPosition = primaryScore
+          ? primeStackPositions.find(position => position.position === primaryScore.position)
+          : undefined;
+        const primaryCorrection = microCorrections[0];
+        const correctionFacet = primaryScore?.codon256Id.match(/-([ABCD])$/)?.[1] as FacetLetter | undefined;
+        const falsifier = primaryCorrection?.falsifiers[0] ?? falsifiers[0] ?? '';
+        const microCorrection = primaryCorrection?.description;
+
         // ── Generate ORIEL transmission ───────────────────────────────────────
         const { generateORIELDynamicTransmission } = await import('./oriel-dynamic-transmission');
         const transmission = await generateORIELDynamicTransmission({
@@ -234,6 +378,13 @@ export const rgpRouter = router({
           fractalRole,
           primeCodonName,
           primeCodonCenter,
+          primaryInterferenceCodon: primaryScore?.codon256Id,
+          primaryInterferenceName: primaryPosition?.codonName,
+          primaryInterferenceFacet: correctionFacet,
+          primaryInterferenceSli: primaryScore?.sliValue,
+          interferencePattern: interferencePattern.type,
+          microCorrection,
+          falsifier,
         });
 
         return {
@@ -254,6 +405,21 @@ export const rgpRouter = router({
             fractalRole,
             primeCodonName,
             primeCodonCenter,
+            stateAmplifier,
+            facetAmplitudes,
+            interferencePattern: {
+              type: interferencePattern.type,
+              severity: interferencePattern.severity,
+              affectedPositions: interferencePattern.affectedPositions,
+              description: interferencePattern.description,
+            },
+            flaggedCodons,
+            sliScores,
+            activeFacets,
+            confidenceLevels,
+            microCorrection,
+            correctionFacet,
+            falsifier,
           },
         };
       } catch (error) {

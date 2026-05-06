@@ -105,13 +105,6 @@ export default function Carrierlock() {
     setReadingError(null);
 
     try {
-      const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
-        mentalNoise,
-        bodyTension,
-        emotionalTurbulence,
-        breathCompletion,
-      });
-
       const result = await dynamicStateMutation.mutateAsync({
         mentalNoise,
         bodyTension,
@@ -122,6 +115,10 @@ export default function Carrierlock() {
       });
 
       if (!result.success || !result.data) {
+        if ((result as { requiresStaticProfile?: boolean }).requiresStaticProfile) {
+          setLocation("/complete-profile");
+          return;
+        }
         throw new Error((result as { error?: string }).error || "Dynamic reading generation failed");
       }
 
@@ -132,18 +129,27 @@ export default function Carrierlock() {
         data.orielTransmission,
       ].join("\n");
 
-      const falsifierMatch = data.orielTransmission.match(/falsifier[:\s]+(.+)/i);
+      const carrierlockResult = await saveCarrierlockMutation.mutateAsync({
+        mentalNoise,
+        bodyTension,
+        emotionalTurbulence,
+        breathCompletion,
+      });
+
+      const correctionFacet = data.correctionFacet && ["A", "B", "C", "D"].includes(data.correctionFacet)
+        ? data.correctionFacet as "A" | "B" | "C" | "D"
+        : undefined;
 
       const savedReading = await saveReadingMutation.mutateAsync({
         carrierlockId: carrierlockResult.id,
         readingText,
-        flaggedCodons: [],
-        sliScores: { mentalNoise, bodyTension, emotionalTurbulence },
-        activeFacets: {},
-        confidenceLevels: {},
-        microCorrection: undefined,
-        correctionFacet: undefined,
-        falsifier: falsifierMatch?.[1]?.trim() ?? "",
+        flaggedCodons: data.flaggedCodons ?? [],
+        sliScores: data.sliScores ?? {},
+        activeFacets: data.activeFacets ?? {},
+        confidenceLevels: data.confidenceLevels ?? {},
+        microCorrection: data.microCorrection,
+        correctionFacet,
+        falsifier: data.falsifier ?? "",
       });
 
       setLocation(`/reading/dynamic/${savedReading.id}`);

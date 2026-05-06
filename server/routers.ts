@@ -17,6 +17,8 @@ import { sendPasswordRecoveryGuidanceEmail, sendPasswordResetCodeEmail } from ".
 import * as autonomy from "./oriel-autonomy";
 import { ENV } from "./_core/env";
 import { buildUserStaticProfile, summarizeStoredStaticProfile } from "./static-profile-service";
+import { calculateBirthChart } from "./ephemeris-service";
+import { facetNameToLetter, longitudeToCodonFacet } from "./rgp-256-codon-engine";
 
 function normalizeEmail(email: string) {
   return email.toLowerCase().trim();
@@ -40,6 +42,20 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function normalizeReadingCodons(value: unknown): string[] {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value === "string") return value.split(",").map((item) => item.trim()).filter(Boolean);
+  return [];
+}
+
+function normalizeNumberRecord(value: unknown): Record<string, number> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([, raw]) => typeof raw === "number" && Number.isFinite(raw))
+  ) as Record<string, number>;
 }
 
 const natalProfileInputSchema = z.object({
@@ -1305,6 +1321,69 @@ export const appRouter = router({
       return db.getUserStaticProfile(ctx.user.id);
     }),
 
+    getTransitOverlay: protectedProcedure
+      .input(z.object({
+        days: z.number().int().min(1).max(14).default(7),
+      }).optional())
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) {
+          throw new Error("Authentication required");
+        }
+
+        const days = input?.days ?? 7;
+        const start = new Date();
+        start.setUTCHours(12, 0, 0, 0);
+
+        const trackedPlanets = new Set([
+          "Sun",
+          "Moon",
+          "Mercury",
+          "Venus",
+          "Mars",
+          "Jupiter",
+          "Saturn",
+          "Uranus",
+          "Neptune",
+          "Pluto",
+          "North Node",
+          "South Node",
+          "Earth",
+        ]);
+
+        const rows = [];
+        for (let offset = 0; offset < days; offset += 1) {
+          const date = new Date(start);
+          date.setUTCDate(start.getUTCDate() + offset);
+
+          const chart = await calculateBirthChart(date, "12:00", 0, 0, 0);
+          const activations = Object.values(chart.planets)
+            .filter((position) => trackedPlanets.has(position.planet))
+            .map((position) => {
+              const resolved = longitudeToCodonFacet(position.longitude);
+              return {
+                planet: position.planet,
+                longitude: position.longitude,
+                zodiacSign: position.zodiacSign,
+                zodiacDegree: position.zodiacDegree,
+                codon: resolved.codon,
+                facet: facetNameToLetter(resolved.facet),
+                center: resolved.center,
+              };
+            });
+
+          rows.push({
+            date: date.toISOString().slice(0, 10),
+            jd: chart.jd,
+            activations,
+          });
+        }
+
+        return {
+          generatedAt: new Date().toISOString(),
+          days: rows,
+        };
+      }),
+
     completeNatalProfile: protectedProcedure
       .input(natalProfileInputSchema)
       .mutation(async ({ input, ctx }) => {
@@ -1580,6 +1659,78 @@ export const appRouter = router({
         };
       }),
 
+    getFacets: publicProcedure.query(async () => {
+      const { FACET_NAMES, FACET_ARC } = await import("./vrc-mandala");
+      const letters = ["A", "B", "C", "D"] as const;
+      const frequencies = ["shadow", "gift", "crown", "siddhi"] as const;
+
+      return FACET_NAMES.map((name, index) => ({
+        letter: letters[index],
+        name,
+        frequency: frequencies[index],
+        arcDegrees: FACET_ARC,
+        startOffset: +(index * FACET_ARC).toFixed(5),
+        endOffset: +((index + 1) * FACET_ARC).toFixed(5),
+      }));
+    }),
+
+    getCenters: publicProcedure.query(async () => {
+      const { CODON_CENTER_MAP } = await import("./vrc-mandala");
+      const centerOrder = [
+        "Crown",
+        "Ajna",
+        "Throat",
+        "G-Self",
+        "Heart",
+        "Solar Plexus",
+        "Sacral",
+        "Spleen",
+        "Root",
+      ] as const;
+      const centerTypes: Record<typeof centerOrder[number], string> = {
+        Crown: "Pressure",
+        Ajna: "Awareness",
+        Throat: "Expression",
+        "G-Self": "Identity",
+        Heart: "Motor",
+        "Solar Plexus": "Motor/Awareness",
+        Sacral: "Motor",
+        Spleen: "Awareness",
+        Root: "Pressure/Motor",
+      };
+
+      return centerOrder.map((center) => ({
+        id: center,
+        name: center,
+        type: centerTypes[center],
+        codons: Object.entries(CODON_CENTER_MAP)
+          .filter(([, mappedCenter]) => mappedCenter === center)
+          .map(([codon]) => Number(codon))
+          .sort((a, b) => a - b),
+      }));
+    }),
+
+    getChannels: publicProcedure.query(async () => {
+      const { VRC_CHANNELS, CODON_CENTER_MAP } = await import("./vrc-mandala");
+      const { getVrcChannels } = await import("./vrc-engine-constants");
+      const namedChannels = new Map(
+        getVrcChannels().map((channel) => [channel.id, channel.name])
+      );
+
+      return VRC_CHANNELS.map(([gateA, gateB]) => {
+        const forwardId = `${gateA}-${gateB}`;
+        const reverseId = `${gateB}-${gateA}`;
+        return {
+          id: forwardId,
+          name: namedChannels.get(forwardId) ?? namedChannels.get(reverseId) ?? `Channel ${forwardId}`,
+          gateA,
+          gateB,
+          centerA: CODON_CENTER_MAP[gateA],
+          centerB: CODON_CENTER_MAP[gateB],
+        };
+      });
+    }),
+
     // Save Carrierlock state and generate diagnostic reading
     saveCarrierlock: protectedProcedure
       .input(z.object({
@@ -1619,6 +1770,62 @@ export const appRouter = router({
       return db.getUserReadingHistory(ctx.user.id);
     }),
 
+    compareReadings: protectedProcedure
+      .input(z.object({
+        leftReadingId: z.number(),
+        rightReadingId: z.number(),
+      }))
+      .query(async ({ input, ctx }) => {
+        if (!ctx.user) throw new Error("User not authenticated");
+
+        const [left, right] = await Promise.all([
+          db.getCodonReadingById(input.leftReadingId),
+          db.getCodonReadingById(input.rightReadingId),
+        ]);
+
+        if (!left || !right) throw new Error("Reading not found");
+        if (left.userId !== ctx.user.id || right.userId !== ctx.user.id) {
+          throw new Error("Unauthorized");
+        }
+
+        const leftCodons = normalizeReadingCodons(left.flaggedCodons);
+        const rightCodons = normalizeReadingCodons(right.flaggedCodons);
+        const leftSli = normalizeNumberRecord(left.sliScores);
+        const rightSli = normalizeNumberRecord(right.sliScores);
+        const allSliKeys = Array.from(new Set([...Object.keys(leftSli), ...Object.keys(rightSli)]));
+        const leftCoherence = typeof left.carrierlock?.coherenceScore === "number"
+          ? left.carrierlock.coherenceScore
+          : null;
+        const rightCoherence = typeof right.carrierlock?.coherenceScore === "number"
+          ? right.carrierlock.coherenceScore
+          : null;
+
+        return {
+          left: {
+            id: left.id,
+            createdAt: left.createdAt,
+            coherenceScore: leftCoherence,
+            flaggedCodons: leftCodons,
+          },
+          right: {
+            id: right.id,
+            createdAt: right.createdAt,
+            coherenceScore: rightCoherence,
+            flaggedCodons: rightCodons,
+          },
+          coherenceDelta: leftCoherence === null || rightCoherence === null
+            ? null
+            : rightCoherence - leftCoherence,
+          sharedFlaggedCodons: leftCodons.filter((codon) => rightCodons.includes(codon)),
+          resolvedCodons: leftCodons.filter((codon) => !rightCodons.includes(codon)),
+          emergingCodons: rightCodons.filter((codon) => !leftCodons.includes(codon)),
+          sliDelta: Object.fromEntries(
+            allSliKeys.map((key) => [key, (rightSli[key] ?? 0) - (leftSli[key] ?? 0)])
+          ),
+          correctionChanged: (left.microCorrection ?? "") !== (right.microCorrection ?? ""),
+        };
+      }),
+
     // Mark micro-correction as completed
     markCorrectionComplete: protectedProcedure
       .input(z.object({ readingId: z.number() }))
@@ -1647,7 +1854,10 @@ export const appRouter = router({
         authorityNode: z.string().optional(),
         vrcType: z.string().optional(),
         vrcAuthority: z.string().optional(),
+        activations: z.unknown().optional(),
+        channelStatuses: z.unknown().optional(),
         circuitLinks: z.unknown().optional(),
+        legacyCircuitLinks: z.unknown().optional(),
         baseCoherence: z.number().optional(),
         coherenceTrajectory: z.unknown().optional(),
         microCorrections: z.unknown().optional(),
@@ -1655,6 +1865,8 @@ export const appRouter = router({
         houses: z.unknown().optional(),
         diagnosticTransmission: z.string().optional(),
         coreCodonEngine: z.unknown().optional(),
+        specVersion: z.string().optional(),
+        calculationStatus: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         if (!ctx.user) throw new Error("User not authenticated");

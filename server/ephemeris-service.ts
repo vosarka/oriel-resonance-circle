@@ -33,6 +33,42 @@ export const PLANET_NAMES: Record<number, string> = {
   10: 'Mean Node',
 };
 
+const CALCULATED_PLANET_IDS = [
+  PLANETS.SUN,
+  PLANETS.MOON,
+  PLANETS.MERCURY,
+  PLANETS.VENUS,
+  PLANETS.MARS,
+  PLANETS.JUPITER,
+  PLANETS.SATURN,
+  PLANETS.URANUS,
+  PLANETS.NEPTUNE,
+  PLANETS.PLUTO,
+  PLANETS.NORTH_NODE, // True Node — VRC § 1 mandates True Node, not Mean Node
+] as const;
+
+const REQUIRED_CHART_BODIES = [
+  'Sun',
+  'Moon',
+  'Mercury',
+  'Venus',
+  'Mars',
+  'Jupiter',
+  'Saturn',
+  'Uranus',
+  'Neptune',
+  'Pluto',
+  'North Node',
+  'South Node',
+  'Earth',
+] as const;
+
+// Swiss Ephemeris does not guarantee populated speed fields unless SEFLG_SPEED
+// is requested. The design solar-arc solver requires Sun longitude speed.
+const SEFLG_SWIEPH = 2;
+const SEFLG_SPEED = 256;
+const EPHEMERIS_CALC_FLAGS = SEFLG_SWIEPH | SEFLG_SPEED;
+
 /**
  * Represents a planetary position
  */
@@ -115,41 +151,33 @@ async function calcPlanetsAtJD(
   jd: number,
   se: SwissEph
 ): Promise<Record<string, PlanetaryPosition>> {
-  const planetIds = [
-    PLANETS.SUN,
-    PLANETS.MOON,
-    PLANETS.MERCURY,
-    PLANETS.VENUS,
-    PLANETS.MARS,
-    PLANETS.JUPITER,
-    PLANETS.SATURN,
-    PLANETS.URANUS,
-    PLANETS.NEPTUNE,
-    PLANETS.PLUTO,
-    PLANETS.NORTH_NODE, // True Node — VRC § 1 mandates True Node, not Mean Node
-  ];
-
   const planets: Record<string, PlanetaryPosition> = {};
+  const failures: string[] = [];
 
-  for (const planetId of planetIds) {
+  for (const planetId of CALCULATED_PLANET_IDS) {
+    const planetName = PLANET_NAMES[planetId] || `Planet ${planetId}`;
     try {
-      const result = se.calc(jd, planetId, 0);
-      if (result && result.longitude !== undefined) {
-        const zodiac = getLongitudeToZodiac(result.longitude);
-        const planetName = PLANET_NAMES[planetId] || `Planet ${planetId}`;
-        planets[planetName] = {
-          planet: planetName,
-          planetId,
-          longitude: result.longitude,
-          latitude: result.latitude || 0,
-          distance: result.distance || 1,
-          speed: result.longitudeSpeed || 0,
-          zodiacSign: zodiac.sign,
-          zodiacDegree: zodiac.degree,
-        };
+      const result = se.calc(jd, planetId, EPHEMERIS_CALC_FLAGS);
+      if (!result || !Number.isFinite(result.longitude)) {
+        failures.push(`${planetName}: missing or non-finite longitude`);
+        continue;
       }
+
+      const zodiac = getLongitudeToZodiac(result.longitude);
+      planets[planetName] = {
+        planet: planetName,
+        planetId,
+        longitude: result.longitude,
+        latitude: result.latitude || 0,
+        distance: result.distance || 1,
+        speed: result.longitudeSpeed || 0,
+        zodiacSign: zodiac.sign,
+        zodiacDegree: zodiac.degree,
+      };
     } catch (error) {
-      console.error(`Error calculating position for planet ${planetId}:`, error);
+      failures.push(
+        `${planetName}: ${error instanceof Error ? error.message : 'unknown error'}`
+      );
     }
   }
 
@@ -185,6 +213,23 @@ async function calcPlanetsAtJD(
     };
   }
 
+  const missing = REQUIRED_CHART_BODIES.filter(
+    (body) => !Number.isFinite(planets[body]?.longitude)
+  );
+
+  if (failures.length > 0 || missing.length > 0) {
+    const details = [
+      failures.length > 0
+        ? `calculation failures: ${failures.join('; ')}`
+        : '',
+      missing.length > 0
+        ? `missing required bodies: ${missing.join(', ')}`
+        : '',
+    ].filter(Boolean);
+
+    throw new Error(`Incomplete ephemeris chart at JD ${jd}: ${details.join('. ')}`);
+  }
+
   return planets;
 }
 
@@ -206,6 +251,10 @@ async function findDesignJD(
   consciousSunLon: number,
   se: SwissEph
 ): Promise<number> {
+  if (!Number.isFinite(consciousSunLon)) {
+    throw new Error('Design solar-arc search requires a finite conscious Sun longitude');
+  }
+
   const targetLon = ((consciousSunLon - 88.0) % 360 + 360) % 360;
 
   // Initial estimate: approximately 88 days before birth
@@ -214,19 +263,35 @@ async function findDesignJD(
 
   const MAX_ITERATIONS = 50;
   const TOLERANCE = 0.00001; // << 0.001° VRC requirement
+  let converged = false;
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const result = se.calc(jd, PLANETS.SUN, 0);
-    const currentLon: number = result.longitude;
-    const speed: number = result.longitudeSpeed || 0.9856; // degrees/day
+    const result = se.calc(jd, PLANETS.SUN, EPHEMERIS_CALC_FLAGS);
+    const currentLon: number = result?.longitude;
+    const speed: number = result?.longitudeSpeed;
+
+    if (!Number.isFinite(currentLon)) {
+      throw new Error('Design solar-arc search failed: Sun longitude is missing or non-finite');
+    }
+
+    if (!Number.isFinite(speed) || speed === 0) {
+      throw new Error('Design solar-arc search failed: Sun speed is missing, non-finite, or zero');
+    }
 
     // Shortest angular difference (handles 0°/360° wrap-around)
     let diff = ((targetLon - currentLon) % 360 + 360) % 360;
     if (diff > 180) diff -= 360;
 
-    if (Math.abs(diff) < TOLERANCE) break;
+    if (Math.abs(diff) < TOLERANCE) {
+      converged = true;
+      break;
+    }
 
     jd += diff / speed;
+  }
+
+  if (!converged) {
+    throw new Error('Design solar-arc search failed to converge within 50 iterations');
   }
 
   return jd;
@@ -328,7 +393,7 @@ export async function calculateBothCharts(
 
   // Step A: Conscious chart
   const consciousPlanets = await calcPlanetsAtJD(consciousJD, se);
-  const consciousSunLon = consciousPlanets['Sun']?.longitude ?? 0;
+  const consciousSunLon = consciousPlanets['Sun'].longitude;
 
   // Step B: Design chart — iterative Solar Arc search
   const designJD = await findDesignJD(consciousJD, consciousSunLon, se);

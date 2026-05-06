@@ -4,7 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Layout from "@/components/Layout";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { CheckCircle, GitCompare, Loader2, ArrowLeft } from "lucide-react";
 
 // ── Design Tokens (shared with StaticReading) ──────────────────
 const C = {
@@ -206,10 +206,17 @@ export default function DynamicReading() {
   const readingId = params?.id ? parseInt(params.id, 10) : 0;
 
   const [activeView, setActiveView] = useState<"field" | "transmission" | "history" | "context">("field");
+  const [compareReadingId, setCompareReadingId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
 
   const { data: reading, isLoading, error } = trpc.codex.getCodonReading.useQuery(
     { id: readingId },
     { enabled: !!user && readingId > 0, retry: false }
+  );
+
+  const { data: readingHistory } = trpc.codex.getReadingHistory.useQuery(
+    undefined,
+    { enabled: !!user }
   );
 
   const { data: coherenceHistory } = trpc.codex.getCoherenceHistory.useQuery(
@@ -217,11 +224,34 @@ export default function DynamicReading() {
     { enabled: !!user }
   );
 
+  const markCorrectionMutation = trpc.codex.markCorrectionComplete.useMutation({
+    onSuccess: () => {
+      utils.codex.getCodonReading.invalidate({ id: readingId });
+      utils.codex.getReadingHistory.invalidate();
+    },
+  });
+
+  const compareQuery = trpc.codex.compareReadings.useQuery(
+    {
+      leftReadingId: compareReadingId ?? 0,
+      rightReadingId: readingId,
+    },
+    {
+      enabled: !!user && readingId > 0 && Boolean(compareReadingId),
+      retry: false,
+    }
+  );
+
   // ── Parse stored data ──────────────────────────────────────
   const transmission = reading?.readingText ?? "";
   const microCorrection = reading?.microCorrection;
   const falsifier = reading?.falsifier;
-  const sliScores = (reading?.sliScores ?? {}) as Record<string, number>;
+  const carrierlock = reading?.carrierlock as {
+    mentalNoise?: number;
+    bodyTension?: number;
+    emotionalTurbulence?: number;
+    breathCompletion?: boolean;
+  } | null | undefined;
 
   // Extract coherence from header: "ORIEL Dynamic Reading — 72/100 — Flux"
   const headerMatch = transmission.match(/(\d+)\/100\s*[—–-]\s*(Entropy|Flux|Resonance)/i);
@@ -229,11 +259,46 @@ export default function DynamicReading() {
   const zone = getZone(coherenceScore);
   const theme = ZONE_THEME[zone];
 
-  // Extract MN/BT/ET from sliScores (passed through from Carrierlock)
-  const mn = sliScores.mentalNoise ?? 5;
-  const bt = sliScores.bodyTension ?? 5;
-  const et = sliScores.emotionalTurbulence ?? 5;
-  const breathDone = coherenceScore > (100 - (mn * 3 + bt * 3 + et * 3));
+  // Current-state values come from the joined Carrierlock state; sliScores now stores real codon SLI values.
+  const mn = carrierlock?.mentalNoise ?? 5;
+  const bt = carrierlock?.bodyTension ?? 5;
+  const et = carrierlock?.emotionalTurbulence ?? 5;
+  const breathDone = Boolean(carrierlock?.breathCompletion ?? coherenceScore > (100 - (mn * 3 + bt * 3 + et * 3)));
+  const sliRows = useMemo(() => {
+    const scores = reading?.sliScores && typeof reading.sliScores === "object"
+      ? reading.sliScores as Record<string, number>
+      : {};
+    const activeFacets = reading?.activeFacets && typeof reading.activeFacets === "object"
+      ? reading.activeFacets as Record<string, string>
+      : {};
+    const confidenceLevels = reading?.confidenceLevels && typeof reading.confidenceLevels === "object"
+      ? reading.confidenceLevels as Record<string, number>
+      : {};
+
+    return Object.entries(scores)
+      .map(([key, value]) => {
+        const [positionPart, codonPart] = key.includes(":")
+          ? key.split(":")
+          : ["", key];
+        const codonId = codonPart || key;
+        return {
+          key,
+          position: positionPart ? Number(positionPart) : null,
+          codonId,
+          sli: Number(value),
+          facet: activeFacets[codonId] ?? "",
+          confidence: confidenceLevels[codonId] ?? null,
+        };
+      })
+      .filter((row) => Number.isFinite(row.sli))
+      .sort((a, b) => b.sli - a.sli);
+  }, [reading?.activeFacets, reading?.confidenceLevels, reading?.sliScores]);
+
+  const compareOptions = useMemo(() => {
+    return (readingHistory ?? [])
+      .filter((entry) => entry.id !== readingId)
+      .slice(0, 8);
+  }, [readingHistory, readingId]);
 
   // Strip header line for prose display
   const transmissionBody = transmission.startsWith("ORIEL Dynamic Reading")
@@ -429,6 +494,29 @@ export default function DynamicReading() {
           <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: C.txt, lineHeight: 1.7, fontWeight: 300 }}>
             {microCorrection}
           </p>
+          <button
+            type="button"
+            onClick={() => markCorrectionMutation.mutate({ readingId })}
+            disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
+            style={{
+              marginTop: 14,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "9px 14px",
+              border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
+              background: "transparent",
+              color: reading.correctionCompleted ? C.teal : C.gold,
+              fontFamily: "monospace",
+              fontSize: 9,
+              letterSpacing: "0.14em",
+              cursor: reading.correctionCompleted || markCorrectionMutation.isPending ? "default" : "pointer",
+              opacity: markCorrectionMutation.isPending ? 0.7 : 1,
+            }}
+          >
+            {reading.correctionCompleted ? <CheckCircle size={13} /> : <CheckCircle size={13} />}
+            {reading.correctionCompleted ? "CORRECTION COMPLETED" : markCorrectionMutation.isPending ? "MARKING..." : "MARK CORRECTION COMPLETE"}
+          </button>
         </div>
       )}
 
@@ -468,6 +556,51 @@ export default function DynamicReading() {
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      )}
+
+      {sliRows.length > 0 && (
+        <div style={{ background: C.deep, padding: "24px", marginTop: 24, borderTop: `1px solid ${C.border}` }}>
+          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.2em", marginBottom: 16 }}>
+            SLI DIAGNOSTIC TABLE
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            {sliRows.map((row) => {
+              const color = row.sli > 75 ? C.red : row.sli > 50 ? C.gold : row.sli > 25 ? C.teal : C.txtD;
+              return (
+                <Link key={row.key} href={`/codex/${row.codonId}`}>
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "54px 1fr 64px 82px",
+                    gap: 10,
+                    alignItems: "center",
+                    padding: "10px 12px",
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    cursor: "pointer",
+                  }}>
+                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>
+                      {row.position ? `P${row.position}` : "SLI"}
+                    </div>
+                    <div>
+                      <div style={{ fontFamily: "monospace", fontSize: 11, color: C.txt }}>
+                        {row.codonId}{row.facet ? ` · Facet ${row.facet}` : ""}
+                      </div>
+                      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.08em" }}>
+                        {row.confidence === null ? "CONFIDENCE N/A" : `CONFIDENCE ${(row.confidence * 100).toFixed(0)}%`}
+                      </div>
+                    </div>
+                    <div style={{ height: 4, background: C.void, border: `1px solid ${C.border}` }}>
+                      <div style={{ width: `${Math.max(0, Math.min(100, row.sli))}%`, height: "100%", background: color }} />
+                    </div>
+                    <div style={{ fontFamily: "monospace", fontSize: 12, color, textAlign: "right" as const }}>
+                      {row.sli.toFixed(1)}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}
@@ -561,6 +694,72 @@ export default function DynamicReading() {
               })}
             </div>
           </div>
+
+          {compareOptions.length > 0 && (
+            <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}`, marginTop: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                <GitCompare size={14} color={C.gold} />
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.18em" }}>
+                  COMPARE READINGS
+                </div>
+              </div>
+              <select
+                value={compareReadingId ?? ""}
+                onChange={(event) => setCompareReadingId(event.target.value ? Number(event.target.value) : null)}
+                style={{
+                  width: "100%",
+                  background: C.surface,
+                  color: C.txt,
+                  border: `1px solid ${C.border}`,
+                  padding: "10px 12px",
+                  fontFamily: "monospace",
+                  fontSize: 10,
+                  marginBottom: 14,
+                }}
+              >
+                <option value="">Select previous reading</option>
+                {compareOptions.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    #{entry.id} · {new Date(entry.createdAt).toLocaleString()}
+                  </option>
+                ))}
+              </select>
+
+              {compareQuery.isLoading && (
+                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD }}>CALCULATING DELTA...</div>
+              )}
+
+              {compareQuery.data && (
+                <div style={{ display: "grid", gap: 10 }}>
+                  <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS }}>
+                    COHERENCE DELTA:{" "}
+                    <span style={{ color: (compareQuery.data.coherenceDelta ?? 0) >= 0 ? C.teal : C.red }}>
+                      {compareQuery.data.coherenceDelta === null ? "N/A" : `${compareQuery.data.coherenceDelta > 0 ? "+" : ""}${compareQuery.data.coherenceDelta}`}
+                    </span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+                    {[
+                      ["RESOLVED", compareQuery.data.resolvedCodons],
+                      ["EMERGING", compareQuery.data.emergingCodons],
+                      ["SHARED", compareQuery.data.sharedFlaggedCodons],
+                    ].map(([label, codons]) => (
+                      <div key={label as string} style={{ padding: "12px", border: `1px solid ${C.border}`, background: C.surface }}>
+                        <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.14em", marginBottom: 8 }}>
+                          {label as string}
+                        </div>
+                        <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txt }}>
+                          {(codons as string[]).length > 0 ? (codons as string[]).join(", ") : "None"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ fontFamily: "monospace", fontSize: 9, color: compareQuery.data.correctionChanged ? C.gold : C.txtD, letterSpacing: "0.1em" }}>
+                    CORRECTION {compareQuery.data.correctionChanged ? "CHANGED" : "UNCHANGED"}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
     </div>

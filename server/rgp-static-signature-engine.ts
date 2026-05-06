@@ -18,6 +18,7 @@ import {
   type PrimeStackMap,
   type PrimeStackCodon,
   type CoreCodonEngine,
+  type PlanetaryActivation,
 } from './rgp-prime-stack-engine';
 
 import {
@@ -63,6 +64,18 @@ export interface BirthChartDataInput {
 
 export type BirthChartData = BirthChartDataInput;
 
+export interface CanonicalStaticLatticePayload {
+  specVersion: string;
+  calculationStatus: 'exact' | 'fallback';
+  activations: PlanetaryActivation[];
+  channelStatuses: PrimeStackMap['channelStatuses'];
+  legacyCircuitLinks: string[];
+}
+
+export type StaticCoreCodonEngine = CoreCodonEngine & {
+  lattice: CanonicalStaticLatticePayload;
+};
+
 export interface StaticSignatureReading {
   readingId: string;
   userId: string;
@@ -77,7 +90,10 @@ export interface StaticSignatureReading {
   }>;
   fractalRole: string;
   authorityNode: string;
+  activations: PlanetaryActivation[];
+  channelStatuses: PrimeStackMap['channelStatuses'];
   circuitLinks: string[];
+  legacyCircuitLinks: string[];
   baseCoherence: number | null;
   coherenceTrajectory: {
     current: number;
@@ -92,13 +108,41 @@ export interface StaticSignatureReading {
   }>;
   diagnosticTransmission: string;
   // Core Codon Engine (spec § 14)
-  coreCodonEngine: CoreCodonEngine;
+  coreCodonEngine: StaticCoreCodonEngine;
   // VRC-specific outputs
   vrcType?: string;
   vrcAuthority?: string;
   status: 'draft' | 'confirmed' | 'deprecated' | 'mythic';
+  calculationStatus: 'exact' | 'fallback';
+  specVersion: string;
   version: number;
 }
+
+export interface StaticSignatureOptions {
+  /**
+   * Legacy compatibility only. Production static profiles must provide exact
+   * Conscious + Design chart data from the ephemeris service.
+   */
+  allowLegacyFallback?: boolean;
+}
+
+const REQUIRED_EXACT_PLANETS = [
+  'Sun',
+  'Moon',
+  'Mercury',
+  'Venus',
+  'Mars',
+  'Jupiter',
+  'Saturn',
+  'Uranus',
+  'Neptune',
+  'Pluto',
+  'North Node',
+  'South Node',
+  'Earth',
+] as const;
+
+const CONSCIOUSNESS_LATTICE_SPEC_VERSION = 'Consciousness Lattice Unified Specification v1';
 
 // ─── Planet record helper ─────────────────────────────────────────────────────
 
@@ -114,6 +158,57 @@ function chartInputToRecord(input: ChartInput | undefined): Record<string, { lon
   return out;
 }
 
+function missingExactPlanets(input: ChartInput | undefined): string[] {
+  if (!input) return [...REQUIRED_EXACT_PLANETS];
+  return REQUIRED_EXACT_PLANETS.filter(planet => !Number.isFinite(input[planet]));
+}
+
+function normalizeLongitude(longitude: number): number {
+  return ((longitude % 360) + 360) % 360;
+}
+
+function completeLegacyFallbackRecord(
+  record: Record<string, { longitude: number }>
+): Record<string, { longitude: number }> {
+  const out = { ...record };
+  const seedSun = Number.isFinite(out.Sun?.longitude) ? out.Sun.longitude : 0;
+  const seedNode = Number.isFinite(out['North Node']?.longitude)
+    ? out['North Node'].longitude
+    : normalizeLongitude(seedSun + 90);
+
+  const offsets: Record<string, number> = {
+    Sun: 0,
+    Moon: 13,
+    Mercury: 28,
+    Venus: 55,
+    Mars: 92,
+    Jupiter: 144,
+    Saturn: 188,
+    Uranus: 231,
+    Neptune: 277,
+    Pluto: 319,
+    'North Node': seedNode - seedSun,
+  };
+
+  for (const [planet, offset] of Object.entries(offsets)) {
+    if (!Number.isFinite(out[planet]?.longitude)) {
+      out[planet] = { longitude: normalizeLongitude(seedSun + offset) };
+    }
+  }
+
+  if (!Number.isFinite(out.Earth?.longitude)) {
+    out.Earth = { longitude: normalizeLongitude(out.Sun.longitude + 180) };
+  }
+
+  if (!Number.isFinite(out['South Node']?.longitude)) {
+    out['South Node'] = {
+      longitude: normalizeLongitude(out['North Node'].longitude + 180),
+    };
+  }
+
+  return out;
+}
+
 // ─── Main generator ────────────────────────────────────────────────────────────
 
 /**
@@ -125,9 +220,21 @@ function chartInputToRecord(input: ChartInput | undefined): Record<string, { lon
 export async function generateStaticSignature(
   userId: string,
   birthChartData: BirthChartDataInput,
-  _coherenceScore?: number
+  _coherenceScore?: number,
+  options: StaticSignatureOptions = {}
 ): Promise<StaticSignatureReading> {
   const readingId = `sig-${userId}-${Date.now()}`;
+  const consciousMissing = missingExactPlanets(birthChartData.conscious);
+  const designMissing = missingExactPlanets(birthChartData.design);
+  const hasExactCharts = consciousMissing.length === 0 && designMissing.length === 0;
+  const calculationStatus: StaticSignatureReading['calculationStatus'] =
+    hasExactCharts ? 'exact' : 'fallback';
+
+  if (!hasExactCharts && !options.allowLegacyFallback) {
+    throw new Error(
+      `Exact conscious/design chart data is required for a confirmed Static Signature. Missing conscious: ${consciousMissing.join(', ') || 'none'}. Missing design: ${designMissing.join(', ') || 'none'}.`
+    );
+  }
 
   // ── Build conscious and design planet records ───────────────────────────────
   let consciousRecord: Record<string, { longitude: number }>;
@@ -161,6 +268,11 @@ export async function generateStaticSignature(
     };
   }
 
+  if (calculationStatus === 'fallback') {
+    consciousRecord = completeLegacyFallbackRecord(consciousRecord);
+    designRecord = completeLegacyFallbackRecord(designRecord);
+  }
+
   // ── Prime Stack (VRC Two-Timing Algorithm) ────────────────────────────────
   const primeStackMap: PrimeStackMap = calculatePrimeStack(consciousRecord, designRecord);
   const primeStack = primeStackMap.positions;
@@ -182,9 +294,20 @@ export async function generateStaticSignature(
   const fractalRole    = fractalRoleData.role;
   const authorityData  = calculateAuthorityNode(primeStackMap);
   const authorityNode  = authorityData.node;
-  const circuitLinks   = primeStackMap.circuitLinks.map(
+  const legacyCircuitLinks = primeStackMap.circuitLinks.map(
     l => `${l.position1}-${l.position2}`
   );
+  const latticePayload: CanonicalStaticLatticePayload = {
+    specVersion: CONSCIOUSNESS_LATTICE_SPEC_VERSION,
+    calculationStatus,
+    activations: primeStackMap.activations,
+    channelStatuses: primeStackMap.channelStatuses,
+    legacyCircuitLinks,
+  };
+  const coreCodonEngine: StaticCoreCodonEngine = {
+    ...primeStackMap.coreCodonEngine,
+    lattice: latticePayload,
+  };
 
   // ── Natal micro-corrections ────────────────────────────────────────────────
   // Built from dominant natal codons only. No current-state overlay is allowed here.
@@ -250,15 +373,20 @@ export async function generateStaticSignature(
     ninecenters,
     fractalRole,
     authorityNode,
-    circuitLinks,
+    activations: primeStackMap.activations,
+    channelStatuses: primeStackMap.channelStatuses,
+    circuitLinks: legacyCircuitLinks,
+    legacyCircuitLinks,
     baseCoherence: null,
     coherenceTrajectory: null,
     microCorrections,
     diagnosticTransmission,
-    coreCodonEngine: primeStackMap.coreCodonEngine,
+    coreCodonEngine,
     vrcType: primeStackMap.vrcType,
     vrcAuthority: primeStackMap.vrcAuthority,
-    status: 'confirmed',
+    status: calculationStatus === 'exact' ? 'confirmed' : 'draft',
+    calculationStatus,
+    specVersion: CONSCIOUSNESS_LATTICE_SPEC_VERSION,
     version: 2,
   };
 }

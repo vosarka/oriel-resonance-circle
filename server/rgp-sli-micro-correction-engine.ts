@@ -12,6 +12,7 @@
  */
 
 import { PrimeStackCodon, PrimeStackMap } from './rgp-prime-stack-engine';
+import { getFacetData } from './vrc-codon-library';
 
 export interface SLIScore {
   position: number;
@@ -25,7 +26,7 @@ export interface SLIScore {
 
 export interface InterferencePattern {
   type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent';
-  severity: number; // 0-100 destabilization score (inverse of average SLI)
+  severity: number; // 0-100 destabilization score (average shadow loudness)
   affectedPositions: number[];
   description: string;
 }
@@ -63,6 +64,25 @@ export interface DiagnosticTransmission {
   transmissionText: string;
 }
 
+type FacetLetter = 'A' | 'B' | 'C' | 'D';
+
+function parseCodonFacet(codon256Id: string): { codonId: number; facet: FacetLetter } | null {
+  const match = codon256Id.match(/^(?:RC)?(\d+)-([ABCD])$/i);
+  if (!match) return null;
+
+  const codonId = parseInt(match[1], 10);
+  const facet = match[2].toUpperCase() as FacetLetter;
+  if (!Number.isFinite(codonId) || codonId < 1 || codonId > 64) return null;
+  return { codonId, facet };
+}
+
+function actionTypeForFacet(facet: FacetLetter): MicroCorrection['actionType'] {
+  if (facet === 'A') return 'movement';
+  if (facet === 'B') return 'inquiry';
+  if (facet === 'C') return 'visualization';
+  return 'affirmation';
+}
+
 /**
  * Calculate Shadow Loudness Index (SLI) for all positions
  * 
@@ -87,13 +107,13 @@ export function calculateSLIScores(
     // SLI = Base × StateAmp × FacetAmp
     const sliValue = Math.min(100, (baseAmplitude * stateAmplifier * facetAmplitude) / 100);
 
-    // Consciousness Lattice Unified Specification v1:
-    // high SLI = coherent, low SLI = destabilized.
+    // Shadow Loudness Index:
+    // high SLI = louder interference, low SLI = quieter shadow expression.
     let interference: 'none' | 'minor' | 'moderate' | 'severe' = 'none';
-    if (sliValue > 75) interference = 'none';
-    else if (sliValue > 50) interference = 'minor';
-    else if (sliValue > 25) interference = 'moderate';
-    else interference = 'severe';
+    if (sliValue > 75) interference = 'severe';
+    else if (sliValue > 50) interference = 'moderate';
+    else if (sliValue > 25) interference = 'minor';
+    else interference = 'none';
 
     sliScores.push({
       position: position.position,
@@ -119,32 +139,31 @@ export function analyzeInterferencePattern(sliScores: SLIScore[]): InterferenceP
   // Calculate average SLI
   const averageSLI = sliScores.reduce((sum, s) => sum + s.sliValue, 0) / sliScores.length;
 
-  // Find positions with the lowest coherence / highest destabilization
+  // Find positions with the highest shadow loudness / destabilization.
   const severePositions = sliScores.filter(s => s.interference === 'severe').map(s => s.position);
   const moderatePositions = sliScores.filter(s => s.interference === 'moderate').map(s => s.position);
 
-  // Unified spec bands:
-  // >75 coherent, 50-75 harmonic, 25-50 dissonant, <25 chaotic
+  // SLI bands: high average shadow loudness means stronger interference.
   let type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent' = 'coherent';
-  let severity = Math.max(0, Math.min(100, 100 - averageSLI));
+  let severity = Math.max(0, Math.min(100, averageSLI));
 
   if (averageSLI > 75) {
-    type = 'coherent';
-  } else if (averageSLI > 50) {
-    type = 'harmonic';
-  } else if (averageSLI > 25) {
-    type = 'dissonant';
-  } else {
     type = 'chaotic';
+  } else if (averageSLI > 50) {
+    type = 'dissonant';
+  } else if (averageSLI > 25) {
+    type = 'harmonic';
+  } else {
+    type = 'coherent';
   }
 
   const affectedPositions = [...severePositions, ...moderatePositions];
 
   const descriptionMap: Record<string, string> = {
-    coherent: 'Your signal is coherent. Frequencies are well-aligned.',
-    harmonic: 'Your signal is harmonic. Minor recalibration may sharpen the field.',
-    dissonant: 'Your signal is dissonant. Multiple frequencies are misaligned.',
-    chaotic: 'Your signal is chaotic. Significant realignment is needed.',
+    coherent: 'Your shadow loudness is quiet. Frequencies are not strongly interfering.',
+    harmonic: 'Your shadow loudness is present. Minor recalibration may sharpen the field.',
+    dissonant: 'Your shadow loudness is elevated. Multiple frequencies are interfering.',
+    chaotic: 'Your shadow loudness is high. Significant realignment is needed.',
   };
 
   return {
@@ -168,10 +187,31 @@ export function generateMicroCorrections(
 ): MicroCorrection[] {
   const corrections: MicroCorrection[] = [];
 
-  // Lowest SLI = most destabilized position
+  // Highest SLI = loudest shadow interference.
   const worstPosition = sliScores.reduce((prev, current) =>
-    current.sliValue < prev.sliValue ? current : prev
+    current.sliValue > prev.sliValue ? current : prev
   );
+
+  const parsedTarget = parseCodonFacet(worstPosition.codon256Id);
+  const facetData = parsedTarget
+    ? getFacetData(parsedTarget.codonId, parsedTarget.facet)
+    : undefined;
+
+  if (parsedTarget && facetData?.micro_correction) {
+    corrections.push({
+      id: `micro-library-${parsedTarget.codonId}-${parsedTarget.facet}`,
+      title: `${facetData.title} Protocol`,
+      description: facetData.micro_correction,
+      actionType: actionTypeForFacet(parsedTarget.facet),
+      duration: 180,
+      frequency: 'as-needed',
+      targetCodon: worstPosition.codon256Id,
+      expectedOutcome: facetData.description,
+      falsifiers: [
+        facetData.shadow_manifestation,
+      ],
+    });
+  }
 
   // Breath correction for severe interference
   if (interferencePattern.severity > 70) {
@@ -284,9 +324,9 @@ export function generateFalsifiers(
 ): string[] {
   const falsifiers: string[] = [];
 
-  // Falsifier based on worst position
+  // Falsifier based on the loudest interference position.
   const worstPosition = sliScores.reduce((prev, current) =>
-    current.sliValue < prev.sliValue ? current : prev
+    current.sliValue > prev.sliValue ? current : prev
   );
 
   falsifiers.push(
@@ -357,15 +397,15 @@ export function calculateCoherenceTrajectory(
 
   // Identify key influences
   const keyInfluences: string[] = [];
-  const lowestCoherence = sliScores.reduce((prev, current) =>
+  const lowestInterference = sliScores.reduce((prev, current) =>
     current.sliValue < prev.sliValue ? current : prev
   );
-  const highestCoherence = sliScores.reduce((prev, current) =>
+  const highestInterference = sliScores.reduce((prev, current) =>
     current.sliValue > prev.sliValue ? current : prev
   );
 
-  keyInfluences.push(`Lowest coherence position: Position ${lowestCoherence.position} (${lowestCoherence.sliValue.toFixed(1)})`);
-  keyInfluences.push(`Highest coherence position: Position ${highestCoherence.position} (${highestCoherence.sliValue.toFixed(1)})`);
+  keyInfluences.push(`Highest shadow loudness position: Position ${highestInterference.position} (${highestInterference.sliValue.toFixed(1)})`);
+  keyInfluences.push(`Lowest shadow loudness position: Position ${lowestInterference.position} (${lowestInterference.sliValue.toFixed(1)})`);
 
   if (trend === 'ascending') {
     keyInfluences.push('Your coherence is building momentum');

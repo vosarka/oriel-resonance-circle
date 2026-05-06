@@ -1,5 +1,62 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { calculateBirthChart, getPlanetPosition, getAllPlanetPositions, formatPlanetPosition } from './ephemeris-service';
+import { describe, it, expect, beforeAll, afterEach, vi } from 'vitest';
+import {
+  calculateBirthChart,
+  calculateBothCharts,
+  getPlanetPosition,
+  getAllPlanetPositions,
+  formatPlanetPosition,
+} from './ephemeris-service';
+import { longitudeToCodonFacet } from './vrc-mandala';
+
+type MockSwissResult = {
+  longitude?: number;
+  latitude?: number;
+  distance?: number;
+  longitudeSpeed?: number;
+};
+
+const SEFLG_SPEED = 256;
+
+const mockLongitudes: Record<number, number> = {
+  0: 280,
+  1: 15,
+  2: 40,
+  3: 75,
+  4: 110,
+  5: 145,
+  6: 180,
+  7: 215,
+  8: 250,
+  9: 285,
+  11: 90,
+};
+
+function mockResult(longitude: number): MockSwissResult {
+  return {
+    longitude,
+    latitude: 0,
+    distance: 1,
+    longitudeSpeed: 1,
+  };
+}
+
+async function importEphemerisWithMock(
+  calc: (jd: number, planetId: number, flags?: number) => MockSwissResult
+) {
+  vi.resetModules();
+  vi.doMock('swisseph-wasm', () => ({
+    default: class MockSwissEph {
+      async initSwissEph() {}
+      julday() {
+        return 1000;
+      }
+      calc(jd: number, planetId: number, flags: number) {
+        return calc(jd, planetId, flags);
+      }
+    },
+  }));
+  return import('./ephemeris-service');
+}
 
 describe('Ephemeris Service', () => {
   // Test with a known birth date: 1990-01-01 12:00 UTC at Greenwich (0, 0)
@@ -67,6 +124,28 @@ describe('Ephemeris Service', () => {
 
     it('should expose the canonical 13 activations for one chart layer', async () => {
       expect(Object.keys(birthChart.planets)).toHaveLength(13);
+    });
+
+    it('matches the VRC validation vector for 2024-01-01 12:00 UTC', async () => {
+      const { conscious, design } = await calculateBothCharts(
+        new Date('2024-01-01'),
+        '12:00:00',
+        0,
+        0,
+        0
+      );
+
+      const consciousSun = conscious.planets['Sun'].longitude;
+      const designSun = design.planets['Sun'].longitude;
+      const solarArc = ((consciousSun - designSun) % 360 + 360) % 360;
+
+      expect(consciousSun).toBeCloseTo(280.46, 1);
+      expect(longitudeToCodonFacet(consciousSun).codon).toBe(38);
+      expect(designSun).toBeCloseTo(192.46, 1);
+      expect(longitudeToCodonFacet(designSun).codon).toBe(57);
+      expect(solarArc).toBeCloseTo(88, 3);
+      expect(Object.keys(conscious.planets)).toHaveLength(13);
+      expect(Object.keys(design.planets)).toHaveLength(13);
     });
 
     it('should calculate house system', async () => {
@@ -217,5 +296,78 @@ describe('Ephemeris Service', () => {
         expect((planet as any).distance).toBeLessThan(50);
       }
     });
+  });
+});
+
+describe('Ephemeris fail-fast behavior', () => {
+  afterEach(() => {
+    vi.doUnmock('swisseph-wasm');
+    vi.resetModules();
+  });
+
+  it('rejects calculateBirthChart when one required Swiss body fails', async () => {
+    const service = await importEphemerisWithMock((_jd, planetId) => {
+      if (planetId === 8) throw new Error('Neptune unavailable');
+      return mockResult(mockLongitudes[planetId] ?? 0);
+    });
+
+    await expect(
+      service.calculateBirthChart(new Date('1990-01-01'), '12:00:00', 0, 0, 0)
+    ).rejects.toThrow(/Failed to calculate birth chart: .*Neptune unavailable/);
+  });
+
+  it('rejects calculateBothCharts when conscious Sun is non-finite', async () => {
+    const service = await importEphemerisWithMock((_jd, planetId) => {
+      if (planetId === 0) return mockResult(Number.NaN);
+      return mockResult(mockLongitudes[planetId] ?? 0);
+    });
+
+    await expect(
+      service.calculateBothCharts(new Date('1990-01-01'), '12:00:00', 0, 0, 0)
+    ).rejects.toThrow(/Sun: missing or non-finite longitude/);
+  });
+
+  it('rejects calculateBothCharts when the design chart is incomplete', async () => {
+    const service = await importEphemerisWithMock((jd, planetId) => {
+      if (planetId === 0) return mockResult(jd === 1000 ? 280 : 192);
+      if (planetId === 1 && jd !== 1000) throw new Error('Design Moon unavailable');
+      return mockResult(mockLongitudes[planetId] ?? 0);
+    });
+
+    await expect(
+      service.calculateBothCharts(new Date('1990-01-01'), '12:00:00', 0, 0, 0)
+    ).rejects.toThrow(/Design Moon unavailable/);
+  });
+
+  it('rejects design timing failure instead of producing a zero-default design chart', async () => {
+    const service = await importEphemerisWithMock((jd, planetId) => {
+      if (planetId === 0) {
+        return mockResult(jd === 1000 ? 280 : Number.NaN);
+      }
+      return mockResult(mockLongitudes[planetId] ?? 0);
+    });
+
+    await expect(
+      service.calculateBothCharts(new Date('1990-01-01'), '12:00:00', 0, 0, 0)
+    ).rejects.toThrow(/Design solar-arc search failed/);
+  });
+
+  it('requests Swiss speed data for the design solar-arc search', async () => {
+    const service = await importEphemerisWithMock((jd, planetId, flags = 0) => {
+      const longitude = planetId === 0
+        ? jd === 1000
+          ? 280
+          : 192
+        : mockLongitudes[planetId] ?? 0;
+
+      return {
+        ...mockResult(longitude),
+        longitudeSpeed: flags & SEFLG_SPEED ? 1 : 0,
+      };
+    });
+
+    await expect(
+      service.calculateBothCharts(new Date('1990-01-01'), '12:00:00', 0, 0, 0)
+    ).resolves.toBeDefined();
   });
 });

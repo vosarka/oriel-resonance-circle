@@ -353,6 +353,7 @@ export default function Profile() {
   const { user, isAuthenticated, loading } = useAuth();
   const [, setLocation] = useLocation();
   const [copied, setCopied] = useState(false);
+  const [recomputeStatus, setRecomputeStatus] = useState<string | null>(null);
 
   // Fetch fractal role from latest static signature
   const sigilQuery = trpc.codex.getProfileSigil.useQuery(undefined, {
@@ -360,6 +361,16 @@ export default function Profile() {
   });
   const staticProfileQuery = trpc.profile.getStaticProfile.useQuery(undefined, {
     enabled: isAuthenticated,
+  });
+  const recomputeStaticProfileMutation = trpc.profile.recomputeStaticProfile.useMutation({
+    onSuccess: () => {
+      setRecomputeStatus("Blueprint recalculated from exact ephemeris.");
+      staticProfileQuery.refetch();
+      sigilQuery.refetch();
+    },
+    onError: (error) => {
+      setRecomputeStatus(error.message || "Blueprint recalculation failed.");
+    },
   });
 
   useEffect(() => {
@@ -651,20 +662,62 @@ export default function Profile() {
                       </div>
                     </div>
                     <div style={{ marginTop: 18 }}>
-                      <Link href="/blueprint">
-                        <span style={{
-                          display: "inline-block",
-                          padding: "10px 16px",
-                          border: `1px solid ${C.goldDim}`,
-                          color: C.gold,
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                        <Link href="/blueprint">
+                          <span style={{
+                            display: "inline-block",
+                            padding: "10px 16px",
+                            border: `1px solid ${C.goldDim}`,
+                            color: C.gold,
+                            fontFamily: "monospace",
+                            fontSize: 10,
+                            letterSpacing: "0.14em",
+                            cursor: "pointer",
+                          }}>
+                            OPEN FULL STATIC SIGNATURE
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRecomputeStatus(null);
+                            recomputeStaticProfileMutation.mutate();
+                          }}
+                          disabled={recomputeStaticProfileMutation.isPending}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 8,
+                            padding: "10px 16px",
+                            border: `1px solid ${C.tealDim}`,
+                            background: "transparent",
+                            color: C.teal,
+                            fontFamily: "monospace",
+                            fontSize: 10,
+                            letterSpacing: "0.14em",
+                            cursor: recomputeStaticProfileMutation.isPending ? "wait" : "pointer",
+                            opacity: recomputeStaticProfileMutation.isPending ? 0.65 : 1,
+                          }}
+                        >
+                          {recomputeStaticProfileMutation.isPending ? (
+                            <Loader2 size={13} style={{ animation: "spin 1s linear infinite" }} />
+                          ) : (
+                            <Zap size={13} />
+                          )}
+                          {recomputeStaticProfileMutation.isPending ? "RECALCULATING" : "REGENERATE EXACT PROFILE"}
+                        </button>
+                      </div>
+                      {recomputeStatus && (
+                        <div style={{
+                          marginTop: 10,
                           fontFamily: "monospace",
-                          fontSize: 10,
-                          letterSpacing: "0.14em",
-                          cursor: "pointer",
+                          fontSize: 9,
+                          color: recomputeStaticProfileMutation.isError ? C.red : C.teal,
+                          letterSpacing: "0.08em",
                         }}>
-                          OPEN FULL STATIC SIGNATURE
-                        </span>
-                      </Link>
+                          {recomputeStatus}
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (

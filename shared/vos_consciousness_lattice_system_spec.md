@@ -110,6 +110,12 @@ These facets describe how the codon expresses across the body, relationships, mi
 
 Each codon spans 5.625 degrees of the zodiac.
 
+The codon wheel starts at 11.25 degrees tropical longitude. Implementations
+normalize longitude with this offset before selecting the 5.625 degree codon
+arc:
+
+normalized = (longitude - 11.25) mod 360
+
 Each facet occupies:
 
 1.40625°
@@ -233,6 +239,13 @@ SLI = Activation Weight × Distortion Factor
 Distortion factor ranges from 0 to 1.
 
 Higher SLI values identify primary psychological interference patterns.
+
+Threshold semantics:
+
+- SLI > 75: Chaotic / severe interference
+- SLI > 50: Dissonant / moderate interference
+- SLI > 25: Harmonic / minor interference
+- SLI <= 25: Coherent / no surfaced interference
 
 ---
 
@@ -797,4 +810,3 @@ These interpretations feed the automated reading generator.
 ---
 
 ## End of System Specification
-

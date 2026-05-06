@@ -3,8 +3,10 @@ import { getLoginUrl } from "@/const";
 import CodonGlyph from "@/components/CodonGlyph";
 import Layout from "@/components/Layout";
 import { trpc } from "@/lib/trpc";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { ArrowLeft, Loader2, MapPin } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 import { Link } from "wouter";
 
 const C = {
@@ -39,6 +41,7 @@ const MANDALA_SEQUENCE = [
 ] as const;
 
 const MANDALA_SEQUENCE_LIST: number[] = [...MANDALA_SEQUENCE];
+const FACET_LETTERS = ["A", "B", "C", "D"] as const;
 
 const CENTER_LAYOUT: Array<{ id: string; x: number; y: number }> = [
   { id: "Crown", x: 50, y: 8 },
@@ -106,6 +109,49 @@ type CenterEntry = {
   defined: boolean;
 };
 
+type ChannelEntry = {
+  gateA: number;
+  gateB: number;
+  active: boolean;
+  centerA: string;
+  centerB: string;
+};
+
+type ActivationEntry = {
+  planet: string;
+  longitude: number;
+  codonId: number;
+  facet: (typeof FACET_LETTERS)[number];
+  center: string;
+  layer: "conscious" | "design";
+  weight: number;
+};
+
+type Lattice512Node = {
+  key: string;
+  codon: number;
+  facet: (typeof FACET_LETTERS)[number];
+  layer: "conscious" | "design";
+  x: number;
+  y: number;
+  z: number;
+  active: boolean;
+  weight: number;
+};
+
+type TransitOverlayDay = {
+  date: string;
+  activations: Array<{
+    planet: string;
+    longitude: number;
+    zodiacSign: string;
+    zodiacDegree: number;
+    codon: number;
+    facet: string;
+    center: string;
+  }>;
+};
+
 type CorrectionEntry = {
   type: string;
   instruction: string;
@@ -119,6 +165,12 @@ function numberOr(value: unknown, fallback: number): number {
 
 function stringOr(value: unknown, fallback = ""): string {
   return typeof value === "string" ? value : fallback;
+}
+
+function normalizeFacet(value: unknown): (typeof FACET_LETTERS)[number] {
+  return FACET_LETTERS.includes(value as (typeof FACET_LETTERS)[number])
+    ? (value as (typeof FACET_LETTERS)[number])
+    : "A";
 }
 
 function formatRc(codon: number) {
@@ -169,6 +221,45 @@ function normalizeCenters(value: unknown): CenterEntry[] {
     .filter((entry): entry is CenterEntry => Boolean(entry));
 }
 
+function normalizeChannels(value: unknown): ChannelEntry[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      return {
+        gateA: numberOr(row.gateA, 0),
+        gateB: numberOr(row.gateB, 0),
+        active: Boolean(row.active),
+        centerA: stringOr(row.centerA, "Unknown"),
+        centerB: stringOr(row.centerB, "Unknown"),
+      };
+    })
+    .filter((entry): entry is ChannelEntry => Boolean(entry && entry.gateA > 0 && entry.gateB > 0));
+}
+
+function normalizeActivations(value: unknown): ActivationEntry[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return null;
+      const row = entry as Record<string, unknown>;
+      const layer = row.layer === "design" ? "design" : "conscious";
+      return {
+        planet: stringOr(row.planet, "Unknown"),
+        longitude: numberOr(row.longitude, 0),
+        codonId: numberOr(row.codonId, 0),
+        facet: normalizeFacet(row.facet),
+        center: stringOr(row.center, "Unknown Center"),
+        layer,
+        weight: numberOr(row.weight, 0),
+      };
+    })
+    .filter((entry): entry is ActivationEntry => Boolean(entry && entry.codonId > 0));
+}
+
 function normalizeCorrections(value: unknown): CorrectionEntry[] {
   if (!Array.isArray(value)) return [];
 
@@ -194,6 +285,44 @@ function buildPositionsByCodon(primeStack: PrimeStackEntry[]) {
     map.set(entry.codon, current);
   }
   return map;
+}
+
+function buildLattice512Nodes(activations: ActivationEntry[]): Lattice512Node[] {
+  const activeWeights = new Map<string, number>();
+  for (const activation of activations) {
+    const key = `${activation.layer}:${activation.codonId}:${activation.facet}`;
+    activeWeights.set(key, Math.max(activeWeights.get(key) ?? 0, activation.weight));
+  }
+
+  const nodes: Lattice512Node[] = [];
+  for (let codonIndex = 0; codonIndex < MANDALA_SEQUENCE.length; codonIndex += 1) {
+    const codon = MANDALA_SEQUENCE[codonIndex];
+    const baseAngle = (codonIndex / MANDALA_SEQUENCE.length) * Math.PI * 2;
+
+    for (const [facetIndex, facet] of FACET_LETTERS.entries()) {
+      for (const layer of ["conscious", "design"] as const) {
+        const layerIndex = layer === "conscious" ? 0 : 1;
+        const key = `${layer}:${codon}:${facet}`;
+        const radius = (layer === "conscious" ? 2.12 : 1.52) + facetIndex * 0.075;
+        const angle = baseAngle + (layerIndex === 0 ? 0 : Math.PI / 64) + (facetIndex - 1.5) * 0.012;
+        const weight = activeWeights.get(key) ?? 0;
+
+        nodes.push({
+          key,
+          codon,
+          facet,
+          layer,
+          x: Math.cos(angle) * radius,
+          y: Math.sin(angle) * radius,
+          z: (layer === "conscious" ? 0.34 : -0.34) + (facetIndex - 1.5) * 0.16,
+          active: weight > 0,
+          weight,
+        });
+      }
+    }
+  }
+
+  return nodes;
 }
 
 function Panel({
@@ -343,6 +472,172 @@ function CenterConstellation({ centers }: { centers: CenterEntry[] }) {
         );
       })}
     </svg>
+  );
+}
+
+function ChannelGraph({
+  channels,
+  centers,
+}: {
+  channels: ChannelEntry[];
+  centers: CenterEntry[];
+}) {
+  const centerMap = new Map(centers.map((center) => [center.id, center]));
+  const positionMap = Object.fromEntries(CENTER_LAYOUT.map((center) => [center.id, center]));
+  const activeCounts = new Map<string, number>();
+
+  for (const channel of channels) {
+    if (!channel.active) continue;
+    activeCounts.set(channel.centerA, (activeCounts.get(channel.centerA) ?? 0) + 1);
+    activeCounts.set(channel.centerB, (activeCounts.get(channel.centerB) ?? 0) + 1);
+  }
+
+  return (
+    <svg viewBox="0 0 100 100" style={{ width: "100%", maxWidth: 420, height: "auto" }}>
+      <defs>
+        <filter id="oriel-channel-glow">
+          <feGaussianBlur stdDeviation="1.4" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      {channels.map((channel, index) => {
+        const from = positionMap[channel.centerA];
+        const to = positionMap[channel.centerB];
+        if (!from || !to) return null;
+
+        const pairOffset = ((index % 5) - 2) * 0.45;
+        return (
+          <line
+            key={`${channel.gateA}-${channel.gateB}-${index}`}
+            x1={from.x + pairOffset}
+            y1={from.y}
+            x2={to.x + pairOffset}
+            y2={to.y}
+            stroke={channel.active ? C.gold : C.border}
+            strokeWidth={channel.active ? "0.95" : "0.28"}
+            opacity={channel.active ? 0.78 : 0.28}
+            filter={channel.active ? "url(#oriel-channel-glow)" : undefined}
+          />
+        );
+      })}
+      {CENTER_LAYOUT.map((point) => {
+        const center = centerMap.get(point.id);
+        const defined = Boolean(center?.defined);
+        const count = activeCounts.get(point.id) ?? 0;
+        return (
+          <g key={point.id}>
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={defined ? 5.1 : 4.2}
+              fill={defined ? C.surfaceR : C.deep}
+              stroke={defined ? C.gold : C.borderH}
+              strokeWidth={defined ? "0.9" : "0.45"}
+            />
+            {count > 0 && (
+              <text
+                x={point.x}
+                y={point.y + 1.6}
+                textAnchor="middle"
+                style={{
+                  fontSize: "4px",
+                  fill: C.goldL,
+                  fontFamily: "monospace",
+                }}
+              >
+                {count}
+              </text>
+            )}
+            <text
+              x={point.x}
+              y={point.y + 9}
+              textAnchor="middle"
+              style={{
+                fontSize: "3.2px",
+                fill: defined ? C.goldL : C.txtD,
+                fontFamily: "monospace",
+              }}
+            >
+              {point.id === "Solar Plexus" ? "Solar" : point.id === "G-Self" ? "G" : point.id}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+function Lattice512Cloud({ nodes }: { nodes: Lattice512Node[] }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.z += delta * 0.055;
+    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
+  });
+
+  return (
+    <group ref={groupRef}>
+      {nodes.map((node) => {
+        const activeScale = node.active ? 1 + Math.min(node.weight / 150, 0.9) : 1;
+        return (
+          <mesh
+            key={node.key}
+            position={[node.x, node.y, node.z]}
+            scale={activeScale}
+          >
+            <sphereGeometry args={[node.active ? 0.038 : 0.018, 8, 8]} />
+            <meshBasicMaterial
+              color={
+                node.active
+                  ? node.layer === "conscious"
+                    ? C.gold
+                    : C.teal
+                  : "#2b2b36"
+              }
+              transparent
+              opacity={node.active ? 0.96 : 0.28}
+            />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function Lattice512Viewer({ nodes }: { nodes: Lattice512Node[] }) {
+  const activeNodes = nodes.filter((node) => node.active);
+  const consciousActive = activeNodes.filter((node) => node.layer === "conscious").length;
+  const designActive = activeNodes.filter((node) => node.layer === "design").length;
+
+  return (
+    <div>
+      <div
+        style={{
+          height: 340,
+          border: `1px solid ${C.border}`,
+          background:
+            "radial-gradient(circle at center, rgba(91,164,164,0.08), rgba(10,10,14,0.88) 62%)",
+          overflow: "hidden",
+        }}
+      >
+        <Canvas
+          dpr={[1, 1.5]}
+          camera={{ position: [0, 0, 5.5], fov: 44 }}
+          gl={{ antialias: true, alpha: true }}
+        >
+          <Lattice512Cloud nodes={nodes} />
+        </Canvas>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 10 }}>
+        <DataPill label="NODES" value={String(nodes.length)} />
+        <DataPill label="CONSCIOUS" value={String(consciousActive)} />
+        <DataPill label="DESIGN" value={String(designActive)} />
+      </div>
+    </div>
   );
 }
 
@@ -544,12 +839,44 @@ export default function StaticReading() {
   const staticProfileQuery = trpc.profile.getStaticProfile.useQuery(undefined, {
     enabled: isAuthenticated,
   });
+  const transitOverlayQuery = trpc.profile.getTransitOverlay.useQuery(
+    { days: 7 },
+    {
+      enabled: isAuthenticated,
+      retry: false,
+      staleTime: 1000 * 60 * 10,
+    },
+  );
   const rootCodonsQuery = trpc.codex.getRootCodons.useQuery();
 
   const profile = staticProfileQuery.data as Record<string, unknown> | null | undefined;
   const rootCodons = (rootCodonsQuery.data ?? []) as RootCodon[];
   const primeStack = useMemo(() => normalizePrimeStack(profile?.primeStack), [profile?.primeStack]);
   const centers = useMemo(() => normalizeCenters(profile?.ninecenters), [profile?.ninecenters]);
+  const channels = useMemo(
+    () => normalizeChannels(profile?.channelStatuses),
+    [profile?.channelStatuses],
+  );
+  const activeChannels = useMemo(
+    () => channels.filter((channel) => channel.active),
+    [channels],
+  );
+  const activations = useMemo(() => {
+    const direct = normalizeActivations(profile?.activations);
+    if (direct.length > 0) return direct;
+
+    const engine = profile?.coreCodonEngine;
+    if (!engine || typeof engine !== "object") return [];
+
+    const lattice = (engine as Record<string, unknown>).lattice;
+    if (!lattice || typeof lattice !== "object") return [];
+
+    return normalizeActivations((lattice as Record<string, unknown>).activations);
+  }, [profile?.activations, profile?.coreCodonEngine]);
+  const legacyLinks = useMemo(() => {
+    const raw = profile?.legacyCircuitLinks ?? profile?.circuitLinks;
+    return Array.isArray(raw) ? raw : [];
+  }, [profile?.legacyCircuitLinks, profile?.circuitLinks]);
   const corrections = useMemo(() => normalizeCorrections(profile?.microCorrections), [profile?.microCorrections]);
   const dominantCodons = useMemo(() => {
     const engine = profile?.coreCodonEngine;
@@ -564,6 +891,8 @@ export default function StaticReading() {
 
   const positionsByCodon = useMemo(() => buildPositionsByCodon(primeStack), [primeStack]);
   const rootCodonMap = useMemo(() => new Map(rootCodons.map((codon) => [codon.numericId, codon])), [rootCodons]);
+  const latticeNodes = useMemo(() => buildLattice512Nodes(activations), [activations]);
+  const transitDays = (transitOverlayQuery.data?.days ?? []) as TransitOverlayDay[];
 
   useEffect(() => {
     if (!selectedCodon && primeStack[0]?.codon) {
@@ -1001,13 +1330,45 @@ export default function StaticReading() {
                 </div>
               </div>
 
-              {Array.isArray(profile.circuitLinks) && profile.circuitLinks.length > 0 && (
+              {channels.length > 0 && (
+                <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
+                  <ChannelGraph channels={channels} centers={centers} />
+                </div>
+              )}
+
+              {activeChannels.length > 0 && (
                 <div style={{ marginTop: 18 }}>
                   <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>
-                    CIRCUIT LINKS
+                    ACTIVE CHANNELS
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {(profile.circuitLinks as unknown[]).map((link, index) => (
+                    {activeChannels.map((channel) => (
+                      <div
+                        key={`${channel.gateA}-${channel.gateB}`}
+                        style={{
+                          padding: "8px 10px",
+                          border: `1px solid ${C.border}`,
+                          background: "rgba(255,255,255,0.02)",
+                          color: C.txtS,
+                          fontFamily: "monospace",
+                          fontSize: 9,
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        {channel.gateA}-{channel.gateB} · {channel.centerA} ⇄ {channel.centerB}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {activeChannels.length === 0 && legacyLinks.length > 0 && (
+                <div style={{ marginTop: 18 }}>
+                  <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.16em", marginBottom: 8 }}>
+                    LEGACY POSITION LINKS
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {legacyLinks.map((link, index) => (
                       <div
                         key={`${String(link)}-${index}`}
                         style={{
@@ -1024,6 +1385,110 @@ export default function StaticReading() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+            </Panel>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22, marginTop: 22, alignItems: "start" }}>
+            <Panel eyebrow="512 LATTICE" title="Codon-Facet Activation Field">
+              <Lattice512Viewer nodes={latticeNodes} />
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                {activations.slice(0, 12).map((activation) => (
+                  <button
+                    key={`${activation.layer}-${activation.planet}-${activation.codonId}-${activation.facet}`}
+                    type="button"
+                    onClick={() => setSelectedCodon(activation.codonId)}
+                    style={{
+                      padding: "8px 10px",
+                      border: `1px solid ${C.border}`,
+                      background:
+                        activation.layer === "conscious"
+                          ? "rgba(189,163,107,0.08)"
+                          : "rgba(91,164,164,0.08)",
+                      color: activation.layer === "conscious" ? C.goldL : C.teal,
+                      fontFamily: "monospace",
+                      fontSize: 9,
+                      letterSpacing: "0.08em",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {activation.planet} · {formatRc(activation.codonId)}-{activation.facet}
+                  </button>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel eyebrow="TRANSIT OVERLAY" title="Seven-Day Ephemeris">
+              {transitOverlayQuery.isLoading && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.txtD, fontFamily: "monospace", fontSize: 10 }}>
+                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                  RESOLVING DAILY TRANSITS
+                </div>
+              )}
+
+              {transitOverlayQuery.error && (
+                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.red, lineHeight: 1.8 }}>
+                  {transitOverlayQuery.error.message}
+                </div>
+              )}
+
+              {!transitOverlayQuery.isLoading && !transitOverlayQuery.error && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {transitDays.map((day) => {
+                    const selectedHits = selectedCodon
+                      ? day.activations.filter((activation) => activation.codon === selectedCodon)
+                      : [];
+                    const primary = selectedHits.length > 0
+                      ? selectedHits
+                      : day.activations.filter((activation) =>
+                          ["Sun", "Moon", "Mercury", "Venus", "Mars"].includes(activation.planet),
+                        );
+
+                    return (
+                      <div
+                        key={day.date}
+                        style={{
+                          padding: "12px 14px",
+                          border: `1px solid ${selectedHits.length > 0 ? C.goldDim : C.border}`,
+                          background: selectedHits.length > 0 ? C.goldGlow : "rgba(255,255,255,0.02)",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
+                          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.14em" }}>
+                            {day.date}
+                          </div>
+                          <div style={{ fontFamily: "monospace", fontSize: 8, color: selectedHits.length > 0 ? C.goldL : C.txtD, letterSpacing: "0.12em" }}>
+                            {selectedHits.length > 0 ? `${selectedHits.length} SELECTED HIT${selectedHits.length > 1 ? "S" : ""}` : "NOON UTC"}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                          {primary.slice(0, 6).map((activation) => (
+                            <button
+                              key={`${day.date}-${activation.planet}-${activation.codon}-${activation.facet}`}
+                              type="button"
+                              onClick={() => setSelectedCodon(activation.codon)}
+                              style={{
+                                padding: "7px 9px",
+                                border: `1px solid ${activation.codon === selectedCodon ? C.goldDim : C.border}`,
+                                background:
+                                  activation.codon === selectedCodon
+                                    ? "rgba(189,163,107,0.1)"
+                                    : "rgba(255,255,255,0.02)",
+                                color: activation.codon === selectedCodon ? C.goldL : C.txtS,
+                                fontFamily: "monospace",
+                                fontSize: 9,
+                                letterSpacing: "0.08em",
+                                cursor: "pointer",
+                              }}
+                            >
+                              {activation.planet} {formatRc(activation.codon)}-{activation.facet}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </Panel>

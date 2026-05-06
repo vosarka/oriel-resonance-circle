@@ -177,29 +177,37 @@ export async function runRGPForChat(
       return { success: false, summary: "Could not parse the birth date." };
     }
 
-    let latitude = 0;
-    let longitude = 0;
+    let latitude: number;
+    let longitude: number;
     let timezone = 0;
     let resolvedCity = "Unknown";
 
-    // Geocode the city if provided
-    if (birthData.city) {
-      try {
-        const geo = await geocodeCity(birthData.city);
-        latitude = geo.latitude;
-        longitude = geo.longitude;
-        resolvedCity = geo.displayName;
-        const tz = getTimezoneForCoords(latitude, longitude, birthDate);
-        timezone = tz.offsetHours;
-      } catch (err) {
-        console.warn("[RGP Bridge] Geocoding failed:", err);
-      }
+    if (!birthData.city) {
+      return {
+        success: false,
+        summary: "Exact RGP calculation requires a birth city so coordinates can be resolved.",
+      };
+    }
+
+    try {
+      const geo = await geocodeCity(birthData.city);
+      latitude = geo.latitude;
+      longitude = geo.longitude;
+      resolvedCity = geo.displayName;
+      const tz = getTimezoneForCoords(latitude, longitude, birthDate);
+      timezone = tz.offsetHours;
+    } catch (err) {
+      console.warn("[RGP Bridge] Geocoding failed:", err);
+      return {
+        success: false,
+        summary: `Exact RGP calculation could not resolve the birth city: ${birthData.city}.`,
+      };
     }
 
     // Always run ephemeris — default to 12:00 noon if no time given
     const birthTime = birthData.time || "12:00";
-    let consciousChartData: Record<string, number> | undefined;
-    let designChartData: Record<string, number> | undefined;
+    let consciousChartData: Record<string, number>;
+    let designChartData: Record<string, number>;
 
     try {
       const { conscious, design } = await calculateBothCharts(
@@ -220,6 +228,10 @@ export async function runRGPForChat(
       }
     } catch (err) {
       console.warn("[RGP Bridge] Ephemeris calculation failed:", err);
+      return {
+        success: false,
+        summary: `Exact RGP ephemeris calculation failed: ${err instanceof Error ? err.message : "unknown error"}`,
+      };
     }
 
     // Run the full static signature engine
@@ -230,9 +242,6 @@ export async function runRGPForChat(
         birthTime: birthData.time,
         conscious: consciousChartData,
         design: designChartData,
-        sun: consciousChartData?.["Sun"],
-        moon: consciousChartData?.["Moon"],
-        northNode: consciousChartData?.["North Node"],
       }
     );
 
@@ -256,6 +265,11 @@ export async function runRGPForChat(
       .map((mc: any) => `  - ${mc.description || mc.correction || JSON.stringify(mc)}`)
       .join("\n") || "None";
 
+    const activeChannels = reading.channelStatuses
+      ?.filter((channel) => channel.active)
+      .map((channel) => `  - ${channel.gateA}-${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`)
+      .join("\n") || "None";
+
     const summary = [
       `=== RGP ENGINE RESULTS (REAL CALCULATION — USE THIS DATA, DO NOT INVENT) ===`,
       `IMPORTANT: This is the Vossari Resonance Codex (VRC), NOT Human Design. NEVER use Human Design terms like "Projector", "Generator", "Manifestor", or "Manifesting Generator". The VRC Types are: Resonator, Catalyst, Harmonizer, Reflector. Use ONLY the data below.`,
@@ -272,7 +286,10 @@ export async function runRGPForChat(
       `NINE CENTERS:`,
       centers,
       ``,
-      `CIRCUIT LINKS: ${reading.circuitLinks ? JSON.stringify(reading.circuitLinks) : "N/A"}`,
+      `ACTIVE CHANNELS:`,
+      activeChannels,
+      ``,
+      `LEGACY POSITION LINKS: ${reading.legacyCircuitLinks ? JSON.stringify(reading.legacyCircuitLinks) : "N/A"}`,
       ``,
       `MICRO-CORRECTIONS:`,
       corrections,

@@ -28,11 +28,36 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
       latitude: 40.7128,
       longitude: -74.0060,
       timezone: 'America/New_York',
-      // legacy flat fields (conscious chart fallback)
-      sun: 355,
-      moon: 120,
-      chiron: 135,
-      northNode: 85,
+      conscious: {
+        Sun: 355,
+        Moon: 120,
+        Mercury: 12,
+        Venus: 48,
+        Mars: 92,
+        Jupiter: 155,
+        Saturn: 204,
+        Uranus: 242,
+        Neptune: 276,
+        Pluto: 318,
+        'North Node': 85,
+        'South Node': 265,
+        Earth: 175,
+      },
+      design: {
+        Sun: 267,
+        Moon: 32,
+        Mercury: 284,
+        Venus: 320,
+        Mars: 4,
+        Jupiter: 67,
+        Saturn: 116,
+        Uranus: 154,
+        Neptune: 188,
+        Pluto: 230,
+        'North Node': 357,
+        'South Node': 177,
+        Earth: 87,
+      },
     };
   });
 
@@ -46,7 +71,32 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
       expect(reading.baseCoherence).toBeNull();
       expect(reading.coherenceTrajectory).toBeNull();
       expect(reading.status).toBe('confirmed');
+      expect(reading.calculationStatus).toBe('exact');
+      expect(reading.specVersion).toBe('Consciousness Lattice Unified Specification v1');
       expect(reading.version).toBe(2); // VRC v1.0 implementation
+    });
+
+    it('should reject confirmed static signatures without exact conscious and design charts', async () => {
+      await expect(generateStaticSignature('user-missing-exact', {
+        birthDate: new Date('1985-03-15T14:30:00Z'),
+        birthTime: '14:30',
+        sun: 355,
+        moon: 120,
+        northNode: 85,
+      })).rejects.toThrow(/Exact conscious\/design chart data is required/);
+    });
+
+    it('marks explicit legacy fallback readings as draft, not confirmed', async () => {
+      const reading = await generateStaticSignature('user-legacy-fallback', {
+        birthDate: new Date('1985-03-15T14:30:00Z'),
+        birthTime: '14:30',
+        sun: 355,
+        moon: 120,
+        northNode: 85,
+      }, 65, { allowLegacyFallback: true });
+
+      expect(reading.status).toBe('draft');
+      expect(reading.calculationStatus).toBe('fallback');
     });
 
     it('should include Prime Stack with 9 positions', async () => {
@@ -95,6 +145,18 @@ describe('Static Signature Generation Engine', { timeout: 30_000 }, () => {
 
       expect(reading.circuitLinks).toBeDefined();
       expect(Array.isArray(reading.circuitLinks)).toBe(true);
+      expect(reading.legacyCircuitLinks).toEqual(reading.circuitLinks);
+    });
+
+    it('should expose canonical activations and 36 channel statuses', async () => {
+      const reading = await generateStaticSignature('user-lattice', sampleBirthChart, 65);
+
+      expect(reading.activations).toHaveLength(26);
+      expect(reading.channelStatuses).toHaveLength(36);
+      expect(reading.channelStatuses.every((channel) => typeof channel.active === 'boolean')).toBe(true);
+      expect(reading.coreCodonEngine.lattice.activations).toHaveLength(26);
+      expect(reading.coreCodonEngine.lattice.channelStatuses).toHaveLength(36);
+      expect(reading.coreCodonEngine.lattice.legacyCircuitLinks).toEqual(reading.legacyCircuitLinks);
     });
 
     it('should not generate coherence trajectory for a natal-only blueprint', async () => {

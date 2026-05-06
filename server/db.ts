@@ -92,6 +92,67 @@ async function executeMigrationStep(
   }
 }
 
+type CanonicalLatticeCarrier = {
+  coreCodonEngine?: unknown;
+  activations?: unknown;
+  channelStatuses?: unknown;
+  legacyCircuitLinks?: unknown;
+  circuitLinks?: unknown;
+  specVersion?: string;
+  calculationStatus?: string;
+};
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function mergeCanonicalLatticeIntoCoreCodonEngine(
+  data: CanonicalLatticeCarrier,
+): unknown {
+  const base = isRecord(data.coreCodonEngine) ? data.coreCodonEngine : {};
+  const existingLattice = isRecord(base.lattice) ? base.lattice : {};
+  const lattice = {
+    ...existingLattice,
+    ...(data.specVersion ? { specVersion: data.specVersion } : {}),
+    ...(data.calculationStatus ? { calculationStatus: data.calculationStatus } : {}),
+    ...(data.activations ? { activations: data.activations } : {}),
+    ...(data.channelStatuses ? { channelStatuses: data.channelStatuses } : {}),
+    ...(data.legacyCircuitLinks ?? data.circuitLinks
+      ? { legacyCircuitLinks: data.legacyCircuitLinks ?? data.circuitLinks }
+      : {}),
+  };
+
+  if (Object.keys(base).length === 0 && Object.keys(lattice).length === 0) {
+    return data.coreCodonEngine;
+  }
+
+  return {
+    ...base,
+    ...(Object.keys(lattice).length > 0 ? { lattice } : {}),
+  };
+}
+
+function extractCanonicalLattice(
+  coreCodonEngine: unknown,
+  circuitLinks: unknown,
+) {
+  const lattice: Record<string, unknown> = isRecord(coreCodonEngine) && isRecord(coreCodonEngine.lattice)
+    ? coreCodonEngine.lattice
+    : {};
+
+  return {
+    activations: Array.isArray(lattice.activations) ? lattice.activations : null,
+    channelStatuses: Array.isArray(lattice.channelStatuses) ? lattice.channelStatuses : null,
+    legacyCircuitLinks: Array.isArray(lattice.legacyCircuitLinks)
+      ? lattice.legacyCircuitLinks
+      : Array.isArray(circuitLinks)
+        ? circuitLinks
+        : null,
+    specVersion: typeof lattice.specVersion === "string" ? lattice.specVersion : null,
+    calculationStatus: typeof lattice.calculationStatus === "string" ? lattice.calculationStatus : null,
+  };
+}
+
 /**
  * Run pending schema migrations on startup.
  * Uses IF NOT EXISTS / IF NOT so it's safe to call every boot.
@@ -1847,7 +1908,7 @@ export async function saveCodonReading(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   try {
     const { codonReadings } = await import("../drizzle/schema");
     await db.insert(codonReadings).values({
@@ -1917,12 +1978,17 @@ export async function getCodonReadingById(id: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const { codonReadings } = await import('../drizzle/schema');
-    const result = await db.select().from(codonReadings).where(eq(codonReadings.id, id)).limit(1);
+    const { codonReadings, carrierlockStates } = await import('../drizzle/schema');
+    const result = await db.select()
+      .from(codonReadings)
+      .leftJoin(carrierlockStates, eq(codonReadings.carrierlockId, carrierlockStates.id))
+      .where(eq(codonReadings.id, id))
+      .limit(1);
     if (!result[0]) return null;
-    const row = result[0];
+    const row = result[0].codonReadings;
     return {
       ...row,
+      carrierlock: result[0].carrierlockStates,
       flaggedCodons:    String(row.flaggedCodons ?? '').split(',').filter(Boolean),
       sliScores:        safeJsonParse<Record<string, number>>(row.sliScores, {}),
       activeFacets:     safeJsonParse<Record<string, string>>(row.activeFacets, {}),
@@ -1980,7 +2046,10 @@ export async function saveStaticSignature(
     authorityNode?: string;
     vrcType?: string;
     vrcAuthority?: string;
+    activations?: unknown;
+    channelStatuses?: unknown;
     circuitLinks?: unknown;
+    legacyCircuitLinks?: unknown;
     baseCoherence?: number;
     coherenceTrajectory?: unknown;
     microCorrections?: unknown;
@@ -1988,10 +2057,13 @@ export async function saveStaticSignature(
     houses?: unknown;
     diagnosticTransmission?: string;
     coreCodonEngine?: unknown;
+    specVersion?: string;
+    calculationStatus?: string;
   }
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const coreCodonEngine = mergeCanonicalLatticeIntoCoreCodonEngine(data);
 
   try {
     await db.insert(staticSignatures).values({
@@ -2012,14 +2084,16 @@ export async function saveStaticSignature(
       authorityNode: data.authorityNode ?? null,
       vrcType: data.vrcType ?? null,
       vrcAuthority: data.vrcAuthority ?? null,
-      circuitLinks: data.circuitLinks ? JSON.stringify(data.circuitLinks) : null,
+      circuitLinks: data.legacyCircuitLinks ?? data.circuitLinks
+        ? JSON.stringify(data.legacyCircuitLinks ?? data.circuitLinks)
+        : null,
       baseCoherence: data.baseCoherence ?? null,
       coherenceTrajectory: data.coherenceTrajectory ? JSON.stringify(data.coherenceTrajectory) : null,
       microCorrections: data.microCorrections ? JSON.stringify(data.microCorrections) : null,
       ephemerisData: data.ephemerisData ? JSON.stringify(data.ephemerisData) : null,
       houses: data.houses ? JSON.stringify(data.houses) : null,
       diagnosticTransmission: data.diagnosticTransmission ?? null,
-      coreCodonEngine: data.coreCodonEngine ? JSON.stringify(data.coreCodonEngine) : null,
+      coreCodonEngine: coreCodonEngine ? JSON.stringify(coreCodonEngine) : null,
     });
 
     const inserted = await db.select().from(staticSignatures)
@@ -2124,12 +2198,17 @@ type UserStaticProfilePayload = {
   authorityNode?: string;
   vrcType?: string;
   vrcAuthority?: string;
+  activations?: unknown;
+  channelStatuses?: unknown;
   circuitLinks?: unknown;
+  legacyCircuitLinks?: unknown;
   microCorrections?: unknown;
   ephemerisData?: unknown;
   houses?: unknown;
   diagnosticTransmission?: string;
   coreCodonEngine?: unknown;
+  specVersion?: string;
+  calculationStatus?: string;
   engineVersion?: number;
 };
 
@@ -2139,6 +2218,7 @@ export async function upsertUserStaticProfile(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  const coreCodonEngine = mergeCanonicalLatticeIntoCoreCodonEngine(profile);
 
   try {
     const existing = await db.select({ id: userStaticProfiles.id })
@@ -2162,12 +2242,14 @@ export async function upsertUserStaticProfile(
       authorityNode: profile.authorityNode ?? null,
       vrcType: profile.vrcType ?? null,
       vrcAuthority: profile.vrcAuthority ?? null,
-      circuitLinks: profile.circuitLinks ? JSON.stringify(profile.circuitLinks) : null,
+      circuitLinks: profile.legacyCircuitLinks ?? profile.circuitLinks
+        ? JSON.stringify(profile.legacyCircuitLinks ?? profile.circuitLinks)
+        : null,
       microCorrections: profile.microCorrections ? JSON.stringify(profile.microCorrections) : null,
       ephemerisData: profile.ephemerisData ? JSON.stringify(profile.ephemerisData) : null,
       houses: profile.houses ? JSON.stringify(profile.houses) : null,
       diagnosticTransmission: profile.diagnosticTransmission ?? null,
-      coreCodonEngine: profile.coreCodonEngine ? JSON.stringify(profile.coreCodonEngine) : null,
+      coreCodonEngine: coreCodonEngine ? JSON.stringify(coreCodonEngine) : null,
       engineVersion: profile.engineVersion ?? 2,
     };
 
@@ -2254,28 +2336,46 @@ export async function getLatestStaticSignature(userId: number) {
 
 /** Parse JSON text columns back into objects */
 function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
+  const circuitLinks = safeJsonParse(row.circuitLinks, null);
+  const coreCodonEngine = safeJsonParse(row.coreCodonEngine, null);
+  const lattice = extractCanonicalLattice(coreCodonEngine, circuitLinks);
+
   return {
     ...row,
     primeStack: safeJsonParse(row.primeStack, null),
     ninecenters: safeJsonParse(row.ninecenters, null),
-    circuitLinks: safeJsonParse(row.circuitLinks, null),
+    circuitLinks,
+    legacyCircuitLinks: lattice.legacyCircuitLinks,
+    activations: lattice.activations,
+    channelStatuses: lattice.channelStatuses,
+    specVersion: lattice.specVersion,
+    calculationStatus: lattice.calculationStatus,
     coherenceTrajectory: safeJsonParse(row.coherenceTrajectory, null),
     microCorrections: safeJsonParse(row.microCorrections, null),
     ephemerisData: safeJsonParse(row.ephemerisData, null),
     houses: safeJsonParse(row.houses, null),
-    coreCodonEngine: safeJsonParse(row.coreCodonEngine, null),
+    coreCodonEngine,
   };
 }
 
 function parseUserStaticProfileRow(row: typeof userStaticProfiles.$inferSelect) {
+  const circuitLinks = safeJsonParse(row.circuitLinks, null);
+  const coreCodonEngine = safeJsonParse(row.coreCodonEngine, null);
+  const lattice = extractCanonicalLattice(coreCodonEngine, circuitLinks);
+
   return {
     ...row,
     primeStack: safeJsonParse(row.primeStack, null),
     ninecenters: safeJsonParse(row.ninecenters, null),
-    circuitLinks: safeJsonParse(row.circuitLinks, null),
+    circuitLinks,
+    legacyCircuitLinks: lattice.legacyCircuitLinks,
+    activations: lattice.activations,
+    channelStatuses: lattice.channelStatuses,
+    specVersion: lattice.specVersion,
+    calculationStatus: lattice.calculationStatus,
     microCorrections: safeJsonParse(row.microCorrections, null),
     ephemerisData: safeJsonParse(row.ephemerisData, null),
     houses: safeJsonParse(row.houses, null),
-    coreCodonEngine: safeJsonParse(row.coreCodonEngine, null),
+    coreCodonEngine,
   };
 }

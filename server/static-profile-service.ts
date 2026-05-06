@@ -25,48 +25,44 @@ export async function buildUserStaticProfile(
   let designChartData: Record<string, number> | undefined;
   let ephemerisData: object | null = null;
 
-  try {
-    const { conscious, design } = await calculateBothCharts(
-      birthDateObj,
-      input.birthTime,
-      input.latitude,
-      input.longitude,
-      input.timezoneOffset ?? 0,
-    );
+  const { conscious, design } = await calculateBothCharts(
+    birthDateObj,
+    input.birthTime,
+    input.latitude,
+    input.longitude,
+    input.timezoneOffset ?? 0,
+  );
 
-    consciousChartData = {};
-    for (const [name, pos] of Object.entries(conscious.planets)) {
-      consciousChartData[name] = pos.longitude;
-    }
-
-    designChartData = {};
-    for (const [name, pos] of Object.entries(design.planets)) {
-      designChartData[name] = pos.longitude;
-    }
-
-    ephemerisData = {
-      conscious: {
-        jd: conscious.jd,
-        planets: Object.values(conscious.planets).map((p) => ({
-          name: p.planet,
-          longitude: p.longitude,
-          zodiacSign: p.zodiacSign,
-          zodiacDegree: p.zodiacDegree,
-        })),
-      },
-      design: {
-        jd: design.jd,
-        planets: Object.values(design.planets).map((p) => ({
-          name: p.planet,
-          longitude: p.longitude,
-          zodiacSign: p.zodiacSign,
-          zodiacDegree: p.zodiacDegree,
-        })),
-      },
-    };
-  } catch (error) {
-    console.error("[Static Profile] Failed to calculate conscious/design charts:", error);
+  consciousChartData = {};
+  for (const [name, pos] of Object.entries(conscious.planets)) {
+    consciousChartData[name] = pos.longitude;
   }
+
+  designChartData = {};
+  for (const [name, pos] of Object.entries(design.planets)) {
+    designChartData[name] = pos.longitude;
+  }
+
+  ephemerisData = {
+    conscious: {
+      jd: conscious.jd,
+      planets: Object.values(conscious.planets).map((p) => ({
+        name: p.planet,
+        longitude: p.longitude,
+        zodiacSign: p.zodiacSign,
+        zodiacDegree: p.zodiacDegree,
+      })),
+    },
+    design: {
+      jd: design.jd,
+      planets: Object.values(design.planets).map((p) => ({
+        name: p.planet,
+        longitude: p.longitude,
+        zodiacSign: p.zodiacSign,
+        zodiacDegree: p.zodiacDegree,
+      })),
+    },
+  };
 
   const reading = await generateStaticSignature(userId, {
     birthDate: birthDateObj,
@@ -96,12 +92,17 @@ export async function buildUserStaticProfile(
     authorityNode: reading.authorityNode,
     vrcType: reading.vrcType,
     vrcAuthority: reading.vrcAuthority,
+    activations: reading.activations,
+    channelStatuses: reading.channelStatuses,
     circuitLinks: reading.circuitLinks,
+    legacyCircuitLinks: reading.legacyCircuitLinks,
     microCorrections: reading.microCorrections,
     ephemerisData,
     houses: null,
     diagnosticTransmission: reading.diagnosticTransmission,
     coreCodonEngine: reading.coreCodonEngine,
+    specVersion: reading.specVersion,
+    calculationStatus: reading.calculationStatus,
     engineVersion: reading.version,
   };
 }
@@ -126,6 +127,14 @@ export function summarizeStoredStaticProfile(profile: {
   }> | null;
   ninecenters?: Record<string, { defined?: boolean }> | null;
   circuitLinks?: string[] | null;
+  legacyCircuitLinks?: string[] | null;
+  channelStatuses?: Array<{
+    gateA?: number;
+    gateB?: number;
+    active?: boolean;
+    centerA?: string;
+    centerB?: string;
+  }> | null;
   microCorrections?: Array<{
     type?: string;
     instruction?: string;
@@ -148,6 +157,12 @@ export function summarizeStoredStaticProfile(profile: {
         .join("\n")
     : "N/A";
 
+  const activeChannels = (profile.channelStatuses ?? [])
+    .filter((channel) => channel?.active && channel.gateA && channel.gateB)
+    .map((channel) => `  - ${channel.gateA}-${channel.gateB}: ${channel.centerA ?? "?"} ↔ ${channel.centerB ?? "?"}`)
+    .join("\n") || "None";
+  const legacyLinks = profile.legacyCircuitLinks ?? profile.circuitLinks;
+
   const corrections = (profile.microCorrections ?? [])
     .slice(0, 3)
     .map((mc) => `  - ${mc.instruction ?? mc.type ?? JSON.stringify(mc)}`)
@@ -169,7 +184,10 @@ export function summarizeStoredStaticProfile(profile: {
     `NINE CENTERS:`,
     centers,
     ``,
-    `CIRCUIT LINKS: ${profile.circuitLinks ? JSON.stringify(profile.circuitLinks) : "N/A"}`,
+    `ACTIVE CHANNELS:`,
+    activeChannels,
+    ``,
+    `LEGACY POSITION LINKS: ${legacyLinks ? JSON.stringify(legacyLinks) : "N/A"}`,
     ``,
     `MICRO-CORRECTIONS:`,
     corrections,
