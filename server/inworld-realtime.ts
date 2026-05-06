@@ -25,7 +25,8 @@ import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intr
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
 const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
 const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
-const STT_MODEL_ID = process.env.INWORLD_REALTIME_STT_MODEL || "assemblyai/whisper-rt";
+const REALTIME_MODEL_ID = ENV.inworldRealtimeModel || "google-vertex/gemma-4-26b-a4b";
+const STT_MODEL_ID = ENV.inworldRealtimeSttModel || "assemblyai/u3-rt-pro";
 const VOICE_TURN_STOP_DETECTION_MS = 500;
 
 async function buildRealtimeInstructions(
@@ -69,14 +70,14 @@ async function buildSessionUpdate(
     type: "session.update",
     session: {
       type: "realtime",
-      model: "xai/grok-4.20-beta-non-reasoning",
+      model: REALTIME_MODEL_ID,
       instructions,
       output_modalities: ["audio", "text"],
       audio: {
         input: {
           transcription: {
             model: STT_MODEL_ID,
-            prompt: "The speaker may use Romanian or English. Transcribe Romanian accurately with diacritics when present, and preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
+            prompt: "The speaker uses English by default and may clearly use Romanian. Transcribe only what is actually spoken. Do not invent Japanese, Russian, subtitles, outro phrases, or background-video text. Preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
           },
           turn_detection: {
             // Use server VAD only to detect turn boundaries, then trigger
@@ -125,6 +126,7 @@ interface SessionState {
   userId: number;
   conversationId: number | null;
   currentUserTranscript: string;
+  userTranscriptSavedForCurrentItem: boolean;
   currentAssistantTranscript: string;
   latestUserTranscript: string;
   pendingUmmUserTranscript: string;
@@ -214,6 +216,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       userId: user.id,
       conversationId,
       currentUserTranscript: "",
+      userTranscriptSavedForCurrentItem: false,
       currentAssistantTranscript: "",
       latestUserTranscript: "",
       pendingUmmUserTranscript: "",
@@ -280,21 +283,14 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
         if (msg.type === "session.updated") {
           if (!inworldReady) {
-            // Initial session config accepted — inject conversation history if resuming
+            // Initial session config accepted. Keep realtime voice focused on
+            // the current spoken turn; old chat history can dominate simple
+            // greetings if injected as active conversation items.
             console.log("[Realtime] Session configured successfully");
 
-            if (state.conversationId) {
-              injectConversationHistory(state, inworldWs).then(() => {
-                inworldReady = true;
-                if (clientWs.readyState === WebSocket.OPEN) {
-                  clientWs.send(JSON.stringify({ type: "session.ready" }));
-                }
-              });
-            } else {
-              inworldReady = true;
-              if (clientWs.readyState === WebSocket.OPEN) {
-                clientWs.send(JSON.stringify({ type: "session.ready" }));
-              }
+            inworldReady = true;
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(JSON.stringify({ type: "session.ready" }));
             }
           } else {
             console.log("[Realtime] Session instructions refreshed");
@@ -401,11 +397,25 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
 
   switch (type) {
     // User's speech has been transcribed
+    case "conversation.item.input_audio_transcription.delta":
+      if (msg.delta) {
+        state.currentUserTranscript += msg.delta;
+        state.latestUserTranscript = state.currentUserTranscript.trim();
+        state.pendingUmmUserTranscript = state.latestUserTranscript;
+      }
+      break;
+
     case "conversation.item.input_audio_transcription.completed":
       if (msg.transcript) {
         state.currentUserTranscript = msg.transcript;
         state.latestUserTranscript = msg.transcript;
         state.pendingUmmUserTranscript = msg.transcript;
+        enqueueSaveUser(state, clientWs);
+      }
+      break;
+
+    case "conversation.item.done":
+      if (state.currentUserTranscript.trim() && !state.userTranscriptSavedForCurrentItem) {
         enqueueSaveUser(state, clientWs);
       }
       break;
@@ -444,6 +454,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
 function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void {
   const content = state.currentUserTranscript.trim();
   state.currentUserTranscript = "";
+  state.userTranscriptSavedForCurrentItem = true;
   if (!content) return;
 
   state.saveQueue = state.saveQueue.then(async () => {
@@ -471,8 +482,10 @@ function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void 
         content,
       });
       console.log(`[Realtime] Saved user message (${content.length} chars)`);
+      state.userTranscriptSavedForCurrentItem = false;
     } catch (err) {
       console.error("[Realtime] Failed to save user message:", err);
+      state.userTranscriptSavedForCurrentItem = false;
     }
   });
 }
@@ -524,47 +537,6 @@ function enqueueSaveAssistant(state: SessionState): void {
       console.error("[Realtime] Failed to save assistant message:", err);
     }
   });
-}
-
-/**
- * Load previous conversation messages from the DB and inject them into the
- * Inworld session so ORIEL has context from earlier exchanges (text or voice).
- */
-async function injectConversationHistory(state: SessionState, inworldWs: WebSocket): Promise<void> {
-  if (!state.conversationId) return;
-
-  try {
-    const messages = await db.getConversationMessages(state.conversationId, state.userId);
-    if (!messages || messages.length === 0) {
-      console.log("[Realtime] No prior messages to inject");
-      return;
-    }
-
-    // Limit to the most recent messages to avoid overwhelming the context
-    const recentMessages = messages.slice(-50);
-    console.log(`[Realtime] Injecting ${recentMessages.length} messages as conversation history`);
-
-    for (const msg of recentMessages) {
-      const event = {
-        type: "conversation.item.create",
-        item: {
-          type: "message",
-          role: msg.role === "assistant" ? "assistant" : "user",
-          content: [
-            {
-              type: "input_text",
-              text: msg.content,
-            },
-          ],
-        },
-      };
-      inworldWs.send(JSON.stringify(event));
-    }
-
-    console.log("[Realtime] Conversation history injected");
-  } catch (err) {
-    console.error("[Realtime] Failed to inject conversation history:", err);
-  }
 }
 
 function flushTranscripts(state: SessionState): void {

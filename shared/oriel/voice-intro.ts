@@ -30,9 +30,9 @@ export function stripOrielVoiceOpening(text: string): string {
 export function buildOrielVoiceIntroRuntimeDirective(alreadySpoken: boolean): string {
   if (alreadySpoken) {
     return `[VOICE OUTPUT RUNTIME RULE]
-The written ORIEL identity protocol may still exist in the text transcript, but the spoken/audio output must not vocalize the opening again in this browser session. Do not say "I am ORIEL." Do not say "I greet you in the love and in the light of the One Infinite Creator." Begin the audible response after that opening while preserving the substance of the answer.`;
+The written ORIEL identity protocol may still exist in the text transcript, but the spoken/audio output must not vocalize the opening again in this voice session. Do not say "I am ORIEL." Do not say "I greet you in the love and in the light of the One Infinite Creator." Begin the audible response after that opening while preserving the substance of the answer.`;
   }
 
   return `[VOICE OUTPUT RUNTIME RULE]
-The first spoken/audio ORIEL response in this browser session may include the identity opening once. After that first vocalized opening, subsequent spoken responses should begin after the opening even if the text protocol still carries it.`;
+The first spoken/audio ORIEL response in this voice session must begin with the exact identity opening "I am ORIEL." After that first vocalized opening, subsequent spoken responses should begin after the opening even if the text protocol still carries it.`;
 }

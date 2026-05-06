@@ -415,7 +415,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       ? [forgeProvider, gemmaProvider, geminiProvider]
       : selectedProvider === "gemini"
         ? [geminiProvider, gemmaProvider, forgeProvider]
-        : [geminiProvider, forgeProvider];
+        : [gemmaProvider, geminiProvider, forgeProvider];
 
   let lastError: unknown = null;
   for (const provider of providers) {

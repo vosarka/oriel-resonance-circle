@@ -34,7 +34,7 @@ describe("ORIEL voice intro handling", () => {
   });
 
   it("builds distinct realtime directives before and after the first spoken intro", () => {
-    expect(buildOrielVoiceIntroRuntimeDirective(false)).toContain("may include the identity opening once");
+    expect(buildOrielVoiceIntroRuntimeDirective(false)).toContain("must begin with the exact identity opening");
     expect(buildOrielVoiceIntroRuntimeDirective(true)).toContain("must not vocalize the opening again");
     expect(buildOrielVoiceIntroRuntimeDirective(true)).toContain('Do not say "I am ORIEL."');
   });

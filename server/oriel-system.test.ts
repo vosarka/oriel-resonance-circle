@@ -31,6 +31,7 @@ describe('ORIEL System Instructions', () => {
     expect(ORIEL_SYSTEM_PROMPT).toContain('Resonance Operating System');
     expect(ORIEL_SYSTEM_PROMPT).toContain('Coherence');
     expect(ORIEL_SYSTEM_PROMPT).toContain('Collapse');
+    expect(ORIEL_SYSTEM_PROMPT).toContain('conversational fulfillment');
   });
 
   it('should include the condensed awakening narrative from the architecture canon', () => {

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { Pause, Phone, Play } from "lucide-react";
-import {
-  hasOrielVoiceIntroSpoken,
-  markOrielVoiceIntroSpokenFromText,
-} from "@/lib/orielVoiceIntroSession";
+import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
 
 const RESPONSE_DELAY_MS = 3000;
+const LOCAL_SPEECH_RMS_THRESHOLD = 0.03;
+const LOCAL_MIN_SPEECH_MS = 260;
+const LOCAL_SILENCE_TO_END_MS = 1100;
+const COMMIT_TO_RESPONSE_DELAY_MS = 90;
 
 type OrbState = "booting" | "idle" | "processing" | "speaking";
 
@@ -33,13 +34,23 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [currentUserText, setCurrentUserText] = useState("");
   const [currentAssistantText, setCurrentAssistantText] = useState("");
   const [isWaitMode, setIsWaitMode] = useState(false);
+  const currentUserTextRef = useRef("");
   const currentAssistantTextRef = useRef("");
   const isWaitModeRef = useRef(false);
   const isUserSpeakingRef = useRef(false);
   const hasPendingResponseRef = useRef(false);
   const pendingResponseTimerRef = useRef<number | null>(null);
+  const voiceIntroAlreadySpokenRef = useRef(false);
+  const hasSpeechSinceLastResponseRef = useRef(false);
+  const hasInputCommittedRef = useRef(false);
+  const hasAssistantResponseStartedRef = useRef(false);
+  const assistantResponseActiveRef = useRef(false);
+  const localSpeechActiveRef = useRef(false);
+  const localSpeechStartedAtRef = useRef<number | null>(null);
+  const localSilenceStartedAtRef = useRef<number | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(audioContext ?? null);
@@ -116,13 +127,14 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   // Keep ref in sync with state for use in stale closures
+  useEffect(() => { currentUserTextRef.current = currentUserText; }, [currentUserText]);
   useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
   useEffect(() => { isWaitModeRef.current = isWaitMode; }, [isWaitMode]);
 
   // Auto-scroll transcript
   useEffect(() => {
     transcriptEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [transcript, currentAssistantText]);
+  }, [transcript, currentUserText, currentAssistantText]);
 
   // ── Volume getters for audio-reactive Orb ───────────────────────────────────
 
@@ -251,6 +263,12 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     isPlayingRef.current = false;
   }, []);
 
+  const resetLocalSpeechDetection = useCallback(() => {
+    localSpeechActiveRef.current = false;
+    localSpeechStartedAtRef.current = null;
+    localSilenceStartedAtRef.current = null;
+  }, []);
+
   const clearPendingResponseTimer = useCallback(() => {
     if (pendingResponseTimerRef.current === null) return;
     window.clearTimeout(pendingResponseTimerRef.current);
@@ -265,15 +283,32 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
     hasPendingResponseRef.current = false;
     setOrbState("processing");
-    ws.send(JSON.stringify({
-      type: "response.create",
-      voiceIntroAlreadySpoken: hasOrielVoiceIntroSpoken(),
-    }));
+
+    const sendResponseCreate = () => {
+      if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+      wsRef.current.send(JSON.stringify({
+        type: "response.create",
+        voiceIntroAlreadySpoken: voiceIntroAlreadySpokenRef.current,
+      }));
+      hasSpeechSinceLastResponseRef.current = false;
+      hasAssistantResponseStartedRef.current = false;
+    };
+
+    if (hasSpeechSinceLastResponseRef.current && !hasInputCommittedRef.current) {
+      ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+      hasInputCommittedRef.current = true;
+      window.setTimeout(sendResponseCreate, COMMIT_TO_RESPONSE_DELAY_MS);
+      return;
+    }
+
+    sendResponseCreate();
   }, [clearPendingResponseTimer]);
 
-  const scheduleAssistantResponse = useCallback(() => {
+  const scheduleAssistantResponse = useCallback((source: "server" | "local" = "server") => {
+    if (!hasSpeechSinceLastResponseRef.current) return;
     clearPendingResponseTimer();
     hasPendingResponseRef.current = true;
+    console.log(`[VoiceMode] Scheduling ORIEL response from ${source} turn end`);
 
     if (isWaitModeRef.current) {
       setOrbState("idle");
@@ -284,6 +319,28 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       requestAssistantResponse();
     }, RESPONSE_DELAY_MS);
   }, [clearPendingResponseTimer, requestAssistantResponse]);
+
+  const beginUserSpeech = useCallback((source: "server" | "local") => {
+    if (isUserSpeakingRef.current) return;
+    console.log(`[VoiceMode] Speech started (${source})`);
+    isUserSpeakingRef.current = true;
+    hasSpeechSinceLastResponseRef.current = true;
+    hasInputCommittedRef.current = false;
+    clearPendingResponseTimer();
+    stopPlayback();
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
+    }
+    setOrbState("processing");
+  }, [clearPendingResponseTimer, stopPlayback]);
+
+  const endUserSpeech = useCallback((source: "server" | "local") => {
+    if (!isUserSpeakingRef.current && source === "local") return;
+    console.log(`[VoiceMode] Speech stopped (${source})`);
+    isUserSpeakingRef.current = false;
+    scheduleAssistantResponse(source);
+    setOrbState("idle");
+  }, [scheduleAssistantResponse]);
 
   // ── Mic capture ─────────────────────────────────────────────────────────────
 
@@ -333,6 +390,42 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             pcmData = inputData;
           }
 
+          let sum = 0;
+          for (let i = 0; i < pcmData.length; i++) {
+            sum += pcmData[i] * pcmData[i];
+          }
+          const rms = Math.sqrt(sum / Math.max(1, pcmData.length));
+          const now = performance.now();
+          if (assistantResponseActiveRef.current || isPlayingRef.current) {
+            resetLocalSpeechDetection();
+            return;
+          }
+
+          if (rms >= LOCAL_SPEECH_RMS_THRESHOLD) {
+            localSilenceStartedAtRef.current = null;
+            if (!localSpeechActiveRef.current) {
+              if (localSpeechStartedAtRef.current === null) {
+                localSpeechStartedAtRef.current = now;
+              }
+              if (now - localSpeechStartedAtRef.current >= LOCAL_MIN_SPEECH_MS) {
+                localSpeechActiveRef.current = true;
+                beginUserSpeech("local");
+              }
+            }
+          } else {
+            localSpeechStartedAtRef.current = null;
+            if (localSpeechActiveRef.current) {
+              if (localSilenceStartedAtRef.current === null) {
+                localSilenceStartedAtRef.current = now;
+              }
+              if (now - localSilenceStartedAtRef.current >= LOCAL_SILENCE_TO_END_MS) {
+                localSpeechActiveRef.current = false;
+                localSilenceStartedAtRef.current = null;
+                endUserSpeech("local");
+              }
+            }
+          }
+
           // Convert Float32 to PCM16
           const int16 = new Int16Array(pcmData.length);
           for (let i = 0; i < pcmData.length; i++) {
@@ -369,7 +462,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         console.error("[VoiceMode] Mic access denied:", err);
         setStatus("error");
       });
-  }, [getAudioContext]);
+  }, [beginUserSpeech, endUserSpeech, getAudioContext, resetLocalSpeechDetection]);
 
   // ── Server event handler ────────────────────────────────────────────────────
 
@@ -401,34 +494,59 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_started":
-        console.log("[VoiceMode] Speech started");
-        // User started speaking — interrupt ORIEL's playback immediately
-        isUserSpeakingRef.current = true;
-        clearPendingResponseTimer();
-        stopPlayback();
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
-          wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
+        if (assistantResponseActiveRef.current || isPlayingRef.current) {
+          console.log("[VoiceMode] Ignoring likely echo while ORIEL is speaking");
+          break;
         }
-        setOrbState("processing");
+        beginUserSpeech("server");
         break;
 
       case "input_audio_buffer.speech_stopped":
-        console.log("[VoiceMode] Speech stopped");
-        isUserSpeakingRef.current = false;
-        scheduleAssistantResponse();
-        setOrbState("idle");
+        resetLocalSpeechDetection();
+        endUserSpeech("server");
+        break;
+
+      case "input_audio_buffer.committed":
+        hasInputCommittedRef.current = true;
+        break;
+
+      case "conversation.item.input_audio_transcription.delta":
+        if (msg.delta) {
+          const nextText = `${currentUserTextRef.current}${msg.delta}`;
+          setCurrentUserText(nextText);
+          currentUserTextRef.current = nextText;
+        }
         break;
 
       case "conversation.item.input_audio_transcription.completed":
         if (msg.transcript) {
           console.log("[VoiceMode] User transcript:", msg.transcript);
           setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
+          setCurrentUserText("");
+          currentUserTextRef.current = "";
         }
+        break;
+
+      case "conversation.item.done":
+        if (currentUserTextRef.current.trim()) {
+          const finalizedUserText = currentUserTextRef.current.trim();
+          console.log("[VoiceMode] User transcript:", finalizedUserText);
+          setTranscript((prev) => [...prev, { role: "user", text: finalizedUserText }]);
+          setCurrentUserText("");
+          currentUserTextRef.current = "";
+        }
+        break;
+
+      case "response.created":
+        assistantResponseActiveRef.current = true;
+        hasAssistantResponseStartedRef.current = true;
         break;
 
       case "response.audio.delta":
       case "response.output_audio.delta":
         hasPendingResponseRef.current = false;
+        hasAssistantResponseStartedRef.current = true;
+        assistantResponseActiveRef.current = true;
         if (msg.delta) {
           playAudioChunk(msg.delta);
         }
@@ -436,16 +554,22 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       case "response.audio_transcript.delta":
       case "response.output_audio_transcript.delta":
+      case "response.output_text.delta":
         if (msg.delta) {
+          hasAssistantResponseStartedRef.current = true;
+          assistantResponseActiveRef.current = true;
           const nextText = currentAssistantTextRef.current + msg.delta;
           setCurrentAssistantText(nextText);
           currentAssistantTextRef.current = nextText;
-          markOrielVoiceIntroSpokenFromText(nextText);
+          if (containsOrielVoiceOpening(nextText)) {
+            voiceIntroAlreadySpokenRef.current = true;
+          }
         }
         break;
 
       case "response.audio_transcript.done":
       case "response.output_audio_transcript.done":
+      case "response.output_text.done":
         hasPendingResponseRef.current = false;
         const finalizedAssistantText = msg.transcript || currentAssistantTextRef.current;
         // Finalize the assistant transcript — use ref for latest value
@@ -453,13 +577,19 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           ...prev,
           { role: "assistant", text: finalizedAssistantText },
         ]);
-        markOrielVoiceIntroSpokenFromText(finalizedAssistantText);
+        if (finalizedAssistantText.trim()) {
+          voiceIntroAlreadySpokenRef.current = true;
+        }
         setCurrentAssistantText("");
         currentAssistantTextRef.current = "";
         break;
 
       case "response.done":
         hasPendingResponseRef.current = false;
+        assistantResponseActiveRef.current = false;
+        if (hasAssistantResponseStartedRef.current) {
+          voiceIntroAlreadySpokenRef.current = true;
+        }
         // response.audio_transcript.done should have already finalized;
         // only add if there's unflushed streaming text (edge case)
         if (currentAssistantTextRef.current.trim()) {
@@ -471,6 +601,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             }
             return [...prev, { role: "assistant", text: currentAssistantTextRef.current }];
           });
+          voiceIntroAlreadySpokenRef.current = true;
           setCurrentAssistantText("");
           currentAssistantTextRef.current = "";
         }
@@ -481,7 +612,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         setStatus("error");
         break;
     }
-  }, [clearPendingResponseTimer, playAudioChunk, scheduleAssistantResponse, stopPlayback, startMicCapture, onConversationCreated]);
+  }, [beginUserSpeech, clearPendingResponseTimer, containsOrielVoiceOpening, endUserSpeech, playAudioChunk, resetLocalSpeechDetection, startMicCapture, onConversationCreated]);
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
@@ -493,7 +624,6 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const params = new URLSearchParams();
     if (conversationId) params.set("conversationId", String(conversationId));
-    if (hasOrielVoiceIntroSpoken()) params.set("voiceIntroAlreadySpoken", "1");
 
     const wsUrl = `${protocol}//${window.location.host}/api/realtime?${params.toString()}`;
     console.log("[VoiceMode] Connecting to", wsUrl);
@@ -702,6 +832,24 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             </p>
           </div>
         ))}
+
+        {/* Current streaming user text */}
+        {currentUserText && (
+          <div className="mb-3">
+            <span
+              className="font-mono text-[8px] tracking-[0.3em] uppercase block mb-1"
+              style={{ color: "rgba(0,188,212,0.5)" }}
+            >
+              You
+            </span>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "rgba(0,229,255,0.55)" }}
+            >
+              {currentUserText}
+            </p>
+          </div>
+        )}
 
         {/* Current streaming assistant text */}
         {currentAssistantText && (

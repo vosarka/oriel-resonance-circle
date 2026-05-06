@@ -10,6 +10,10 @@ const resolveRunMigrations = () => {
 };
 
 const resolveAutonomyRuntimeEnabled = () => autonomyRuntimeEnv === "true";
+const resolveLlmProvider = () =>
+  llmProviderEnv === "gemma" || llmProviderEnv === "gemini" || llmProviderEnv === "forge"
+    ? llmProviderEnv
+    : "gemma";
 
 export const ENV = {
   nodeEnv,
@@ -19,9 +23,7 @@ export const ENV = {
   runMigrations: resolveRunMigrations(),
   // OFF by default: autonomy runtime overlays only activate when explicitly enabled.
   enableOrielAutonomyRuntime: resolveAutonomyRuntimeEnabled(),
-  llmProvider: llmProviderEnv === "gemma" || llmProviderEnv === "gemini" || llmProviderEnv === "forge"
-    ? llmProviderEnv
-    : "",
+  llmProvider: resolveLlmProvider(),
   llmModel: process.env.LLM_MODEL ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: process.env.GEMINI_MODEL ?? "",
@@ -57,4 +59,6 @@ export const ENV = {
 
   // ─── Inworld (TTS & Realtime) ─────────────────────────────────────────
   inworldApiKey: process.env.INWORLD_API_KEY ?? "",
+  inworldRealtimeModel: process.env.INWORLD_REALTIME_MODEL ?? "",
+  inworldRealtimeSttModel: process.env.INWORLD_REALTIME_STT_MODEL ?? "",
 };

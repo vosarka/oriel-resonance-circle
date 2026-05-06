@@ -196,5 +196,15 @@ describe('ORIEL Response Intelligence', () => {
       });
       expect(diagnosticDirective).not.toContain('Guide mode');
     });
+
+    it('should include conversational fulfillment for seeking and curiosity', () => {
+      const seekingDirective = buildTonalDirective('seeking', 'drifted', {
+        recentMetaphors: [],
+        lastOpeningPattern: null,
+        suggestedVariation: 'direct_insight',
+      });
+      expect(seekingDirective).toContain('complete-but-concise');
+      expect(seekingDirective).toContain('curiosity behind it');
+    });
   });
 });
