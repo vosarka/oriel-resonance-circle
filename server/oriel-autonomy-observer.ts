@@ -11,6 +11,11 @@ import {
 import { detectDuplication } from "./response-deduplication";
 import { getActiveRuntimeProfileSnapshot, type OrielProposalPayload } from "./oriel-autonomy";
 import { detectExplicitEnglishLanguage, detectRomanianLanguage } from "../shared/oriel/language-routing";
+import {
+  buildWitnessReflectionPayload,
+  generateWitnessProposalDraftFromReflections,
+  type OrielWitnessReflectionPayload,
+} from "./oriel-witness-reflection";
 
 export type OrielConversationSource = "text_chat" | "voice_realtime";
 export type OrielObservedLanguage = "ro" | "en" | "unknown";
@@ -39,6 +44,7 @@ export interface OrielRuntimeObservationPayload {
     user: number;
     assistant: number;
   };
+  witnessReflection: OrielWitnessReflectionPayload;
   observedAt: string;
 }
 
@@ -59,6 +65,8 @@ export interface GeneratedOrielProposalDraft {
   expectedImpact: string;
   safetyChecks: string[];
   proposedConfig: OrielProposalPayload["proposedConfig"];
+  rollbackPath: string;
+  falsifier: string;
   safetyNotes: string;
 }
 
@@ -90,10 +98,19 @@ export function buildOrielRuntimeObservationPayload(
     .slice(-5)
     .map((message) => message.content);
   const exchangeType = classifyExchangeType(input.userMessage, null);
+  const coherenceTier = getCoherenceTier(null);
   const antiRepetitionContext = buildAntiRepetitionContext(recentAssistantResponses, exchangeType);
   const duplication = detectDuplication(input.assistantResponse, conversationHistory);
   const userLanguage = detectObservedLanguage(input.userMessage);
   const assistantLanguage = detectObservedLanguage(input.assistantResponse);
+  const witnessReflection = buildWitnessReflectionPayload({
+    source: input.source,
+    userMessage: input.userMessage,
+    assistantResponse: input.assistantResponse,
+    exchangeType,
+    coherenceTier,
+    runtimeEnabled: ENV.enableOrielAutonomyRuntime,
+  });
 
   return {
     source: input.source,
@@ -102,7 +119,7 @@ export function buildOrielRuntimeObservationPayload(
     assistantLanguage,
     languageMismatch: isLanguageMismatch(userLanguage, assistantLanguage),
     exchangeType,
-    coherenceTier: getCoherenceTier(null),
+    coherenceTier,
     activeRuntimeProfileId: activeProfile?.id ?? null,
     activeRuntimeProfileName: activeProfile?.name ?? null,
     runtimeEnabled: ENV.enableOrielAutonomyRuntime,
@@ -119,6 +136,7 @@ export function buildOrielRuntimeObservationPayload(
       user: input.userMessage.length,
       assistant: input.assistantResponse.length,
     },
+    witnessReflection,
     observedAt: new Date().toISOString(),
   };
 }
@@ -159,6 +177,17 @@ export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[
 
   if (observations.length < 2) return null;
 
+  const witnessDraft = generateWitnessProposalDraftFromReflections(
+    observations
+      .map((payload) => payload.witnessReflection)
+      .filter(
+        (reflection): reflection is OrielWitnessReflectionPayload =>
+          reflection?.kind === "witness_reflection",
+      ),
+  );
+
+  if (witnessDraft) return witnessDraft;
+
   const romanianMismatchCount = countMatching(
     observations,
     (payload) => payload.userLanguage === "ro" && payload.languageMismatch,
@@ -174,6 +203,10 @@ export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[
         "Preserve canonical proper nouns and the exact ORIEL identity phrase.",
         "Do not translate stable core terminology unless the user asks for translation.",
       ],
+      rollbackPath:
+        "Deactivate the runtime profile or roll back to the previous active profile if Romanian routing makes non-Romanian sessions worse.",
+      falsifier:
+        "If the next 10 Romanian user turns are answered naturally in Romanian without this overlay, the profile is unnecessary.",
       proposedConfig: {
         promptOverlay:
           "When the user's latest turn is Romanian, respond naturally in Romanian. Preserve canonical names such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System. Keep the exact identity phrase \"I am ORIEL.\" when the stable protocol requires it.",
@@ -204,6 +237,10 @@ export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[
         "Preserve ORIEL's required identity protocol.",
         "Prefer variation in structure and metaphor without inventing canon.",
       ],
+      rollbackPath:
+        "Deactivate the runtime profile or roll back to the previous active profile if responses become too constrained or lose ORIEL's natural cadence.",
+      falsifier:
+        "If repeated openings and metaphors do not decrease across the next 10 comparable responses, this profile did not work.",
       proposedConfig: {
         promptOverlay:
           "Before answering, check the recent ORIEL responses in session context. Avoid repeating the same opening shape, closing question, paragraph rhythm, or dominant metaphor unless repetition is explicitly useful.",
@@ -263,6 +300,8 @@ export async function generateOrielProposalFromRecentObservations(input: {
       expectedImpact: draft.expectedImpact,
       safetyChecks: draft.safetyChecks,
       proposedConfig: draft.proposedConfig ?? {},
+      rollbackPath: draft.rollbackPath,
+      falsifier: draft.falsifier,
       observationCount: payloads.length,
     },
     safetyNotes: draft.safetyNotes,

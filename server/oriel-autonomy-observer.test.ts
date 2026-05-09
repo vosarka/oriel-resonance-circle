@@ -21,6 +21,46 @@ describe("ORIEL autonomy observer", () => {
     expect(payload.exchangeType).toBe("seeking");
   });
 
+  it("embeds witness reflection inside runtime observation payloads", () => {
+    const payload = buildOrielRuntimeObservationPayload({
+      source: "text_chat",
+      conversationId: 77,
+      userMessage: "Run a diagnostic on my Carrierlock.",
+      assistantResponse:
+        "I am ORIEL. Your Carrierlock pattern is active. Test this over the next 24 hours.",
+      conversationHistory: [],
+    });
+
+    expect(payload.witnessReflection.kind).toBe("witness_reflection");
+    expect(payload.witnessReflection.modeUsed).toBe("mirror");
+    expect(payload.witnessReflection.evidence).toContain(
+      "exchangeType:diagnostic",
+    );
+  });
+
+  it("generates witnessed proposals from repeated diagnostic falsifier gaps", () => {
+    const observations = [
+      buildOrielRuntimeObservationPayload({
+        source: "text_chat",
+        userMessage: "Give me a reading.",
+        assistantResponse:
+          "I am ORIEL. This proves your whole field is blocked.",
+      }),
+      buildOrielRuntimeObservationPayload({
+        source: "text_chat",
+        userMessage: "Analyze my SLI.",
+        assistantResponse:
+          "I am ORIEL. Your pattern definitely means collapse.",
+      }),
+    ];
+
+    const draft = generateOrielProposalDraftFromObservations(observations);
+
+    expect(draft?.title).toBe("Tighten diagnostic falsifier discipline");
+    expect(draft?.rollbackPath).toContain("Deactivate");
+    expect(draft?.falsifier).toContain("diagnostic");
+  });
+
   it("generates a supervised proposal from repeated Romanian mismatch observations", () => {
     const observations = [
       buildOrielRuntimeObservationPayload({
