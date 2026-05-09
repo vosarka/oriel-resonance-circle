@@ -978,6 +978,8 @@ export const appRouter = router({
           hypothesis: z.string().min(10),
           expectedImpact: z.string().min(5).optional(),
           safetyChecks: z.array(z.string().min(2)).max(20).optional(),
+          rollbackPath: z.string().min(10).optional(),
+          falsifier: z.string().min(10).optional(),
           proposedConfig: z.record(z.string(), z.unknown()).optional(),
           safetyNotes: z.string().optional(),
         }))
@@ -987,6 +989,8 @@ export const appRouter = router({
           const proposalPayload: Record<string, unknown> = {
             expectedImpact: input.expectedImpact ?? "",
             safetyChecks: input.safetyChecks ?? [],
+            rollbackPath: input.rollbackPath ?? "",
+            falsifier: input.falsifier ?? "",
             proposedConfig: input.proposedConfig ?? {},
           };
 

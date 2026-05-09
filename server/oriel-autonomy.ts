@@ -17,6 +17,8 @@ export interface OrielRuntimeProfileConfig {
 export interface OrielProposalPayload {
   expectedImpact?: string;
   safetyChecks?: string[];
+  rollbackPath?: string;
+  falsifier?: string;
   proposedConfig?: unknown;
   [key: string]: unknown;
 }
@@ -220,15 +222,26 @@ export function evaluateProposalPayload(payload: OrielProposalPayload): OrielPro
   const safetyChecks = Array.isArray(payload.safetyChecks)
     ? payload.safetyChecks.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
+  const rollbackPath = typeof payload.rollbackPath === "string" ? payload.rollbackPath.trim() : "";
+  const falsifier = typeof payload.falsifier === "string" ? payload.falsifier.trim() : "";
 
   const { config, violations } = sanitizeRuntimeProfileConfig(payload.proposedConfig ?? {});
+  const runtimeChanging = hasMeaningfulConfig(config);
+  if (runtimeChanging && rollbackPath.length < 20) {
+    violations.push("rollbackPath is required for runtime-changing proposals");
+  }
+  if (runtimeChanging && falsifier.length < 20) {
+    violations.push("falsifier is required for runtime-changing proposals");
+  }
 
   let score = 0;
   if (objective.length >= 20) score += 20;
   if (hypothesis.length >= 20) score += 20;
   if (expectedImpact.length >= 12) score += 15;
   if (safetyChecks.length >= 2) score += 20;
-  if (hasMeaningfulConfig(config)) score += 20;
+  if (hasMeaningfulConfig(config)) score += 10;
+  if (rollbackPath.length >= 20) score += 10;
+  if (falsifier.length >= 20) score += 10;
   if (violations.length === 0) score += 5;
 
   score = Math.max(0, Math.min(100, score));

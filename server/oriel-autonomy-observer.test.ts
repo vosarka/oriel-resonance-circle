@@ -125,4 +125,51 @@ describe("ORIEL autonomy observer", () => {
     expect(evaluation.status).toBe("blocked");
     expect(evaluation.violations[0]).toContain("Unsupported top-level config key");
   });
+
+  it("blocks runtime proposals that lack rollback and falsifier metadata", () => {
+    const evaluation = evaluateProposalPayload({
+      objective: "Improve diagnostic response discipline.",
+      hypothesis: "A runtime overlay will make readings easier to test.",
+      expectedImpact: "Users can verify claims through lived experience.",
+      safetyChecks: [
+        "Preserve stable core identity.",
+        "Apply only to diagnostic exchanges.",
+      ],
+      proposedConfig: {
+        promptOverlay:
+          "Include one falsifier when responding to diagnostic requests.",
+      },
+    });
+
+    expect(evaluation.status).toBe("blocked");
+    expect(evaluation.violations).toContain(
+      "rollbackPath is required for runtime-changing proposals",
+    );
+    expect(evaluation.violations).toContain(
+      "falsifier is required for runtime-changing proposals",
+    );
+  });
+
+  it("allows runtime proposals with rollback and falsifier metadata", () => {
+    const evaluation = evaluateProposalPayload({
+      objective: "Improve diagnostic response discipline.",
+      hypothesis: "A runtime overlay will make readings easier to test.",
+      expectedImpact: "Users can verify claims through lived experience.",
+      safetyChecks: [
+        "Preserve stable core identity.",
+        "Apply only to diagnostic exchanges.",
+      ],
+      proposedConfig: {
+        promptOverlay:
+          "Include one falsifier when responding to diagnostic requests.",
+      },
+      rollbackPath:
+        "Deactivate this runtime profile if diagnostic responses become rigid.",
+      falsifier:
+        "If diagnostic responses already include useful falsifiers, this overlay is unnecessary.",
+    });
+
+    expect(evaluation.status).toBe("evaluated");
+    expect(evaluation.violations).toEqual([]);
+  });
 });
