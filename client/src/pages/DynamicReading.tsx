@@ -247,6 +247,7 @@ export default function DynamicReading() {
   const microCorrection = reading?.microCorrection;
   const falsifier = reading?.falsifier;
   const carrierlock = reading?.carrierlock as {
+    coherenceScore?: number;
     mentalNoise?: number;
     bodyTension?: number;
     emotionalTurbulence?: number;
@@ -293,6 +294,19 @@ export default function DynamicReading() {
       .filter((row) => Number.isFinite(row.sli))
       .sort((a, b) => b.sli - a.sli);
   }, [reading?.activeFacets, reading?.confidenceLevels, reading?.sliScores]);
+
+  const primarySliRow = sliRows[0] ?? null;
+  const evidenceItems = [
+    carrierlock
+      ? `Carrierlock coherence ${carrierlock.coherenceScore ?? coherenceScore}/100`
+      : "Carrierlock state linked to this reading",
+    primarySliRow
+      ? `Primary SLI ${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""} at ${primarySliRow.sli.toFixed(1)}`
+      : null,
+    reading?.flaggedCodons?.length
+      ? `${reading.flaggedCodons.length} active codon signal${reading.flaggedCodons.length === 1 ? "" : "s"}`
+      : null,
+  ].filter((item): item is string => Boolean(item));
 
   const compareOptions = useMemo(() => {
     return (readingHistory ?? [])
@@ -481,59 +495,67 @@ export default function DynamicReading() {
         </div>
       </div>
 
-      {/* Micro-correction */}
-      {microCorrection && (
-        <div style={{
-          background: C.deep, padding: "24px",
-          borderLeft: `2px solid ${C.gold}`,
-          marginBottom: 24,
-        }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.2em", marginBottom: 12 }}>
-            MICRO-CORRECTION
-          </div>
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: C.txt, lineHeight: 1.7, fontWeight: 300 }}>
-            {microCorrection}
-          </p>
-          <button
-            type="button"
-            onClick={() => markCorrectionMutation.mutate({ readingId })}
-            disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
-            style={{
-              marginTop: 14,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "9px 14px",
-              border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
-              background: "transparent",
-              color: reading.correctionCompleted ? C.teal : C.gold,
-              fontFamily: "monospace",
-              fontSize: 9,
-              letterSpacing: "0.14em",
-              cursor: reading.correctionCompleted || markCorrectionMutation.isPending ? "default" : "pointer",
-              opacity: markCorrectionMutation.isPending ? 0.7 : 1,
-            }}
-          >
-            {reading.correctionCompleted ? <CheckCircle size={13} /> : <CheckCircle size={13} />}
-            {reading.correctionCompleted ? "CORRECTION COMPLETED" : markCorrectionMutation.isPending ? "MARKING..." : "MARK CORRECTION COMPLETE"}
-          </button>
+      <div style={{
+        background: C.deep,
+        padding: "24px",
+        borderTop: `1px solid ${C.border}`,
+        marginBottom: 24,
+      }}>
+        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 16 }}>
+          FALSIFIER-FIRST READING
         </div>
-      )}
-
-      {/* Falsifier */}
-      {falsifier && (
-        <div style={{
-          background: C.deep, padding: "24px",
-          borderLeft: `2px solid ${C.red}`,
-        }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.red, letterSpacing: "0.2em", marginBottom: 12 }}>
-            FALSIFIER · TEST IN THE NEXT 24 HOURS
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>SIGNAL</div>
+            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: C.txt, lineHeight: 1.6 }}>
+              {primarySliRow ? `${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""}` : "Dynamic field signal"}
+            </div>
           </div>
-          <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: C.txt, lineHeight: 1.7, fontStyle: "italic", fontWeight: 300 }}>
-            {falsifier}
-          </p>
+          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>EVIDENCE</div>
+            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
+              {evidenceItems.length > 0 ? evidenceItems.join(" · ") : "Stored reading payload"}
+            </div>
+          </div>
+          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.red, letterSpacing: "0.16em", marginBottom: 8 }}>FALSIFIER</div>
+            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
+              {falsifier || "No falsifier stored for this reading."}
+            </div>
+          </div>
+          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>PRACTICE</div>
+            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
+              {microCorrection || "No micro-correction stored for this reading."}
+            </div>
+            {microCorrection && (
+              <button
+                type="button"
+                onClick={() => markCorrectionMutation.mutate({ readingId })}
+                disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
+                style={{
+                  marginTop: 14,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 14px",
+                  border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
+                  background: "transparent",
+                  color: reading.correctionCompleted ? C.teal : C.gold,
+                  fontFamily: "monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.14em",
+                  cursor: reading.correctionCompleted || markCorrectionMutation.isPending ? "default" : "pointer",
+                  opacity: markCorrectionMutation.isPending ? 0.7 : 1,
+                }}
+              >
+                <CheckCircle size={13} />
+                {reading.correctionCompleted ? "CORRECTION COMPLETED" : markCorrectionMutation.isPending ? "MARKING..." : "MARK CORRECTION COMPLETE"}
+              </button>
+            )}
+          </div>
         </div>
-      )}
+      </div>
 
       {/* Flagged Codons */}
       {reading.flaggedCodons && reading.flaggedCodons.length > 0 && (
