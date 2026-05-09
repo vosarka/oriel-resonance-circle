@@ -1,6 +1,14 @@
 import { ORIEL_SYSTEM_PROMPT } from "./oriel-system-prompt";
 import { buildResponseLanguageDirective } from "./oriel-language-routing";
 import {
+  classifyExchangeType,
+  getCoherenceTier,
+} from "./oriel-response-intelligence";
+import {
+  buildCoherenceThresholdFrame,
+  formatCoherenceThresholdContext,
+} from "./oriel-coherence-threshold";
+import {
   ORIEL_STABLE_CORE_SOURCE_FILES,
   buildStableCoreManifestSummary,
 } from "../shared/oriel/stable-core/manifest";
@@ -107,6 +115,20 @@ export async function buildWorkingSessionLayer({
   }
 
   parts.push(buildResponseLanguageDirective(userMessage, conversationHistory));
+
+  if (userMessage?.trim()) {
+    const thresholdFrame = buildCoherenceThresholdFrame({
+      userMessage,
+      exchangeType: classifyExchangeType(userMessage, null),
+      coherenceTier: getCoherenceTier(null),
+      coherenceScore: null,
+      operatorRole: "seeker",
+      hasReadings: false,
+      routeSurface: "text_chat",
+    });
+
+    parts.push(formatCoherenceThresholdContext(thresholdFrame));
+  }
 
   if (includeFieldState && userMessage?.trim()) {
     try {

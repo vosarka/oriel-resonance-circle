@@ -106,4 +106,25 @@ describe("ORIEL context layers", () => {
     expect(workingIndex).toBeGreaterThan(stableIndex);
     expect(prompt).not.toContain("[RETRIEVAL LAYER]");
   });
+
+  it("injects an observe-only coherence threshold frame for the current request", async () => {
+    const workingLayer = await buildWorkingSessionLayer({
+      userMessage: "Give me a reading on my current pattern.",
+      conversationHistory: [],
+      includeFieldState: false,
+    });
+
+    expect(workingLayer).toContain("[COHERENCE THRESHOLD FRAME]");
+    expect(workingLayer).toContain("Recommended mode: mirror");
+    expect(workingLayer).toContain("Falsifiers required: yes");
+  });
+
+  it("keeps the threshold frame out when there is no current user request", async () => {
+    const workingLayer = await buildWorkingSessionLayer({
+      conversationHistory: [{ role: "user", content: "Earlier message." }],
+      includeFieldState: false,
+    });
+
+    expect(workingLayer).not.toContain("[COHERENCE THRESHOLD FRAME]");
+  });
 });
