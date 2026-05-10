@@ -7,6 +7,7 @@ import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
 import { SignalInterferenceGate, useTransmissionTrigger } from "@/components/SignalInterferenceGate";
+import { getTransmissionGatePlan } from "@/lib/transmission-gate";
 import {
   markOrielVoiceIntroSpoken,
   prepareOrielTextForVoice,
@@ -611,7 +612,11 @@ export default function Conduit() {
       forcedTransmissionType,
       transmissionIntent,
     } = parseTransmissionCommand(rawUserMessage);
-    if (forceTransmissionMode) {
+    const pendingGatePlan = getTransmissionGatePlan({
+      forceTransmissionMode,
+      hasTransmissionEvent: false,
+    });
+    if (pendingGatePlan.startBeforeRequest) {
       transmissionGate.startAcquiring();
     }
     setMessage("");
@@ -651,6 +656,10 @@ export default function Conduit() {
       }
 
       const returnedTransmissionEvent = (result.transmissionEvent ?? null) as GeneratedTransmissionEvent | null;
+      const resolvedGatePlan = getTransmissionGatePlan({
+        forceTransmissionMode,
+        hasTransmissionEvent: Boolean(returnedTransmissionEvent),
+      });
       const resolvedConversationId = result.conversationId ?? activeConversationId ?? null;
       if (returnedTransmissionEvent) {
         setSessionTransmissionAttachments((prev) => [
@@ -664,12 +673,10 @@ export default function Conduit() {
         ].slice(-30));
       }
 
-      if (forceTransmissionMode) {
-        if (returnedTransmissionEvent) {
-          await transmissionGate.lock();
-        } else {
-          transmissionGate.cancel();
-        }
+      if (resolvedGatePlan.lockBeforeReveal) {
+        await transmissionGate.lock();
+      } else if (resolvedGatePlan.cancelAfterResult) {
+        transmissionGate.cancel();
       }
 
       const newAssistantMessage: ChatMessage = {
