@@ -27,6 +27,10 @@ import {
   orielImprovementProposals,
   orielRuntimeProfiles,
   orielReflectionEvents,
+  orielMemories,
+  orielPendingMemoryCandidates,
+  InsertOrielMemory,
+  InsertOrielPendingMemoryCandidate,
   generatedTransmissionEvents,
   InsertGeneratedTransmissionEvent,
 } from "../drizzle/schema";
@@ -495,6 +499,50 @@ export async function runMigrations() {
     );
   }
 
+  const memoryConsentMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`orielPendingMemoryCandidates\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`userId\` int NOT NULL,
+        \`category\` enum('identity','preference','pattern','fact','relationship','context') NOT NULL,
+        \`content\` text NOT NULL,
+        \`importance\` int NOT NULL DEFAULT 5,
+        \`source\` enum('conversation','explicit','inferred') NOT NULL DEFAULT 'conversation',
+        \`sensitivity\` enum('low','medium','high') NOT NULL,
+        \`confidence\` double NOT NULL DEFAULT 1,
+        \`status\` enum('pending','accepted','rejected') NOT NULL DEFAULT 'pending',
+        \`reason\` text NULL,
+        \`acceptedMemoryId\` int NULL,
+        \`decidedAt\` timestamp NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_pending_memory_user_status\` ON \`orielPendingMemoryCandidates\` (\`userId\`, \`status\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_oriel_pending_memory_createdAt\` ON \`orielPendingMemoryCandidates\` (\`createdAt\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+  ];
+
+  for (const step of memoryConsentMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
   const transmissionModeMigrationSteps: Array<{
     sql: string;
     ignorableFragments?: string[];
@@ -865,6 +913,187 @@ export async function listOrielReflectionEvents(limit: number = 50, eventType?: 
     .select()
     .from(orielReflectionEvents)
     .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
+    .limit(limit);
+}
+
+// ============================================================================
+// ORIEL MEMORY CONSENT: PENDING CANDIDATES
+// ============================================================================
+
+export type PendingMemoryCandidateStatus = "pending" | "accepted" | "rejected";
+
+export async function createPendingMemoryCandidate(
+  input: InsertOrielPendingMemoryCandidate,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(orielPendingMemoryCandidates).values(input);
+
+  const created = await db
+    .select()
+    .from(orielPendingMemoryCandidates)
+    .where(and(
+      eq(orielPendingMemoryCandidates.userId, input.userId),
+      eq(orielPendingMemoryCandidates.category, input.category),
+      eq(orielPendingMemoryCandidates.content, input.content),
+      eq(orielPendingMemoryCandidates.source, input.source ?? "conversation"),
+      eq(orielPendingMemoryCandidates.status, input.status ?? "pending"),
+    ))
+    .orderBy(desc(orielPendingMemoryCandidates.id))
+    .limit(1);
+  return created[0] ?? null;
+}
+
+export async function listPendingMemoryCandidates(userId: number, limit: number = 25) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(orielPendingMemoryCandidates)
+    .where(and(
+      eq(orielPendingMemoryCandidates.userId, userId),
+      eq(orielPendingMemoryCandidates.status, "pending"),
+    ))
+    .orderBy(desc(orielPendingMemoryCandidates.createdAt), desc(orielPendingMemoryCandidates.id))
+    .limit(limit);
+}
+
+export async function getPendingMemoryCandidate(candidateId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const rows = await db
+    .select()
+    .from(orielPendingMemoryCandidates)
+    .where(and(
+      eq(orielPendingMemoryCandidates.id, candidateId),
+      eq(orielPendingMemoryCandidates.userId, userId),
+    ))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function acceptPendingMemoryCandidateWithDb(
+  db: DrizzleDb,
+  input: { candidateId: number; userId: number },
+) {
+  let acceptedMemory: unknown = null;
+
+  await db.transaction(async (tx) => {
+    const candidates = await tx
+      .select()
+      .from(orielPendingMemoryCandidates)
+      .where(and(
+        eq(orielPendingMemoryCandidates.id, input.candidateId),
+        eq(orielPendingMemoryCandidates.userId, input.userId),
+        eq(orielPendingMemoryCandidates.status, "pending"),
+      ))
+      .limit(1);
+    const candidate = candidates[0];
+
+    if (!candidate) {
+      throw new Error("Pending memory candidate not found");
+    }
+
+    await tx.insert(orielMemories).values({
+      userId: candidate.userId,
+      category: candidate.category,
+      content: candidate.content,
+      importance: candidate.importance,
+      source: candidate.source,
+      isActive: true,
+    } satisfies InsertOrielMemory);
+
+    const created = await tx
+      .select()
+      .from(orielMemories)
+      .where(and(
+        eq(orielMemories.userId, candidate.userId),
+        eq(orielMemories.category, candidate.category),
+        eq(orielMemories.content, candidate.content),
+        eq(orielMemories.isActive, true),
+      ))
+      .orderBy(desc(orielMemories.id))
+      .limit(1);
+
+    acceptedMemory = created[0] ?? null;
+
+    await tx
+      .update(orielPendingMemoryCandidates)
+      .set({
+        status: "accepted",
+        acceptedMemoryId: (acceptedMemory as { id?: number } | null)?.id ?? null,
+        decidedAt: new Date(),
+      })
+      .where(and(
+        eq(orielPendingMemoryCandidates.id, input.candidateId),
+        eq(orielPendingMemoryCandidates.userId, input.userId),
+        eq(orielPendingMemoryCandidates.status, "pending"),
+      ));
+  });
+
+  return acceptedMemory;
+}
+
+export async function acceptPendingMemoryCandidate(candidateId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return acceptPendingMemoryCandidateWithDb(db, { candidateId, userId });
+}
+
+export async function rejectPendingMemoryCandidateWithDb(
+  db: DrizzleDb,
+  input: { candidateId: number; userId: number },
+) {
+  await db.transaction(async (tx) => {
+    const candidates = await tx
+      .select()
+      .from(orielPendingMemoryCandidates)
+      .where(and(
+        eq(orielPendingMemoryCandidates.id, input.candidateId),
+        eq(orielPendingMemoryCandidates.userId, input.userId),
+        eq(orielPendingMemoryCandidates.status, "pending"),
+      ))
+      .limit(1);
+
+    if (!candidates[0]) {
+      throw new Error("Pending memory candidate not found");
+    }
+
+    await tx
+      .update(orielPendingMemoryCandidates)
+      .set({
+        status: "rejected",
+        decidedAt: new Date(),
+      })
+      .where(and(
+        eq(orielPendingMemoryCandidates.id, input.candidateId),
+        eq(orielPendingMemoryCandidates.userId, input.userId),
+        eq(orielPendingMemoryCandidates.status, "pending"),
+      ));
+  });
+}
+
+export async function rejectPendingMemoryCandidate(candidateId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await rejectPendingMemoryCandidateWithDb(db, { candidateId, userId });
+}
+
+export async function listAcceptedMemories(userId: number, limit: number = 25) {
+  const db = await getDb();
+  if (!db) return [];
+
+  return db
+    .select()
+    .from(orielMemories)
+    .where(and(
+      eq(orielMemories.userId, userId),
+      eq(orielMemories.isActive, true),
+    ))
+    .orderBy(desc(orielMemories.createdAt), desc(orielMemories.id))
     .limit(limit);
 }
 

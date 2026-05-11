@@ -19,6 +19,7 @@ import { ENV } from "./_core/env";
 import { buildUserStaticProfile, summarizeStoredStaticProfile } from "./static-profile-service";
 import { calculateBirthChart } from "./ephemeris-service";
 import { facetNameToLetter, longitudeToCodonFacet } from "./rgp-256-codon-engine";
+import { getCurrentResonanceForUser } from "./oriel-current-resonance";
 
 function normalizeEmail(email: string) {
   return email.toLowerCase().trim();
@@ -254,6 +255,42 @@ export const appRouter = router({
 
   // ORIEL Interface router
   oriel: router({
+    memory: router({
+      listPendingCandidates: protectedProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(50).default(25),
+        }).optional())
+        .query(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+          return db.listPendingMemoryCandidates(ctx.user.id, input?.limit ?? 25);
+        }),
+
+      listAccepted: protectedProcedure
+        .input(z.object({
+          limit: z.number().min(1).max(50).default(25),
+        }).optional())
+        .query(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+          return db.listAcceptedMemories(ctx.user.id, input?.limit ?? 25);
+        }),
+
+      acceptCandidate: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+          const memory = await db.acceptPendingMemoryCandidate(input.id, ctx.user.id);
+          return { success: true, memory };
+        }),
+
+      rejectCandidate: protectedProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+          await db.rejectPendingMemoryCandidate(input.id, ctx.user.id);
+          return { success: true };
+        }),
+    }),
+
     // ── Conversation management ──
     listConversations: protectedProcedure.query(async ({ ctx }) => {
       if (!ctx.user) return [];
@@ -1155,7 +1192,7 @@ export const appRouter = router({
           };
         }),
 
-      evaluate: protectedProcedure
+      evaluate: adminProcedure
         .input(z.object({ proposalId: z.number() }))
         .mutation(async ({ input, ctx }) => {
           if (!ctx.user) throw new Error("Authentication required");
@@ -1236,6 +1273,48 @@ export const appRouter = router({
           };
         }),
 
+      reject: adminProcedure
+        .input(z.object({
+          proposalId: z.number(),
+          notes: z.string().optional(),
+        }))
+        .mutation(async ({ input, ctx }) => {
+          if (!ctx.user) throw new Error("Authentication required");
+
+          const proposal = await db.getOrielImprovementProposalById(input.proposalId);
+          if (!proposal) throw new Error("Proposal not found");
+
+          const updated = await db.setOrielProposalEvaluation(input.proposalId, {
+            evaluationScore: proposal.evaluationScore ?? 0,
+            evaluationSummary: normalizeOptionalText(
+              input.notes,
+              "Rejected by Architect.",
+            ) ?? "Rejected by Architect.",
+            status: "rejected",
+          });
+
+          await db.createOrielReflectionEvent({
+            eventType: "proposal_evaluated",
+            sourceRoute: "oriel.autonomy.reject",
+            userId: ctx.user.id,
+            proposalId: input.proposalId,
+            payload: {
+              verdict: "rejected",
+              notes: normalizeOptionalText(input.notes, ""),
+            },
+          });
+
+          return {
+            success: true,
+            proposal: updated
+              ? {
+                  ...updated,
+                  proposalPayload: safeJsonParse<Record<string, unknown>>(updated.proposalPayload, {}),
+                }
+              : null,
+          };
+        }),
+
       listProfiles: adminProcedure
         .input(z.object({
           limit: z.number().min(1).max(100).default(25).optional(),
@@ -1287,6 +1366,24 @@ export const appRouter = router({
             }
 
             const proposalPayload = safeJsonParse<autonomy.OrielProposalPayload>(proposal.proposalPayload, {});
+            const activationGate = autonomy.canActivateProposalPayload(
+              proposalPayload,
+              proposal.status,
+            );
+            if (!activationGate.canActivate) {
+              const violations = activationGate.missing.map(
+                (field) => `${field} is required for runtime-changing proposals`,
+              );
+              await db.createOrielReflectionEvent({
+                eventType: "guardrail_block",
+                sourceRoute: "oriel.autonomy.activate",
+                userId: ctx.user.id,
+                proposalId: proposal.id,
+                payload: { violations },
+              });
+              throw new Error(`Activation blocked by guardrail: ${violations.join("; ")}`);
+            }
+
             const { config, violations } = autonomy.extractRuntimeConfigFromProposalPayload(proposalPayload);
             if (violations.length > 0) {
               await db.createOrielReflectionEvent({
@@ -1412,6 +1509,13 @@ export const appRouter = router({
         throw new Error("Authentication required");
       }
       return db.getUserStaticProfile(ctx.user.id);
+    }),
+
+    getCurrentResonance: protectedProcedure.query(async ({ ctx }) => {
+      if (!ctx.user) {
+        throw new Error("Authentication required");
+      }
+      return getCurrentResonanceForUser(ctx.user.id);
     }),
 
     getTransitOverlay: protectedProcedure

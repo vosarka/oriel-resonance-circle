@@ -4,6 +4,7 @@ import { useLocation, Link } from "wouter";
 import { Loader2, Copy, CheckCircle, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
+import MemoryConsentTray from "@/components/memory/MemoryConsentTray";
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 
@@ -354,6 +355,11 @@ export default function Profile() {
   const [, setLocation] = useLocation();
   const [copied, setCopied] = useState(false);
   const [recomputeStatus, setRecomputeStatus] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const refreshMemoryConsent = () => {
+    void utils.oriel.memory.listPendingCandidates.invalidate();
+    void utils.oriel.memory.listAccepted.invalidate();
+  };
 
   // Fetch fractal role from latest static signature
   const sigilQuery = trpc.codex.getProfileSigil.useQuery(undefined, {
@@ -361,6 +367,20 @@ export default function Profile() {
   });
   const staticProfileQuery = trpc.profile.getStaticProfile.useQuery(undefined, {
     enabled: isAuthenticated,
+  });
+  const pendingMemoryQuery = trpc.oriel.memory.listPendingCandidates.useQuery(
+    { limit: 10 },
+    { enabled: isAuthenticated },
+  );
+  const acceptedMemoryQuery = trpc.oriel.memory.listAccepted.useQuery(
+    { limit: 10 },
+    { enabled: isAuthenticated },
+  );
+  const acceptMemoryMutation = trpc.oriel.memory.acceptCandidate.useMutation({
+    onSuccess: refreshMemoryConsent,
+  });
+  const rejectMemoryMutation = trpc.oriel.memory.rejectCandidate.useMutation({
+    onSuccess: refreshMemoryConsent,
   });
   const recomputeStaticProfileMutation = trpc.profile.recomputeStaticProfile.useMutation({
     onSuccess: () => {
@@ -727,6 +747,22 @@ export default function Profile() {
                 )}
               </Section>
             </div>
+
+            <Section title="ORIEL MEMORY CONSENT">
+              <MemoryConsentTray
+                pendingCandidates={pendingMemoryQuery.data ?? []}
+                acceptedMemories={acceptedMemoryQuery.data ?? []}
+                onAccept={(id) => acceptMemoryMutation.mutate({ id })}
+                onReject={(id) => rejectMemoryMutation.mutate({ id })}
+                isLoading={
+                  pendingMemoryQuery.isLoading ||
+                  acceptedMemoryQuery.isLoading ||
+                  acceptMemoryMutation.isPending ||
+                  rejectMemoryMutation.isPending
+                }
+                className="border-[#bda36b]/20 bg-[#0a0a0e]/60"
+              />
+            </Section>
 
             {/* All tiers display */}
             <Section title="SIGNAL LEVELS">

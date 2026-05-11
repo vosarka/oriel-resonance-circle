@@ -1,3 +1,5 @@
+import type { MemoryCategory } from "./oriel-memory";
+
 export type MemoryCandidateCategory =
   | "preference"
   | "fact"
@@ -9,19 +11,18 @@ export type MemoryCandidateCategory =
 
 export type MemoryCandidateSource = "conversation" | "explicit" | "inferred";
 export type MemorySensitivity = "low" | "medium" | "high";
-export type MemoryRecommendedAction =
-  | "store_existing_path"
-  | "ask_consent"
-  | "discard";
+export type MemoryRecommendedAction = "store" | "pending" | "discard";
 
 export interface MemoryCandidateInput {
   category: MemoryCandidateCategory | string;
   content: string;
   source: MemoryCandidateSource;
   confidence: number;
+  importance?: number;
 }
 
 export interface MemoryConsecrationDecision {
+  normalizedCategory: MemoryCategory;
   sensitivity: MemorySensitivity;
   consentRequired: boolean;
   recommendedAction: MemoryRecommendedAction;
@@ -41,6 +42,26 @@ const HIGH_SENSITIVITY_TERMS = [
   "private",
   "secret",
 ];
+
+export function mapMemoryCandidateCategory(
+  category: MemoryCandidateCategory | string,
+): MemoryCategory {
+  switch (category.toLowerCase()) {
+    case "identity":
+    case "preference":
+    case "pattern":
+    case "fact":
+    case "relationship":
+    case "context":
+      return category.toLowerCase() as MemoryCategory;
+    case "emotion":
+      return "pattern";
+    case "project":
+    case "spiritual":
+    default:
+      return "context";
+  }
+}
 
 function inferSensitivity(input: MemoryCandidateInput): MemorySensitivity {
   const category = input.category.toLowerCase();
@@ -68,6 +89,7 @@ export function classifyMemoryCandidate(
   const confidence = Number(input.confidence);
   if (!Number.isFinite(confidence) || confidence < 0.6) {
     return {
+      normalizedCategory: mapMemoryCandidateCategory(input.category),
       sensitivity: inferSensitivity(input),
       consentRequired: false,
       recommendedAction: "discard",
@@ -80,9 +102,10 @@ export function classifyMemoryCandidate(
   const consentRequired = sensitivity === "high" || input.source === "inferred";
 
   return {
+    normalizedCategory: mapMemoryCandidateCategory(input.category),
     sensitivity,
     consentRequired,
-    recommendedAction: consentRequired ? "ask_consent" : "store_existing_path",
+    recommendedAction: consentRequired ? "pending" : "store",
     reason: consentRequired
       ? "Sensitive or inferred memory requires explicit user consent before storage."
       : "Low or medium sensitivity memory can use the existing memory path.",

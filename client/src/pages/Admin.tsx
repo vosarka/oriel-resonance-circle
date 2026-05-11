@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Loader2, Plus, Pencil, Trash2, ChevronDown, ChevronUp, X } from "lucide-react";
+import ArchitectConsole from "@/components/admin/ArchitectConsole";
 
 // ─── Design Tokens ──────────────────────────────────────────────────────────
 
@@ -552,7 +553,7 @@ function OracleForm({ initial, onSubmit, onCancel, isLoading }: {
 
 export default function Admin() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"transmissions" | "oracles">("transmissions");
+  const [activeTab, setActiveTab] = useState<"transmissions" | "oracles" | "architect">("transmissions");
 
   // Transmission state
   const [mode, setMode] = useState<"list" | "create" | "edit">("list");
@@ -745,7 +746,7 @@ export default function Admin() {
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px" }}>
         {/* Tab Switcher */}
         <div className="flex gap-1 mb-6" style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
-          {(["transmissions", "oracles"] as const).map((tab) => (
+          {(["transmissions", "oracles", "architect"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -753,9 +754,9 @@ export default function Admin() {
                 padding: "10px 24px",
                 background: activeTab === tab ? C.surface : "transparent",
                 border: `1px solid ${activeTab === tab ? C.border : "transparent"}`,
-                borderBottom: activeTab === tab ? `2px solid ${tab === "transmissions" ? C.gold : C.cyan}` : "2px solid transparent",
+                borderBottom: activeTab === tab ? `2px solid ${tab === "transmissions" ? C.gold : tab === "oracles" ? C.cyan : C.teal}` : "2px solid transparent",
                 borderRadius: "8px 8px 0 0",
-                color: activeTab === tab ? (tab === "transmissions" ? C.gold : C.cyan) : C.txtD,
+                color: activeTab === tab ? (tab === "transmissions" ? C.gold : tab === "oracles" ? C.cyan : C.teal) : C.txtD,
                 cursor: "pointer",
                 fontFamily: "'Red Hat Mono', monospace",
                 fontWeight: activeTab === tab ? 700 : 400,
@@ -1068,6 +1069,8 @@ export default function Admin() {
             )}
           </>
         )}
+
+        {activeTab === "architect" && <ArchitectConsole />}
       </div>
 
       {/* Transmission Modals */}

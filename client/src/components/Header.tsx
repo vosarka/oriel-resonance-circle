@@ -15,6 +15,7 @@ export default function Header() {
     { href: "/archive", label: "TRANSMISSIONS" },
     { href: "/codex", label: "CODONS" },
     { href: "/readings", label: "CALIBRATION" },
+    { href: "/resonance", label: "RESONANCE" },
     { href: "/conduit", label: "CHANNEL ORIEL" },
   ];
 

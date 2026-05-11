@@ -18,6 +18,7 @@ import Reading from "./pages/Reading";
 import Readings from "./pages/Readings";
 import StaticReading from "./pages/StaticReading";
 import DynamicReading from "./pages/DynamicReading";
+import CurrentResonance from "./pages/CurrentResonance";
 import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
@@ -48,6 +49,7 @@ function Router() {
       <Route path={"/codex"} component={Codex} />
       <Route path={"/codex/:id"} component={CodonDetail} />
       <Route path={"/carrierlock"} component={Carrierlock} />
+      <Route path={"/resonance"} component={CurrentResonance} />
       <Route path={"/readings"} component={Readings} />
       <Route path={"/reading/static/:readingId"} component={StaticReading} />
       <Route path={"/reading/dynamic/:id"} component={DynamicReading} />

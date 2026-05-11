@@ -215,6 +215,53 @@ function hasMeaningfulConfig(config: OrielRuntimeProfileConfig): boolean {
   return Boolean(config.promptOverlay || config.responseIntelligence);
 }
 
+function hasMeaningfulText(value: unknown): boolean {
+  return typeof value === "string" && value.trim().length >= 20;
+}
+
+export function canActivateProposalPayload(
+  payload: OrielProposalPayload,
+  status: db.OrielProposalStatus,
+): { canActivate: boolean; missing: Array<"rollbackPath" | "falsifier"> } {
+  const missing: Array<"rollbackPath" | "falsifier"> = [];
+
+  if (!hasMeaningfulText(payload.rollbackPath)) {
+    missing.push("rollbackPath");
+  }
+  if (!hasMeaningfulText(payload.falsifier)) {
+    missing.push("falsifier");
+  }
+
+  return {
+    canActivate:
+      (status === "evaluated" || status === "approved") &&
+      missing.length === 0,
+    missing,
+  };
+}
+
+export function summarizeGuardrailBlockPayload(payload: unknown): string {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return "Guardrail block payload did not include readable violations.";
+  }
+
+  const violations = (payload as Record<string, unknown>).violations;
+  if (!Array.isArray(violations)) {
+    return "Guardrail block payload did not include readable violations.";
+  }
+
+  const readableViolations = violations.filter(
+    (violation): violation is string =>
+      typeof violation === "string" && violation.trim().length > 0,
+  );
+
+  if (readableViolations.length === 0) {
+    return "Guardrail block payload did not include readable violations.";
+  }
+
+  return readableViolations.map((violation) => violation.trim()).join("; ");
+}
+
 export function evaluateProposalPayload(payload: OrielProposalPayload): OrielProposalEvaluation {
   const objective = typeof payload.objective === "string" ? payload.objective.trim() : "";
   const hypothesis = typeof payload.hypothesis === "string" ? payload.hypothesis.trim() : "";

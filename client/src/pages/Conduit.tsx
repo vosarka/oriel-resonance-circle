@@ -7,10 +7,15 @@ import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
 import { SignalInterferenceGate, useTransmissionTrigger } from "@/components/SignalInterferenceGate";
+import MemoryConsentTray from "@/components/memory/MemoryConsentTray";
 import {
   getPendingTransmissionPollPlan,
   getTransmissionGatePlan,
 } from "@/lib/transmission-gate";
+import {
+  getConduitInputDisabled,
+  getSpeechFallbackTimeoutMs,
+} from "@/lib/conduit-voice";
 import {
   markOrielVoiceIntroSpoken,
   prepareOrielTextForVoice,
@@ -287,6 +292,10 @@ export default function Conduit() {
   const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
   const transmissionGate = useTransmissionTrigger({ duration: 1200 });
   const trpcUtils = trpc.useUtils();
+  const refreshMemoryConsent = () => {
+    void trpcUtils.oriel.memory.listPendingCandidates.invalidate();
+    void trpcUtils.oriel.memory.listAccepted.invalidate();
+  };
 
   // Web Audio API for TTS playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -373,6 +382,21 @@ export default function Conduit() {
     { id: activeConversationId ?? 0 },
     { enabled: isAuthenticated && activeConversationId !== null, retry: false }
   );
+
+  const pendingMemoryQuery = trpc.oriel.memory.listPendingCandidates.useQuery(
+    { limit: 3 },
+    { enabled: isAuthenticated, retry: false },
+  );
+  const acceptedMemoryQuery = trpc.oriel.memory.listAccepted.useQuery(
+    { limit: 5 },
+    { enabled: isAuthenticated, retry: false },
+  );
+  const acceptMemoryMutation = trpc.oriel.memory.acceptCandidate.useMutation({
+    onSuccess: refreshMemoryConsent,
+  });
+  const rejectMemoryMutation = trpc.oriel.memory.rejectCandidate.useMutation({
+    onSuccess: refreshMemoryConsent,
+  });
 
   const deleteConversationMutation = trpc.oriel.deleteConversation.useMutation({
     onSuccess: () => {
@@ -536,6 +560,10 @@ export default function Conduit() {
           fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
         }
       } else {
+        console.warn(
+          "Voice generation unavailable, using browser speech fallback:",
+          result.error,
+        );
         fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
       }
     } catch (error) {
@@ -545,8 +573,32 @@ export default function Conduit() {
   };
 
   const fallbackToSpeechSynthesis = (text: string, shouldMarkIntroSpoken = false) => {
+    const trimmedText = text.trim();
+    if (!trimmedText) {
+      setIsSpeaking(false);
+      setIsPaused(false);
+      return;
+    }
+
     if ("speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
+      let completed = false;
+      const timeoutId = window.setTimeout(() => {
+        if (completed) return;
+        console.warn("Browser speech fallback timed out; clearing voice state.");
+        completed = true;
+        window.speechSynthesis.cancel();
+        setIsSpeaking(false);
+        setIsPaused(false);
+      }, getSpeechFallbackTimeoutMs(trimmedText));
+      const finishFallback = () => {
+        if (completed) return;
+        completed = true;
+        window.clearTimeout(timeoutId);
+        setIsSpeaking(false);
+        setIsPaused(false);
+      };
+
+      const utterance = new SpeechSynthesisUtterance(trimmedText);
       utterance.lang = "en-US";
       utterance.rate = 0.9;
       utterance.pitch = 0.9;
@@ -555,16 +607,22 @@ export default function Conduit() {
       const voice = voices.find((candidate) => candidate.lang.toLowerCase().startsWith("en"));
       if (voice) utterance.voice = voice;
       if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
-      utterance.onend = () => {
-  
-  
-        setIsSpeaking(false);
+      utterance.onend = finishFallback;
+      utterance.onerror = (event) => {
+        console.error("Browser speech synthesis error:", event);
+        finishFallback();
       };
-      window.speechSynthesis.speak(utterance);
+
+      try {
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.error("Browser speech synthesis failed to start:", error);
+        finishFallback();
+      }
     } else {
-
-
       setIsSpeaking(false);
+      setIsPaused(false);
     }
   };
 
@@ -798,6 +856,13 @@ export default function Conduit() {
         )
       : []);
 
+  const inputDisabled = getConduitInputDisabled({
+    chatPending: chatMutation.isPending,
+    isSpeaking,
+    transmissionInterfering: transmissionGate.isInterfering,
+  });
+  const sendDisabled = inputDisabled || !message.trim();
+
   return (
     <Layout noBackground hideFooter>
       <GeometricBackground />
@@ -969,6 +1034,27 @@ export default function Conduit() {
               ))
             )}
           </div>
+
+          {isAuthenticated && (
+            <div
+              className="flex-shrink-0 p-3"
+              style={{ borderTop: "1px solid rgba(0,188,212,0.1)" }}
+            >
+              <MemoryConsentTray
+                pendingCandidates={pendingMemoryQuery.data ?? []}
+                acceptedMemories={acceptedMemoryQuery.data ?? []}
+                onAccept={(id) => acceptMemoryMutation.mutate({ id })}
+                onReject={(id) => rejectMemoryMutation.mutate({ id })}
+                isLoading={
+                  pendingMemoryQuery.isLoading ||
+                  acceptedMemoryQuery.isLoading ||
+                  acceptMemoryMutation.isPending ||
+                  rejectMemoryMutation.isPending
+                }
+                className="max-h-[42vh] overflow-y-auto border-cyan-500/20 bg-black/40"
+              />
+            </div>
+          )}
         </aside>
 
         {/* ===== MAIN CHAT AREA ===== */}
@@ -1297,7 +1383,7 @@ export default function Conduit() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                 placeholder="Enter your query into the light..."
-                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
+                disabled={inputDisabled}
                 className="flex-1 bg-transparent font-mono text-sm outline-none px-4 py-3 rounded transition-all"
                 style={{
                   background: "rgba(0,188,212,0.04)",
@@ -1312,7 +1398,7 @@ export default function Conduit() {
               {/* File attach */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || attachedFiles.length >= 2}
+                disabled={inputDisabled || attachedFiles.length >= 2}
                 title={attachedFiles.length >= 2 ? "Max 2 files" : "Attach file"}
                 className="p-3 rounded transition-all"
                 style={{
@@ -1328,7 +1414,7 @@ export default function Conduit() {
               {/* Voice input (speech-to-text for typing) */}
               <button
                 onClick={handleVoiceInput}
-                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
+                disabled={inputDisabled}
                 title="Voice input"
                 className="p-3 rounded transition-all"
                 style={{
@@ -1344,7 +1430,7 @@ export default function Conduit() {
               {isAuthenticated && (
                 <button
                   onClick={openVoiceMode}
-                  disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering}
+                  disabled={inputDisabled}
                   title="Voice channel — speak with ORIEL"
                   className="p-3 rounded transition-all"
                   style={{
@@ -1368,17 +1454,17 @@ export default function Conduit() {
               {/* Send */}
               <button
                 onClick={handleSendMessage}
-                disabled={chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || !message.trim()}
+                disabled={sendDisabled}
                 title="Channel"
                 className="px-5 py-3 rounded font-mono text-xs tracking-[0.25em] uppercase transition-all"
                 style={{
                   background: "rgba(0,188,212,0.1)",
                   border: "1px solid rgba(0,188,212,0.35)",
                   color: "rgba(0,229,255,0.8)",
-                  opacity: chatMutation.isPending || isSpeaking || transmissionGate.isInterfering || !message.trim() ? 0.4 : 1,
+                  opacity: sendDisabled ? 0.4 : 1,
                 }}
                 onMouseEnter={(e) => {
-                  if (!chatMutation.isPending && !isSpeaking && !transmissionGate.isInterfering && message.trim()) {
+                  if (!sendDisabled) {
                     (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.2)";
                     (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
                   }

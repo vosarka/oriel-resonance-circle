@@ -12,7 +12,7 @@ describe("ORIEL Memory Consecration", () => {
 
     expect(result.sensitivity).toBe("high");
     expect(result.consentRequired).toBe(true);
-    expect(result.recommendedAction).toBe("ask_consent");
+    expect(result.recommendedAction).toBe("pending");
   });
 
   it("allows low-sensitivity preferences to follow the existing memory path", () => {
@@ -25,7 +25,7 @@ describe("ORIEL Memory Consecration", () => {
 
     expect(result.sensitivity).toBe("low");
     expect(result.consentRequired).toBe(false);
-    expect(result.recommendedAction).toBe("store_existing_path");
+    expect(result.recommendedAction).toBe("store");
   });
 
   it("routes architecture decisions to project memory with medium sensitivity", () => {
@@ -39,7 +39,7 @@ describe("ORIEL Memory Consecration", () => {
 
     expect(result.sensitivity).toBe("medium");
     expect(result.consentRequired).toBe(false);
-    expect(result.recommendedAction).toBe("store_existing_path");
+    expect(result.recommendedAction).toBe("store");
   });
 
   it("discards low-confidence inferred memories", () => {

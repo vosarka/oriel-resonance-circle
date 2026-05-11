@@ -3,11 +3,15 @@
  * Persistent memory that evolves with each user interaction
  */
 
-import { getDb } from './db';
-import { orielMemories, orielUserProfiles, type OrielMemory, type InsertOrielUserProfile, type OrielUserProfile } from '../drizzle/schema';
+import { createPendingMemoryCandidate, getDb } from './db';
+import { orielMemories, orielUserProfiles, type InsertOrielPendingMemoryCandidate, type OrielMemory, type InsertOrielUserProfile, type OrielUserProfile } from '../drizzle/schema';
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { invokeLLM } from './_core/llm';
 import { parseModelJson } from './_core/json';
+import {
+  classifyMemoryCandidate,
+  type MemoryCandidateSource,
+} from './oriel-memory-consecration';
 import * as fs from 'fs';
 
 const LOG_FILE = '/tmp/oriel-memory.log';
@@ -29,6 +33,8 @@ export interface ExtractedMemory {
   category: MemoryCategory;
   content: string;
   importance: number;
+  source?: MemoryCandidateSource;
+  confidence?: number;
 }
 
 // User profile summary
@@ -82,10 +88,15 @@ Rules:
 3. Be concise - each memory should be 1-2 sentences max
 4. Focus on information that would be useful in future conversations
 5. Assign importance 1-10 (10 = critical identity info, 1 = minor detail)
-6. Return empty array ONLY if conversation is purely repetitive with zero new content
+6. Assign source:
+   - explicit = the user directly stated the memory as fact or preference
+   - inferred = you are inferring a pattern, identity, wound, or motive
+   - conversation = contextual circumstance from this exchange
+7. Assign confidence 0.0-1.0 based on how clearly the user provided the memory
+8. Return empty array ONLY if conversation is purely repetitive with zero new content
 
 Respond with JSON array only:
-[{"category": "identity", "content": "User's name is X", "importance": 9}]
+[{"category": "identity", "content": "User's name is X", "importance": 9, "source": "explicit", "confidence": 0.98}]
 ${existingContext}`
         },
         {
@@ -105,9 +116,11 @@ ${existingContext}`
               properties: {
                 category: { type: 'string', enum: ['identity', 'preference', 'pattern', 'fact', 'relationship', 'context'] },
                 content: { type: 'string' },
-                importance: { type: 'integer', minimum: 1, maximum: 10 }
+                importance: { type: 'integer', minimum: 1, maximum: 10 },
+                source: { type: 'string', enum: ['conversation', 'explicit', 'inferred'] },
+                confidence: { type: 'number', minimum: 0, maximum: 1 }
               },
-              required: ['category', 'content', 'importance'],
+              required: ['category', 'content', 'importance', 'source', 'confidence'],
               additionalProperties: false
             }
           }
@@ -172,6 +185,63 @@ export async function storeMemory(
   } catch (error) {
     console.error('[Memory] Failed to store memory:', error);
   }
+}
+
+type MemoryPersistenceDeps = {
+  storeMemory: typeof storeMemory;
+  createPendingMemoryCandidate: typeof createPendingMemoryCandidate;
+};
+
+const defaultMemoryPersistenceDeps: MemoryPersistenceDeps = {
+  storeMemory,
+  createPendingMemoryCandidate,
+};
+
+export async function persistClassifiedMemoryCandidate(
+  userId: number,
+  memory: ExtractedMemory,
+  deps: MemoryPersistenceDeps = defaultMemoryPersistenceDeps,
+): Promise<"stored" | "pending" | "discarded"> {
+  const source = memory.source ?? "conversation";
+  const confidence = memory.confidence ?? 1;
+  const decision = classifyMemoryCandidate({
+    category: memory.category,
+    content: memory.content,
+    source,
+    confidence,
+    importance: memory.importance,
+  });
+
+  if (decision.recommendedAction === "discard") {
+    logToFile(`[Memory] Discarded candidate: ${decision.reason}`);
+    return "discarded";
+  }
+
+  const normalizedMemory: ExtractedMemory = {
+    category: decision.normalizedCategory,
+    content: memory.content,
+    importance: memory.importance,
+    ...(memory.source ? { source: memory.source } : {}),
+    ...(memory.confidence !== undefined ? { confidence: memory.confidence } : {}),
+  };
+
+  if (decision.recommendedAction === "pending") {
+    await deps.createPendingMemoryCandidate({
+      userId,
+      category: decision.normalizedCategory,
+      content: memory.content,
+      importance: memory.importance,
+      source,
+      sensitivity: decision.sensitivity,
+      confidence,
+      status: "pending",
+      reason: decision.reason,
+    } satisfies InsertOrielPendingMemoryCandidate);
+    return "pending";
+  }
+
+  await deps.storeMemory(userId, normalizedMemory);
+  return "stored";
 }
 
 /**
@@ -417,13 +487,13 @@ export async function processConversationMemory(
     );
     logToFile(`[Memory] Extraction complete: ${newMemories.length} new memories`);
 
-    // Store new memories
+    // Store safe memories; queue sensitive/inferred candidates for consent.
     if (newMemories.length > 0) {
-      logToFile(`[Memory] Storing ${newMemories.length} new memories...`);
+      logToFile(`[Memory] Classifying ${newMemories.length} new memory candidates...`);
       for (const memory of newMemories) {
-        await storeMemory(userId, memory);
+        await persistClassifiedMemoryCandidate(userId, memory);
       }
-      logToFile(`[Memory] All new memories stored`);
+      logToFile(`[Memory] Memory candidates classified`);
     } else {
       logToFile(`[Memory] No new memories to store`);
     }
