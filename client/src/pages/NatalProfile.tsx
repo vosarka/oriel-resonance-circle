@@ -87,13 +87,13 @@ export default function NatalProfile() {
     setSuccess(null);
 
     if (!birthDate || !birthTime || !birthCity.trim() || !birthCountry.trim()) {
-      setError("Completează toate câmpurile natale înainte de calcul.");
+      setError("Complete all natal fields before calculating.");
       return;
     }
 
     const geocodeResult = geocodeQuery.data ?? (await geocodeQuery.refetch()).data;
     if (!geocodeResult) {
-      setError("Nu am putut rezolva locația. Verifică orașul și țara.");
+      setError("We could not resolve the location. Check the city and country.");
       return;
     }
 
@@ -109,10 +109,10 @@ export default function NatalProfile() {
         timezoneOffset: geocodeResult.offsetHours,
       });
       await refresh();
-      setSuccess("Blueprint-ul natal a fost calculat și salvat.");
+      setSuccess("Your natal blueprint has been calculated and saved.");
       window.location.href = "/blueprint";
     } catch (mutationError) {
-      setError(mutationError instanceof Error ? mutationError.message : "Calculul profilului natal a eșuat.");
+      setError(mutationError instanceof Error ? mutationError.message : "Natal profile calculation failed.");
     }
   };
 
@@ -139,10 +139,12 @@ export default function NatalProfile() {
             </div>
             <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 20 }} />
             <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(28px, 4vw, 42px)", color: C.txt, fontWeight: 300, marginBottom: 8 }}>
-              Completează blueprint-ul natal
+              Complete your natal blueprint
             </h1>
             <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 560 }}>
-              Static Signature nu mai este un reading separat. ORIEL folosește acum un profil natal canonic, persistent, care contextualizează toate citirile dinamice și interacțiunile de tip blueprint.
+              Static Signature is no longer a separate reading. ORIEL now uses
+              a canonical, persistent natal profile to contextualize all
+              dynamic readings and blueprint interactions.
             </p>
           </div>
 
