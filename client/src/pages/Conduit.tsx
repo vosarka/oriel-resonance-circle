@@ -7,7 +7,10 @@ import { Orb } from "@/components/ui/orb";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
 import { SignalInterferenceGate, useTransmissionTrigger } from "@/components/SignalInterferenceGate";
-import { getTransmissionGatePlan } from "@/lib/transmission-gate";
+import {
+  getPendingTransmissionPollPlan,
+  getTransmissionGatePlan,
+} from "@/lib/transmission-gate";
 import {
   markOrielVoiceIntroSpoken,
   prepareOrielTextForVoice,
@@ -74,6 +77,12 @@ interface GeneratedTransmissionEvent {
   createdAt?: string | number | Date;
 }
 
+interface PendingTransmission {
+  conversationId: number;
+  requestedAt: string;
+  triggerSource: "oriel.chat";
+}
+
 interface SessionTransmissionAttachment {
   conversationId: number | null;
   assistantContent: string;
@@ -84,6 +93,8 @@ interface SessionTransmissionAttachment {
 const TRANSMISSION_RARITIES: TransmissionRarity[] = ["common", "uncommon", "rare", "mythic", "void"];
 const TRANSMISSION_TYPES = ["tx", "oracle"] as const;
 type TransmissionCommandType = typeof TRANSMISSION_TYPES[number];
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payload is GeneratedOraclePayload {
   return "parts" in payload;
@@ -275,6 +286,7 @@ export default function Conduit() {
   const [isNewConversation, setIsNewConversation] = useState(false);
   const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
   const transmissionGate = useTransmissionTrigger({ duration: 1200 });
+  const trpcUtils = trpc.useUtils();
 
   // Web Audio API for TTS playback
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -601,6 +613,51 @@ export default function Conduit() {
     }
   };
 
+  const pollPendingTransmission = async (
+    pending: PendingTransmission | null | undefined,
+    assistantContent: string,
+    conversationId: number | null,
+  ) => {
+    const pollPlan = getPendingTransmissionPollPlan({
+      isAuthenticated,
+      hasPendingTransmission: Boolean(pending),
+      conversationId: pending?.conversationId ?? conversationId,
+    });
+    if (!pending || !pollPlan.shouldPoll) return;
+
+    for (let attempt = 0; attempt < pollPlan.maxAttempts; attempt += 1) {
+      await wait(pollPlan.intervalMs);
+
+      try {
+        const event = await trpcUtils.oriel.getLatestGeneratedTransmissionEvent.fetch({
+          conversationId: pending.conversationId,
+          after: pending.requestedAt,
+        });
+        if (!event) continue;
+
+        await transmissionGate.lock();
+        const attachment: SessionTransmissionAttachment = {
+          conversationId: pending.conversationId,
+          assistantContent,
+          event: event as unknown as GeneratedTransmissionEvent,
+          createdAt: Date.now(),
+        };
+        setSessionTransmissionAttachments((prev) => [
+          ...prev,
+          attachment,
+        ].slice(-30));
+        setLocalMessages((prev) =>
+          attachSessionTransmissionEvents(prev, [attachment], pending.conversationId),
+        );
+        void refetchActiveConv();
+        return;
+      } catch (error) {
+        console.error("Pending transmission polling failed:", error);
+        return;
+      }
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || chatMutation.isPending || transmissionGate.isInterfering) return;
 
@@ -656,6 +713,7 @@ export default function Conduit() {
       }
 
       const returnedTransmissionEvent = (result.transmissionEvent ?? null) as GeneratedTransmissionEvent | null;
+      const pendingTransmission = (result.pendingTransmission ?? null) as PendingTransmission | null;
       const resolvedGatePlan = getTransmissionGatePlan({
         forceTransmissionMode,
         hasTransmissionEvent: Boolean(returnedTransmissionEvent),
@@ -698,6 +756,14 @@ export default function Conduit() {
         if (result.conversationId) {
           refetchActiveConv();
         }
+      }
+
+      if (pendingTransmission) {
+        void pollPendingTransmission(
+          pendingTransmission,
+          result.response,
+          resolvedConversationId,
+        );
       }
 
       if (result.response.trim()) {

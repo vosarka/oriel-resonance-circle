@@ -280,6 +280,43 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    getLatestGeneratedTransmissionEvent: protectedProcedure
+      .input(z.object({
+        conversationId: z.number(),
+        after: z.string().min(1),
+      }))
+      .query(async ({ input, ctx }) => {
+        const conversation = await db.getConversationById(input.conversationId, ctx.user.id);
+        if (!conversation) return null;
+
+        const afterMs = new Date(input.after).getTime();
+        if (!Number.isFinite(afterMs)) return null;
+
+        const events = await db.listGeneratedTransmissionEventsByConversation({
+          conversationId: input.conversationId,
+          limit: 30,
+        });
+        const event = events
+          .filter((candidate) => {
+            const createdAt = new Date(candidate.createdAt).getTime();
+            return (
+              candidate.triggerSource === "oriel.chat" &&
+              (candidate.status === "generated" || candidate.status === "revealed") &&
+              Number.isFinite(createdAt) &&
+              createdAt > afterMs
+            );
+          })
+          .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())[0];
+
+        if (!event) return null;
+
+        return {
+          ...event,
+          payload: safeJsonParse<Record<string, unknown>>(event.payload, {}),
+          sourceContext: safeJsonParse<Record<string, unknown>>(event.sourceContext, {}),
+        };
+      }),
+
     chat: publicProcedure
       .input(z.object({
         message: z.string(),
@@ -300,8 +337,14 @@ export const appRouter = router({
         transmissionIntent: z.enum(["clarity"]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        const totalStartedAt = Date.now();
+        const timings: Record<string, number> = {};
+        const markTiming = (label: string, startedAt: number) => {
+          timings[label] = Date.now() - startedAt;
+        };
         let conversationHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
+        const historyStartedAt = Date.now();
         if (ctx.user && input.conversationId) {
           // Load history from the specific conversation
           const history = await db.getConversationMessages(input.conversationId, ctx.user.id);
@@ -319,6 +362,7 @@ export const appRouter = router({
         } else if (input.history && input.history.length > 0) {
           conversationHistory = input.history;
         }
+        markTiming("historyMs", historyStartedAt);
 
         if (input.transmissionOnly) {
           let conversationId = input.conversationId ?? null;
@@ -465,6 +509,7 @@ export const appRouter = router({
           return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
         };
 
+        const llmStartedAt = Date.now();
         let response = await callLLM(fullMessage, conversationHistory);
 
         // Deduplication with retry loop (max 2 retries, temperature escalation)
@@ -514,9 +559,11 @@ export const appRouter = router({
             });
           }
         }
+        markTiming("llmMs", llmStartedAt);
 
         let conversationId = input.conversationId ?? null;
 
+        const dbSaveStartedAt = Date.now();
         if (ctx.user) {
           if (!conversationId) {
             if (input.createNewConversation) {
@@ -568,41 +615,83 @@ export const appRouter = router({
             }
           })();
         }
+        markTiming("dbSaveMs", dbSaveStartedAt);
 
         let transmissionEvent = null;
+        let pendingTransmission = null;
+        const transmissionStartedAt = Date.now();
         try {
-          const { generateTransmissionModeEvent } = await import("./oriel-transmission-mode");
-          transmissionEvent = await generateTransmissionModeEvent({
-            userId: ctx.user?.id ?? null,
-            conversationId,
-            userMessage: input.message,
-            assistantResponse: response,
-            conversationHistory,
-            force: input.forceTransmissionMode,
-            forcedEventType: input.forcedTransmissionType,
-            forcedRarity: input.forcedTransmissionRarity,
-            intent: input.transmissionIntent,
-            triggerSource: input.forceTransmissionMode ? "oriel.chat.force" : "oriel.chat",
-          });
+          const {
+            generateTransmissionModeEvent,
+            prepareNaturalTransmissionSchedule,
+          } = await import("./oriel-transmission-mode");
 
-          if (transmissionEvent) {
-            if (transmissionEvent.id > 0) {
-              try {
-                await db.markGeneratedTransmissionEventStatus(transmissionEvent.id, "revealed");
-              } catch (statusError) {
-                console.error("[oriel.chat] Failed to mark transmission event as revealed:", statusError);
+          if (input.forceTransmissionMode) {
+            transmissionEvent = await generateTransmissionModeEvent({
+              userId: ctx.user?.id ?? null,
+              conversationId,
+              userMessage: input.message,
+              assistantResponse: response,
+              conversationHistory,
+              force: true,
+              forcedEventType: input.forcedTransmissionType,
+              forcedRarity: input.forcedTransmissionRarity,
+              intent: input.transmissionIntent,
+              triggerSource: "oriel.chat.force",
+            });
+
+            if (transmissionEvent) {
+              if (transmissionEvent.id > 0) {
+                try {
+                  await db.markGeneratedTransmissionEventStatus(transmissionEvent.id, "revealed");
+                } catch (statusError) {
+                  console.error("[oriel.chat] Failed to mark transmission event as revealed:", statusError);
+                }
               }
+              transmissionEvent = {
+                ...transmissionEvent,
+                status: "revealed" as const,
+              };
             }
-            transmissionEvent = {
-              ...transmissionEvent,
-              status: "revealed" as const,
-            };
+          } else {
+            const schedule = await prepareNaturalTransmissionSchedule({
+              userId: ctx.user?.id ?? null,
+              conversationId,
+              userMessage: input.message,
+              assistantResponse: response,
+              conversationHistory,
+            });
+            if (schedule) {
+              pendingTransmission = schedule.pending;
+              void schedule.run()
+                .then(async (event) => {
+                  if (event && event.id > 0) {
+                    try {
+                      await db.markGeneratedTransmissionEventStatus(event.id, "revealed");
+                    } catch (statusError) {
+                      console.error("[oriel.chat] Failed to mark async transmission event as revealed:", statusError);
+                    }
+                  }
+                })
+                .catch((error) => {
+                  console.error("[oriel.chat] Async natural transmission failed:", error);
+                });
+            }
           }
         } catch (err) {
           console.error("[oriel.chat] Transmission mode failed:", err);
         }
+        markTiming("transmissionMs", transmissionStartedAt);
+        timings.totalMs = Date.now() - totalStartedAt;
+        console.log("[oriel.chat.timing]", JSON.stringify({
+          authenticated: Boolean(ctx.user),
+          conversationId,
+          pendingTransmission: Boolean(pendingTransmission),
+          syncTransmission: Boolean(transmissionEvent),
+          ...timings,
+        }));
 
-        return { response, conversationId, transmissionEvent };
+        return { response, conversationId, transmissionEvent, pendingTransmission };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {

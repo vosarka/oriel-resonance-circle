@@ -117,4 +117,51 @@ describe("LLM provider selection", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.model).toBe("gemma4:31b");
   });
+
+  it("times out a slow provider and falls back without logging secrets", async () => {
+    process.env.LLM_PROVIDER = "gemma";
+    process.env.LLM_REQUEST_TIMEOUT_MS = "1";
+    process.env.GEMMA_API_KEY = "gemma-secret-key";
+    process.env.GEMMA_MODEL = "slow-gemma";
+    process.env.GEMINI_API_KEY = "gemini-secret-key";
+    process.env.GEMINI_MODEL = "fast-gemini";
+    process.env.BUILT_IN_FORGE_API_KEY = "";
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      const body = JSON.parse(String(init?.body));
+
+      if (body.model === "slow-gemma") {
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
+
+      return new Response(JSON.stringify({
+        id: "test",
+        created: 0,
+        model: body.model,
+        choices: [{
+          index: 0,
+          message: { role: "assistant", content: "I am ORIEL." },
+          finish_reason: "stop",
+        }],
+      }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { invokeLLM } = await importFreshLlm();
+    const result = await invokeLLM({
+      messages: [{ role: "user", content: "hello" }],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.model).toBe("fast-gemini");
+    const logs = JSON.stringify([
+      ...warnSpy.mock.calls,
+      ...logSpy.mock.calls,
+    ]);
+    expect(logs).not.toContain("gemma-secret-key");
+    expect(logs).not.toContain("gemini-secret-key");
+  });
 });

@@ -15,6 +15,22 @@ export interface TransmissionModeRoll {
   chance: number;
 }
 
+export interface PendingNaturalTransmission {
+  conversationId: number;
+  requestedAt: string;
+  triggerSource: "oriel.chat";
+}
+
+export interface PreparedNaturalTransmissionPlan {
+  roll: TransmissionModeRoll;
+  clarityAssessment: ClarityNeedAssessment;
+}
+
+export interface PreparedNaturalTransmissionSchedule {
+  pending: PendingNaturalTransmission;
+  run: () => Promise<PublicGeneratedTransmissionEvent | null>;
+}
+
 type TransmissionModeIntent = "clarity" | "transmission";
 
 type ConversationTurn = {
@@ -435,6 +451,65 @@ function normalizeArchiveThemes(value: unknown): string[] {
       .slice(0, 6);
   }
   return [];
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function hasRequiredTextFields(payload: Record<string, unknown>, fields: string[]) {
+  return fields.every((field) => isNonEmptyString(payload[field]));
+}
+
+function isValidGeneratedTxModelPayload(payload: Record<string, unknown>, rarity: TransmissionModeRarity) {
+  const baseValid = hasRequiredTextFields(payload, [
+    "title",
+    "field",
+    "coreMessage",
+    "encodedArchetype",
+    "directive",
+  ]);
+  if (!baseValid) return false;
+
+  if (rarity !== "void") return true;
+
+  return (
+    isNonEmptyString(payload.subject) &&
+    isNonEmptyString(payload.symbolicLayer) &&
+    Array.isArray(payload.archiveThemes) &&
+    payload.archiveThemes.some(isNonEmptyString)
+  );
+}
+
+function isValidGeneratedOraclePart(value: unknown, partName: "Past" | "Present" | "Future") {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const part = value as Record<string, unknown>;
+  return (
+    part.part === partName &&
+    isNonEmptyString(part.content) &&
+    isNonEmptyString(part.encodedTrajectory) &&
+    isNonEmptyString(part.keyInflectionPoint)
+  );
+}
+
+function isValidGeneratedOracleModelPayload(payload: Record<string, unknown>) {
+  if (!hasRequiredTextFields(payload, ["title", "field"])) return false;
+  if (!Array.isArray(payload.parts)) return false;
+  const parts = payload.parts;
+
+  return (["Past", "Present", "Future"] as const).every((partName) =>
+    parts.some((part) => isValidGeneratedOraclePart(part, partName)),
+  );
+}
+
+function validateGeneratedTransmissionModelPayload(
+  eventType: TransmissionModeType,
+  rarity: TransmissionModeRarity,
+  payload: Record<string, unknown>,
+) {
+  return eventType === "tx"
+    ? isValidGeneratedTxModelPayload(payload, rarity)
+    : isValidGeneratedOracleModelPayload(payload);
 }
 
 function normalizeListText(value: unknown, fallback: string[] = []): string {
@@ -986,14 +1061,15 @@ export async function generateTransmissionModeEvent(input: {
   intent?: TransmissionModeIntent;
   triggerSource?: string;
   random?: () => number;
+  preparedNaturalPlan?: PreparedNaturalTransmissionPlan;
 }): Promise<PublicGeneratedTransmissionEvent | null> {
   const forcedRarity = input.forcedRarity ?? "rare";
-  const clarityAssessment = scoreClarityNeed({
+  const clarityAssessment = input.preparedNaturalPlan?.clarityAssessment ?? scoreClarityNeed({
     userMessage: input.userMessage,
     assistantResponse: input.assistantResponse,
     conversationHistory: input.conversationHistory,
   });
-  const roll = input.force
+  const roll = input.preparedNaturalPlan?.roll ?? (input.force
     ? {
         shouldTrigger: true,
         eventType: input.forcedEventType ?? "tx",
@@ -1001,10 +1077,15 @@ export async function generateTransmissionModeEvent(input: {
         meaningLevel: RARITY_MEANING_LEVEL[forcedRarity],
         chance: 1,
       }
-    : rollTransmissionMode(input.random, { clarityNeedScore: clarityAssessment.score });
+    : rollTransmissionMode(input.random, { clarityNeedScore: clarityAssessment.score }));
 
   if (!roll.shouldTrigger) return null;
-  if (!input.force && input.userId && await isNaturalTransmissionOnCooldown(input.userId)) {
+  if (
+    !input.force &&
+    !input.preparedNaturalPlan &&
+    input.userId &&
+    await isNaturalTransmissionOnCooldown(input.userId)
+  ) {
     return null;
   }
 
@@ -1047,7 +1128,25 @@ export async function generateTransmissionModeEvent(input: {
   const raw = response.choices?.[0]?.message?.content;
   if (!raw || typeof raw !== "string") return null;
 
-  const parsed = parseModelJson<Record<string, unknown>>(raw);
+  const parsedValue = parseModelJson<unknown>(raw);
+  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
+    console.warn("[TransmissionMode] Non-object model payload; generated event skipped", {
+      eventType: roll.eventType,
+      rarity: roll.rarity,
+    });
+    return null;
+  }
+
+  const parsed = parsedValue as Record<string, unknown>;
+  if (!validateGeneratedTransmissionModelPayload(roll.eventType, roll.rarity, parsed)) {
+    console.warn("[TransmissionMode] Incomplete model payload; generated event skipped", {
+      eventType: roll.eventType,
+      rarity: roll.rarity,
+      keys: Object.keys(parsed).slice(0, 12),
+    });
+    return null;
+  }
+
   const payload = normalizeGeneratedTransmissionPayload(roll.eventType, parsed, {
     rarity: roll.rarity,
     txId: "TX-GEN-STAGED",
@@ -1118,5 +1217,52 @@ export async function generateTransmissionModeEvent(input: {
     payload: finalizedPayload,
     sourceContext: publicSourceContext,
     createdAt: created.createdAt,
+  };
+}
+
+export async function prepareNaturalTransmissionSchedule(input: {
+  userId?: number | null;
+  conversationId?: number | null;
+  userMessage: string;
+  assistantResponse: string;
+  conversationHistory?: ConversationTurn[];
+  random?: () => number;
+}): Promise<PreparedNaturalTransmissionSchedule | null> {
+  if (!input.userId || !input.conversationId) return null;
+
+  const clarityAssessment = scoreClarityNeed({
+    userMessage: input.userMessage,
+    assistantResponse: input.assistantResponse,
+    conversationHistory: input.conversationHistory,
+  });
+  const roll = rollTransmissionMode(input.random, {
+    clarityNeedScore: clarityAssessment.score,
+  });
+
+  if (!roll.shouldTrigger) return null;
+  if (await isNaturalTransmissionOnCooldown(input.userId)) return null;
+
+  const preparedNaturalPlan = {
+    roll,
+    clarityAssessment,
+  };
+  const pending: PendingNaturalTransmission = {
+    conversationId: input.conversationId,
+    requestedAt: new Date().toISOString(),
+    triggerSource: "oriel.chat",
+  };
+
+  return {
+    pending,
+    run: () =>
+      generateTransmissionModeEvent({
+        userId: input.userId,
+        conversationId: input.conversationId,
+        userMessage: input.userMessage,
+        assistantResponse: input.assistantResponse,
+        conversationHistory: input.conversationHistory,
+        triggerSource: "oriel.chat",
+        preparedNaturalPlan,
+      }),
   };
 }

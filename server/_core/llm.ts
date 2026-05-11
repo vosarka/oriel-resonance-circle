@@ -254,6 +254,24 @@ const resolveForgeModel = () => ENV.llmModel || ENV.forgeModel || "gemini-2.5-fl
 
 const isLocalUrl = (url: string) => url.includes("localhost") || url.includes("127.0.0.1");
 
+function elapsedMs(startedAt: number) {
+  return Date.now() - startedAt;
+}
+
+function redactSecrets(text: string) {
+  return [
+    ENV.geminiApiKey,
+    ENV.gemmaApiKey,
+    ENV.forgeApiKey,
+  ].filter((secret) => secret.length >= 6)
+    .reduce((current, secret) => current.split(secret).join("[redacted]"), text);
+}
+
+function formatProviderError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return redactSecrets(message.slice(0, 500));
+}
+
 const assertApiKey = () => {
   const geminiKey = resolveGeminiKey();
   const gemmaKey = resolveGemmaKey();
@@ -362,8 +380,13 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     url: string;
     key?: string;
     model: string;
+    attempt: number;
   }) => {
-    console.log(`[LLM] Attempting ${provider.name} API call with model ${provider.model}...`);
+    const startedAt = Date.now();
+    console.log(
+      `[LLM] Attempting ${provider.name} API call with model ${provider.model} ` +
+      `(attempt ${provider.attempt})...`,
+    );
     const headers: Record<string, string> = {
       "content-type": "application/json",
     };
@@ -371,22 +394,41 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       headers.authorization = `Bearer ${provider.key}`;
     }
 
-    const response = await fetch(provider.url, {
+    const controller = new AbortController();
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<Response>((_, reject) => {
+      timeout = setTimeout(() => {
+        controller.abort();
+        reject(new Error(`${provider.name} timed out after ${ENV.llmRequestTimeoutMs}ms`));
+      }, ENV.llmRequestTimeoutMs);
+    });
+
+    const requestPromise = fetch(provider.url, {
       method: "POST",
       headers,
+      signal: controller.signal,
       body: JSON.stringify({
         ...basePayload,
         model: provider.model,
       }),
     });
 
+    const response = await Promise.race([requestPromise, timeoutPromise]).finally(() => {
+      if (timeout) clearTimeout(timeout);
+    });
+
     if (response.ok) {
-      console.log(`[LLM] ${provider.name} API succeeded`);
+      console.log(`[LLM] ${provider.name} API succeeded in ${elapsedMs(startedAt)}ms`);
       return (await response.json()) as InvokeResult;
     }
 
     const errorText = await response.text();
-    throw new Error(`${provider.name} failed: ${response.status} ${response.statusText} – ${errorText}`);
+    throw new Error(
+      redactSecrets(
+        `${provider.name} failed after ${elapsedMs(startedAt)}ms: ` +
+        `${response.status} ${response.statusText} – ${errorText}`,
+      ),
+    );
   };
 
   const gemmaProvider = {
@@ -418,16 +460,20 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
         : [gemmaProvider, geminiProvider, forgeProvider];
 
   let lastError: unknown = null;
+  let attempt = 0;
   for (const provider of providers) {
     if (!provider.url || (!provider.key && !isLocalUrl(provider.url))) {
       continue;
     }
 
+    attempt += 1;
     try {
-      return await invokeProvider(provider);
+      return await invokeProvider({ ...provider, attempt });
     } catch (error) {
       lastError = error;
-      console.warn(`[LLM] ${provider.name} API error:`, error);
+      console.warn(
+        `[LLM] ${provider.name} API error on attempt ${attempt}: ${formatProviderError(error)}`,
+      );
     }
   }
 

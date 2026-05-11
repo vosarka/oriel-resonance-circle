@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getTransmissionGatePlan } from "../client/src/lib/transmission-gate";
+import {
+  getPendingTransmissionPollPlan,
+  getTransmissionGatePlan,
+} from "../client/src/lib/transmission-gate";
 
 describe("transmission gate plan", () => {
   it("locks before revealing naturally generated transmissions", () => {
@@ -51,6 +54,36 @@ describe("transmission gate plan", () => {
       startBeforeRequest: false,
       lockBeforeReveal: false,
       cancelAfterResult: false,
+    });
+  });
+
+  it("polls authenticated pending natural transmissions without starting the gate immediately", () => {
+    expect(
+      getPendingTransmissionPollPlan({
+        isAuthenticated: true,
+        hasPendingTransmission: true,
+        conversationId: 42,
+      }),
+    ).toEqual({
+      shouldPoll: true,
+      intervalMs: 1500,
+      timeoutMs: 45000,
+      maxAttempts: 30,
+    });
+  });
+
+  it("does not poll pending transmissions when there is no authenticated conversation", () => {
+    expect(
+      getPendingTransmissionPollPlan({
+        isAuthenticated: false,
+        hasPendingTransmission: true,
+        conversationId: null,
+      }),
+    ).toEqual({
+      shouldPoll: false,
+      intervalMs: 1500,
+      timeoutMs: 45000,
+      maxAttempts: 30,
     });
   });
 });

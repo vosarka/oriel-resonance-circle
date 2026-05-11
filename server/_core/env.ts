@@ -2,6 +2,7 @@ const nodeEnv = process.env.NODE_ENV ?? "development";
 const runMigrationsEnv = process.env.RUN_MIGRATIONS?.toLowerCase();
 const autonomyRuntimeEnv = process.env.ORIEL_AUTONOMY_RUNTIME?.toLowerCase();
 const llmProviderEnv = process.env.LLM_PROVIDER?.toLowerCase();
+const llmRequestTimeoutEnv = Number(process.env.LLM_REQUEST_TIMEOUT_MS);
 
 const resolveRunMigrations = () => {
   if (runMigrationsEnv === "true") return true;
@@ -14,6 +15,10 @@ const resolveLlmProvider = () =>
   llmProviderEnv === "gemma" || llmProviderEnv === "gemini" || llmProviderEnv === "forge"
     ? llmProviderEnv
     : "gemma";
+const resolveLlmRequestTimeoutMs = () =>
+  Number.isFinite(llmRequestTimeoutEnv) && llmRequestTimeoutEnv > 0
+    ? Math.max(1, Math.floor(llmRequestTimeoutEnv))
+    : 45_000;
 
 export const ENV = {
   nodeEnv,
@@ -24,6 +29,7 @@ export const ENV = {
   // OFF by default: autonomy runtime overlays only activate when explicitly enabled.
   enableOrielAutonomyRuntime: resolveAutonomyRuntimeEnabled(),
   llmProvider: resolveLlmProvider(),
+  llmRequestTimeoutMs: resolveLlmRequestTimeoutMs(),
   llmModel: process.env.LLM_MODEL ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: process.env.GEMINI_MODEL ?? "",
