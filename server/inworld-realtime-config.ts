@@ -4,7 +4,7 @@ import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intr
 export const DEFAULT_ORIEL_REALTIME_MODEL = "google-vertex/gemma-4-26b-a4b";
 export const DEFAULT_ORIEL_REALTIME_STT_MODEL = "assemblyai/u3-rt-pro";
 export const DEFAULT_ORIEL_REALTIME_TTS_MODEL = "inworld-tts-2";
-export const DEFAULT_ORIEL_REALTIME_VAD_EAGERNESS = "high";
+export const DEFAULT_ORIEL_REALTIME_VAD_EAGERNESS = "low";
 
 export const DEFAULT_ORIEL_SOPHIANIC_VOICE_ID =
   "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";

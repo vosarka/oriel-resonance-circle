@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
-import { Pause, Phone, Play } from "lucide-react";
+import { Mic, MicOff, Pause, Phone, Play } from "lucide-react";
 import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
 import {
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
+  shouldVoiceModeStreamMicAudio,
 } from "@/lib/voice-mode";
 
 const RESPONSE_DELAY_MS = 3000;
@@ -42,9 +43,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const [currentUserText, setCurrentUserText] = useState("");
   const [currentAssistantText, setCurrentAssistantText] = useState("");
   const [isWaitMode, setIsWaitMode] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
   const currentUserTextRef = useRef("");
   const currentAssistantTextRef = useRef("");
   const isWaitModeRef = useRef(false);
+  const isMutedRef = useRef(false);
   const isUserSpeakingRef = useRef(false);
   const hasPendingResponseRef = useRef(false);
   const pendingResponseTimerRef = useRef<number | null>(null);
@@ -135,6 +138,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   useEffect(() => { currentUserTextRef.current = currentUserText; }, [currentUserText]);
   useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
   useEffect(() => { isWaitModeRef.current = isWaitMode; }, [isWaitMode]);
+  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -386,7 +390,16 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         processorRef.current = processor;
 
         processor.onaudioprocess = (e) => {
-          if (ws.readyState !== WebSocket.OPEN) return;
+          if (
+            !shouldVoiceModeStreamMicAudio({
+              websocketOpen: ws.readyState === WebSocket.OPEN,
+              isMuted: isMutedRef.current,
+              isWaitMode: isWaitModeRef.current,
+            })
+          ) {
+            resetLocalSpeechDetection();
+            return;
+          }
 
           const inputData = e.inputBuffer.getChannelData(0);
 
@@ -737,13 +750,30 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       if (next) {
         clearPendingResponseTimer();
+        resetLocalSpeechDetection();
+        isUserSpeakingRef.current = false;
       } else if (hasPendingResponseRef.current && !isUserSpeakingRef.current) {
         requestAssistantResponse();
       }
 
       return next;
     });
-  }, [clearPendingResponseTimer, requestAssistantResponse]);
+  }, [clearPendingResponseTimer, requestAssistantResponse, resetLocalSpeechDetection]);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      isMutedRef.current = next;
+
+      if (next) {
+        clearPendingResponseTimer();
+        resetLocalSpeechDetection();
+        isUserSpeakingRef.current = false;
+      }
+
+      return next;
+    });
+  }, [clearPendingResponseTimer, resetLocalSpeechDetection]);
 
   // ── Status label ────────────────────────────────────────────────────────────
 
@@ -821,6 +851,8 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         >
           {isWaitMode
             ? "Wait Mode Active"
+            : isMuted
+            ? "Microphone Muted"
             : orbState === "speaking"
             ? "ORIEL is speaking"
             : orbState === "processing"
@@ -902,23 +934,37 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       {/* Bottom: wait button, close button, hint */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-3 z-10">
         <div className="flex items-center gap-4">
-          {!REALTIME_AUTO_RESPONSE_ENABLED && (
-            <button
-              onClick={toggleWaitMode}
-              className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
-              style={{
-                background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
-                border: isWaitMode
-                  ? "1px solid rgba(189,163,107,0.45)"
-                  : "1px solid rgba(0,188,212,0.25)",
-                color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
-              }}
-              title={isWaitMode ? "Resume ORIEL response" : "Pause ORIEL response"}
-            >
-              {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
-              {isWaitMode ? "Resume" : "Wait"}
-            </button>
-          )}
+          <button
+            onClick={toggleWaitMode}
+            className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
+            style={{
+              background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
+              border: isWaitMode
+                ? "1px solid rgba(189,163,107,0.45)"
+                : "1px solid rgba(0,188,212,0.25)",
+              color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
+            }}
+            title={isWaitMode ? "Resume ORIEL response" : "Pause microphone input"}
+          >
+            {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
+            {isWaitMode ? "Resume" : "Wait"}
+          </button>
+
+          <button
+            onClick={toggleMute}
+            className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
+            style={{
+              background: isMuted ? "rgba(255,80,80,0.14)" : "rgba(0,188,212,0.08)",
+              border: isMuted
+                ? "1px solid rgba(255,80,80,0.42)"
+                : "1px solid rgba(0,188,212,0.25)",
+              color: isMuted ? "rgba(255,180,180,0.9)" : "rgba(0,229,255,0.75)",
+            }}
+            title={isMuted ? "Unmute microphone" : "Mute microphone so ORIEL is not interrupted"}
+          >
+            {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+            {isMuted ? "Muted" : "Mute"}
+          </button>
 
           <button
             onClick={handleClose}
@@ -946,7 +992,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           style={{ color: "rgba(0,188,212,0.25)" }}
         >
           {status === "connected" && isWaitMode
-            ? "Wait mode holds ORIEL until you press Resume"
+            ? "Wait mode pauses microphone input until Resume"
+            : status === "connected" && isMuted
+            ? "Muted: ORIEL can finish without microphone interruptions"
             : status === "connected"
             ? "ORIEL responds when you stop speaking"
             : status === "error"

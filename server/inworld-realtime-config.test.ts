@@ -30,7 +30,7 @@ describe("Inworld realtime ORIEL session config", () => {
 
     expect(update.session.audio.input.turn_detection).toMatchObject({
       type: "semantic_vad",
-      eagerness: "high",
+      eagerness: "low",
       create_response: true,
       interrupt_response: true,
     });

@@ -16,3 +16,14 @@ export function shouldVoiceModeInterruptPlayback(input: {
   if (input.speechSource === "server") return true;
   return !input.assistantResponseActive && !input.isPlaying;
 }
+
+export function shouldVoiceModeStreamMicAudio(input: {
+  websocketOpen: boolean;
+  isMuted: boolean;
+  isWaitMode: boolean;
+}): boolean {
+  if (!input.websocketOpen) return false;
+  if (input.isMuted) return false;
+  if (input.isWaitMode) return false;
+  return true;
+}

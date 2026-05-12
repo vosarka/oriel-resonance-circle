@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
+  shouldVoiceModeStreamMicAudio,
 } from "../client/src/lib/voice-mode";
 
 describe("VoiceMode realtime response policy", () => {
@@ -50,5 +51,29 @@ describe("VoiceMode realtime response policy", () => {
         isPlaying: true,
       }),
     ).toBe(false);
+  });
+
+  it("does not stream microphone audio while mute or wait mode is active", () => {
+    expect(
+      shouldVoiceModeStreamMicAudio({
+        websocketOpen: true,
+        isMuted: true,
+        isWaitMode: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldVoiceModeStreamMicAudio({
+        websocketOpen: true,
+        isMuted: false,
+        isWaitMode: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldVoiceModeStreamMicAudio({
+        websocketOpen: true,
+        isMuted: false,
+        isWaitMode: false,
+      }),
+    ).toBe(true);
   });
 });
