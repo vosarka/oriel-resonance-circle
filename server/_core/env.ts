@@ -67,4 +67,10 @@ export const ENV = {
   inworldApiKey: process.env.INWORLD_API_KEY ?? "",
   inworldRealtimeModel: process.env.INWORLD_REALTIME_MODEL ?? "",
   inworldRealtimeSttModel: process.env.INWORLD_REALTIME_STT_MODEL ?? "",
+  inworldRealtimeTtsModel: process.env.INWORLD_REALTIME_TTS_MODEL ?? "",
+  inworldRealtimeVoiceSophianic:
+    process.env.INWORLD_REALTIME_VOICE_SOPHIANIC ?? "",
+  inworldRealtimeVoiceDeep: process.env.INWORLD_REALTIME_VOICE_DEEP ?? "",
+  inworldRealtimeVadEagerness:
+    process.env.INWORLD_REALTIME_VAD_EAGERNESS ?? "",
 };

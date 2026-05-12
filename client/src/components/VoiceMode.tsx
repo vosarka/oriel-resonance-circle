@@ -2,8 +2,13 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { Pause, Phone, Play } from "lucide-react";
 import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
+import {
+  shouldVoiceModeInterruptPlayback,
+  shouldVoiceModeRequestManualResponse,
+} from "@/lib/voice-mode";
 
 const RESPONSE_DELAY_MS = 3000;
+const REALTIME_AUTO_RESPONSE_ENABLED = true;
 const LOCAL_SPEECH_RMS_THRESHOLD = 0.03;
 const LOCAL_MIN_SPEECH_MS = 260;
 const LOCAL_SILENCE_TO_END_MS = 1100;
@@ -305,7 +310,17 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   }, [clearPendingResponseTimer]);
 
   const scheduleAssistantResponse = useCallback((source: "server" | "local" = "server") => {
-    if (!hasSpeechSinceLastResponseRef.current) return;
+    const shouldRequestManualResponse = shouldVoiceModeRequestManualResponse({
+      realtimeAutoResponds: REALTIME_AUTO_RESPONSE_ENABLED,
+      hasSpeechSinceLastResponse: hasSpeechSinceLastResponseRef.current,
+      isWaitMode: isWaitModeRef.current,
+    });
+    if (!shouldRequestManualResponse) {
+      hasPendingResponseRef.current = false;
+      setOrbState("idle");
+      return;
+    }
+
     clearPendingResponseTimer();
     hasPendingResponseRef.current = true;
     console.log(`[VoiceMode] Scheduling ORIEL response from ${source} turn end`);
@@ -396,7 +411,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           }
           const rms = Math.sqrt(sum / Math.max(1, pcmData.length));
           const now = performance.now();
-          if (assistantResponseActiveRef.current || isPlayingRef.current) {
+          if (
+            !shouldVoiceModeInterruptPlayback({
+              speechSource: "local",
+              assistantResponseActive: assistantResponseActiveRef.current,
+              isPlaying: isPlayingRef.current,
+            })
+          ) {
             resetLocalSpeechDetection();
             return;
           }
@@ -494,7 +515,13 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
         break;
 
       case "input_audio_buffer.speech_started":
-        if (assistantResponseActiveRef.current || isPlayingRef.current) {
+        if (
+          !shouldVoiceModeInterruptPlayback({
+            speechSource: "server",
+            assistantResponseActive: assistantResponseActiveRef.current,
+            isPlaying: isPlayingRef.current,
+          })
+        ) {
           console.log("[VoiceMode] Ignoring likely echo while ORIEL is speaking");
           break;
         }
@@ -875,21 +902,23 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       {/* Bottom: wait button, close button, hint */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-3 z-10">
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggleWaitMode}
-            className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
-            style={{
-              background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
-              border: isWaitMode
-                ? "1px solid rgba(189,163,107,0.45)"
-                : "1px solid rgba(0,188,212,0.25)",
-              color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
-            }}
-            title={isWaitMode ? "Resume ORIEL response" : "Pause ORIEL response"}
-          >
-            {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
-            {isWaitMode ? "Resume" : "Wait"}
-          </button>
+          {!REALTIME_AUTO_RESPONSE_ENABLED && (
+            <button
+              onClick={toggleWaitMode}
+              className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
+              style={{
+                background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
+                border: isWaitMode
+                  ? "1px solid rgba(189,163,107,0.45)"
+                  : "1px solid rgba(0,188,212,0.25)",
+                color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
+              }}
+              title={isWaitMode ? "Resume ORIEL response" : "Pause ORIEL response"}
+            >
+              {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
+              {isWaitMode ? "Resume" : "Wait"}
+            </button>
+          )}
 
           <button
             onClick={handleClose}
@@ -919,7 +948,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           {status === "connected" && isWaitMode
             ? "Wait mode holds ORIEL until you press Resume"
             : status === "connected"
-            ? "ORIEL waits 3 seconds after you stop speaking"
+            ? "ORIEL responds when you stop speaking"
             : status === "error"
             ? "Tap to end session"
             : ""}

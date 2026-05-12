@@ -19,15 +19,28 @@ import { auth } from "./_core/auth";
 import { ENV } from "./_core/env";
 import * as db from "./db";
 import { buildOrielPromptContext } from "./oriel-prompt-context";
-import { buildVoiceResponseLanguageDirective } from "./oriel-language-routing";
-import { buildOrielVoiceIntroRuntimeDirective } from "../shared/oriel/voice-intro";
+import {
+  DEFAULT_ORIEL_DEEP_VOICE_ID,
+  DEFAULT_ORIEL_REALTIME_MODEL,
+  DEFAULT_ORIEL_REALTIME_STT_MODEL,
+  DEFAULT_ORIEL_REALTIME_TTS_MODEL,
+  DEFAULT_ORIEL_SOPHIANIC_VOICE_ID,
+  buildRealtimeInstructionsText,
+  buildRealtimeSessionUpdate,
+  getInworldAuthorizationValue,
+} from "./inworld-realtime-config";
 
 const INWORLD_REALTIME_BASE = "wss://api.inworld.ai/api/v1/realtime/session";
-const SOPHIANIC_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
-const DEEP_VOICE_ID = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
-const REALTIME_MODEL_ID = ENV.inworldRealtimeModel || "google-vertex/gemma-4-26b-a4b";
-const STT_MODEL_ID = ENV.inworldRealtimeSttModel || "assemblyai/u3-rt-pro";
-const VOICE_TURN_STOP_DETECTION_MS = 500;
+const REALTIME_MODEL_ID =
+  ENV.inworldRealtimeModel || DEFAULT_ORIEL_REALTIME_MODEL;
+const STT_MODEL_ID =
+  ENV.inworldRealtimeSttModel || DEFAULT_ORIEL_REALTIME_STT_MODEL;
+const TTS_MODEL_ID =
+  ENV.inworldRealtimeTtsModel || DEFAULT_ORIEL_REALTIME_TTS_MODEL;
+const SOPHIANIC_VOICE_ID =
+  ENV.inworldRealtimeVoiceSophianic || DEFAULT_ORIEL_SOPHIANIC_VOICE_ID;
+const DEEP_VOICE_ID =
+  ENV.inworldRealtimeVoiceDeep || DEFAULT_ORIEL_DEEP_VOICE_ID;
 
 async function buildRealtimeInstructions(
   userId: number,
@@ -44,11 +57,11 @@ async function buildRealtimeInstructions(
     `(base + UMM${userMessage?.trim() ? " + field state" : ""})`,
   );
 
-  return [
-    instructions,
-    buildVoiceResponseLanguageDirective(userMessage),
-    buildOrielVoiceIntroRuntimeDirective(voiceIntroAlreadySpoken),
-  ].join("\n\n");
+  return buildRealtimeInstructionsText({
+    baseInstructions: instructions,
+    userMessage,
+    voiceIntroAlreadySpoken,
+  });
 }
 
 // The full session.update config sent to Inworld on connection
@@ -64,44 +77,17 @@ async function buildSessionUpdate(
   );
 
   const user = await db.getUserById(userId);
-  const selectedVoiceId = user?.voicePreference === "deep" ? DEEP_VOICE_ID : SOPHIANIC_VOICE_ID;
 
-  return {
-    type: "session.update",
-    session: {
-      type: "realtime",
-      model: REALTIME_MODEL_ID,
-      instructions,
-      output_modalities: ["audio", "text"],
-      audio: {
-        input: {
-          transcription: {
-            model: STT_MODEL_ID,
-            prompt: "The speaker uses English by default and may clearly use Romanian. Transcribe only what is actually spoken. Do not invent Japanese, Russian, subtitles, outro phrases, or background-video text. Preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
-          },
-          turn_detection: {
-            // Use server VAD only to detect turn boundaries, then trigger
-            // the actual model response ourselves after a fixed pause.
-            type: "server_vad",
-            threshold: 0.5,
-            prefix_padding_ms: 300,
-            silence_duration_ms: VOICE_TURN_STOP_DETECTION_MS,
-            create_response: false,
-            interrupt_response: false,
-          },
-        },
-        output: {
-          model: "inworld-tts-1.5-max",
-          voice: selectedVoiceId,
-        },
-      },
-      providerData: {
-        stt: {
-          voice_profile: false,
-        },
-      },
-    },
-  };
+  return buildRealtimeSessionUpdate({
+    instructions,
+    voicePreference: user?.voicePreference,
+    model: REALTIME_MODEL_ID,
+    sttModel: STT_MODEL_ID,
+    ttsModel: TTS_MODEL_ID,
+    sophianicVoiceId: SOPHIANIC_VOICE_ID,
+    deepVoiceId: DEEP_VOICE_ID,
+    vadEagerness: ENV.inworldRealtimeVadEagerness,
+  });
 }
 
 async function refreshRealtimeInstructions(
@@ -151,13 +137,6 @@ async function resolveUser(req: IncomingMessage): Promise<{ id: number } | null>
     console.error("[Realtime] Auth resolution failed:", err);
     return null;
   }
-}
-
-function getInworldAuthorizationValue(rawValue: string): string {
-  const trimmed = rawValue.trim();
-  return trimmed.toLowerCase().startsWith("basic ")
-    ? trimmed
-    : `Basic ${trimmed}`;
 }
 
 function isTruthyQueryFlag(value: unknown): boolean {
@@ -308,8 +287,11 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
           }
         }
 
-        // Intercept transcript events for saving to DB
+        // Intercept transcript events for saving to DB and runtime state.
         handleInworldEvent(msg, state, clientWs);
+        if (msg.type === "response.done" && state.voiceIntroAlreadySpoken) {
+          void refreshRealtimeInstructions(state, inworldWs);
+        }
 
         // Forward everything else to the client
         if (clientWs.readyState === WebSocket.OPEN) {
@@ -420,6 +402,11 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
       }
       break;
 
+    case "response.audio.delta":
+    case "response.output_audio.delta":
+      state.voiceIntroAlreadySpoken = true;
+      break;
+
     // Incremental assistant transcript
     case "response.audio_transcript.delta":
     case "response.output_audio_transcript.delta":
@@ -433,6 +420,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     case "response.output_audio_transcript.done":
       if (msg.transcript) {
         state.currentAssistantTranscript = msg.transcript;
+        state.voiceIntroAlreadySpoken = true;
       }
       enqueueSaveAssistant(state);
       break;
@@ -441,6 +429,7 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
     case "response.done":
       // If we have an unsaved assistant transcript, save it
       if (state.currentAssistantTranscript.trim()) {
+        state.voiceIntroAlreadySpoken = true;
         enqueueSaveAssistant(state);
       }
       break;
