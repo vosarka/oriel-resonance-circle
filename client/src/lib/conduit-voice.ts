@@ -11,3 +11,15 @@ export function getSpeechFallbackTimeoutMs(text: string) {
   const estimatedMs = wordCount * 450 + 2000;
   return Math.max(4000, Math.min(25000, estimatedMs));
 }
+
+export function getSpeechFallbackWatchdogDecision(input: {
+  elapsedMs: number;
+  isSpeaking: boolean;
+  hardLimitMs?: number;
+}): "extend" | "clear" {
+  const hardLimitMs = input.hardLimitMs ?? 120_000;
+  if (input.isSpeaking && input.elapsedMs < hardLimitMs) {
+    return "extend";
+  }
+  return "clear";
+}

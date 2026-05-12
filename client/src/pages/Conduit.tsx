@@ -15,6 +15,7 @@ import {
 import {
   getConduitInputDisabled,
   getSpeechFallbackTimeoutMs,
+  getSpeechFallbackWatchdogDecision,
 } from "@/lib/conduit-voice";
 import {
   markOrielVoiceIntroSpoken,
@@ -582,18 +583,30 @@ export default function Conduit() {
 
     if ("speechSynthesis" in window) {
       let completed = false;
-      const timeoutId = window.setTimeout(() => {
-        if (completed) return;
-        console.warn("Browser speech fallback timed out; clearing voice state.");
-        completed = true;
-        window.speechSynthesis.cancel();
-        setIsSpeaking(false);
-        setIsPaused(false);
-      }, getSpeechFallbackTimeoutMs(trimmedText));
+      let timeoutId: number | undefined;
+      const startedAt = Date.now();
+      const scheduleWatchdog = () => {
+        timeoutId = window.setTimeout(() => {
+          if (completed) return;
+          const decision = getSpeechFallbackWatchdogDecision({
+            elapsedMs: Date.now() - startedAt,
+            isSpeaking: window.speechSynthesis.speaking,
+          });
+          if (decision === "extend") {
+            scheduleWatchdog();
+            return;
+          }
+          console.warn("Browser speech fallback did not complete; clearing voice state.");
+          completed = true;
+          window.speechSynthesis.cancel();
+          setIsSpeaking(false);
+          setIsPaused(false);
+        }, getSpeechFallbackTimeoutMs(trimmedText));
+      };
       const finishFallback = () => {
         if (completed) return;
         completed = true;
-        window.clearTimeout(timeoutId);
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
         setIsSpeaking(false);
         setIsPaused(false);
       };
@@ -609,12 +622,14 @@ export default function Conduit() {
       if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
       utterance.onend = finishFallback;
       utterance.onerror = (event) => {
+        if (completed && event.error === "interrupted") return;
         console.error("Browser speech synthesis error:", event);
         finishFallback();
       };
 
       try {
         window.speechSynthesis.cancel();
+        scheduleWatchdog();
         window.speechSynthesis.speak(utterance);
       } catch (error) {
         console.error("Browser speech synthesis failed to start:", error);
