@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  shouldVoiceModeShowWaitButton,
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
   shouldVoiceModeStreamMicAudio,
@@ -75,5 +76,9 @@ describe("VoiceMode realtime response policy", () => {
         isWaitMode: false,
       }),
     ).toBe(true);
+  });
+
+  it("hides the wait button while testing automatic realtime turn-taking", () => {
+    expect(shouldVoiceModeShowWaitButton()).toBe(false);
   });
 });

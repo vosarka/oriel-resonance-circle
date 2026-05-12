@@ -3,6 +3,7 @@ import { Orb, type AgentState } from "@/components/ui/orb";
 import { Mic, MicOff, Pause, Phone, Play } from "lucide-react";
 import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
 import {
+  shouldVoiceModeShowWaitButton,
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
   shouldVoiceModeStreamMicAudio,
@@ -10,6 +11,7 @@ import {
 
 const RESPONSE_DELAY_MS = 3000;
 const REALTIME_AUTO_RESPONSE_ENABLED = true;
+const SHOW_WAIT_BUTTON = shouldVoiceModeShowWaitButton();
 const LOCAL_SPEECH_RMS_THRESHOLD = 0.03;
 const LOCAL_MIN_SPEECH_MS = 260;
 const LOCAL_SILENCE_TO_END_MS = 1100;
@@ -934,21 +936,23 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       {/* Bottom: wait button, close button, hint */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center gap-3 z-10">
         <div className="flex items-center gap-4">
-          <button
-            onClick={toggleWaitMode}
-            className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
-            style={{
-              background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
-              border: isWaitMode
-                ? "1px solid rgba(189,163,107,0.45)"
-                : "1px solid rgba(0,188,212,0.25)",
-              color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
-            }}
-            title={isWaitMode ? "Resume ORIEL response" : "Pause microphone input"}
-          >
-            {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
-            {isWaitMode ? "Resume" : "Wait"}
-          </button>
+          {SHOW_WAIT_BUTTON && (
+            <button
+              onClick={toggleWaitMode}
+              className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
+              style={{
+                background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
+                border: isWaitMode
+                  ? "1px solid rgba(189,163,107,0.45)"
+                  : "1px solid rgba(0,188,212,0.25)",
+                color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
+              }}
+              title={isWaitMode ? "Resume ORIEL response" : "Pause microphone input"}
+            >
+              {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
+              {isWaitMode ? "Resume" : "Wait"}
+            </button>
+          )}
 
           <button
             onClick={toggleMute}

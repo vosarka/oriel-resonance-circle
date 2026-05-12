@@ -27,3 +27,7 @@ export function shouldVoiceModeStreamMicAudio(input: {
   if (input.isWaitMode) return false;
   return true;
 }
+
+export function shouldVoiceModeShowWaitButton(): boolean {
+  return false;
+}
