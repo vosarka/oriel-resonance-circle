@@ -1,3 +1,9 @@
+export const VOICE_MODE_MANUAL_RESPONSE_DELAY_MS = 3000;
+
+export function shouldVoiceModeUseRealtimeAutoResponse(): boolean {
+  return false;
+}
+
 export function shouldVoiceModeRequestManualResponse(input: {
   realtimeAutoResponds: boolean;
   hasSpeechSinceLastResponse: boolean;

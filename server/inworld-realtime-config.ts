@@ -109,7 +109,7 @@ export function buildRealtimeSessionUpdate({
           turn_detection: {
             type: "semantic_vad",
             eagerness: normalizeVadEagerness(vadEagerness),
-            create_response: true,
+            create_response: false,
             interrupt_response: true,
           },
         },

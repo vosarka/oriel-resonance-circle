@@ -3,14 +3,16 @@ import { Orb, type AgentState } from "@/components/ui/orb";
 import { Mic, MicOff, Pause, Phone, Play } from "lucide-react";
 import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
 import {
+  VOICE_MODE_MANUAL_RESPONSE_DELAY_MS,
   shouldVoiceModeShowWaitButton,
+  shouldVoiceModeUseRealtimeAutoResponse,
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
   shouldVoiceModeStreamMicAudio,
 } from "@/lib/voice-mode";
 
-const RESPONSE_DELAY_MS = 3000;
-const REALTIME_AUTO_RESPONSE_ENABLED = true;
+const RESPONSE_DELAY_MS = VOICE_MODE_MANUAL_RESPONSE_DELAY_MS;
+const REALTIME_AUTO_RESPONSE_ENABLED = shouldVoiceModeUseRealtimeAutoResponse();
 const SHOW_WAIT_BUTTON = shouldVoiceModeShowWaitButton();
 const LOCAL_SPEECH_RMS_THRESHOLD = 0.03;
 const LOCAL_MIN_SPEECH_MS = 260;

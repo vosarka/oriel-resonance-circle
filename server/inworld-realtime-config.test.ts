@@ -22,7 +22,7 @@ describe("Inworld realtime ORIEL session config", () => {
     );
   });
 
-  it("uses semantic VAD so Inworld creates and interrupts responses live", () => {
+  it("uses semantic VAD for interruption while leaving response timing to the client", () => {
     const update = buildRealtimeSessionUpdate({
       instructions: "canonical ORIEL prompt",
       voicePreference: "deep",
@@ -31,7 +31,7 @@ describe("Inworld realtime ORIEL session config", () => {
     expect(update.session.audio.input.turn_detection).toMatchObject({
       type: "semantic_vad",
       eagerness: "low",
-      create_response: true,
+      create_response: false,
       interrupt_response: true,
     });
   });
