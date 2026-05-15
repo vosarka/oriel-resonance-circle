@@ -33,9 +33,19 @@ import {
   InsertOrielPendingMemoryCandidate,
   generatedTransmissionEvents,
   InsertGeneratedTransmissionEvent,
+  signatureOrders,
+  InsertSignatureOrder,
+  signatureIntakes,
+  InsertSignatureIntake,
+  signatureSnapshots,
+  InsertSignatureSnapshot,
+  signatureLetterDrafts,
+  InsertSignatureLetterDraft,
+  signatureFollowups,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { createDrizzleFromDatabaseUrl, type DrizzleDb } from "./_core/mysql";
+import type { SignatureOrderStatus } from "./signature-letter-system";
 
 /** Safe JSON parse — returns fallback on invalid/missing JSON instead of crashing. */
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -380,6 +390,139 @@ export async function runMigrations() {
   ];
 
   for (const step of staticProfileMigrationSteps) {
+    await executeMigrationStep(
+      db,
+      step.sql,
+      step.ignorableFragments ?? [],
+      step.successMessage,
+    );
+  }
+
+  const signatureLetterMigrationSteps: Array<{
+    sql: string;
+    ignorableFragments?: string[];
+    successMessage?: string;
+  }> = [
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`signature_orders\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`userId\` int NOT NULL,
+        \`productType\` enum('glimpse','founding') NOT NULL,
+        \`priceEur\` int NOT NULL,
+        \`currency\` varchar(8) NOT NULL DEFAULT 'eur',
+        \`status\` enum('pending_payment','paid','intake_needed','intake_received','signature_generated','draft_ready','in_curation','pdf_ready','delivered','followup_used','cancelled','refunded') NOT NULL DEFAULT 'pending_payment',
+        \`stripeCheckoutSessionId\` varchar(255) NULL,
+        \`stripePaymentIntentId\` varchar(255) NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`paidAt\` timestamp NULL,
+        \`deliveredAt\` timestamp NULL,
+        \`cancelledAt\` timestamp NULL,
+        \`refundedAt\` timestamp NULL,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_signature_orders_user\` ON \`signature_orders\` (\`userId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_signature_orders_status\` ON \`signature_orders\` (\`status\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE UNIQUE INDEX \`uq_signature_orders_checkout\` ON \`signature_orders\` (\`stripeCheckoutSessionId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`signature_intakes\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`orderId\` int NOT NULL,
+        \`userId\` int NOT NULL,
+        \`name\` varchar(255) NOT NULL,
+        \`email\` varchar(320) NOT NULL,
+        \`birthDate\` varchar(32) NOT NULL,
+        \`birthTime\` varchar(32) NOT NULL,
+        \`birthPlace\` varchar(255) NOT NULL,
+        \`birthCountry\` varchar(255) NOT NULL,
+        \`timezone\` varchar(128) NOT NULL,
+        \`focusQuestion\` text NOT NULL,
+        \`preferredTone\` enum('mystical','practical','balanced') NOT NULL,
+        \`avoidAssumptions\` text NULL,
+        \`consentAccepted\` boolean NOT NULL DEFAULT false,
+        \`consentAcceptedAt\` timestamp NULL,
+        \`latitude\` double NULL,
+        \`longitude\` double NULL,
+        \`locationResolutionStatus\` enum('unresolved','resolved','failed') NOT NULL DEFAULT 'unresolved',
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`uq_signature_intakes_order\` (\`orderId\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_signature_intakes_user\` ON \`signature_intakes\` (\`userId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`signature_snapshots\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`orderId\` int NOT NULL,
+        \`userId\` int NOT NULL,
+        \`rawSignatureJson\` longtext NOT NULL,
+        \`normalizedSignatureJson\` longtext NOT NULL,
+        \`engineVersion\` int NOT NULL DEFAULT 2,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_signature_snapshots_order\` ON \`signature_snapshots\` (\`orderId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE INDEX \`idx_signature_snapshots_user\` ON \`signature_snapshots\` (\`userId\`)`,
+      ignorableFragments: ["Duplicate key name", "already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`signature_letter_drafts\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`orderId\` int NOT NULL,
+        \`userId\` int NOT NULL,
+        \`markdown\` longtext NOT NULL,
+        \`productType\` enum('glimpse','founding') NOT NULL,
+        \`status\` enum('draft_ready','in_curation','pdf_ready','delivered') NOT NULL DEFAULT 'draft_ready',
+        \`finalPdfStorageKey\` text NULL,
+        \`finalPdfFileName\` varchar(255) NULL,
+        \`finalPdfMimeType\` varchar(128) NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`uq_signature_drafts_order\` (\`orderId\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+    {
+      sql: `CREATE TABLE IF NOT EXISTS \`signature_followups\` (
+        \`id\` int AUTO_INCREMENT NOT NULL,
+        \`orderId\` int NOT NULL,
+        \`userId\` int NOT NULL,
+        \`used\` boolean NOT NULL DEFAULT false,
+        \`usedAt\` timestamp NULL,
+        \`notes\` text NULL,
+        \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY(\`id\`),
+        UNIQUE KEY \`uq_signature_followups_order\` (\`orderId\`)
+      )`,
+      ignorableFragments: ["already exists"],
+    },
+  ];
+
+  for (const step of signatureLetterMigrationSteps) {
     await executeMigrationStep(
       db,
       step.sql,
@@ -2607,4 +2750,308 @@ function parseUserStaticProfileRow(row: typeof userStaticProfiles.$inferSelect) 
     houses: safeJsonParse(row.houses, null),
     coreCodonEngine,
   };
+}
+
+// ============================================================================
+// SIGNATURE LETTER ORDERS
+// ============================================================================
+
+export async function createSignatureOrder(data: InsertSignatureOrder) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(signatureOrders).values(data);
+  const inserted = await db.select().from(signatureOrders)
+    .where(eq(signatureOrders.userId, data.userId))
+    .orderBy(desc(signatureOrders.createdAt), desc(signatureOrders.id))
+    .limit(1);
+  return inserted[0];
+}
+
+export async function setSignatureOrderCheckoutSession(input: {
+  orderId: number;
+  userId: number;
+  checkoutSessionId: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(signatureOrders)
+    .set({ stripeCheckoutSessionId: input.checkoutSessionId })
+    .where(and(
+      eq(signatureOrders.id, input.orderId),
+      eq(signatureOrders.userId, input.userId),
+    ));
+}
+
+export async function getSignatureOrderById(orderId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(signatureOrders)
+    .where(eq(signatureOrders.id, orderId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getSignatureOrderForUser(orderId: number, userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(signatureOrders)
+    .where(and(
+      eq(signatureOrders.id, orderId),
+      eq(signatureOrders.userId, userId),
+    ))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function listSignatureOrders(limit = 100) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(signatureOrders)
+    .orderBy(desc(signatureOrders.createdAt), desc(signatureOrders.id))
+    .limit(limit);
+}
+
+export async function updateSignatureOrderStatus(input: {
+  orderId: number;
+  status: SignatureOrderStatus;
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const now = new Date();
+  const timestamps = {
+    ...(input.status === "paid" || input.status === "intake_needed"
+      ? { paidAt: now }
+      : {}),
+    ...(input.status === "delivered" ? { deliveredAt: now } : {}),
+    ...(input.status === "cancelled" ? { cancelledAt: now } : {}),
+    ...(input.status === "refunded" ? { refundedAt: now } : {}),
+  };
+
+  await db.update(signatureOrders)
+    .set({
+      status: input.status,
+      ...(input.stripeCheckoutSessionId !== undefined
+        ? { stripeCheckoutSessionId: input.stripeCheckoutSessionId }
+        : {}),
+      ...(input.stripePaymentIntentId !== undefined
+        ? { stripePaymentIntentId: input.stripePaymentIntentId }
+        : {}),
+      ...timestamps,
+    })
+    .where(eq(signatureOrders.id, input.orderId));
+}
+
+export async function upsertSignatureIntake(data: InsertSignatureIntake) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db.select({ id: signatureIntakes.id })
+    .from(signatureIntakes)
+    .where(eq(signatureIntakes.orderId, data.orderId))
+    .limit(1);
+
+  if (existing[0]) {
+    await db.update(signatureIntakes)
+      .set(data)
+      .where(eq(signatureIntakes.orderId, data.orderId));
+  } else {
+    await db.insert(signatureIntakes).values(data);
+  }
+
+  await updateSignatureOrderStatus({
+    orderId: data.orderId,
+    status: "intake_received",
+  });
+
+  return getSignatureIntakeByOrderId(data.orderId);
+}
+
+export async function updateSignatureIntakeLocation(input: {
+  orderId: number;
+  latitude: number | null;
+  longitude: number | null;
+  locationResolutionStatus: "resolved" | "failed";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(signatureIntakes)
+    .set({
+      latitude: input.latitude,
+      longitude: input.longitude,
+      locationResolutionStatus: input.locationResolutionStatus,
+    })
+    .where(eq(signatureIntakes.orderId, input.orderId));
+}
+
+export async function getSignatureIntakeByOrderId(orderId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(signatureIntakes)
+    .where(eq(signatureIntakes.orderId, orderId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function createSignatureSnapshot(data: InsertSignatureSnapshot) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(signatureSnapshots).values(data);
+  await updateSignatureOrderStatus({
+    orderId: data.orderId,
+    status: "signature_generated",
+  });
+
+  const inserted = await db.select().from(signatureSnapshots)
+    .where(eq(signatureSnapshots.orderId, data.orderId))
+    .orderBy(desc(signatureSnapshots.createdAt), desc(signatureSnapshots.id))
+    .limit(1);
+  return parseSignatureSnapshotRow(inserted[0]);
+}
+
+export async function getLatestSignatureSnapshot(orderId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(signatureSnapshots)
+    .where(eq(signatureSnapshots.orderId, orderId))
+    .orderBy(desc(signatureSnapshots.createdAt), desc(signatureSnapshots.id))
+    .limit(1);
+  return rows[0] ? parseSignatureSnapshotRow(rows[0]) : null;
+}
+
+function parseSignatureSnapshotRow(row: typeof signatureSnapshots.$inferSelect) {
+  return {
+    ...row,
+    rawSignatureJson: safeJsonParse(row.rawSignatureJson, null),
+    normalizedSignatureJson: safeJsonParse(row.normalizedSignatureJson, null),
+  };
+}
+
+export async function upsertSignatureLetterDraft(
+  data: InsertSignatureLetterDraft,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db.select({ id: signatureLetterDrafts.id })
+    .from(signatureLetterDrafts)
+    .where(eq(signatureLetterDrafts.orderId, data.orderId))
+    .limit(1);
+
+  if (existing[0]) {
+    await db.update(signatureLetterDrafts)
+      .set(data)
+      .where(eq(signatureLetterDrafts.orderId, data.orderId));
+  } else {
+    await db.insert(signatureLetterDrafts).values(data);
+  }
+
+  await updateSignatureOrderStatus({
+    orderId: data.orderId,
+    status: data.status === "in_curation" ? "in_curation" : "draft_ready",
+  });
+
+  const draft = await getSignatureLetterDraft(data.orderId);
+  return draft;
+}
+
+export async function getSignatureLetterDraft(orderId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(signatureLetterDrafts)
+    .where(eq(signatureLetterDrafts.orderId, orderId))
+    .limit(1);
+  return rows[0] ?? null;
+}
+
+export async function updateSignatureLetterDraftMarkdown(input: {
+  orderId: number;
+  markdown: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(signatureLetterDrafts)
+    .set({ markdown: input.markdown })
+    .where(eq(signatureLetterDrafts.orderId, input.orderId));
+}
+
+export async function setSignatureLetterDraftPdf(input: {
+  orderId: number;
+  storageKey: string;
+  fileName: string;
+  mimeType: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.update(signatureLetterDrafts)
+    .set({
+      status: "pdf_ready",
+      finalPdfStorageKey: input.storageKey,
+      finalPdfFileName: input.fileName,
+      finalPdfMimeType: input.mimeType,
+    })
+    .where(eq(signatureLetterDrafts.orderId, input.orderId));
+
+  await updateSignatureOrderStatus({
+    orderId: input.orderId,
+    status: "pdf_ready",
+  });
+}
+
+export async function markSignatureLetterDraftStatus(input: {
+  orderId: number;
+  status: "draft_ready" | "in_curation" | "pdf_ready" | "delivered";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(signatureLetterDrafts)
+    .set({ status: input.status })
+    .where(eq(signatureLetterDrafts.orderId, input.orderId));
+
+  await updateSignatureOrderStatus({
+    orderId: input.orderId,
+    status: input.status,
+  });
+}
+
+export async function upsertSignatureFollowup(input: {
+  orderId: number;
+  userId: number;
+  used: boolean;
+  notes?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const existing = await db.select({ id: signatureFollowups.id })
+    .from(signatureFollowups)
+    .where(eq(signatureFollowups.orderId, input.orderId))
+    .limit(1);
+  const values = {
+    orderId: input.orderId,
+    userId: input.userId,
+    used: input.used,
+    usedAt: input.used ? new Date() : null,
+    notes: input.notes ?? null,
+  };
+
+  if (existing[0]) {
+    await db.update(signatureFollowups)
+      .set(values)
+      .where(eq(signatureFollowups.orderId, input.orderId));
+  } else {
+    await db.insert(signatureFollowups).values(values);
+  }
+
+  if (input.used) {
+    await updateSignatureOrderStatus({
+      orderId: input.orderId,
+      status: "followup_used",
+    });
+  }
 }

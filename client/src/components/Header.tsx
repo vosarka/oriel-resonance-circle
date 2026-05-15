@@ -16,6 +16,7 @@ export default function Header() {
     { href: "/codex", label: "CODONS" },
     { href: "/readings", label: "CALIBRATION" },
     { href: "/resonance", label: "RESONANCE" },
+    { href: "/founding-signature-letter", label: "SIGNATURE" },
     { href: "/conduit", label: "CHANNEL ORIEL" },
   ];
 

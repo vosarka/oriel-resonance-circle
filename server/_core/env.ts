@@ -73,4 +73,20 @@ export const ENV = {
   inworldRealtimeVoiceDeep: process.env.INWORLD_REALTIME_VOICE_DEEP ?? "",
   inworldRealtimeVadEagerness:
     process.env.INWORLD_REALTIME_VAD_EAGERNESS ?? "",
+
+  // ─── Stripe (Signature Letters) ─────────────────────────────────────────
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET ?? "",
+  stripeSignatureGlimpsePriceId:
+    process.env.STRIPE_SIGNATURE_GLIMPSE_PRICE_ID ?? "",
+  stripeFoundingSignaturePriceId:
+    process.env.STRIPE_FOUNDING_SIGNATURE_PRICE_ID ?? "",
+
+  // ─── S3-Compatible Storage (Signature PDFs) ─────────────────────────────
+  s3Endpoint: process.env.S3_ENDPOINT ?? "",
+  s3Region: process.env.S3_REGION ?? "auto",
+  s3Bucket: process.env.S3_BUCKET ?? "",
+  s3AccessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+  s3SecretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+  s3PublicBaseUrl: process.env.S3_PUBLIC_BASE_URL ?? "",
 };

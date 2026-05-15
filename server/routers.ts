@@ -20,6 +20,21 @@ import { buildUserStaticProfile, summarizeStoredStaticProfile } from "./static-p
 import { calculateBirthChart } from "./ephemeris-service";
 import { facetNameToLetter, longitudeToCodonFacet } from "./rgp-256-codon-engine";
 import { getCurrentResonanceForUser } from "./oriel-current-resonance";
+import {
+  createSignatureCheckout,
+  generateSignatureDraftForOrder,
+  generateSignatureSnapshotForOrder,
+  getFinalSignaturePdfUrl,
+  getSignatureLetterAdminOrder,
+  getSignatureOrderBundleForUser,
+  listSignatureLetterAdminOrders,
+  markSignatureDelivered,
+  markSignatureFollowupUsed,
+  markSignatureInCuration,
+  saveSignatureDraft,
+  submitSignatureIntake,
+  uploadFinalSignaturePdf,
+} from "./signature-letter-service";
 
 function normalizeEmail(email: string) {
   return email.toLowerCase().trim();
@@ -68,6 +83,21 @@ const natalProfileInputSchema = z.object({
   longitude: z.number(),
   timezoneId: z.string().optional(),
   timezoneOffset: z.number().optional(),
+});
+
+const signatureProductTypeSchema = z.enum(["glimpse", "founding"]);
+const signatureIntakeInputSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email(),
+  birthDate: z.string().min(1),
+  birthTime: z.string().min(1),
+  birthPlace: z.string().min(1),
+  birthCountry: z.string().min(1),
+  timezone: z.string().min(1),
+  focusQuestion: z.string().min(1),
+  preferredTone: z.enum(["mystical", "practical", "balanced"]),
+  avoidAssumptions: z.string().optional().default(""),
+  consentAccepted: z.boolean(),
 });
 
 export const appRouter = router({
@@ -160,6 +190,55 @@ export const appRouter = router({
           await db.setUserPasswordHash(legacyUser.openId, newPasswordHash);
         }
         return { success: true } as const;
+      }),
+  }),
+
+  signature: router({
+    createCheckout: protectedProcedure
+      .input(z.object({
+        productType: signatureProductTypeSchema,
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return createSignatureCheckout({
+          userId: ctx.user.id,
+          userEmail: ctx.user.email,
+          productType: input.productType,
+        });
+      }),
+
+    getOrder: protectedProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+      }))
+      .query(async ({ ctx, input }) => {
+        return getSignatureOrderBundleForUser({
+          orderId: input.orderId,
+          userId: ctx.user.id,
+        });
+      }),
+
+    submitIntake: protectedProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+        intake: signatureIntakeInputSchema,
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return submitSignatureIntake({
+          orderId: input.orderId,
+          userId: ctx.user.id,
+          intake: input.intake,
+        });
+      }),
+
+    getFinalPdfUrl: protectedProcedure
+      .input(z.object({
+        orderId: z.number().int().positive(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return getFinalSignaturePdfUrl({
+          orderId: input.orderId,
+          userId: ctx.user.id,
+        });
       }),
   }),
 
@@ -2158,6 +2237,81 @@ export const appRouter = router({
 
   // ── Admin Dashboard ─────────────────────────────────────────────────────────
   admin: router({
+    signatureLetters: router({
+      listOrders: adminProcedure.query(async () => {
+        return listSignatureLetterAdminOrders();
+      }),
+
+      getOrder: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+        }))
+        .query(async ({ input }) => {
+          return getSignatureLetterAdminOrder(input.orderId);
+        }),
+
+      generateSnapshot: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+        }))
+        .mutation(async ({ input }) => {
+          return generateSignatureSnapshotForOrder(input.orderId);
+        }),
+
+      generateDraft: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+        }))
+        .mutation(async ({ input }) => {
+          return generateSignatureDraftForOrder(input.orderId);
+        }),
+
+      saveDraft: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+          markdown: z.string().min(1),
+        }))
+        .mutation(async ({ input }) => {
+          return saveSignatureDraft(input);
+        }),
+
+      markInCuration: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+        }))
+        .mutation(async ({ input }) => {
+          return markSignatureInCuration(input.orderId);
+        }),
+
+      uploadFinalPdf: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+          fileName: z.string().min(1),
+          mimeType: z.string().min(1),
+          base64: z.string().min(1),
+        }))
+        .mutation(async ({ input }) => {
+          return uploadFinalSignaturePdf(input);
+        }),
+
+      markDelivered: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+        }))
+        .mutation(async ({ input }) => {
+          return markSignatureDelivered(input.orderId);
+        }),
+
+      markFollowupUsed: adminProcedure
+        .input(z.object({
+          orderId: z.number().int().positive(),
+          notes: z.string().optional(),
+        }))
+        .mutation(async ({ input }) => {
+          return markSignatureFollowupUsed(input);
+        }),
+    }),
+
     generatedTransmissions: router({
       list: adminProcedure
         .input(z.object({

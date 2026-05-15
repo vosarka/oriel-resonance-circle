@@ -85,7 +85,7 @@ async function sendViaSmtp(message: MailMessage) {
   ]);
 }
 
-async function sendMail(message: MailMessage) {
+export async function sendMail(message: MailMessage) {
   requireMailConfig();
 
   if (hasResendConfig()) {
@@ -122,6 +122,30 @@ export async function sendPasswordRecoveryGuidanceEmail(email: string) {
       "",
       "This account does not currently use email-password sign-in.",
       "Please return to the sign-in page and use your original sign-in method.",
+    ].join("\n"),
+  });
+}
+
+export async function sendSignatureLetterDeliveryEmail(input: {
+  email: string;
+  name: string;
+  productTitle: string;
+  deliveryUrl: string;
+}) {
+  await sendMail({
+    from: ENV.authEmailFrom || ENV.resendFrom,
+    to: input.email,
+    subject: `Your ${input.productTitle} is ready`,
+    text: [
+      `Hello ${input.name},`,
+      "",
+      `Your ${input.productTitle} has been curated and is ready inside ORIEL Signal.`,
+      "",
+      input.deliveryUrl,
+      "",
+      "This symbolic letter is for self-inquiry and pattern recognition. It is not medical, legal, therapeutic, financial, or guaranteed predictive guidance.",
+      "",
+      "ORIEL Signal",
     ].join("\n"),
   });
 }

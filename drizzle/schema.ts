@@ -1,4 +1,4 @@
-﻿import { int, double, mysqlEnum, mysqlTable, text, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+﻿import { int, double, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 import { index, uniqueIndex } from "drizzle-orm/mysql-core";
 
@@ -609,6 +609,139 @@ export const userStaticProfiles = mysqlTable("userStaticProfiles", {
 
 export type UserStaticProfile = typeof userStaticProfiles.$inferSelect;
 export type InsertUserStaticProfile = typeof userStaticProfiles.$inferInsert;
+
+/**
+ * Paid ORIEL Signature Letter orders.
+ * Founder-curated symbolic readings fulfilled after Stripe payment and intake.
+ */
+export const signatureOrders = mysqlTable("signature_orders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
+  priceEur: int("priceEur").notNull(),
+  currency: varchar("currency", { length: 8 }).default("eur").notNull(),
+  status: mysqlEnum("status", [
+    "pending_payment",
+    "paid",
+    "intake_needed",
+    "intake_received",
+    "signature_generated",
+    "draft_ready",
+    "in_curation",
+    "pdf_ready",
+    "delivered",
+    "followup_used",
+    "cancelled",
+    "refunded",
+  ]).default("pending_payment").notNull(),
+  stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  paidAt: timestamp("paidAt"),
+  deliveredAt: timestamp("deliveredAt"),
+  cancelledAt: timestamp("cancelledAt"),
+  refundedAt: timestamp("refundedAt"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_signature_orders_user").on(table.userId),
+  index("idx_signature_orders_status").on(table.status),
+  uniqueIndex("uq_signature_orders_checkout").on(table.stripeCheckoutSessionId),
+]);
+
+export type SignatureOrder = typeof signatureOrders.$inferSelect;
+export type InsertSignatureOrder = typeof signatureOrders.$inferInsert;
+
+export const signatureIntakes = mysqlTable("signature_intakes", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  userId: int("userId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  birthDate: varchar("birthDate", { length: 32 }).notNull(),
+  birthTime: varchar("birthTime", { length: 32 }).notNull(),
+  birthPlace: varchar("birthPlace", { length: 255 }).notNull(),
+  birthCountry: varchar("birthCountry", { length: 255 }).notNull(),
+  timezone: varchar("timezone", { length: 128 }).notNull(),
+  focusQuestion: text("focusQuestion").notNull(),
+  preferredTone: mysqlEnum("preferredTone", ["mystical", "practical", "balanced"]).notNull(),
+  avoidAssumptions: text("avoidAssumptions"),
+  consentAccepted: boolean("consentAccepted").default(false).notNull(),
+  consentAcceptedAt: timestamp("consentAcceptedAt"),
+  latitude: double("latitude"),
+  longitude: double("longitude"),
+  locationResolutionStatus: mysqlEnum("locationResolutionStatus", [
+    "unresolved",
+    "resolved",
+    "failed",
+  ]).default("unresolved").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_signature_intakes_order").on(table.orderId),
+  index("idx_signature_intakes_user").on(table.userId),
+  uniqueIndex("uq_signature_intakes_order").on(table.orderId),
+]);
+
+export type SignatureIntake = typeof signatureIntakes.$inferSelect;
+export type InsertSignatureIntake = typeof signatureIntakes.$inferInsert;
+
+export const signatureSnapshots = mysqlTable("signature_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  userId: int("userId").notNull(),
+  rawSignatureJson: longtext("rawSignatureJson").notNull(),
+  normalizedSignatureJson: longtext("normalizedSignatureJson").notNull(),
+  engineVersion: int("engineVersion").default(2).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [
+  index("idx_signature_snapshots_order").on(table.orderId),
+  index("idx_signature_snapshots_user").on(table.userId),
+]);
+
+export type SignatureSnapshot = typeof signatureSnapshots.$inferSelect;
+export type InsertSignatureSnapshot = typeof signatureSnapshots.$inferInsert;
+
+export const signatureLetterDrafts = mysqlTable("signature_letter_drafts", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  userId: int("userId").notNull(),
+  markdown: longtext("markdown").notNull(),
+  productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
+  status: mysqlEnum("status", [
+    "draft_ready",
+    "in_curation",
+    "pdf_ready",
+    "delivered",
+  ]).default("draft_ready").notNull(),
+  finalPdfStorageKey: text("finalPdfStorageKey"),
+  finalPdfFileName: varchar("finalPdfFileName", { length: 255 }),
+  finalPdfMimeType: varchar("finalPdfMimeType", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_signature_drafts_order").on(table.orderId),
+  uniqueIndex("uq_signature_drafts_order").on(table.orderId),
+]);
+
+export type SignatureLetterDraft = typeof signatureLetterDrafts.$inferSelect;
+export type InsertSignatureLetterDraft = typeof signatureLetterDrafts.$inferInsert;
+
+export const signatureFollowups = mysqlTable("signature_followups", {
+  id: int("id").autoincrement().primaryKey(),
+  orderId: int("orderId").notNull(),
+  userId: int("userId").notNull(),
+  used: boolean("used").default(false).notNull(),
+  usedAt: timestamp("usedAt"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  index("idx_signature_followups_order").on(table.orderId),
+  uniqueIndex("uq_signature_followups_order").on(table.orderId),
+]);
+
+export type SignatureFollowup = typeof signatureFollowups.$inferSelect;
+export type InsertSignatureFollowup = typeof signatureFollowups.$inferInsert;
 
 // ============================================================================
 // BETTER AUTH TABLES

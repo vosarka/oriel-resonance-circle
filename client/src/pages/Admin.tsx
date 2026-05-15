@@ -744,6 +744,24 @@ export default function Admin() {
   return (
     <Layout>
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 16px" }}>
+        <div className="mb-4 flex justify-end">
+          <a
+            href="/admin/signature-letters"
+            style={{
+              border: `1px solid ${C.border}`,
+              color: C.gold,
+              padding: "8px 14px",
+              fontFamily: "'Red Hat Mono', monospace",
+              fontSize: 11,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
+            Signature Letters
+          </a>
+        </div>
+
         {/* Tab Switcher */}
         <div className="flex gap-1 mb-6" style={{ borderBottom: `1px solid ${C.border}`, paddingBottom: 0 }}>
           {(["transmissions", "oracles", "architect"] as const).map((tab) => (

@@ -19,10 +19,13 @@ import Readings from "./pages/Readings";
 import StaticReading from "./pages/StaticReading";
 import DynamicReading from "./pages/DynamicReading";
 import CurrentResonance from "./pages/CurrentResonance";
+import FoundingSignatureLetter from "./pages/FoundingSignatureLetter";
+import SignatureIntake from "./pages/SignatureIntake";
 import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Admin from "./pages/Admin";
+import AdminSignatureLetters from "./pages/AdminSignatureLetters";
 import OrbPreview from "./pages/OrbPreview";
 import OracleDetail from "./pages/OracleDetail";
 import NatalProfile from "./pages/NatalProfile";
@@ -33,12 +36,15 @@ function Router() {
   return (
     <Switch>
       <Route path={"/orb-preview"} component={OrbPreview} />
+      <Route path={"/admin/signature-letters"} component={AdminSignatureLetters} />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/complete-profile"} component={NatalProfile} />
       <Route path={"/blueprint"} component={StaticReading} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
+      <Route path={"/founding-signature-letter"} component={FoundingSignatureLetter} />
+      <Route path={"/signature-intake/:orderId"} component={SignatureIntake} />
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />

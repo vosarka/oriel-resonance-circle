@@ -10,6 +10,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { runMigrations } from "../db";
 import { setupRealtimeWebSocket } from "../inworld-realtime";
+import { handleSignatureStripeWebhook } from "../signature-letter-webhook";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,6 +40,12 @@ async function startServer() {
   // Better Auth handles its own body parsing — mount BEFORE express.json()
   const baHandler = toNodeHandler(auth);
   app.all("/api/auth/*", (req, res) => baHandler(req, res));
+
+  app.post(
+    "/api/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    handleSignatureStripeWebhook,
+  );
 
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
