@@ -11,10 +11,6 @@ import {
 
 import { useAuth } from "@/_core/hooks/useAuth";
 import Layout from "@/components/Layout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 
@@ -24,41 +20,25 @@ type CurrentResonanceStatus =
   | "missing_dynamic_reading"
   | "ready";
 
-interface CurrentResonanceResult {
-  status: CurrentResonanceStatus;
-  staticAnchor: {
-    vrcType: string | null;
-    vrcAuthority: string | null;
-    fractalRole: string | null;
-    birthLocation: string | null;
-    primeStackCount: number;
-  } | null;
-  carrierlock: {
-    coherenceScore: number | null;
-    mentalNoise: number | null;
-    bodyTension: number | null;
-    emotionalTurbulence: number | null;
-    breathCompletion: boolean | null;
-    createdAt: string | null;
-  } | null;
-  activePattern: {
-    codon256Id: string;
-    codon: number | null;
-    facet: string | null;
-    sli: number;
-    interpretation: "highest_shadow_loudness";
-  } | null;
-  primeStackPosition: {
-    position: number | null;
-    codonName: string | null;
-    center: string | null;
-    label: string | null;
-  } | null;
-  microCorrection: string | null;
-  falsifier: string | null;
-  nextAction: string;
-  evidence: string[];
-}
+const C = {
+  void: "#0a0a0e",
+  deep: "#0f0f15",
+  surface: "#14141c",
+  border: "rgba(189,163,107,0.12)",
+  borderH: "rgba(189,163,107,0.26)",
+  gold: "#bda36b",
+  goldL: "#d4c090",
+  goldDim: "rgba(189,163,107,0.52)",
+  goldGlow: "rgba(189,163,107,0.10)",
+  teal: "#5ba4a4",
+  tealDim: "rgba(91,164,164,0.45)",
+  tealGlow: "rgba(91,164,164,0.14)",
+  txt: "#e8e4dc",
+  txtS: "#9a968e",
+  txtD: "#6a665e",
+  red: "#c94444",
+  redGlow: "rgba(201,68,68,0.10)",
+};
 
 const statusLabels: Record<CurrentResonanceStatus, string> = {
   missing_static_profile: "Static anchor missing",
@@ -71,6 +51,120 @@ function formatNumber(value: number | null | undefined, fallback = "—") {
   return typeof value === "number" && Number.isFinite(value)
     ? String(value)
     : fallback;
+}
+
+function Panel({
+  eyebrow,
+  title,
+  children,
+  accent = false,
+}: {
+  eyebrow?: string;
+  title: string;
+  children: React.ReactNode;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        background: accent ? "rgba(91,164,164,0.06)" : C.deep,
+        border: `1px solid ${accent ? C.tealDim : C.border}`,
+        boxShadow: accent ? `0 0 34px ${C.tealGlow}` : "none",
+      }}
+    >
+      <div style={{ padding: "16px 22px", borderBottom: `1px solid ${C.border}` }}>
+        {eyebrow && (
+          <div
+            style={{
+              fontFamily: "monospace",
+              fontSize: 9,
+              color: C.teal,
+              letterSpacing: "0.2em",
+              marginBottom: 6,
+            }}
+          >
+            {eyebrow}
+          </div>
+        )}
+        <h2
+          style={{
+            fontFamily: "'Cormorant Garamond', serif",
+            fontSize: 22,
+            color: C.txt,
+            fontWeight: 300,
+            lineHeight: 1.1,
+            margin: 0,
+          }}
+        >
+          {title}
+        </h2>
+      </div>
+      <div style={{ padding: 22 }}>{children}</div>
+    </div>
+  );
+}
+
+function DataPill({ label, value, accent = false }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div
+      style={{
+        padding: "13px 15px",
+        border: `1px solid ${accent ? C.goldDim : C.border}`,
+        background: accent ? C.goldGlow : "rgba(255,255,255,0.02)",
+      }}
+    >
+      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.16em", marginBottom: 5 }}>
+        {label}
+      </div>
+      <div style={{ fontFamily: "monospace", fontSize: 13, color: accent ? C.goldL : C.txt }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function ActionLink({ href, label, primary = false, icon }: { href: string; label: string; primary?: boolean; icon?: React.ReactNode }) {
+  return (
+    <Link href={href}>
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 8,
+          padding: "10px 16px",
+          border: `1px solid ${primary ? C.goldDim : C.borderH}`,
+          background: primary ? C.goldGlow : "rgba(255,255,255,0.015)",
+          color: primary ? C.goldL : C.txtS,
+          fontFamily: "monospace",
+          fontSize: 10,
+          letterSpacing: "0.14em",
+          cursor: "pointer",
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+        {icon}
+      </span>
+    </Link>
+  );
+}
+
+function CoherenceBar({ value }: { value: number }) {
+  const bounded = Math.max(0, Math.min(100, value));
+
+  return (
+    <div style={{ height: 5, background: C.border, overflow: "hidden" }}>
+      <div
+        style={{
+          width: `${bounded}%`,
+          height: "100%",
+          background: `linear-gradient(90deg, ${C.red}, ${C.gold}, ${C.teal})`,
+          boxShadow: `0 0 18px ${C.tealGlow}`,
+        }}
+      />
+    </div>
+  );
 }
 
 function MissingState({
@@ -91,29 +185,26 @@ function MissingState({
           ];
 
   return (
-    <section className="border border-amber-500/30 bg-amber-500/5 p-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2 text-amber-200">
-            <AlertTriangle className="h-4 w-4" />
-            <h2 className="font-mono text-sm uppercase tracking-[0.22em]">
-              {statusLabels[status]}
-            </h2>
+    <div style={{ border: `1px solid ${C.goldDim}`, background: C.goldGlow, padding: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 18, flexWrap: "wrap" }}>
+        <div style={{ maxWidth: 720 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.goldL, marginBottom: 8 }}>
+            <AlertTriangle size={16} />
+            <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em" }}>
+              {statusLabels[status].toUpperCase()}
+            </div>
           </div>
-          <p className="max-w-2xl text-sm text-zinc-300">{nextAction}</p>
+          <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: 0 }}>
+            {nextAction}
+          </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {links.map(link => (
-            <Link key={link.href} href={link.href}>
-              <Button className="bg-primary text-black hover:bg-primary/90">
-                {link.label}
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+          {links.map((link) => (
+            <ActionLink key={link.href} href={link.href} label={link.label} primary icon={<ArrowRight size={14} />} />
           ))}
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -127,22 +218,25 @@ export default function CurrentResonance() {
   if (!user) {
     return (
       <Layout>
-        <main className="min-h-screen bg-black px-4 py-16 text-zinc-100">
-          <div className="mx-auto flex max-w-xl flex-col items-center gap-4 text-center">
-            <RadioTower className="h-10 w-10 text-primary" />
-            <h1 className="font-serif text-3xl italic text-zinc-100">
-              Current Resonance
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ maxWidth: 520, width: "100%", background: C.deep, border: `1px solid ${C.border}`, padding: "28px 24px", textAlign: "center" }}>
+            <RadioTower size={34} color={C.teal} style={{ margin: "0 auto 14px" }} />
+            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 12 }}>
+              CURRENT RESONANCE
+            </div>
+            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 34, color: C.txt, fontWeight: 300, margin: "0 0 10px" }}>
+              Sign in to load your field state
             </h1>
-            <p className="text-sm text-zinc-400">
-              Sign in to load your current resonance state.
+            <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, marginBottom: 22 }}>
+              Current Resonance needs your Static Signature, latest Carrierlock, and stored dynamic reading to resolve the active pattern.
             </p>
-            <a href={getLoginUrl()}>
-              <Button className="bg-primary text-black hover:bg-primary/90">
-                Sign in
-              </Button>
+            <a href={getLoginUrl()} style={{ textDecoration: "none" }}>
+              <span style={{ display: "inline-block", padding: "10px 20px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em" }}>
+                SIGN IN
+              </span>
             </a>
           </div>
-        </main>
+        </div>
       </Layout>
     );
   }
@@ -150,9 +244,13 @@ export default function CurrentResonance() {
   if (isLoading) {
     return (
       <Layout>
-        <main className="flex min-h-screen items-center justify-center bg-black text-zinc-100">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </main>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+          <Loader2 size={24} style={{ color: C.teal, animation: "spin 1s linear infinite" }} />
+          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.2em" }}>
+            RESOLVING CURRENT RESONANCE…
+          </div>
+          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        </div>
       </Layout>
     );
   }
@@ -160,20 +258,19 @@ export default function CurrentResonance() {
   if (error || !data) {
     return (
       <Layout>
-        <main className="min-h-screen bg-black px-4 py-16 text-zinc-100">
-          <div className="mx-auto max-w-3xl border border-red-500/30 bg-red-500/5 p-6">
-            <div className="flex items-center gap-2 text-red-200">
-              <AlertTriangle className="h-4 w-4" />
-              <h1 className="font-mono text-sm uppercase tracking-[0.22em]">
-                Resonance unavailable
-              </h1>
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ maxWidth: 680, width: "100%", border: `1px solid rgba(201,68,68,0.35)`, background: C.redGlow, padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.red, marginBottom: 10 }}>
+              <AlertTriangle size={16} />
+              <div style={{ fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em" }}>
+                RESONANCE UNAVAILABLE
+              </div>
             </div>
-            <p className="mt-3 text-sm text-zinc-300">
-              {error?.message ??
-                "The current resonance route returned no data."}
+            <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: 0 }}>
+              {error?.message ?? "The current resonance route returned no data."}
             </p>
           </div>
-        </main>
+        </div>
       </Layout>
     );
   }
@@ -182,147 +279,132 @@ export default function CurrentResonance() {
   const activeLabel = data.activePattern
     ? `${data.activePattern.codon256Id} · SLI ${data.activePattern.sli}`
     : "No active pattern";
+  const status = data.status as CurrentResonanceStatus;
 
   return (
     <Layout>
-      <main className="min-h-screen bg-black px-4 py-10 text-zinc-100">
-        <div className="mx-auto max-w-6xl space-y-8">
-          <header className="flex flex-col gap-5 border-b border-zinc-800 pb-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <Badge className="w-fit border-primary/30 bg-primary/10 font-mono text-primary">
-                {statusLabels[data.status]}
-              </Badge>
-              <div>
-                <h1 className="font-serif text-4xl italic tracking-normal text-zinc-100 md:text-5xl">
-                  Current Resonance
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-400">
-                  A compact view of the static anchor, latest Carrierlock state,
-                  and loudest stored SLI interference.
-                </p>
-              </div>
-            </div>
-            <Link href="/carrierlock">
-              <Button variant="outline" className="border-primary/40">
-                Recalibrate
-                <Activity className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </header>
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes resonancePulse {
+          0%, 100% { opacity: 0.45; transform: scale(1); }
+          50% { opacity: 0.9; transform: scale(1.018); }
+        }
+      `}</style>
 
-          {data.status !== "ready" && (
-            <MissingState status={data.status} nextAction={data.nextAction} />
+      <div
+        style={{
+          minHeight: "100vh",
+          padding: "72px 24px 120px",
+          background:
+            "radial-gradient(circle at top left, rgba(91,164,164,0.08), transparent 30%), radial-gradient(circle at top right, rgba(189,163,107,0.08), transparent 34%), linear-gradient(180deg, #09090d 0%, #0f0f15 44%, #09090d 100%)",
+        }}
+      >
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 18, marginBottom: 26, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.24em", marginBottom: 12 }}>
+                CURRENT RESONANCE · LIVE FIELD SNAPSHOT
+              </div>
+              <div style={{ width: 36, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 18 }} />
+              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(34px, 5vw, 56px)", color: C.txt, fontWeight: 300, lineHeight: 1, margin: "0 0 10px" }}>
+                Current Resonance
+              </h1>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 760, margin: 0 }}>
+                A compact field console joining your Static Signature, latest Carrierlock state, and loudest stored SLI interference into one operational view.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <ActionLink href="/blueprint" label="Static Signature" icon={<Sparkles size={14} />} />
+              <ActionLink href="/carrierlock" label="Recalibrate" primary icon={<Activity size={14} />} />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 18 }}>
+            <DataPill label="STATUS" value={statusLabels[status] ?? "Unknown"} accent={status === "ready"} />
+            <DataPill label="COHERENCE" value={formatNumber(data.carrierlock?.coherenceScore)} accent />
+            <DataPill label="ACTIVE PATTERN" value={activeLabel} />
+            <DataPill label="PRIME POSITION" value={data.primeStackPosition?.label ?? "Unresolved"} />
+          </div>
+
+          {status !== "ready" && (
+            <div style={{ marginBottom: 18 }}>
+              <MissingState status={status} nextAction={data.nextAction} />
+            </div>
           )}
 
-          <section className="grid gap-4 md:grid-cols-3">
-            <Card className="border-zinc-800 bg-zinc-950/70">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  Static Anchor
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="flex justify-between gap-4">
-                  <span className="text-zinc-500">VRC</span>
-                  <span className="text-right text-zinc-100">
-                    {data.staticAnchor?.vrcType ?? "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-zinc-500">Authority</span>
-                  <span className="text-right text-zinc-100">
-                    {data.staticAnchor?.vrcAuthority ?? "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between gap-4">
-                  <span className="text-zinc-500">Prime Stack</span>
-                  <span className="font-mono text-zinc-100">
-                    {formatNumber(data.staticAnchor?.primeStackCount)}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18, marginBottom: 18 }}>
+            <Panel eyebrow="STATIC ANCHOR" title="Blueprint Baseline">
+              <div style={{ display: "grid", gap: 10 }}>
+                <DataPill label="VRC TYPE" value={data.staticAnchor?.vrcType ?? "—"} accent />
+                <DataPill label="AUTHORITY" value={data.staticAnchor?.vrcAuthority ?? "—"} />
+                <DataPill label="FRACTAL ROLE" value={data.staticAnchor?.fractalRole ?? "—"} />
+                <DataPill label="PRIME STACK" value={formatNumber(data.staticAnchor?.primeStackCount)} />
+              </div>
+            </Panel>
 
-            <Card className="border-zinc-800 bg-zinc-950/70">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <RadioTower className="h-4 w-4 text-primary" />
-                  Carrierlock
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm">
-                <div className="flex items-end justify-between">
-                  <span className="text-zinc-500">Coherence</span>
-                  <span className="font-mono text-3xl text-primary">
-                    {formatNumber(data.carrierlock?.coherenceScore)}
-                  </span>
+            <Panel eyebrow="CARRIERLOCK" title="Coherence Snapshot">
+              <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 54, color: C.teal, fontWeight: 300, lineHeight: 1 }}>
+                  {formatNumber(data.carrierlock?.coherenceScore)}
                 </div>
-                <Progress value={Math.max(0, Math.min(100, coherence))} />
-                <div className="grid grid-cols-3 gap-2 font-mono text-xs text-zinc-400">
-                  <span>M {formatNumber(data.carrierlock?.mentalNoise)}</span>
-                  <span>B {formatNumber(data.carrierlock?.bodyTension)}</span>
-                  <span>
-                    E {formatNumber(data.carrierlock?.emotionalTurbulence)}
-                  </span>
+                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.18em" }}>
+                  COHERENCE SCORE
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <CoherenceBar value={coherence} />
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 14 }}>
+                <DataPill label="MENTAL" value={formatNumber(data.carrierlock?.mentalNoise)} />
+                <DataPill label="BODY" value={formatNumber(data.carrierlock?.bodyTension)} />
+                <DataPill label="EMOTION" value={formatNumber(data.carrierlock?.emotionalTurbulence)} />
+              </div>
+            </Panel>
 
-            <Card className="border-primary/30 bg-primary/5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Active Pattern
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3 text-sm">
-                <div className="font-mono text-xl text-primary">
+            <Panel eyebrow="ACTIVE PATTERN" title="Loudest Interference" accent>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.teal, marginBottom: 14 }}>
+                <CheckCircle2 size={16} />
+                <div style={{ fontFamily: "monospace", fontSize: 18, color: C.teal }}>
                   {activeLabel}
                 </div>
-                <p className="text-zinc-400">
-                  {data.primeStackPosition?.label ?? "Prime Stack position"} ·{" "}
-                  {data.primeStackPosition?.center ?? "center unresolved"}
-                </p>
-                <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">
-                  Highest finite SLI = active interference
-                </p>
-              </CardContent>
-            </Card>
-          </section>
+              </div>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: "0 0 12px" }}>
+                {data.primeStackPosition?.label ?? "Prime Stack position"} · {data.primeStackPosition?.center ?? "center unresolved"}
+              </p>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.16em" }}>
+                HIGHEST FINITE SLI = ACTIVE INTERFERENCE
+              </div>
+            </Panel>
+          </div>
 
-          <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="border border-zinc-800 bg-zinc-950/60 p-5">
-              <h2 className="font-mono text-sm uppercase tracking-[0.22em] text-zinc-300">
-                Micro-correction
-              </h2>
-              <p className="mt-4 text-sm leading-6 text-zinc-200">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 18 }}>
+            <Panel eyebrow="MICRO-CORRECTION" title="Next Small Adjustment">
+              <p style={{ fontFamily: "monospace", fontSize: 12, color: C.txt, lineHeight: 1.9, margin: 0 }}>
                 {data.microCorrection ?? "No micro-correction recorded yet."}
               </p>
-              <h3 className="mt-6 font-mono text-xs uppercase tracking-[0.2em] text-zinc-500">
-                Falsifier
-              </h3>
-              <p className="mt-2 text-sm leading-6 text-zinc-400">
+              <div style={{ height: 1, background: C.border, margin: "18px 0" }} />
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.18em", marginBottom: 8 }}>
+                FALSIFIER
+              </div>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: 0 }}>
                 {data.falsifier ?? "No falsifier recorded yet."}
               </p>
-            </div>
+            </Panel>
 
-            <div className="border border-zinc-800 bg-zinc-950/60 p-5">
-              <h2 className="font-mono text-sm uppercase tracking-[0.22em] text-zinc-300">
-                Evidence
-              </h2>
-              <ul className="mt-4 space-y-3 text-sm text-zinc-400">
-                {data.evidence.map(item => (
-                  <li key={item} className="border-l border-primary/40 pl-3">
+            <Panel eyebrow="EVIDENCE" title="Why This Reading Resolved">
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {data.evidence.map((item: string) => (
+                  <div key={item} style={{ borderLeft: `1px solid ${C.tealDim}`, paddingLeft: 12, fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8 }}>
                     {item}
-                  </li>
+                  </div>
                 ))}
-              </ul>
-              <p className="mt-6 text-sm text-zinc-200">{data.nextAction}</p>
-            </div>
-          </section>
+              </div>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.goldL, lineHeight: 1.8, margin: "18px 0 0" }}>
+                {data.nextAction}
+              </p>
+            </Panel>
+          </div>
         </div>
-      </main>
+      </div>
     </Layout>
   );
 }

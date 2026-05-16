@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ArrowRight, Zap } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -166,26 +166,48 @@ export default function Carrierlock() {
 
   return (
     <Layout>
-      <div style={{ minHeight: "100vh", padding: "80px 24px 120px" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div style={{ marginBottom: 36 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.25em", marginBottom: 12 }}>
-              SIGNAL CALIBRATION
+      <div
+        style={{
+          minHeight: "100vh",
+          padding: "72px 24px 120px",
+          background:
+            "radial-gradient(circle at top left, rgba(91,164,164,0.08), transparent 30%), radial-gradient(circle at top right, rgba(189,163,107,0.08), transparent 34%), linear-gradient(180deg, #09090d 0%, #0f0f15 44%, #09090d 100%)",
+        }}
+      >
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 18, marginBottom: 36, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.25em", marginBottom: 12 }}>
+                SIGNAL CALIBRATION · CARRIERLOCK
+              </div>
+              <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 20 }} />
+              <h1 style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: "clamp(30px, 5vw, 48px)",
+                fontWeight: 300,
+                color: C.txt,
+                lineHeight: 1.05,
+                marginBottom: 8,
+              }}>
+                Carrierlock Diagnostic
+              </h1>
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 560 }}>
+                This page measures only your current field state. Your natal blueprint lives permanently inside your profile and is used automatically for contextualization.
+              </p>
             </div>
-            <div style={{ width: 32, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 20 }} />
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(26px, 4vw, 42px)",
-              fontWeight: 300,
-              color: C.txt,
-              lineHeight: 1.1,
-              marginBottom: 8,
-            }}>
-              Carrierlock Diagnostic
-            </h1>
-            <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 520 }}>
-              This page now measures only your current field state. Your natal blueprint lives permanently inside your profile and is used automatically for contextualization.
-            </p>
+
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Link href="/blueprint">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.border}`, color: C.txtS, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                  STATIC SIGNATURE
+                </span>
+              </Link>
+              <Link href="/resonance">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                  CURRENT RESONANCE
+                </span>
+              </Link>
+            </div>
           </div>
 
           <div style={{ background: C.border, display: "flex", flexDirection: "column", gap: 1 }}>

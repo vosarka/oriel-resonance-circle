@@ -1026,6 +1026,11 @@ export default function StaticReading() {
                   RUN CALIBRATION
                 </span>
               </Link>
+              <Link href="/resonance">
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.borderH}`, color: C.txtS, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                  CURRENT RESONANCE
+                </span>
+              </Link>
             </div>
           </div>
 
