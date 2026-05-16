@@ -217,6 +217,15 @@ export async function runRGPForChat(
       return { success: false, summary: "Could not parse the birth date." };
     }
 
+    const birthTime = birthData.time?.trim();
+    if (!birthTime) {
+      return {
+        success: false,
+        summary:
+          "Exact RGP calculation requires a birth time. Without it, ORIEL will not produce a Static Signature from an assumed noon fallback.",
+      };
+    }
+
     let latitude: number;
     let longitude: number;
     let timezone = 0;
@@ -244,8 +253,7 @@ export async function runRGPForChat(
       };
     }
 
-    // Always run ephemeris — default to 12:00 noon if no time given
-    const birthTime = birthData.time || "12:00";
+    // Run ephemeris only with a user-supplied birth time; no assumed noon fallback.
     let consciousChartData: Record<string, number>;
     let designChartData: Record<string, number>;
 
