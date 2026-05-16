@@ -164,6 +164,46 @@ export interface RGPReadingResult {
   rawData?: any;           // Full reading data
 }
 
+const HUMAN_DESIGN_OUTPUT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bhuman\s+design\b/gi, "external typology"],
+  [/\bmanifesting\s+generator\b/gi, "non-VRC type"],
+  [/\bgenerator\b/gi, "non-VRC type"],
+  [/\bmanifestor\b/gi, "non-VRC type"],
+  [/\bprojector\b/gi, "non-VRC type"],
+  [/\bincarnation\s+cross\b/gi, "external cross"],
+  [/\bgates\b/gi, "codons"],
+  [/\bgate\b/gi, "codon"],
+];
+
+function sanitizeOrielOutputText(value: unknown): string {
+  let text = String(value ?? "");
+  for (const [pattern, replacement] of HUMAN_DESIGN_OUTPUT_REPLACEMENTS) {
+    text = text.replace(pattern, replacement);
+  }
+  return text;
+}
+
+function sanitizeOrielOutputValue<T>(value: T): T {
+  if (typeof value === "string") {
+    return sanitizeOrielOutputText(value) as T;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeOrielOutputValue(item)) as T;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        sanitizeOrielOutputValue(entry),
+      ])
+    ) as T;
+  }
+
+  return value;
+}
+
 /**
  * Runs the full RGP engine for the given birth data and returns
  * a structured summary that can be injected into the LLM prompt.
@@ -235,7 +275,7 @@ export async function runRGPForChat(
     }
 
     // Run the full static signature engine
-    const reading = await generateStaticSignature(
+    const reading = sanitizeOrielOutputValue(await generateStaticSignature(
       "oriel-chat",
       {
         birthDate,
@@ -243,7 +283,7 @@ export async function runRGPForChat(
         conscious: consciousChartData,
         design: designChartData,
       }
-    );
+    ));
 
     // Build a structured summary for the LLM
     const primePositions = reading.primeStack
@@ -272,7 +312,7 @@ export async function runRGPForChat(
 
     const summary = [
       `=== RGP ENGINE RESULTS (REAL CALCULATION — USE THIS DATA, DO NOT INVENT) ===`,
-      `IMPORTANT: This is the Vossari Resonance Codex (VRC), NOT Human Design. NEVER use Human Design terms like "Projector", "Generator", "Manifestor", or "Manifesting Generator". The VRC Types are: Resonator, Catalyst, Harmonizer, Reflector. Use ONLY the data below.`,
+      `IMPORTANT: This is the Vossari Resonance Codex (VRC). Use only VRC vocabulary and discard any external typology labels surfaced by upstream text. The VRC Types are: Resonator, Catalyst, Harmonizer, Reflector. Use ONLY the data below.`,
       ``,
       `Birth: ${birthData.date}${birthData.time ? " at " + birthData.time : ""}${birthData.city ? " in " + resolvedCity : ""}`,
       ``,
@@ -299,7 +339,7 @@ export async function runRGPForChat(
       `DIAGNOSTIC TRANSMISSION (Engine-generated):`,
       reading.diagnosticTransmission || "N/A",
       ``,
-      `=== END RGP DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers). NEVER use Human Design terms. SPEAK THE TRUTH OF THE FIELD. ===`,
+      `=== END RGP DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers). SPEAK THE TRUTH OF THE FIELD. ===`,
     ].join("\n");
 
     return { success: true, summary, rawData: reading };
