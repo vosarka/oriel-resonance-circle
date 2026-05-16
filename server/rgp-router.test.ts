@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   getUserStaticProfile: vi.fn(),
+  calculateBothCharts: vi.fn(),
+  generateStaticSignature: vi.fn(),
   generateORIELDynamicTransmission: vi.fn(async () => ({
     orielTransmission: 'I am ORIEL. Test dynamic transmission.',
     coherenceLabel: 'Flux' as const,
@@ -11,6 +13,14 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./db', () => ({
   getUserStaticProfile: mocks.getUserStaticProfile,
+}));
+
+vi.mock('./ephemeris-service', () => ({
+  calculateBothCharts: mocks.calculateBothCharts,
+}));
+
+vi.mock('./rgp-static-signature-engine', () => ({
+  generateStaticSignature: mocks.generateStaticSignature,
 }));
 
 vi.mock('./oriel-dynamic-transmission', () => ({
@@ -30,6 +40,85 @@ const samplePrimeStack = [
   { position: 8, codon: 8, facet: 'A', codon256Id: '8-A', weightedFrequency: 50, baseFrequency: 50, weight: 0.6, codonName: 'Eight', name: 'Design True Node', center: 'Throat' },
   { position: 9, codon: 9, facet: 'A', codon256Id: '9-A', weightedFrequency: 40, baseFrequency: 40, weight: 0.5, codonName: 'Nine', name: 'Conscious South Node', center: 'Sacral' },
 ];
+
+const makePlanet = (planet: string, longitude: number) => ({
+  planet,
+  planetId: 0,
+  longitude,
+  latitude: 0,
+  distance: 1,
+  speed: 0,
+  zodiacSign: 'Aries',
+  zodiacDegree: longitude % 30,
+});
+
+const fakePlanets = {
+  Sun: makePlanet('Sun', 10),
+  Moon: makePlanet('Moon', 20),
+  Earth: makePlanet('Earth', 190),
+  'North Node': makePlanet('North Node', 30),
+  'South Node': makePlanet('South Node', 210),
+};
+
+const fakeCharts = {
+  conscious: {
+    timestamp: 946728000000,
+    jd: 2451545,
+    latitude: 40.7128,
+    longitude: -74.006,
+    timezone: -4,
+    planets: fakePlanets,
+  },
+  design: {
+    timestamp: 939083997235,
+    jd: 2451456.5,
+    latitude: 40.7128,
+    longitude: -74.006,
+    timezone: -4,
+    planets: fakePlanets,
+  },
+};
+
+function fakeStaticReading(birthDate = new Date('2000-07-01T00:00:00.000Z')) {
+  return {
+    readingId: 'reading-1',
+    userId: 'test-user',
+    birthChartData: {
+      birthDate,
+      birthTime: '12:00',
+    },
+    generatedAt: new Date('2000-07-01T12:00:00.000Z'),
+    primeStack: samplePrimeStack,
+    ninecenters: {},
+    fractalRole: 'Test Role',
+    authorityNode: 'Sacral',
+    vrcType: 'Resonator',
+    vrcAuthority: 'Sacral',
+    activations: [],
+    channelStatuses: [],
+    circuitLinks: [],
+    legacyCircuitLinks: [],
+    baseCoherence: null,
+    coherenceTrajectory: null,
+    microCorrections: [],
+    diagnosticTransmission: 'Test static signature.',
+    coreCodonEngine: {
+      dominant: [],
+      supporting: [],
+      lattice: {
+        specVersion: 'test',
+        calculationStatus: 'exact',
+        activations: [],
+        channelStatuses: [],
+        legacyCircuitLinks: [],
+      },
+    },
+    status: 'confirmed',
+    calculationStatus: 'exact',
+    specVersion: 'test',
+    version: 1,
+  };
+}
 
 describe('RGP dynamicState route', () => {
   beforeEach(() => {
@@ -116,6 +205,12 @@ describe('RGP dynamicState route', () => {
 });
 
 describe('RGP staticSignature route', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.calculateBothCharts.mockResolvedValue(fakeCharts);
+    mocks.generateStaticSignature.mockResolvedValue(fakeStaticReading());
+  });
+
   it('does not generate a confirmed static signature without exact birth time and coordinates', async () => {
     const caller = rgpRouter.createCaller({ user: null } as never);
 
@@ -126,5 +221,29 @@ describe('RGP staticSignature route', () => {
 
     expect(result.success).toBe(false);
     expect((result as { error?: string }).error).toMatch(/Exact birth time and coordinates are required/);
+    expect(mocks.calculateBothCharts).not.toHaveBeenCalled();
+    expect(mocks.generateStaticSignature).not.toHaveBeenCalled();
+  });
+
+  it('derives the timezone from server-side coordinates and date instead of trusting the client offset', async () => {
+    const caller = rgpRouter.createCaller({ user: null } as never);
+
+    const result = await caller.staticSignature({
+      birthDate: '2000-07-01',
+      birthTime: '12:00',
+      birthLatitude: 40.7128,
+      birthLongitude: -74.006,
+      birthTimezoneOffset: 9,
+      userId: 'test-user',
+    });
+
+    expect(result.success).toBe(true);
+    expect(mocks.calculateBothCharts).toHaveBeenCalledWith(
+      expect.any(Date),
+      '12:00',
+      40.7128,
+      -74.006,
+      -4
+    );
   });
 });

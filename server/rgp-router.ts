@@ -1,3 +1,4 @@
+import { find as findTimeZones } from 'geo-tz';
 import { z } from 'zod';
 import { publicProcedure, router } from './_core/trpc';
 import {
@@ -24,6 +25,89 @@ const FACET_LETTERS: FacetLetter[] = ['A', 'B', 'C', 'D'];
 
 function isFacetLetter(value: unknown): value is FacetLetter {
   return typeof value === 'string' && FACET_LETTERS.includes(value as FacetLetter);
+}
+
+function parseBirthTimeParts(birthTime: string) {
+  const [rawHours, rawMinutes = '0', rawSeconds = '0'] = birthTime.split(':');
+  const hours = Number.parseInt(rawHours, 10);
+  const minutes = Number.parseInt(rawMinutes, 10);
+  const seconds = Number.parseInt(rawSeconds, 10);
+
+  if (![hours, minutes, seconds].every(Number.isFinite)) {
+    throw new Error('Valid birth time is required for timezone resolution.');
+  }
+
+  return { hours, minutes, seconds };
+}
+
+function buildLocalDateAsUtc(birthDate: Date, birthTime: string) {
+  const { hours, minutes, seconds } = parseBirthTimeParts(birthTime);
+
+  return new Date(Date.UTC(
+    birthDate.getUTCFullYear(),
+    birthDate.getUTCMonth(),
+    birthDate.getUTCDate(),
+    hours,
+    minutes,
+    seconds,
+    0
+  ));
+}
+
+function partsValue(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes) {
+  return parts.find(part => part.type === type)?.value;
+}
+
+function getTimezoneOffsetHours(timezoneId: string, instant: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezoneId,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(instant);
+
+  const zonedTimestamp = Date.UTC(
+    Number(partsValue(parts, 'year')),
+    Number(partsValue(parts, 'month')) - 1,
+    Number(partsValue(parts, 'day')),
+    Number(partsValue(parts, 'hour')),
+    Number(partsValue(parts, 'minute')),
+    Number(partsValue(parts, 'second'))
+  );
+
+  return (zonedTimestamp - instant.getTime()) / 3_600_000;
+}
+
+function deriveTimezoneOffsetHours(
+  birthDate: Date,
+  birthTime: string,
+  latitude: number,
+  longitude: number
+) {
+  const timezoneId = findTimeZones(latitude, longitude)[0];
+
+  if (!timezoneId) {
+    throw new Error('Unable to resolve a timezone for the supplied birth coordinates.');
+  }
+
+  const localDateAsUtc = buildLocalDateAsUtc(birthDate, birthTime);
+  let offset = getTimezoneOffsetHours(timezoneId, localDateAsUtc);
+
+  // Re-check at the UTC instant implied by the first offset. This keeps DST
+  // boundaries tied to the actual local birth moment rather than client input.
+  for (let i = 0; i < 2; i += 1) {
+    const impliedUtcInstant = new Date(localDateAsUtc.getTime() - offset * 3_600_000);
+    const nextOffset = getTimezoneOffsetHours(timezoneId, impliedUtcInstant);
+
+    if (Math.abs(nextOffset - offset) < 0.000001) break;
+    offset = nextOffset;
+  }
+
+  return offset;
 }
 
 function normalizeStoredPrimeStack(value: unknown): PrimeStackCodon[] | null {
@@ -130,22 +214,27 @@ export const rgpRouter = router({
           throw new Error('Exact birth time and coordinates are required for a confirmed Static Signature.');
         }
 
-        let latitude: number, longitude: number, timezone: number;
+        let latitude: number, longitude: number;
 
         if (hasStructured) {
           latitude  = input.birthLatitude!;
           longitude = input.birthLongitude!;
-          timezone  = input.birthTimezoneOffset ?? 0;
         } else {
           const locationParts = input.birthLocation!.split(',');
           latitude  = parseFloat(locationParts[0]);
           longitude = parseFloat(locationParts[1]);
-          timezone  = locationParts[2] ? parseFloat(locationParts[2]) : 0;
         }
 
         if (isNaN(latitude) || isNaN(longitude)) {
           throw new Error('Valid birth latitude and longitude are required for a confirmed Static Signature.');
         }
+
+        const timezone = deriveTimezoneOffsetHours(
+          birthDateObj,
+          input.birthTime,
+          latitude,
+          longitude
+        );
 
         // VRC § 2: Calculate BOTH Conscious (T_birth) and Design (T_design) charts.
         const { conscious, design } = await calculateBothCharts(
