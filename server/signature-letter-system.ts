@@ -70,6 +70,19 @@ export type SignatureIntakePayload = {
   consentAccepted: boolean;
 };
 
+export type CalculationTrustContext = {
+  status: "exact" | "missing_precision";
+  birthDate: string;
+  birthTime: string | null;
+  birthPlace: string;
+  birthCountry: string;
+  latitude: number | null;
+  longitude: number | null;
+  resolvedTimezoneId: string | null;
+  timezoneOffsetHours: number | null;
+  missingPrecision: string[];
+};
+
 export type NormalizedSignatureSnapshot = {
   productType: SignatureProductType;
   type: string;
@@ -87,6 +100,7 @@ export type NormalizedSignatureSnapshot = {
   resonanceLinks: string[];
   shadowGiftFraming: string[];
   correctionProtocols: string[];
+  calculationContext: CalculationTrustContext | null;
   orielReflection: string;
   engineVersion: number;
 };
@@ -150,6 +164,104 @@ function formatCodonList(
       return `- ${position}: Codon ${codon.codon} — ${codon.codonName} (${codon.facet}, ${codon.center})`;
     })
     .join("\n");
+}
+
+function numberOrNull(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function unique(values: string[]) {
+  return Array.from(new Set(values));
+}
+
+function normalizeCalculationContext(value: unknown): CalculationTrustContext | null {
+  const context = asRecord(value);
+  if (!Object.keys(context).length) return null;
+
+  const birthDate = stringOrNull(context.birthDate);
+  const birthPlace = stringOrNull(context.birthPlace);
+  const birthCountry = stringOrNull(context.birthCountry);
+  if (!birthDate || !birthPlace || !birthCountry) return null;
+
+  const missingPrecision = asArray(context.missingPrecision)
+    .map((item) => stringOrNull(item))
+    .filter((item): item is string => Boolean(item));
+  const birthTime = stringOrNull(context.birthTime);
+  const latitude = numberOrNull(context.latitude);
+  const longitude = numberOrNull(context.longitude);
+  const timezoneOffsetHours = numberOrNull(context.timezoneOffsetHours);
+  const inferredMissingPrecision = [
+    !birthTime ? "birth time" : null,
+    latitude === null || longitude === null ? "birth coordinates" : null,
+    timezoneOffsetHours === null ? "timezone offset" : null,
+  ].filter((item): item is string => Boolean(item));
+  const resolvedMissingPrecision = unique([
+    ...missingPrecision,
+    ...inferredMissingPrecision,
+  ]);
+
+  return {
+    status: context.status === "exact" && resolvedMissingPrecision.length === 0
+      ? "exact"
+      : "missing_precision",
+    birthDate,
+    birthTime,
+    birthPlace,
+    birthCountry,
+    latitude,
+    longitude,
+    resolvedTimezoneId: stringOrNull(context.resolvedTimezoneId),
+    timezoneOffsetHours,
+    missingPrecision: resolvedMissingPrecision,
+  };
+}
+
+function formatUtcOffset(offset: number | null) {
+  if (offset === null) return "unknown UTC offset";
+  const sign = offset >= 0 ? "+" : "-";
+  const absolute = Math.abs(offset);
+  const hours = Math.trunc(absolute);
+  const minutes = Math.round((absolute - hours) * 60);
+  return `UTC${sign}${hours}${minutes ? `:${String(minutes).padStart(2, "0")}` : ""}`;
+}
+
+function formatCalculationTrustContract(context: CalculationTrustContext | null) {
+  if (!context) {
+    return [
+      "## Calculation Trust Contract",
+      "",
+      "Status: missing_precision",
+      "Birth data: not available in the normalized snapshot",
+      "Coordinates: missing",
+      "Resolved timezone: unknown UTC offset",
+      "Missing precision: calculation context",
+    ].join("\n");
+  }
+
+  const coordinates =
+    context.latitude !== null && context.longitude !== null
+      ? `${context.latitude}, ${context.longitude}`
+      : "missing";
+  const timezone = context.resolvedTimezoneId
+    ? `${context.resolvedTimezoneId} (${formatUtcOffset(context.timezoneOffsetHours)})`
+    : formatUtcOffset(context.timezoneOffsetHours);
+  const missing = context.missingPrecision.length
+    ? context.missingPrecision.join(", ")
+    : "none";
+
+  return [
+    "## Calculation Trust Contract",
+    "",
+    `Status: ${context.status}`,
+    `Birth data: ${context.birthDate} ${context.birthTime ?? "missing time"}, ${context.birthPlace}, ${context.birthCountry}`,
+    `Coordinates: ${coordinates}`,
+    `Resolved timezone: ${timezone}`,
+    `Missing precision: ${missing}`,
+  ].join("\n");
 }
 
 export function assertCanAccessIntake(status: SignatureOrderStatus) {
@@ -307,6 +419,9 @@ export function normalizeSignatureSnapshot(
     resonanceLinks,
     shadowGiftFraming,
     correctionProtocols,
+    calculationContext: normalizeCalculationContext(
+      raw.calculationContext ?? asRecord(coreCodonEngine.lattice).calculationContext,
+    ),
     orielReflection: stringValue(raw.diagnosticTransmission),
     engineVersion:
       typeof raw.engineVersion === "number" && Number.isFinite(raw.engineVersion)
@@ -344,6 +459,8 @@ export function generateSignatureLetterDraftMarkdown(input: {
     `Birth: ${input.intake.birthDate} ${input.intake.birthTime}, ${input.intake.birthPlace}, ${input.intake.birthCountry}`,
     `Timezone: ${input.intake.timezone}`,
     `Preferred tone: ${input.intake.preferredTone}`,
+    "",
+    formatCalculationTrustContract(input.normalized.calculationContext),
     "",
     "## Focus Question",
     "",

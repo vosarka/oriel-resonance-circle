@@ -108,6 +108,7 @@ async function executeMigrationStep(
 
 type CanonicalLatticeCarrier = {
   coreCodonEngine?: unknown;
+  calculationContext?: unknown;
   activations?: unknown;
   channelStatuses?: unknown;
   legacyCircuitLinks?: unknown;
@@ -129,6 +130,7 @@ function mergeCanonicalLatticeIntoCoreCodonEngine(
     ...existingLattice,
     ...(data.specVersion ? { specVersion: data.specVersion } : {}),
     ...(data.calculationStatus ? { calculationStatus: data.calculationStatus } : {}),
+    ...(data.calculationContext ? { calculationContext: data.calculationContext } : {}),
     ...(data.activations ? { activations: data.activations } : {}),
     ...(data.channelStatuses ? { channelStatuses: data.channelStatuses } : {}),
     ...(data.legacyCircuitLinks ?? data.circuitLinks
@@ -164,6 +166,9 @@ function extractCanonicalLattice(
         : null,
     specVersion: typeof lattice.specVersion === "string" ? lattice.specVersion : null,
     calculationStatus: typeof lattice.calculationStatus === "string" ? lattice.calculationStatus : null,
+    calculationContext: isRecord(lattice.calculationContext)
+      ? lattice.calculationContext
+      : null,
   };
 }
 
@@ -2431,6 +2436,7 @@ export async function saveStaticSignature(
     coreCodonEngine?: unknown;
     specVersion?: string;
     calculationStatus?: string;
+    calculationContext?: unknown;
   }
 ) {
   const db = await getDb();
@@ -2581,6 +2587,7 @@ type UserStaticProfilePayload = {
   coreCodonEngine?: unknown;
   specVersion?: string;
   calculationStatus?: string;
+  calculationContext?: unknown;
   engineVersion?: number;
 };
 
@@ -2722,6 +2729,7 @@ function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
     channelStatuses: lattice.channelStatuses,
     specVersion: lattice.specVersion,
     calculationStatus: lattice.calculationStatus,
+    calculationContext: lattice.calculationContext,
     coherenceTrajectory: safeJsonParse(row.coherenceTrajectory, null),
     microCorrections: safeJsonParse(row.microCorrections, null),
     ephemerisData: safeJsonParse(row.ephemerisData, null),
@@ -2745,6 +2753,7 @@ function parseUserStaticProfileRow(row: typeof userStaticProfiles.$inferSelect) 
     channelStatuses: lattice.channelStatuses,
     specVersion: lattice.specVersion,
     calculationStatus: lattice.calculationStatus,
+    calculationContext: lattice.calculationContext,
     microCorrections: safeJsonParse(row.microCorrections, null),
     ephemerisData: safeJsonParse(row.ephemerisData, null),
     houses: safeJsonParse(row.houses, null),

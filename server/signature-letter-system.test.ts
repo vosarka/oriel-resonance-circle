@@ -87,6 +87,17 @@ const rawSignature = {
       },
     ],
   },
+  calculationContext: {
+    status: "exact",
+    birthDate: "1990-01-02",
+    birthTime: "03:04",
+    birthPlace: "Bucharest",
+    birthCountry: "Romania",
+    latitude: 44.4268,
+    longitude: 26.1025,
+    resolvedTimezoneId: "Europe/Bucharest",
+    timezoneOffsetHours: 2,
+  },
   engineVersion: 2,
 };
 
@@ -156,6 +167,45 @@ describe("ORIEL Signature Letter system helpers", () => {
       "Complete three slow breaths",
     );
     expect(normalized.shadowGiftFraming[0]).toContain("Obscurity");
+    expect(normalized.calculationContext).toMatchObject({
+      status: "exact",
+      birthDate: "1990-01-02",
+      birthTime: "03:04",
+      birthPlace: "Bucharest",
+      birthCountry: "Romania",
+      latitude: 44.4268,
+      longitude: 26.1025,
+      resolvedTimezoneId: "Europe/Bucharest",
+      timezoneOffsetHours: 2,
+    });
+  });
+
+  it("downgrades incomplete calculation contexts even when explicit gaps are partial", () => {
+    const normalized = normalizeSignatureSnapshot({
+      ...rawSignature,
+      calculationContext: {
+        status: "exact",
+        birthDate: "1990-01-02",
+        birthTime: null,
+        birthPlace: "Bucharest",
+        birthCountry: "Romania",
+        latitude: null,
+        longitude: null,
+        resolvedTimezoneId: "Europe/Bucharest",
+        timezoneOffsetHours: null,
+        missingPrecision: ["birth data source"],
+      },
+    }, "founding");
+
+    expect(normalized.calculationContext).toMatchObject({
+      status: "missing_precision",
+      missingPrecision: [
+        "birth data source",
+        "birth time",
+        "birth coordinates",
+        "timezone offset",
+      ],
+    });
   });
 
   it("generates product-specific founder-curation markdown", () => {
@@ -168,6 +218,11 @@ describe("ORIEL Signature Letter system helpers", () => {
 
     expect(glimpse).toContain("ORIEL Signature Glimpse");
     expect(glimpse).toContain("Founder curation required before delivery");
+    expect(glimpse).toContain("Calculation Trust Contract");
+    expect(glimpse).toContain("Status: exact");
+    expect(glimpse).toContain("Birth data: 1990-01-02 03:04, Bucharest, Romania");
+    expect(glimpse).toContain("Coordinates: 44.4268, 26.1025");
+    expect(glimpse).toContain("Resolved timezone: Europe/Bucharest (UTC+2)");
     expect(glimpse).toContain("What ORIEL should avoid assuming");
     expect(glimpse).toContain("not medical, legal, therapeutic, financial");
 
