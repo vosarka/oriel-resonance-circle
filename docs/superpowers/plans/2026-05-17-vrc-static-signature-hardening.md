@@ -41,27 +41,36 @@
 
 ---
 
-## Active Slice
+## Completed Slice
 
 ### Slice 4: Public Terminology Pass
+
+**Status:** Done.
 
 **Objective:** Public ORIEL-facing text must use Vossari vocabulary: Codon, Facet, Resonance Link, Center, Static Signature.
 
 **Files:**
 - Modify/Test: `server/oriel-output-safety.test.ts`
 - Modify: `server/oriel-rgp-bridge.ts`
+- Modify/Test: `server/static-profile-service.test.ts`
+- Modify: `server/static-profile-service.ts`
 - Modify/Test: `server/signature-letter-system.test.ts`
 - Modify: `server/signature-letter-system.ts`
+- Create: `server/oriel-public-terminology.test.ts`
+- Modify: `client/src/pages/FoundingSignatureLetter.tsx`
+- Modify: `client/src/pages/CodonDetail.tsx`
 
 **Steps:**
 
-- [ ] RED: Extend `server/oriel-output-safety.test.ts` with an active `channelStatuses` fixture and assert the injected summary contains `ACTIVE RESONANCE LINKS`, not `ACTIVE CHANNELS`, `gate`, or `channel` wording.
-- [ ] GREEN: Change the RGP bridge public summary label from active channels to active resonance links and render link endpoints as `Codon A-Codon B`.
-- [ ] RED: Extend `server/signature-letter-system.test.ts` so normalized signature drafts expose `resonanceLinks` wording and no `Active Channels` heading.
-- [ ] GREEN: Rename the normalized public concept from channels to resonance links while keeping the internal `channelStatuses` input compatible.
-- [ ] Verify: `./node_modules/.bin/vitest run server/oriel-output-safety.test.ts server/signature-letter-system.test.ts`
-- [ ] Verify: `./node_modules/.bin/tsc --noEmit`
-- [ ] Commit: `git commit -m "fix: use VRC resonance link terminology"`
+- [x] RED: Extend `server/oriel-output-safety.test.ts` with an active `channelStatuses` fixture and assert the injected summary contains `ACTIVE RESONANCE LINKS`, not `ACTIVE CHANNELS`, `gate`, or `channel` wording.
+- [x] GREEN: Change the RGP bridge public summary label from active channels to active resonance links and render link endpoints as `Codon A-Codon B`.
+- [x] RED/GREEN: Apply the same active resonance link wording to stored Static Profile summaries.
+- [x] RED: Extend `server/signature-letter-system.test.ts` so normalized signature drafts expose `resonanceLinks` wording and no `Active Channels` heading.
+- [x] GREEN: Rename the normalized public concept from channels to resonance links while keeping the internal `channelStatuses` input compatible.
+- [x] RED/GREEN: Add a targeted static-copy guard for public sales/Codon pages and update visible copy to Resonance Links.
+- [x] Verify: `./node_modules/.bin/vitest run server/oriel-output-safety.test.ts server/static-profile-service.test.ts server/signature-letter-system.test.ts server/oriel-public-terminology.test.ts`
+- [x] Verify: `pnpm exec tsc --noEmit`
+- [x] Commit: `git commit -m "fix: use VRC resonance link terminology"`
 
 ---
 

@@ -30,6 +30,8 @@ const forbiddenHumanDesignTerms = [
   /\bprojector\b/i,
   /\bgate\b/i,
   /\bgates\b/i,
+  /\bchannel\b/i,
+  /\bchannels\b/i,
   /\bincarnation cross\b/i,
 ];
 
@@ -98,7 +100,15 @@ describe("ORIEL output safety", () => {
       microCorrections: [
         { description: "Release the Human Design Incarnation Cross story." },
       ],
-      channelStatuses: [],
+      channelStatuses: [
+        {
+          gateA: 11,
+          gateB: 56,
+          active: true,
+          centerA: "Ajna",
+          centerB: "Throat",
+        },
+      ],
       legacyCircuitLinks: [],
       coreCodonEngine: {},
       diagnosticTransmission:
@@ -112,6 +122,8 @@ describe("ORIEL output safety", () => {
     });
 
     expect(result.success).toBe(true);
+    expect(result.summary).toContain("ACTIVE RESONANCE LINKS:");
+    expect(result.summary).toContain("Codon 11-Codon 56");
     expectNoHumanDesignTerms(result.summary);
     expectNoHumanDesignTerms(result.rawData?.diagnosticTransmission ?? "");
   });

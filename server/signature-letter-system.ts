@@ -84,7 +84,7 @@ export type NormalizedSignatureSnapshot = {
     center: string;
     source: string;
   }>;
-  channels: string[];
+  resonanceLinks: string[];
   shadowGiftFraming: string[];
   correctionProtocols: string[];
   orielReflection: string;
@@ -258,7 +258,7 @@ export function normalizeSignatureSnapshot(
     };
   });
 
-  const channels = asArray(raw.channelStatuses)
+  const resonanceLinks = asArray(raw.channelStatuses)
     .map((item) => asRecord(item))
     .filter((channel) => channel.active === true)
     .map((channel) => {
@@ -266,7 +266,7 @@ export function normalizeSignatureSnapshot(
       const gateB = stringValue(channel.gateB, "?");
       const centerA = stringValue(channel.centerA, "?");
       const centerB = stringValue(channel.centerB, "?");
-      return `${gateA}-${gateB}: ${centerA} to ${centerB}`;
+      return `Codon ${gateA}-Codon ${gateB}: ${centerA} to ${centerB}`;
     });
 
   const correctionProtocols = asArray(raw.microCorrections).map((item) => {
@@ -304,7 +304,7 @@ export function normalizeSignatureSnapshot(
     definedCenters,
     openCenters,
     coreCodons,
-    channels,
+    resonanceLinks,
     shadowGiftFraming,
     correctionProtocols,
     orielReflection: stringValue(raw.diagnosticTransmission),
@@ -391,9 +391,9 @@ export function generateSignatureLetterDraftMarkdown(input: {
     "",
     formatList(input.normalized.openCenters),
     "",
-    "## Active Channels",
+    "## Active Resonance Links",
     "",
-    formatList(input.normalized.channels),
+    formatList(input.normalized.resonanceLinks),
     "",
     "## Shadow / Gift Framing",
     "",

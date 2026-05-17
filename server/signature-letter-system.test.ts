@@ -149,7 +149,9 @@ describe("ORIEL Signature Letter system helpers", () => {
       codonName: "Peace",
       position: 1,
     });
-    expect(normalized.channels).toEqual(["11-56: Ajna to Throat"]);
+    expect(normalized).toMatchObject({
+      resonanceLinks: ["Codon 11-Codon 56: Ajna to Throat"],
+    });
     expect(normalized.correctionProtocols[0]).toContain(
       "Complete three slow breaths",
     );
@@ -176,6 +178,8 @@ describe("ORIEL Signature Letter system helpers", () => {
     });
 
     expect(founding).toContain("ORIEL Founding Signature Letter");
+    expect(founding).toContain("Active Resonance Links");
+    expect(founding).not.toContain("Active Channels");
     expect(founding).toContain("Follow-up clarification");
     expect(founding.split("\n").length).toBeGreaterThan(glimpse.split("\n").length);
   });

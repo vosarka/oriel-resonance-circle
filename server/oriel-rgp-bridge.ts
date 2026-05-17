@@ -171,6 +171,8 @@ const HUMAN_DESIGN_OUTPUT_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bmanifestor\b/gi, "non-VRC type"],
   [/\bprojector\b/gi, "non-VRC type"],
   [/\bincarnation\s+cross\b/gi, "external cross"],
+  [/\bchannels\b/gi, "resonance links"],
+  [/\bchannel\b/gi, "resonance link"],
   [/\bgates\b/gi, "codons"],
   [/\bgate\b/gi, "codon"],
 ];
@@ -313,9 +315,9 @@ export async function runRGPForChat(
       .map((mc: any) => `  - ${mc.description || mc.correction || JSON.stringify(mc)}`)
       .join("\n") || "None";
 
-    const activeChannels = reading.channelStatuses
+    const activeResonanceLinks = reading.channelStatuses
       ?.filter((channel) => channel.active)
-      .map((channel) => `  - ${channel.gateA}-${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`)
+      .map((channel) => `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`)
       .join("\n") || "None";
 
     const summary = [
@@ -334,8 +336,8 @@ export async function runRGPForChat(
       `NINE CENTERS:`,
       centers,
       ``,
-      `ACTIVE CHANNELS:`,
-      activeChannels,
+      `ACTIVE RESONANCE LINKS:`,
+      activeResonanceLinks,
       ``,
       `LEGACY POSITION LINKS: ${reading.legacyCircuitLinks ? JSON.stringify(reading.legacyCircuitLinks) : "N/A"}`,
       ``,
@@ -347,7 +349,7 @@ export async function runRGPForChat(
       `DIAGNOSTIC TRANSMISSION (Engine-generated):`,
       reading.diagnosticTransmission || "N/A",
       ``,
-      `=== END RGP DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers). SPEAK THE TRUTH OF THE FIELD. ===`,
+      `=== END RGP DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers, Resonance Links). SPEAK THE TRUTH OF THE FIELD. ===`,
     ].join("\n");
 
     return { success: true, summary, rawData: reading };

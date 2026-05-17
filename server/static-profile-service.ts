@@ -157,9 +157,9 @@ export function summarizeStoredStaticProfile(profile: {
         .join("\n")
     : "N/A";
 
-  const activeChannels = (profile.channelStatuses ?? [])
+  const activeResonanceLinks = (profile.channelStatuses ?? [])
     .filter((channel) => channel?.active && channel.gateA && channel.gateB)
-    .map((channel) => `  - ${channel.gateA}-${channel.gateB}: ${channel.centerA ?? "?"} ↔ ${channel.centerB ?? "?"}`)
+    .map((channel) => `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA ?? "?"} ↔ ${channel.centerB ?? "?"}`)
     .join("\n") || "None";
   const legacyLinks = profile.legacyCircuitLinks ?? profile.circuitLinks;
 
@@ -184,8 +184,8 @@ export function summarizeStoredStaticProfile(profile: {
     `NINE CENTERS:`,
     centers,
     ``,
-    `ACTIVE CHANNELS:`,
-    activeChannels,
+    `ACTIVE RESONANCE LINKS:`,
+    activeResonanceLinks,
     ``,
     `LEGACY POSITION LINKS: ${legacyLinks ? JSON.stringify(legacyLinks) : "N/A"}`,
     ``,
@@ -197,6 +197,6 @@ export function summarizeStoredStaticProfile(profile: {
     `DIAGNOSTIC TRANSMISSION (Stored blueprint transmission):`,
     profile.diagnosticTransmission || "N/A",
     ``,
-    `=== END STORED STATIC PROFILE — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers). NEVER use Human Design terms. ===`,
+    `=== END STORED STATIC PROFILE — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers, Resonance Links). NEVER use Human Design terms. ===`,
   ].join("\n");
 }

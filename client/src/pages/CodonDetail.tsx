@@ -401,7 +401,7 @@ export default function CodonDetail() {
               </div>
             </div>
 
-            {/* Right: Harmonic partner + channels */}
+            {/* Right: Harmonic partner + resonance links */}
             <div className="lg:col-span-4 order-3 flex flex-col gap-4">
               <div className="bg-zinc-900/50 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
                 <h3 className="text-white font-mono text-xs uppercase tracking-widest mb-4 opacity-80">
@@ -493,11 +493,11 @@ export default function CodonDetail() {
                 </div>
               </div>
 
-              {/* Channel memberships */}
+              {/* Resonance link memberships */}
               {codon.channels && codon.channels.length > 0 && (
                 <div className="bg-zinc-900/50 backdrop-blur-sm border border-primary/20 rounded-xl p-6">
                   <h3 className="text-white font-mono text-xs uppercase tracking-widest mb-3 opacity-80 flex items-center gap-2">
-                    <Link2 className="w-3.5 h-3.5" /> Channels
+                    <Link2 className="w-3.5 h-3.5" /> Resonance Links
                   </h3>
                   <div className="flex flex-col gap-2">
                     {(codon.channels as any[]).map((ch: any) => (

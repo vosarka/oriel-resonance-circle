@@ -96,7 +96,7 @@ describe('buildUserStaticProfile', () => {
     expect((profile.coreCodonEngine as Record<string, any>).lattice.activations).toHaveLength(26);
   });
 
-  it('summarizes real active channels separately from legacy position links', () => {
+  it('summarizes real active resonance links separately from legacy position links', () => {
     const summary = summarizeStoredStaticProfile({
       birthDate: '1985-03-15',
       birthTime: '14:30',
@@ -110,8 +110,10 @@ describe('buildUserStaticProfile', () => {
       ninecenters: {},
     });
 
-    expect(summary).toContain('ACTIVE CHANNELS:');
-    expect(summary).toContain('25-51');
+    expect(summary).toContain('ACTIVE RESONANCE LINKS:');
+    expect(summary).toContain('Codon 25-Codon 51');
+    expect(summary).not.toMatch(/\bchannels?\b/i);
+    expect(summary).not.toMatch(/\bgates?\b/i);
     expect(summary).toContain('LEGACY POSITION LINKS: ["1-2"]');
   });
 });

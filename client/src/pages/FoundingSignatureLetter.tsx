@@ -38,10 +38,10 @@ const products = [
     price: "€111",
     pages: "8-12 page symbolic PDF",
     description:
-      "The full founding letter: centers, codons, channels, shadow/gift framing, three correction protocols, ORIEL reflection, and one clarification email.",
+      "The full founding letter: centers, codons, resonance links, shadow/gift framing, three correction protocols, ORIEL reflection, and one clarification email.",
     points: [
       "Defined and open centers",
-      "Core codons and active channels",
+      "Core codons and active resonance links",
       "Shadow/gift framing",
       "Three correction protocols",
       "One follow-up clarification email",
