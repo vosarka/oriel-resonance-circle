@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Loader2, ArrowRight, Zap } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -152,7 +152,7 @@ export default function Carrierlock() {
         falsifier: data.falsifier ?? "",
       });
 
-      setLocation(`/reading/dynamic/${savedReading.id}`);
+      setLocation("/resonance");
     } catch (error) {
       console.error("Failed to generate reading:", error);
       setReadingError(error instanceof Error ? error.message : "Failed to generate reading. Please try again.");
@@ -196,17 +196,17 @@ export default function Carrierlock() {
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <Link href="/blueprint">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.border}`, color: C.txtS, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
-                  STATIC SIGNATURE
-                </span>
-              </Link>
-              <Link href="/resonance">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
-                  CURRENT RESONANCE
-                </span>
-              </Link>
+            <div style={{
+              border: `1px solid ${C.border}`,
+              color: C.txtD,
+              fontFamily: "monospace",
+              fontSize: 10,
+              letterSpacing: "0.12em",
+              lineHeight: 1.7,
+              maxWidth: 260,
+              padding: "10px 14px",
+            }}>
+              STEP 1 OF 2 · AFTER THIS, YOU LAND ON YOUR CURRENT RESONANCE
             </div>
           </div>
 

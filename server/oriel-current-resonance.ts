@@ -49,10 +49,17 @@ export interface CurrentResonancePrimeStackPosition {
   label: string | null;
 }
 
+export interface CurrentResonanceDynamicReading {
+  id: number | null;
+  readingText: string | null;
+  createdAt: string | null;
+}
+
 export interface CurrentResonanceResult {
   status: CurrentResonanceStatus;
   staticAnchor: CurrentResonanceStaticAnchor | null;
   carrierlock: CurrentResonanceCarrierlock | null;
+  dynamicReading: CurrentResonanceDynamicReading | null;
   activePattern: CurrentResonanceActivePattern | null;
   primeStackPosition: CurrentResonancePrimeStackPosition | null;
   microCorrection: string | null;
@@ -141,6 +148,16 @@ function buildCarrierlock(
   };
 }
 
+function buildDynamicReading(
+  reading: JsonRecord
+): CurrentResonanceDynamicReading {
+  return {
+    id: asNumber(reading.id),
+    readingText: asString(reading.readingText),
+    createdAt: toIsoString(reading.createdAt),
+  };
+}
+
 function parseSliKey(key: string): {
   codon256Id: string;
   codon: number | null;
@@ -219,6 +236,7 @@ export function buildCurrentResonance(
       status: "missing_static_profile",
       staticAnchor: null,
       carrierlock: null,
+      dynamicReading: null,
       activePattern: null,
       primeStackPosition: null,
       microCorrection: null,
@@ -241,6 +259,7 @@ export function buildCurrentResonance(
       status: "missing_carrierlock",
       staticAnchor,
       carrierlock: null,
+      dynamicReading: null,
       activePattern: null,
       primeStackPosition: null,
       microCorrection: null,
@@ -268,6 +287,7 @@ export function buildCurrentResonance(
       status: "missing_dynamic_reading",
       staticAnchor,
       carrierlock,
+      dynamicReading: null,
       activePattern: null,
       primeStackPosition: null,
       microCorrection: null,
@@ -289,6 +309,7 @@ export function buildCurrentResonance(
       status: "missing_dynamic_reading",
       staticAnchor,
       carrierlock,
+      dynamicReading: null,
       activePattern: null,
       primeStackPosition: null,
       microCorrection: null,
@@ -316,6 +337,7 @@ export function buildCurrentResonance(
     status: "ready",
     staticAnchor,
     carrierlock,
+    dynamicReading: buildDynamicReading(reading),
     activePattern: {
       ...active,
       interpretation: "highest_shadow_loudness",

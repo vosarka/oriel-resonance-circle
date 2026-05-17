@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Loader2,
   RadioTower,
-  Sparkles,
 } from "lucide-react";
 
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -51,6 +50,21 @@ function formatNumber(value: number | null | undefined, fallback = "—") {
   return typeof value === "number" && Number.isFinite(value)
     ? String(value)
     : fallback;
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function cleanTransmission(text: string | null | undefined) {
+  const trimmed = text?.trim();
+  if (!trimmed) return null;
+  return trimmed.replace(/^ORIEL Dynamic Reading[^\n]*(\n|$)/i, "").trim() || trimmed;
 }
 
 function Panel({
@@ -177,12 +191,7 @@ function MissingState({
   const links =
     status === "missing_static_profile"
       ? [{ href: "/complete-profile", label: "Complete profile" }]
-      : status === "missing_carrierlock"
-        ? [{ href: "/carrierlock", label: "Run Carrierlock" }]
-        : [
-            { href: "/carrierlock", label: "Run Carrierlock" },
-            { href: "/readings", label: "View readings" },
-          ];
+      : [{ href: "/carrierlock", label: "Run calibration" }];
 
   return (
     <div style={{ border: `1px solid ${C.goldDim}`, background: C.goldGlow, padding: 20 }}>
@@ -280,6 +289,8 @@ export default function CurrentResonance() {
     ? `${data.activePattern.codon256Id} · SLI ${data.activePattern.sli}`
     : "No active pattern";
   const status = data.status as CurrentResonanceStatus;
+  const transmission = cleanTransmission(data.dynamicReading?.readingText);
+  const readingDate = formatDate(data.dynamicReading?.createdAt);
 
   return (
     <Layout>
@@ -299,32 +310,28 @@ export default function CurrentResonance() {
             "radial-gradient(circle at top left, rgba(91,164,164,0.08), transparent 30%), radial-gradient(circle at top right, rgba(189,163,107,0.08), transparent 34%), linear-gradient(180deg, #09090d 0%, #0f0f15 44%, #09090d 100%)",
         }}
       >
-        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        <div style={{ maxWidth: 1040, margin: "0 auto" }}>
           <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 18, marginBottom: 26, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.24em", marginBottom: 12 }}>
-                CURRENT RESONANCE · LIVE FIELD SNAPSHOT
+                CALIBRATION RESULT · ONE CURRENT VIEW
               </div>
               <div style={{ width: 36, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 18 }} />
               <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(34px, 5vw, 56px)", color: C.txt, fontWeight: 300, lineHeight: 1, margin: "0 0 10px" }}>
                 Current Resonance
               </h1>
-              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 760, margin: 0 }}>
-                A compact field console joining your Static Signature, latest Carrierlock state, and loudest stored SLI interference into one operational view.
+              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 720, margin: 0 }}>
+                This is the single result page after calibration: ORIEL's reading first, then the field numbers underneath. To update it, run one new calibration.
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <ActionLink href="/blueprint" label="Static Signature" icon={<Sparkles size={14} />} />
-              <ActionLink href="/carrierlock" label="Recalibrate" primary icon={<Activity size={14} />} />
-            </div>
+            <ActionLink href="/carrierlock" label="New calibration" primary icon={<Activity size={14} />} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 18 }}>
             <DataPill label="STATUS" value={statusLabels[status] ?? "Unknown"} accent={status === "ready"} />
+            <DataPill label="LATEST CALIBRATION" value={readingDate} />
             <DataPill label="COHERENCE" value={formatNumber(data.carrierlock?.coherenceScore)} accent />
-            <DataPill label="ACTIVE PATTERN" value={activeLabel} />
-            <DataPill label="PRIME POSITION" value={data.primeStackPosition?.label ?? "Unresolved"} />
           </div>
 
           {status !== "ready" && (
@@ -333,17 +340,18 @@ export default function CurrentResonance() {
             </div>
           )}
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 18, marginBottom: 18 }}>
-            <Panel eyebrow="STATIC ANCHOR" title="Blueprint Baseline">
-              <div style={{ display: "grid", gap: 10 }}>
-                <DataPill label="VRC TYPE" value={data.staticAnchor?.vrcType ?? "—"} accent />
-                <DataPill label="AUTHORITY" value={data.staticAnchor?.vrcAuthority ?? "—"} />
-                <DataPill label="FRACTAL ROLE" value={data.staticAnchor?.fractalRole ?? "—"} />
-                <DataPill label="PRIME STACK" value={formatNumber(data.staticAnchor?.primeStackCount)} />
-              </div>
-            </Panel>
+          {status === "ready" && (
+            <div style={{ marginBottom: 18 }}>
+              <Panel eyebrow="ORIEL TRANSMISSION" title="Read This First" accent>
+                <p style={{ fontFamily: "monospace", fontSize: 12, color: C.txt, lineHeight: 1.9, margin: 0, whiteSpace: "pre-line" }}>
+                  {transmission ?? "No ORIEL transmission was stored for this calibration."}
+                </p>
+              </Panel>
+            </div>
+          )}
 
-            <Panel eyebrow="CARRIERLOCK" title="Coherence Snapshot">
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 18, marginBottom: 18 }}>
+            <Panel eyebrow="FIELD NOW" title="Coherence Snapshot">
               <div style={{ display: "flex", alignItems: "baseline", gap: 14, marginBottom: 16 }}>
                 <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 54, color: C.teal, fontWeight: 300, lineHeight: 1 }}>
                   {formatNumber(data.carrierlock?.coherenceScore)}
@@ -360,7 +368,18 @@ export default function CurrentResonance() {
               </div>
             </Panel>
 
-            <Panel eyebrow="ACTIVE PATTERN" title="Loudest Interference" accent>
+            <Panel eyebrow="WHAT IS BEING FILTERED" title="Stable Blueprint">
+              <div style={{ display: "grid", gap: 10 }}>
+                <DataPill label="TYPE" value={data.staticAnchor?.vrcType ?? "—"} accent />
+                <DataPill label="AUTHORITY" value={data.staticAnchor?.vrcAuthority ?? "—"} />
+                <DataPill label="ROLE" value={data.staticAnchor?.fractalRole ?? "—"} />
+              </div>
+              <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, margin: "14px 0 0" }}>
+                Your natal blueprint is not another task. It is already loaded behind the reading.
+              </p>
+            </Panel>
+
+            <Panel eyebrow="ACTIVE THEME" title="Loudest Pattern" accent>
               <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.teal, marginBottom: 14 }}>
                 <CheckCircle2 size={16} />
                 <div style={{ fontFamily: "monospace", fontSize: 18, color: C.teal }}>
@@ -368,39 +387,49 @@ export default function CurrentResonance() {
                 </div>
               </div>
               <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: "0 0 12px" }}>
-                {data.primeStackPosition?.label ?? "Prime Stack position"} · {data.primeStackPosition?.center ?? "center unresolved"}
+                {data.primeStackPosition?.label ?? "Blueprint position unresolved"}
+                {data.primeStackPosition?.center ? ` · ${data.primeStackPosition.center}` : ""}
               </p>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.16em" }}>
-                HIGHEST FINITE SLI = ACTIVE INTERFERENCE
-              </div>
+              <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, margin: 0 }}>
+                This is the pattern ORIEL treats as loudest right now, not a separate page to interpret.
+              </p>
             </Panel>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 18 }}>
-            <Panel eyebrow="MICRO-CORRECTION" title="Next Small Adjustment">
+            <Panel eyebrow="NEXT ACTION" title="One Small Adjustment">
               <p style={{ fontFamily: "monospace", fontSize: 12, color: C.txt, lineHeight: 1.9, margin: 0 }}>
-                {data.microCorrection ?? "No micro-correction recorded yet."}
+                {data.microCorrection ?? data.nextAction}
               </p>
               <div style={{ height: 1, background: C.border, margin: "18px 0" }} />
               <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.18em", marginBottom: 8 }}>
-                FALSIFIER
+                CHECKPOINT
               </div>
               <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8, margin: 0 }}>
-                {data.falsifier ?? "No falsifier recorded yet."}
+                {data.falsifier ?? "After applying the correction, recalibrate and compare how the field changes."}
               </p>
             </Panel>
 
-            <Panel eyebrow="EVIDENCE" title="Why This Reading Resolved">
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {data.evidence.map((item: string) => (
-                  <div key={item} style={{ borderLeft: `1px solid ${C.tealDim}`, paddingLeft: 12, fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8 }}>
-                    {item}
-                  </div>
-                ))}
+            <Panel eyebrow="TECHNICAL TRAIL" title="What Was Used">
+              <details>
+                <summary style={{ fontFamily: "monospace", fontSize: 10, color: C.goldL, letterSpacing: "0.14em", cursor: "pointer" }}>
+                  SHOW CALCULATION NOTES
+                </summary>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+                  {data.evidence.map((item: string) => (
+                    <div key={item} style={{ borderLeft: `1px solid ${C.tealDim}`, paddingLeft: 12, fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.8 }}>
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </details>
+              <div style={{ marginTop: 18, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <Link href="/readings">
+                  <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.14em", cursor: "pointer", borderBottom: `1px solid ${C.border}` }}>
+                    ARCHIVE / OLDER READINGS
+                  </span>
+                </Link>
               </div>
-              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.goldL, lineHeight: 1.8, margin: "18px 0 0" }}>
-                {data.nextAction}
-              </p>
             </Panel>
           </div>
         </div>

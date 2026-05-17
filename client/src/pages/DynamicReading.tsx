@@ -205,7 +205,7 @@ export default function DynamicReading() {
   const [, params] = useRoute("/reading/dynamic/:id");
   const readingId = params?.id ? parseInt(params.id, 10) : 0;
 
-  const [activeView, setActiveView] = useState<"field" | "transmission" | "history" | "context">("field");
+  const [activeView, setActiveView] = useState<"field" | "transmission" | "history">("field");
   const [compareReadingId, setCompareReadingId] = useState<number | null>(null);
   const utils = trpc.useUtils();
 
@@ -807,9 +807,8 @@ export default function DynamicReading() {
   // ══════════════════════════════════════════════════════════
   const views = [
     { id: "field"        as const, label: "Field State" },
-    { id: "transmission" as const, label: "Transmission" },
+    { id: "transmission" as const, label: "ORIEL Reading" },
     { id: "history"      as const, label: "History" },
-    { id: "context"      as const, label: "Resonance" },
   ];
 
   return (
@@ -870,7 +869,6 @@ export default function DynamicReading() {
           {activeView === "field"        && renderFieldState()}
           {activeView === "transmission" && renderTransmission()}
           {activeView === "history"      && renderHistory()}
-          {activeView === "context"      && renderContext()}
         </div>
 
         {/* Footer nav */}

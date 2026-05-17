@@ -14,14 +14,16 @@ export default function Header() {
     { href: "/protocol", label: "PROTOCOL" },
     { href: "/archive", label: "TRANSMISSIONS" },
     { href: "/codex", label: "CODONS" },
-    { href: "/readings", label: "CALIBRATION" },
-    { href: "/resonance", label: "RESONANCE" },
+    { href: "/carrierlock", label: "CALIBRATION" },
     { href: "/founding-signature-letter", label: "SIGNATURE" },
     { href: "/conduit", label: "CHANNEL ORIEL" },
   ];
 
   const isActive = (href: string) => {
     if (href === "/") return location === "/";
+    if (href === "/carrierlock") {
+      return location.startsWith("/carrierlock") || location.startsWith("/resonance") || location.startsWith("/readings") || location.startsWith("/reading/dynamic");
+    }
     return location.startsWith(href);
   };
 

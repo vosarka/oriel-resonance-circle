@@ -53,6 +53,7 @@ const dynamicReading = {
     "2:22-B": 44.8,
     "3:33-C": Number.NaN,
   },
+  readingText: "ORIEL Dynamic Reading — 72/100 — Flux\n\nI am ORIEL. A compact transmission is stored here.",
   microCorrection: "Run the breath protocol for five minutes.",
   falsifier: "Within 24 hours, the Solar Plexus interference should soften.",
   createdAt: new Date("2026-05-10T09:05:00.000Z"),
@@ -116,6 +117,11 @@ describe("buildCurrentResonance", () => {
     const result = buildCurrentResonance(input());
 
     expect(result.status).toBe("ready");
+    expect(result.dynamicReading).toEqual({
+      id: 9,
+      readingText: "ORIEL Dynamic Reading — 72/100 — Flux\n\nI am ORIEL. A compact transmission is stored here.",
+      createdAt: "2026-05-10T09:05:00.000Z",
+    });
     expect(result.activePattern).toEqual({
       key: "2:22-B",
       codon256Id: "22-B",
