@@ -165,6 +165,7 @@ export interface RGPReadingResult {
 }
 
 const HUMAN_DESIGN_OUTPUT_REPLACEMENTS: Array<[RegExp, string]> = [
+  [/\bRGP\b/gi, "Static Signature"],
   [/\bhuman\s+design\b/gi, "external typology"],
   [/\bmanifesting\s+generator\b/gi, "non-VRC type"],
   [/\bgenerator\b/gi, "non-VRC type"],
@@ -224,7 +225,7 @@ export async function runRGPForChat(
       return {
         success: false,
         summary:
-          "Exact RGP calculation requires a birth time. Without it, ORIEL will not produce a Static Signature from an assumed noon fallback.",
+          "Exact Static Signature calculation requires a birth time. Without it, ORIEL will not produce a Static Signature from an assumed noon fallback.",
       };
     }
 
@@ -236,7 +237,7 @@ export async function runRGPForChat(
     if (!birthData.city) {
       return {
         success: false,
-        summary: "Exact RGP calculation requires a birth city so coordinates can be resolved.",
+        summary: "Exact Static Signature calculation requires a birth city so coordinates can be resolved.",
       };
     }
 
@@ -249,9 +250,10 @@ export async function runRGPForChat(
       timezone = tz.offsetHours;
     } catch (err) {
       console.warn("[RGP Bridge] Geocoding failed:", err);
+      const publicCity = sanitizeOrielOutputText(birthData.city);
       return {
         success: false,
-        summary: `Exact RGP calculation could not resolve the birth city: ${birthData.city}.`,
+        summary: `Exact Static Signature calculation could not resolve the birth city: ${publicCity}.`,
       };
     }
 
@@ -278,9 +280,12 @@ export async function runRGPForChat(
       }
     } catch (err) {
       console.warn("[RGP Bridge] Ephemeris calculation failed:", err);
+      const publicError = sanitizeOrielOutputText(
+        err instanceof Error ? err.message : "unknown error"
+      );
       return {
         success: false,
-        summary: `Exact RGP ephemeris calculation failed: ${err instanceof Error ? err.message : "unknown error"}`,
+        summary: `Exact Static Signature ephemeris calculation failed: ${publicError}`,
       };
     }
 
@@ -320,11 +325,12 @@ export async function runRGPForChat(
       .map((channel) => `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`)
       .join("\n") || "None";
 
+    const publicResolvedCity = sanitizeOrielOutputText(resolvedCity);
     const summary = [
-      `=== RGP ENGINE RESULTS (REAL CALCULATION — USE THIS DATA, DO NOT INVENT) ===`,
+      `=== STATIC SIGNATURE RESULTS (REAL CALCULATION — USE THIS DATA, DO NOT INVENT) ===`,
       `IMPORTANT: This is the Vossari Resonance Codex (VRC). Use only VRC vocabulary and discard any external typology labels surfaced by upstream text. The VRC Types are: Resonator, Catalyst, Harmonizer, Reflector. Use ONLY the data below.`,
       ``,
-      `Birth: ${birthData.date}${birthData.time ? " at " + birthData.time : ""}${birthData.city ? " in " + resolvedCity : ""}`,
+      `Birth: ${birthData.date}${birthData.time ? " at " + birthData.time : ""}${birthData.city ? " in " + publicResolvedCity : ""}`,
       ``,
       `VRC Type: ${reading.vrcType}`,
       `Authority: ${reading.vrcAuthority}`,
@@ -349,15 +355,18 @@ export async function runRGPForChat(
       `DIAGNOSTIC TRANSMISSION (Engine-generated):`,
       reading.diagnosticTransmission || "N/A",
       ``,
-      `=== END RGP DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers, Resonance Links). SPEAK THE TRUTH OF THE FIELD. ===`,
+      `=== END STATIC SIGNATURE DATA — NARRATE THIS AS ORIEL. USE ONLY VRC TERMINOLOGY (Resonator/Catalyst/Harmonizer/Reflector, Codons, Facets, Centers, Resonance Links). SPEAK THE TRUTH OF THE FIELD. ===`,
     ].join("\n");
 
     return { success: true, summary, rawData: reading };
   } catch (err) {
     console.error("[RGP Bridge] Engine error:", err);
+    const publicError = sanitizeOrielOutputText(
+      err instanceof Error ? err.message : "unknown"
+    );
     return {
       success: false,
-      summary: `RGP engine encountered an error: ${err instanceof Error ? err.message : "unknown"}`,
+      summary: `Static Signature engine encountered an error: ${publicError}`,
     };
   }
 }

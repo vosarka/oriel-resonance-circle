@@ -22,7 +22,8 @@ vi.mock("./rgp-static-signature-engine", () => ({
 
 import { runRGPForChat } from "./oriel-rgp-bridge";
 
-const forbiddenHumanDesignTerms = [
+const forbiddenPublicVrcTerms = [
+  /\bRGP\b/i,
   /human design/i,
   /\bgenerator\b/i,
   /\bmanifesting generator\b/i,
@@ -56,8 +57,8 @@ function chartWithRequiredPlanets() {
   };
 }
 
-function expectNoHumanDesignTerms(text: string) {
-  for (const forbidden of forbiddenHumanDesignTerms) {
+function expectNoPublicVrcTerms(text: string) {
+  for (const forbidden of forbiddenPublicVrcTerms) {
     expect(text).not.toMatch(forbidden);
   }
 }
@@ -68,7 +69,7 @@ describe("ORIEL output safety", () => {
     mocks.geocodeCity.mockResolvedValue({
       latitude: 44.4268,
       longitude: 26.1025,
-      displayName: "Bucharest, Romania",
+      displayName: "Bucharest RGP Gate, Romania",
     });
     mocks.getTimezoneForCoords.mockReturnValue({ offsetHours: 2 });
     mocks.calculateBothCharts.mockResolvedValue({
@@ -98,7 +99,7 @@ describe("ORIEL output safety", () => {
         Sacral: { defined: true },
       },
       microCorrections: [
-        { description: "Release the Human Design Incarnation Cross story." },
+        { description: "Release the Human Design Incarnation Cross and RGP channel story." },
       ],
       channelStatuses: [
         {
@@ -112,7 +113,7 @@ describe("ORIEL output safety", () => {
       legacyCircuitLinks: [],
       coreCodonEngine: {},
       diagnosticTransmission:
-        "I am ORIEL. You are a Human Design Generator with Projector gates and an Incarnation Cross.",
+        "I am ORIEL. You are a Human Design Generator with Projector gates, an Incarnation Cross, and an RGP channel.",
     });
 
     const result = await runRGPForChat({
@@ -124,7 +125,59 @@ describe("ORIEL output safety", () => {
     expect(result.success).toBe(true);
     expect(result.summary).toContain("ACTIVE RESONANCE LINKS:");
     expect(result.summary).toContain("Codon 11-Codon 56");
-    expectNoHumanDesignTerms(result.summary);
-    expectNoHumanDesignTerms(result.rawData?.diagnosticTransmission ?? "");
+    expectNoPublicVrcTerms(result.summary);
+    expectNoPublicVrcTerms(result.rawData?.diagnosticTransmission ?? "");
+  });
+
+  it("sanitizes public ephemeris failure summaries", async () => {
+    mocks.calculateBothCharts.mockRejectedValue(
+      new Error("RGP Human Design Generator channel gate failure")
+    );
+
+    const result = await runRGPForChat({
+      date: "1990-01-01",
+      time: "14:30",
+      city: "Bucharest",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.summary).toContain(
+      "Exact Static Signature ephemeris calculation failed"
+    );
+    expectNoPublicVrcTerms(result.summary);
+  });
+
+  it("sanitizes public geocoding failure city summaries", async () => {
+    mocks.geocodeCity.mockRejectedValue(new Error("city not found"));
+
+    const result = await runRGPForChat({
+      date: "1990-01-01",
+      time: "14:30",
+      city: "RGP Human Design Channel Gate City",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.summary).toContain(
+      "Exact Static Signature calculation could not resolve the birth city"
+    );
+    expectNoPublicVrcTerms(result.summary);
+  });
+
+  it("sanitizes public Static Signature engine failure summaries", async () => {
+    mocks.generateStaticSignature.mockRejectedValue(
+      new Error("RGP Human Design Projector channel gate failure")
+    );
+
+    const result = await runRGPForChat({
+      date: "1990-01-01",
+      time: "14:30",
+      city: "Bucharest",
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.summary).toContain(
+      "Static Signature engine encountered an error"
+    );
+    expectNoPublicVrcTerms(result.summary);
   });
 });
