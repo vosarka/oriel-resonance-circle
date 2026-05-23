@@ -45,7 +45,10 @@ type GeminiResponse = {
   }>;
 };
 
-const DEFAULT_GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
+const DEFAULT_GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+const DEPRECATED_GEMINI_IMAGE_MODEL_ALIASES = new Map([
+  ["gemini-2.5-flash-image-preview", DEFAULT_GEMINI_IMAGE_MODEL],
+]);
 const GEMINI_GENERATE_CONTENT_BASE_URL =
   "https://generativelanguage.googleapis.com/v1beta/models";
 const MAX_GENERATED_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -56,6 +59,17 @@ const SUPPORTED_GENERATED_IMAGE_TYPES = new Set([
   "image/webp",
   "image/gif",
 ]);
+
+function normalizeGeminiImageModel(model: string | undefined) {
+  const trimmed = model?.trim() ?? "";
+  const withoutApiPrefix = trimmed.startsWith("models/")
+    ? trimmed.slice("models/".length)
+    : trimmed;
+  if (!withoutApiPrefix) return DEFAULT_GEMINI_IMAGE_MODEL;
+  return (
+    DEPRECATED_GEMINI_IMAGE_MODEL_ALIASES.get(withoutApiPrefix) ?? withoutApiPrefix
+  );
+}
 
 function stripDataUrlPrefix(data: string) {
   const commaIndex = data.indexOf(",");
@@ -207,7 +221,7 @@ export async function generateImage(
     return { url: undefined };
   }
 
-  const model = ENV.geminiImageModel || DEFAULT_GEMINI_IMAGE_MODEL;
+  const model = normalizeGeminiImageModel(ENV.geminiImageModel);
   const controller = new AbortController();
   const timeout = setTimeout(
     () => controller.abort(),

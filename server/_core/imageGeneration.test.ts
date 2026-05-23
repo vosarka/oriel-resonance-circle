@@ -25,6 +25,7 @@ vi.mock("node:fs/promises", () => ({
 }));
 
 import { generateImage } from "./imageGeneration";
+import { ENV } from "./env";
 
 const originalFetch = globalThis.fetch;
 const pngBytes = Buffer.from(
@@ -36,6 +37,7 @@ describe("generateImage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     globalThis.fetch = mocks.fetch as unknown as typeof fetch;
+    ENV.geminiImageModel = "";
     mocks.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -73,7 +75,7 @@ describe("generateImage", () => {
 
     expect(result.url).toMatch(/^\/generated\/oriel-chat-images\/[\w-]+\.png$/);
     expect(mocks.fetch).toHaveBeenCalledWith(
-      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent",
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
@@ -97,6 +99,17 @@ describe("generateImage", () => {
     expect(mocks.writeFile).toHaveBeenCalledWith(
       expect.stringContaining("uploads/generated/oriel-chat-images"),
       pngBytes
+    );
+  });
+
+  it("normalizes deprecated and API-prefixed Gemini image model env values", async () => {
+    ENV.geminiImageModel = "models/gemini-2.5-flash-image-preview";
+
+    await generateImage({ prompt: "A teal resonance sigil" });
+
+    expect(mocks.fetch).toHaveBeenCalledWith(
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent",
+      expect.any(Object)
     );
   });
 
