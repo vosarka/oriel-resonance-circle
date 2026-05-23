@@ -1,6 +1,6 @@
 import { find as findTimeZones } from 'geo-tz';
 import { z } from 'zod';
-import { publicProcedure, router } from './_core/trpc';
+import { publicProcedure, rateLimitedProcedure, router } from './_core/trpc';
 import {
   generateStaticSignature,
   type StaticSignatureReading,
@@ -184,7 +184,7 @@ function sliScoreKey(score: SLIScore) {
 }
 
 export const rgpRouter = router({
-  staticSignature: publicProcedure
+  staticSignature: rateLimitedProcedure('rgp.static')
     .input(z.object({
       birthDate: z.string(),
       birthTime: z.string().optional(),

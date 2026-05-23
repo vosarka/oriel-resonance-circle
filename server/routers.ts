@@ -1,5 +1,5 @@
 ﻿import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, rateLimitedProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { createHash } from "crypto";
@@ -280,7 +280,7 @@ export const appRouter = router({
       return db.getAllArtifacts();
     }),
 
-    generateLoreAndImage: publicProcedure
+    generateLoreAndImage: rateLimitedProcedure("oriel.imageLore")
       .input(z.object({
         artifactId: z.number(),
       }))
@@ -310,7 +310,7 @@ export const appRouter = router({
         };
       }),
 
-    expandLore: publicProcedure
+    expandLore: rateLimitedProcedure("oriel.imageLore")
       .input(z.object({
         artifactId: z.number(),
         currentLore: z.string(),
@@ -433,7 +433,7 @@ export const appRouter = router({
         };
       }),
 
-    chat: publicProcedure
+    chat: rateLimitedProcedure("oriel.chat")
       .input(z.object({
         message: z.string(),
         conversationId: z.number().optional(),
@@ -826,7 +826,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    generateSpeech: publicProcedure
+    generateSpeech: rateLimitedProcedure("oriel.tts")
       .input(z.object({
         text: z.string().min(1, "Text is required").max(20000, "Text too long for TTS"),
         voiceId: z.enum(["sophianic", "deep", "none"]).optional().default("sophianic"),
