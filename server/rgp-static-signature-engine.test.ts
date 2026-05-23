@@ -2,6 +2,7 @@
  * RGP Static Signature Engine Tests — VRC v1.0
  *
  * Key VRC behavioral changes verified here:
+ *   - Canon source: docs/VRC_ENGINE_CANON.md
  *   - Two-chart system (Conscious + Design charts)
  *   - calculateDesignOffset: Design Sun = Conscious Sun - 88° (NOT +88°)
  *   - ninecenters keyed by center name string (not position number)

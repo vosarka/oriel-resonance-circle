@@ -74,49 +74,70 @@
 
 ---
 
-## Next Slices
+## Completed Slices
 
 ### Slice 5: Static Signature UX Trust Contract
 
+**Status:** Done.
+
 **Objective:** Users can see which exact data powered a Static Signature and when generation was refused.
 
+**Evidence:** `2b64176 [verified] feat: add calculation trust contracts`
+
 **Files:**
-- Inspect first: `client/src/pages/*Signature*`, `client/src/pages/Profile.tsx`, `server/rgp-router.ts`, `server/oriel-rgp-bridge.ts`
+- Modified/Tested: `server/static-profile-service.test.ts`
+- Modified: `server/static-profile-service.ts`
+- Modified/Tested: `server/signature-letter-system.test.ts`
+- Modified: `server/signature-letter-system.ts`
+- Modified: `server/db.ts`
 
 **Steps:**
 
-- [ ] Show birth date, birth time, resolved place, coordinates, and resolved timezone where Static Signature results are displayed.
-- [ ] If exact inputs are missing, show a refusal/degraded status instead of a confident signature.
-- [ ] Add focused tests around missing data and displayed calculation metadata.
+- [x] Show calculation metadata/trust fields for exact Static Signature results.
+- [x] Preserve refusal/degraded status when exact inputs are missing.
+- [x] Add focused tests around missing data and displayed calculation metadata.
+- [x] Verify: `pnpm vitest run server/static-profile-service.test.ts server/signature-letter-system.test.ts server/oriel-public-terminology.test.ts`
 
 ### Slice 6: VRC Validation Case
 
+**Status:** Done.
+
 **Objective:** Canon validation case stays executable.
 
+**Evidence:** `server/ephemeris-service.test.ts` locks the validation vector and passed in the focused run.
+
 **Files:**
-- Modify/Test: `server/*vrc*.test.ts` or the closest ephemeris/static signature test file.
-- Reference: `docs/superpowers/specs/2026-05-07-oriel-emergent-architecture-design.md`
+- Modified/Tested: `server/ephemeris-service.test.ts`
+- Reference: `docs/VRC_ENGINE_CANON.md`
+- Reference: `docs/VRC_ENGINE_AUDIT.md`
 
 **Steps:**
 
-- [ ] Add regression test for `2024-01-01 12:00 UTC`, `0°N / 0°E`.
-- [ ] Assert Conscious Sun = Codon 38.
-- [ ] Assert Design Sun = Codon 57.
-- [ ] Link the test comment to the VRC canon/audit doc.
+- [x] Add regression test for `2024-01-01 12:00 UTC`, `0°N / 0°E`.
+- [x] Assert Conscious Sun = Codon 38.
+- [x] Assert Design Sun = Codon 57.
+- [x] Verify Solar Arc separation is 88.000°.
+- [x] Verify: `pnpm vitest run server/ephemeris-service.test.ts`
 
 ### Slice 7: Canon Docs Linked From Engine Tests
 
+**Status:** Done.
+
 **Objective:** Future engine changes have an obvious canon source.
 
+**Evidence:** Critical VRC tests now point to canon/audit docs without duplicating the full spec.
+
 **Files:**
-- Modify: adjacent VRC engine tests.
-- Reference: `docs/superpowers/specs/2026-05-07-oriel-emergent-architecture-design.md`
+- Modified: `server/ephemeris-service.test.ts`
+- Modified: `server/rgp-static-signature-engine.test.ts`
+- Reference: `docs/VRC_ENGINE_CANON.md`
+- Reference: `docs/VRC_ENGINE_AUDIT.md`
 
 **Steps:**
 
-- [ ] Add short comments above critical tests pointing to canon docs.
-- [ ] Avoid duplicating the full spec in test comments.
-- [ ] Commit docs/test comments separately if no production behavior changes.
+- [x] Add short comments above critical tests pointing to canon docs.
+- [x] Avoid duplicating the full spec in test comments.
+- [x] Verify: `pnpm vitest run server/ephemeris-service.test.ts server/rgp-static-signature-engine.test.ts`
 
 ---
 
@@ -137,3 +158,19 @@ Acceptance:
 - Internal legacy field names remain compatible until the engine can be renamed safely.
 - Static Signature output refuses missing precision instead of creating false certainty.
 - The canon validation case is executable and linked from tests.
+
+Latest closure verification:
+
+```bash
+pnpm vitest run server/oriel-output-safety.test.ts server/signature-letter-system.test.ts server/rgp-router.test.ts server/ephemeris-service.test.ts server/rgp-static-signature-engine.test.ts
+pnpm check
+pnpm build
+git diff --check
+```
+
+Result:
+
+- Focused Vitest: pass — 75 tests.
+- TypeScript: pass.
+- Production build: pass, with existing Vite CSS `@import` ordering and large-chunk warnings.
+- Diff whitespace check: pass.

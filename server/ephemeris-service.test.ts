@@ -126,6 +126,8 @@ describe('Ephemeris Service', () => {
       expect(Object.keys(birthChart.planets)).toHaveLength(13);
     });
 
+    // Canon source: docs/VRC_ENGINE_CANON.md and docs/VRC_ENGINE_AUDIT.md.
+    // Locks the VRC validation vector: Conscious Sun Codon 38, Design Sun Codon 57.
     it('matches the VRC validation vector for 2024-01-01 12:00 UTC', async () => {
       const { conscious, design } = await calculateBothCharts(
         new Date('2024-01-01'),
