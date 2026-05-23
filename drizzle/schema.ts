@@ -1,4 +1,4 @@
-﻿import { int, double, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+﻿import { int, double, decimal, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
 
 import { index, uniqueIndex } from "drizzle-orm/mysql-core";
 
@@ -618,7 +618,7 @@ export const signatureOrders = mysqlTable("signature_orders", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
   productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
-  priceEur: int("priceEur").notNull(),
+  priceEur: decimal("priceEur", { precision: 10, scale: 2 }).$type<number>().notNull(),
   currency: varchar("currency", { length: 8 }).default("eur").notNull(),
   status: mysqlEnum("status", [
     "pending_payment",

@@ -22,22 +22,6 @@ import {
 
 const MAX_FINAL_PDF_BYTES = 15 * 1024 * 1024;
 
-function requireStripePriceId(productType: SignatureProductType) {
-  const priceId =
-    productType === "glimpse"
-      ? ENV.stripeSignatureGlimpsePriceId
-      : ENV.stripeFoundingSignaturePriceId;
-
-  if (!priceId) {
-    throw new TRPCError({
-      code: "PRECONDITION_FAILED",
-      message: `Stripe price ID is not configured for ${productType}.`,
-    });
-  }
-
-  return priceId;
-}
-
 function requireStripeSecret() {
   if (!ENV.stripeSecretKey) {
     throw new TRPCError({
@@ -139,8 +123,27 @@ async function fetchStripeCheckoutSession(
     body.set("customer_email", payload.customer_email);
   }
   payload.line_items.forEach((lineItem, index) => {
-    body.set(`line_items[${index}][price]`, lineItem.price);
-    body.set(`line_items[${index}][quantity]`, String(lineItem.quantity));
+    const prefix = `line_items[${index}]`;
+    body.set(`${prefix}[quantity]`, String(lineItem.quantity));
+
+    if ("price" in lineItem) {
+      body.set(`${prefix}[price]`, lineItem.price);
+      return;
+    }
+
+    body.set(`${prefix}[price_data][currency]`, lineItem.price_data.currency);
+    body.set(
+      `${prefix}[price_data][product_data][name]`,
+      lineItem.price_data.product_data.name,
+    );
+    body.set(
+      `${prefix}[price_data][product_data][description]`,
+      lineItem.price_data.product_data.description,
+    );
+    body.set(
+      `${prefix}[price_data][unit_amount]`,
+      String(lineItem.price_data.unit_amount),
+    );
   });
   Object.entries(payload.metadata).forEach(([key, value]) => {
     body.set(`metadata[${key}]`, value);
@@ -178,7 +181,6 @@ export async function createSignatureCheckout(input: {
 }) {
   const product = SIGNATURE_PRODUCTS[input.productType];
   const appBaseUrl = requireAppBaseUrl();
-  const priceId = requireStripePriceId(input.productType);
   requireStripeSecret();
   const order = await db.createSignatureOrder({
     userId: input.userId,
@@ -192,7 +194,6 @@ export async function createSignatureCheckout(input: {
     appBaseUrl,
     orderId: order.id,
     productType: input.productType,
-    priceId,
     userId: input.userId,
     customerEmail: input.userEmail,
   });

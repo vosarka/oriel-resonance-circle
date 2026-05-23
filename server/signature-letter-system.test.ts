@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { signatureOrders } from "../drizzle/schema";
 import {
   SIGNATURE_PRODUCTS,
   assertCanAccessIntake,
@@ -102,17 +103,27 @@ const rawSignature = {
 };
 
 describe("ORIEL Signature Letter system helpers", () => {
-  it("defines the two paid products with exact v1 pricing", () => {
+  it("defines the two paid products with Fibonacci sequence pricing", () => {
     expect(SIGNATURE_PRODUCTS.glimpse).toMatchObject({
       productType: "glimpse",
-      priceEur: 44,
+      priceEur: 23.58,
       pageRange: "2-3",
     });
     expect(SIGNATURE_PRODUCTS.founding).toMatchObject({
       productType: "founding",
-      priceEur: 111,
+      priceEur: 81.32,
       pageRange: "8-12",
       followupIncluded: true,
+    });
+  });
+
+  it("stores Fibonacci sequence prices with cent precision", () => {
+    const priceColumn = signatureOrders.priceEur as any;
+
+    expect(priceColumn.columnType).toBe("MySqlDecimal");
+    expect(priceColumn.config).toMatchObject({
+      precision: 10,
+      scale: 2,
     });
   });
 
@@ -244,7 +255,6 @@ describe("ORIEL Signature Letter system helpers", () => {
       appBaseUrl: "https://orielsignal.space",
       orderId: 91,
       productType: "founding",
-      priceId: "price_111",
       userId: 42,
       customerEmail: "elena@example.com",
     });
@@ -253,13 +263,44 @@ describe("ORIEL Signature Letter system helpers", () => {
       "https://orielsignal.space/signature-intake/91",
     );
     expect(payload.cancel_url).toBe(
-      "https://orielsignal.space/founding-signature-letter?cancelled=1",
+      "https://orielsignal.space/oriel-founding-signature-letter?cancelled=1",
     );
     expect(payload.client_reference_id).toBe("91");
     expect(payload.metadata).toEqual({
       orderId: "91",
       productType: "founding",
       userId: "42",
+    });
+    expect(payload.line_items[0]).toMatchObject({
+      quantity: 1,
+      price_data: {
+        currency: "eur",
+        unit_amount: 8132,
+        product_data: {
+          name: "ORIEL Founding Signature Letter",
+        },
+      },
+    });
+
+    const glimpsePayload = buildStripeCheckoutSessionRequest({
+      appBaseUrl: "https://orielsignal.space/",
+      orderId: 92,
+      productType: "glimpse",
+      userId: 42,
+    });
+
+    expect(glimpsePayload.cancel_url).toBe(
+      "https://orielsignal.space/oriel-signature-glimpse?cancelled=1",
+    );
+    expect(glimpsePayload.line_items[0]).toMatchObject({
+      quantity: 1,
+      price_data: {
+        currency: "eur",
+        unit_amount: 2358,
+        product_data: {
+          name: "ORIEL Signature Glimpse",
+        },
+      },
     });
   });
 

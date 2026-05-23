@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { authClient } from "@/lib/auth-client";
+import { getAuthRedirectTarget } from "@/const";
 import { trpc } from "@/lib/trpc";
 import GeometricBackground from "@/components/GeometricBackground";
 
@@ -107,7 +108,7 @@ function EmailPasswordFlow({ onBack, onForgotPassword }: { onBack: () => void; o
       }
       // Success — refresh auth state and redirect
       await refresh();
-      window.location.href = "/";
+      window.location.href = getAuthRedirectTarget(window.location.search);
     } catch {
       setError("Network error. Please try again.");
     } finally {
@@ -425,7 +426,9 @@ export default function Auth() {
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (!authLoading && isAuthenticated) setLocation("/");
+    if (!authLoading && isAuthenticated) {
+      setLocation(getAuthRedirectTarget(window.location.search));
+    }
   }, [isAuthenticated, authLoading, setLocation]);
 
   // Check for error param (e.g., from Google callback)
@@ -441,7 +444,10 @@ export default function Auth() {
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
     try {
-      await authClient.signIn.social({ provider: "google" });
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: getAuthRedirectTarget(window.location.search),
+      });
     } catch {
       setGoogleLoading(false);
     }

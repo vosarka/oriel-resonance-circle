@@ -413,7 +413,7 @@ export async function runMigrations() {
         \`id\` int AUTO_INCREMENT NOT NULL,
         \`userId\` int NOT NULL,
         \`productType\` enum('glimpse','founding') NOT NULL,
-        \`priceEur\` int NOT NULL,
+        \`priceEur\` decimal(10,2) NOT NULL,
         \`currency\` varchar(8) NOT NULL DEFAULT 'eur',
         \`status\` enum('pending_payment','paid','intake_needed','intake_received','signature_generated','draft_ready','in_curation','pdf_ready','delivered','followup_used','cancelled','refunded') NOT NULL DEFAULT 'pending_payment',
         \`stripeCheckoutSessionId\` varchar(255) NULL,

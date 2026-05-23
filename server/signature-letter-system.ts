@@ -25,8 +25,9 @@ export const SIGNATURE_PRODUCTS = {
   glimpse: {
     productType: "glimpse",
     title: "ORIEL Signature Glimpse",
-    priceEur: 44,
+    priceEur: 23.58,
     currency: "eur",
+    checkoutCancelPath: "/oriel-signature-glimpse",
     pageRange: "2-3",
     coreCodonLimit: 2,
     correctionLimit: 1,
@@ -35,8 +36,9 @@ export const SIGNATURE_PRODUCTS = {
   founding: {
     productType: "founding",
     title: "ORIEL Founding Signature Letter",
-    priceEur: 111,
+    priceEur: 81.32,
     currency: "eur",
+    checkoutCancelPath: "/oriel-founding-signature-letter",
     pageRange: "8-12",
     coreCodonLimit: 6,
     correctionLimit: 3,
@@ -49,6 +51,7 @@ export const SIGNATURE_PRODUCTS = {
     title: string;
     priceEur: number;
     currency: "eur";
+    checkoutCancelPath: string;
     pageRange: string;
     coreCodonLimit: number;
     correctionLimit: number;
@@ -111,10 +114,23 @@ type StripeCheckoutPayload = {
   cancel_url: string;
   client_reference_id: string;
   customer_email?: string;
-  line_items: Array<{
-    price: string;
-    quantity: number;
-  }>;
+  line_items: Array<
+    | {
+        price: string;
+        quantity: number;
+      }
+    | {
+        price_data: {
+          currency: "eur";
+          product_data: {
+            name: string;
+            description: string;
+          };
+          unit_amount: number;
+        };
+        quantity: number;
+      }
+  >;
   metadata: {
     orderId: string;
     productType: SignatureProductType;
@@ -310,25 +326,36 @@ export function assertCanMarkDelivered(input: {
   }
 }
 
+function priceEurToStripeCents(priceEur: number) {
+  return Math.round(priceEur * 100);
+}
+
 export function buildStripeCheckoutSessionRequest(input: {
   appBaseUrl: string;
   orderId: number;
   productType: SignatureProductType;
-  priceId: string;
   userId: number;
   customerEmail?: string | null;
 }): StripeCheckoutPayload {
   const baseUrl = input.appBaseUrl.replace(/\/+$/, "");
+  const product = SIGNATURE_PRODUCTS[input.productType];
 
   return {
     mode: "payment",
     success_url: `${baseUrl}/signature-intake/${input.orderId}`,
-    cancel_url: `${baseUrl}/founding-signature-letter?cancelled=1`,
+    cancel_url: `${baseUrl}${product.checkoutCancelPath}?cancelled=1`,
     client_reference_id: String(input.orderId),
     ...(input.customerEmail ? { customer_email: input.customerEmail } : {}),
     line_items: [
       {
-        price: input.priceId,
+        price_data: {
+          currency: product.currency,
+          product_data: {
+            name: product.title,
+            description: `${product.pageRange} page founder-curated symbolic PDF`,
+          },
+          unit_amount: priceEurToStripeCents(product.priceEur),
+        },
         quantity: 1,
       },
     ],

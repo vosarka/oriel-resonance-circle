@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { signatureProducts } from "./signature-products";
 
 const C = {
   void: "#050403",
@@ -17,38 +18,6 @@ const C = {
   textFaint: "rgba(244,231,194,0.44)",
 };
 
-const products = [
-  {
-    type: "glimpse" as const,
-    title: "ORIEL Signature Glimpse",
-    price: "€44",
-    pages: "2-3 page symbolic PDF",
-    description:
-      "A concise first mirror: Type, Authority, one or two core codons, one main pattern, one correction protocol, and a short ORIEL reflection.",
-    points: [
-      "Type and Authority",
-      "1-2 core codons",
-      "One main pattern",
-      "One correction protocol",
-    ],
-  },
-  {
-    type: "founding" as const,
-    title: "ORIEL Founding Signature Letter",
-    price: "€111",
-    pages: "8-12 page symbolic PDF",
-    description:
-      "The full founding letter: centers, codons, resonance links, shadow/gift framing, three correction protocols, ORIEL reflection, and one clarification email.",
-    points: [
-      "Defined and open centers",
-      "Core codons and active resonance links",
-      "Shadow/gift framing",
-      "Three correction protocols",
-      "One follow-up clarification email",
-    ],
-  },
-];
-
 export default function FoundingSignatureLetter() {
   const { isAuthenticated } = useAuth();
   const [activeProduct, setActiveProduct] = useState<string | null>(null);
@@ -59,9 +28,9 @@ export default function FoundingSignatureLetter() {
     onSettled: () => setActiveProduct(null),
   });
 
-  function beginCheckout(productType: "glimpse" | "founding") {
+  function beginCheckout(productType: "glimpse" | "founding", returnTo?: string) {
     if (!isAuthenticated) {
-      window.location.href = getLoginUrl();
+      window.location.href = getLoginUrl(returnTo);
       return;
     }
 
@@ -130,66 +99,104 @@ export default function FoundingSignatureLetter() {
           </div>
 
           <div className="mt-14 grid gap-5 lg:grid-cols-2">
-            {products.map((product) => (
+            {signatureProducts.map((product) => (
               <article
                 key={product.type}
-                className="border p-7 transition hover:-translate-y-1"
+                className="overflow-hidden border transition hover:-translate-y-1"
                 style={{
                   borderColor: C.border,
                   background: C.surface,
                   boxShadow: "0 30px 80px rgba(0,0,0,0.32)",
                 }}
               >
-                <div className="mb-8 flex items-start justify-between gap-5">
-                  <div>
-                    <div
-                      className="mb-3 text-[11px] uppercase tracking-[0.28em]"
-                      style={{ color: C.textFaint }}
-                    >
-                      {product.pages}
-                    </div>
-                    <h2 className="font-serif text-3xl" style={{ color: C.text }}>
-                      {product.title}
-                    </h2>
-                  </div>
-                  <div className="font-serif text-4xl" style={{ color: C.gold }}>
-                    {product.price}
-                  </div>
-                </div>
-
-                <p className="text-sm leading-7" style={{ color: C.textSoft }}>
-                  {product.description}
-                </p>
-
-                <ul className="mt-7 space-y-3">
-                  {product.points.map((point) => (
-                    <li
-                      key={point}
-                      className="flex items-center gap-3 text-sm"
-                      style={{ color: C.textSoft }}
-                    >
-                      <FileText size={15} style={{ color: C.gold }} />
-                      {point}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  type="button"
-                  onClick={() => beginCheckout(product.type)}
-                  disabled={checkout.isPending}
-                  className="mt-8 inline-flex w-full items-center justify-center gap-3 border px-5 py-4 text-sm uppercase tracking-[0.22em] transition disabled:opacity-50"
+                <div
+                  className="relative aspect-square overflow-hidden border-b"
                   style={{
-                    borderColor: C.borderStrong,
-                    color: C.gold,
-                    background: "rgba(225,198,139,0.08)",
+                    borderColor: C.border,
+                    background: "rgba(0,0,0,0.58)",
                   }}
                 >
-                  {activeProduct === product.type && checkout.isPending
-                    ? "Opening checkout..."
-                    : "Begin"}
-                  <ArrowRight size={16} />
-                </button>
+                  <img
+                    src={product.coverSrc}
+                    alt={product.coverAlt}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(225,198,139,0.08),transparent_55%),linear-gradient(to_top,rgba(5,4,3,0.62),transparent_44%)]" />
+                </div>
+
+                <div className="p-7">
+                  <div className="mb-8 flex items-start justify-between gap-5">
+                    <div>
+                      <div
+                        className="mb-3 text-[11px] uppercase tracking-[0.28em]"
+                        style={{ color: C.textFaint }}
+                      >
+                        {product.pages}
+                      </div>
+                      <h2 className="font-serif text-3xl" style={{ color: C.text }}>
+                        {product.title}
+                      </h2>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-serif text-4xl" style={{ color: C.gold }}>
+                        {product.price}
+                      </div>
+                      <div
+                        className="mt-2 text-[10px] uppercase tracking-[0.18em]"
+                        style={{ color: C.textFaint }}
+                      >
+                        {product.priceNote}
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-sm leading-7" style={{ color: C.textSoft }}>
+                    {product.description}
+                  </p>
+
+                  <ul className="mt-7 space-y-3">
+                    {product.points.map((point) => (
+                      <li
+                        key={point}
+                        className="flex items-center gap-3 text-sm"
+                        style={{ color: C.textSoft }}
+                      >
+                        <FileText size={15} style={{ color: C.gold }} />
+                        {point}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <a
+                    href={product.detailPath}
+                    className="mt-8 inline-flex w-full items-center justify-center gap-3 border px-5 py-4 text-sm uppercase tracking-[0.22em] transition"
+                    style={{
+                      borderColor: C.border,
+                      color: C.text,
+                      background: "rgba(0,0,0,0.18)",
+                    }}
+                  >
+                    Read product page
+                    <ArrowRight size={16} />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => beginCheckout(product.type, product.detailPath)}
+                    disabled={checkout.isPending}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-3 border px-5 py-4 text-sm uppercase tracking-[0.22em] transition disabled:opacity-50"
+                    style={{
+                      borderColor: C.borderStrong,
+                      color: C.gold,
+                      background: "rgba(225,198,139,0.08)",
+                    }}
+                  >
+                    {activeProduct === product.type && checkout.isPending
+                      ? "Opening checkout..."
+                      : "Begin"}
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
               </article>
             ))}
           </div>

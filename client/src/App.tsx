@@ -20,6 +20,10 @@ import StaticReading from "./pages/StaticReading";
 import DynamicReading from "./pages/DynamicReading";
 import CurrentResonance from "./pages/CurrentResonance";
 import FoundingSignatureLetter from "./pages/FoundingSignatureLetter";
+import {
+  FoundingSignatureProductPage,
+  SignatureGlimpseProductPage,
+} from "./pages/SignatureProductPage";
 import SignatureIntake from "./pages/SignatureIntake";
 import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -44,6 +48,8 @@ function Router() {
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
       <Route path={"/founding-signature-letter"} component={FoundingSignatureLetter} />
+      <Route path={"/oriel-signature-glimpse"} component={SignatureGlimpseProductPage} />
+      <Route path={"/oriel-founding-signature-letter"} component={FoundingSignatureProductPage} />
       <Route path={"/signature-intake/:orderId"} component={SignatureIntake} />
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />
