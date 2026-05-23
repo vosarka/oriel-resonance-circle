@@ -21,6 +21,11 @@ import { calculateBirthChart } from "./ephemeris-service";
 import { facetNameToLetter, longitudeToCodonFacet } from "./rgp-256-codon-engine";
 import { getCurrentResonanceForUser } from "./oriel-current-resonance";
 import {
+  generateOrielChatImage,
+  normalizeImageReferences,
+} from "./oriel-chat-image-service";
+import { stripOrielChatImageBlocks } from "@shared/oriel-chat-images";
+import {
   createSignatureCheckout,
   generateSignatureDraftForOrder,
   generateSignatureSnapshotForOrder,
@@ -49,6 +54,29 @@ function hashResetCode(email: string, code: string) {
 function normalizeOptionalText(value: string | undefined, emptyValue: string | null | undefined = null) {
   const trimmed = value?.trim();
   return trimmed ? trimmed : emptyValue;
+}
+
+type OrielChatHistoryMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+function prepareOrielChatHistoryForLLM(
+  messages: OrielChatHistoryMessage[]
+): OrielChatHistoryMessage[] {
+  return messages.map((message) => {
+    const content = message.role === "assistant"
+      ? stripOrielChatImageBlocks(message.content)
+      : message.content;
+
+    return {
+      role: message.role,
+      // Truncate old assistant messages — full text causes the LLM to parrot them.
+      content: message.role === "assistant" && content.length > 300
+        ? content.substring(0, 300) + "..."
+        : content,
+    };
+  });
 }
 
 function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
@@ -445,6 +473,15 @@ export const appRouter = router({
         fileContents: z.array(z.object({
           name: z.string(),
           data: z.string(), // base64-encoded file data
+          mimeType: z.string().optional(),
+        })).max(2).optional(),
+        imageAttachments: z.array(z.object({
+          name: z.string().max(255),
+          data: z.string().min(1).max(14 * 1024 * 1024),
+          mimeType: z.string().regex(
+            /^image\/(?:png|jpe?g|webp|gif)$/i,
+            "Image attachments must be PNG, JPEG, WEBP, or GIF images."
+          ),
         })).max(2).optional(),
         forceTransmissionMode: z.boolean().optional().default(false),
         transmissionOnly: z.boolean().optional().default(false),
@@ -464,19 +501,18 @@ export const appRouter = router({
         if (ctx.user && input.conversationId) {
           // Load history from the specific conversation
           const history = await db.getConversationMessages(input.conversationId, ctx.user.id);
-          conversationHistory = history.slice(-6).map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            // Truncate old assistant messages — full text causes the LLM to parrot them
-            content: msg.role === 'assistant' && msg.content.length > 300
-              ? msg.content.substring(0, 300) + '...'
-              : msg.content,
-          }));
+          conversationHistory = prepareOrielChatHistoryForLLM(
+            history.slice(-6).map(msg => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content,
+            }))
+          );
         } else if (ctx.user) {
           // New conversation: start with empty history.
           // UMM context (injected into system prompt) provides cross-conversation memory.
           conversationHistory = [];
         } else if (input.history && input.history.length > 0) {
-          conversationHistory = input.history;
+          conversationHistory = prepareOrielChatHistoryForLLM(input.history);
         }
         markTiming("historyMs", historyStartedAt);
 
@@ -516,12 +552,12 @@ export const appRouter = router({
           let transmissionConversationHistory = conversationHistory;
           if (ctx.user && conversationId && transmissionConversationHistory.length === 0) {
             const history = await db.getConversationMessages(conversationId, ctx.user.id);
-            transmissionConversationHistory = history.slice(-6).map(msg => ({
-              role: msg.role as 'user' | 'assistant',
-              content: msg.role === 'assistant' && msg.content.length > 300
-                ? msg.content.substring(0, 300) + '...'
-                : msg.content,
-            }));
+            transmissionConversationHistory = prepareOrielChatHistoryForLLM(
+              history.slice(-6).map(msg => ({
+                role: msg.role as 'user' | 'assistant',
+                content: msg.content,
+              }))
+            );
           }
 
           let transmissionEvent = null;
@@ -615,18 +651,31 @@ export const appRouter = router({
           console.warn('[ORIEL] RGP bridge error (non-fatal):', err);
         }
 
+        const normalizedImageAttachments = input.imageAttachments
+          ? normalizeImageReferences(input.imageAttachments)?.map((image, index) => ({
+              name: input.imageAttachments?.[index]?.name ?? `image-${index + 1}`,
+              data: image.b64Json,
+              mimeType: image.mimeType,
+            }))
+          : undefined;
+
         // Helper to call the active LLM — Gemini primary, Forge fallback (handled in invokeLLM)
         const callLLM = async (
           msg: string,
           history: typeof conversationHistory,
-          options?: { temperature?: number },
+          options?: {
+            temperature?: number;
+            imageAttachments?: typeof normalizedImageAttachments;
+          },
         ) => {
           // Fallback logic is now handled in invokeLLM (Gemini → Forge)
           return await gemini.chatWithORIEL(msg, history, ctx.user?.id, options);
         };
 
         const llmStartedAt = Date.now();
-        let response = await callLLM(fullMessage, conversationHistory);
+        let response = await callLLM(fullMessage, conversationHistory, {
+          imageAttachments: normalizedImageAttachments,
+        });
 
         // Deduplication with retry loop (max 2 retries, temperature escalation)
         if (conversationHistory.some(m => m.role === 'assistant')) {
@@ -672,6 +721,7 @@ export const appRouter = router({
             const freshMsg = `${fullMessage}\n\n${systemNote}`;
             response = await callLLM(freshMsg, conversationHistory, {
               temperature: TEMPERATURE_ESCALATION[attempt],
+              imageAttachments: normalizedImageAttachments,
             });
           }
         }
@@ -808,6 +858,84 @@ export const appRouter = router({
         }));
 
         return { response, conversationId, transmissionEvent, pendingTransmission };
+      }),
+
+    generateChatImage: rateLimitedProcedure("oriel.imageLore")
+      .input(z.object({
+        prompt: z.string().trim().min(1).max(2000),
+        conversationId: z.number().int().positive().optional(),
+        createNewConversation: z.boolean().optional().default(false),
+        referenceImages: z.array(z.object({
+          name: z.string().max(255),
+          data: z.string().min(1).max(14 * 1024 * 1024),
+          mimeType: z.string().regex(
+            /^image\/(?:png|jpe?g|webp|gif)$/i,
+            "Reference files must be PNG, JPEG, WEBP, or GIF images."
+          ),
+        })).max(2).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        let conversationId = ctx.user ? input.conversationId ?? null : null;
+
+        if (ctx.user && conversationId) {
+          const conversation = await db.getConversationById(
+            conversationId,
+            ctx.user.id
+          );
+          if (!conversation) {
+            throw new Error("Conversation not found.");
+          }
+        }
+
+        if (ctx.user && !conversationId) {
+          if (input.createNewConversation) {
+            const titleBase = `Image: ${input.prompt}`;
+            const title = titleBase.length > 60
+              ? titleBase.substring(0, 57) + "..."
+              : titleBase;
+            const conv = await db.createConversation(ctx.user.id, title);
+            conversationId = conv?.id ?? null;
+          } else {
+            const latestConversation = await db.getLatestConversation(ctx.user.id);
+            if (latestConversation) {
+              conversationId = latestConversation.id;
+            } else {
+              const titleBase = `Image: ${input.prompt}`;
+              const title = titleBase.length > 60
+                ? titleBase.substring(0, 57) + "..."
+                : titleBase;
+              const conv = await db.createConversation(ctx.user.id, title);
+              conversationId = conv?.id ?? null;
+            }
+          }
+        }
+
+        const generated = await generateOrielChatImage({
+          prompt: input.prompt,
+          referenceImages: input.referenceImages,
+        });
+
+        if (ctx.user) {
+          await db.saveChatMessage({
+            userId: ctx.user.id,
+            conversationId,
+            role: "user",
+            content: `Create image: ${input.prompt}`,
+          });
+          await db.saveChatMessage({
+            userId: ctx.user.id,
+            conversationId,
+            role: "assistant",
+            content: generated.response,
+          });
+        }
+
+        return {
+          response: generated.response,
+          image: generated.image,
+          imageUrl: generated.image.url,
+          conversationId,
+        };
       }),
 
     getHistory: protectedProcedure.query(async ({ ctx }) => {

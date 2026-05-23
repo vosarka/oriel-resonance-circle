@@ -33,6 +33,7 @@ export const ENV = {
   llmModel: process.env.LLM_MODEL ?? "",
   geminiApiKey: process.env.GEMINI_API_KEY ?? "",
   geminiModel: process.env.GEMINI_MODEL ?? "",
+  geminiImageModel: process.env.GEMINI_IMAGE_MODEL ?? "",
   gemmaApiKey: process.env.GEMMA_API_KEY ?? "",
   gemmaApiUrl: process.env.GEMMA_API_URL ?? "",
   gemmaModel: process.env.GEMMA_MODEL ?? "",

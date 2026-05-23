@@ -1,4 +1,8 @@
-import { invokeLLM } from "./_core/llm";
+import {
+  invokeLLM,
+  type ImageContent,
+  type MessageContent,
+} from "./_core/llm";
 import { generateImage } from "./_core/imageGeneration";
 import {
   detectDuplication,
@@ -14,11 +18,67 @@ import { buildOrielPromptContext } from "./oriel-prompt-context";
 // Re-export for backward compatibility (other files import from gemini.ts)
 export { ORIEL_SYSTEM_PROMPT };
 
+type ChatImageAttachment = {
+  name: string;
+  data: string;
+  mimeType: string;
+};
+
+type ChatWithOrielOptions = {
+  temperature?: number;
+  imageAttachments?: ChatImageAttachment[];
+};
+
+function stripDataUrlPrefix(data: string) {
+  const commaIndex = data.indexOf(",");
+  if (data.startsWith("data:") && commaIndex >= 0) {
+    return data.slice(commaIndex + 1);
+  }
+  return data;
+}
+
+function buildImageDataUrl(attachment: ChatImageAttachment) {
+  const mimeType = attachment.mimeType.trim().toLowerCase();
+  const data = attachment.data.trim();
+  if (!mimeType.startsWith("image/") || !data) return null;
+  if (data.startsWith("data:image/")) return data;
+  return `data:${mimeType};base64,${stripDataUrlPrefix(data)}`;
+}
+
+function buildUserMessageContent(
+  userMessage: string,
+  imageAttachments: ChatImageAttachment[] | undefined
+): string | MessageContent[] {
+  const imageParts: ImageContent[] = [];
+
+  for (const attachment of imageAttachments ?? []) {
+    const url = buildImageDataUrl(attachment);
+    if (!url) continue;
+    imageParts.push({
+      type: "image_url",
+      image_url: {
+        url,
+        detail: "auto",
+      },
+    });
+  }
+
+  if (imageParts.length === 0) return userMessage;
+
+  return [
+    {
+      type: "text",
+      text: userMessage,
+    },
+    ...imageParts,
+  ];
+}
+
 export async function chatWithORIEL(
   userMessage: string,
   conversationHistory: Array<{ role: string; content: string }> = [],
   userId?: number,
-  options?: { temperature?: number },
+  options?: ChatWithOrielOptions,
 ) {
   try {
     const systemPrompt = await buildOrielPromptContext({
@@ -30,7 +90,13 @@ export async function chatWithORIEL(
     const messages = [
       { role: "system", content: systemPrompt },
       ...conversationHistory,
-      { role: "user", content: userMessage }
+      {
+        role: "user",
+        content: buildUserMessageContent(
+          userMessage,
+          options?.imageAttachments
+        ),
+      },
     ];
 
     const response = await invokeLLM({

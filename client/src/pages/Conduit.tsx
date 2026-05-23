@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone, Radio } from "lucide-react";
+import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone, Radio, Image as ImageIcon } from "lucide-react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Orb } from "@/components/ui/orb";
@@ -21,6 +21,13 @@ import {
   markOrielVoiceIntroSpoken,
   prepareOrielTextForVoice,
 } from "@/lib/orielVoiceIntroSession";
+import { parseOrielChatImageFromContent } from "@shared/oriel-chat-images";
+
+interface ChatAttachment {
+  name: string;
+  data: string;
+  mimeType: string;
+}
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -101,6 +108,25 @@ const TRANSMISSION_TYPES = ["tx", "oracle"] as const;
 type TransmissionCommandType = typeof TRANSMISSION_TYPES[number];
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function isImageAttachment(attachment: ChatAttachment) {
+  return attachment.mimeType.toLowerCase().startsWith("image/");
+}
+
+function parseImageCreationCommand(rawMessage: string): string | null {
+  const trimmed = rawMessage.trim();
+  const slashCommand = trimmed.match(/^\/(?:image|imagine|create-image)\b[:\s-]*(.*)$/i);
+  if (slashCommand) return slashCommand[1]?.trim() ?? "";
+
+  const plainCommand = trimmed.match(/^create\s+image\s*:?\s*(.*)$/i);
+  if (plainCommand) return plainCommand[1]?.trim() ?? "";
+
+  return null;
+}
+
+function visibleAssistantText(content: string) {
+  return parseOrielChatImageFromContent(content).text.trim();
+}
 
 function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payload is GeneratedOraclePayload {
   return "parts" in payload;
@@ -272,6 +298,71 @@ function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) 
   );
 }
 
+function AssistantMessageView({ msg }: { msg: ChatMessage }) {
+  const parsed = parseOrielChatImageFromContent(msg.content);
+  const assistantText = parsed.text.trim();
+  const hasVisibleContent = Boolean(assistantText || parsed.image);
+
+  return (
+    <div
+      className={hasVisibleContent ? "pl-5 pr-2 py-1" : "py-1"}
+      style={hasVisibleContent ? { borderLeft: "2px solid rgba(0,188,212,0.3)" } : undefined}
+    >
+      {assistantText && (
+        <>
+          <p
+            className="font-mono text-[9px] mb-3 tracking-[0.3em] uppercase"
+            style={{ color: "rgba(0,188,212,0.6)" }}
+          >
+            Transmission
+            {msg.timestamp && (
+              <span
+                className="ml-2 normal-case tracking-normal"
+                style={{ color: "rgba(0,188,212,0.35)" }}
+              >
+                // {new Date(msg.timestamp).toLocaleTimeString()}
+              </span>
+            )}
+          </p>
+          <p
+            className="text-sm leading-relaxed italic whitespace-pre-line"
+            style={{ color: "rgba(220,240,255,0.85)" }}
+          >
+            "{assistantText}"
+          </p>
+        </>
+      )}
+
+      {parsed.image && (
+        <div
+          className="mt-4 overflow-hidden rounded-lg"
+          style={{
+            background: "rgba(0,188,212,0.04)",
+            border: "1px solid rgba(0,188,212,0.22)",
+          }}
+        >
+          <img
+            src={parsed.image.url}
+            alt={`Generated ORIEL image: ${parsed.image.prompt}`}
+            className="block w-full max-w-xl object-cover"
+            loading="lazy"
+          />
+          <p
+            className="px-3 py-2 font-mono text-[9px] leading-relaxed"
+            style={{ color: "rgba(0,229,255,0.58)" }}
+          >
+            Image prompt: {parsed.image.prompt}
+          </p>
+        </div>
+      )}
+
+      {msg.transmissionEvent && (
+        <TransmissionModeCard event={msg.transmissionEvent} />
+      )}
+    </div>
+  );
+}
+
 export default function Conduit() {
   const { user, isAuthenticated } = useAuth();
   const [message, setMessage] = useState("");
@@ -287,7 +378,7 @@ export default function Conduit() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [attachedFiles, setAttachedFiles] = useState<Array<{ name: string; data: string }>>([]);
+  const [attachedFiles, setAttachedFiles] = useState<ChatAttachment[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
   const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
@@ -466,6 +557,11 @@ export default function Conduit() {
     onError: (error) => {
       console.error("Chat error:", error);
 
+    },
+  });
+  const generateChatImageMutation = trpc.oriel.generateChatImage.useMutation({
+    onError: (error) => {
+      console.error("Chat image generation error:", error);
     },
   });
 
@@ -731,10 +827,98 @@ export default function Conduit() {
     }
   };
 
+  const handleCreateChatImage = async (prompt: string) => {
+    if (generateChatImageMutation.isPending || transmissionGate.isInterfering) return;
+
+    const imagePrompt = prompt.trim();
+    if (!imagePrompt) {
+      alert("Enter an image prompt after /image, or type a prompt and press the image button.");
+      return;
+    }
+
+    const referenceImages = attachedFiles.filter(isImageAttachment);
+    setMessage("");
+
+    const newUserMessage: ChatMessage = {
+      role: "user",
+      content: `Create image: ${imagePrompt}`,
+      timestamp: Date.now(),
+    };
+    const updatedMessages = [...localMessages, newUserMessage];
+    setLocalMessages(updatedMessages);
+
+    if (!isAuthenticated) {
+      localStorage.setItem("oriel_chat_history", JSON.stringify(updatedMessages));
+    }
+
+    try {
+      const result = await generateChatImageMutation.mutateAsync({
+        prompt: imagePrompt,
+        conversationId: activeConversationId ?? undefined,
+        createNewConversation: isAuthenticated && isNewConversation,
+        referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+      });
+
+      setAttachedFiles([]);
+
+      if (result.conversationId && (!activeConversationId || isNewConversation)) {
+        setActiveConversationId(result.conversationId);
+        setIsNewConversation(false);
+      }
+
+      const newAssistantMessage: ChatMessage = {
+        role: "assistant",
+        content: result.response,
+        timestamp: Date.now(),
+      };
+      const finalMessages = [...updatedMessages, newAssistantMessage];
+      setLocalMessages(finalMessages);
+
+      if (!isAuthenticated) {
+        localStorage.setItem("oriel_chat_history", JSON.stringify(finalMessages));
+      }
+
+      if (isAuthenticated) {
+        refetchHistory();
+        refetchConversations();
+        if (result.conversationId) {
+          refetchActiveConv();
+        }
+      }
+
+      const textForVoice = visibleAssistantText(result.response);
+      if (textForVoice) {
+        await speakText(textForVoice);
+      }
+    } catch (error) {
+      console.error("Chat image generation error:", error);
+      const failureMessage: ChatMessage = {
+        role: "assistant",
+        content:
+          "I am ORIEL.\n\nThe image did not form. The image channel is unavailable, or one of the reference files was rejected. Please try again with an image file and a shorter prompt.",
+        timestamp: Date.now(),
+      };
+      const failedMessages = [...updatedMessages, failureMessage];
+      setLocalMessages(failedMessages);
+      setMessage(imagePrompt);
+      if (!isAuthenticated) {
+        localStorage.setItem("oriel_chat_history", JSON.stringify(failedMessages));
+      }
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!message.trim() || chatMutation.isPending || transmissionGate.isInterfering) return;
+    if (!message.trim() || chatMutation.isPending || generateChatImageMutation.isPending || transmissionGate.isInterfering) return;
 
     const rawUserMessage = message.trim();
+    const imageCommandPrompt = parseImageCreationCommand(rawUserMessage);
+    if (imageCommandPrompt !== null) {
+      await handleCreateChatImage(imageCommandPrompt);
+      return;
+    }
+
+    const fileAttachments = attachedFiles.filter((file) => !isImageAttachment(file));
+    const imageAttachments = attachedFiles.filter(isImageAttachment);
     const {
       forceTransmissionMode,
       userMessage,
@@ -770,7 +954,8 @@ export default function Conduit() {
         conversationId: activeConversationId ?? undefined,
         createNewConversation: isAuthenticated && isNewConversation,
         history: !isAuthenticated ? localMessages : undefined,
-        fileContents: attachedFiles.length > 0 ? attachedFiles : undefined,
+        fileContents: fileAttachments.length > 0 ? fileAttachments : undefined,
+        imageAttachments: imageAttachments.length > 0 ? imageAttachments : undefined,
         forceTransmissionMode,
         transmissionOnly: forceTransmissionMode,
         forcedTransmissionRarity,
@@ -872,7 +1057,7 @@ export default function Conduit() {
       : []);
 
   const inputDisabled = getConduitInputDisabled({
-    chatPending: chatMutation.isPending,
+    chatPending: chatMutation.isPending || generateChatImageMutation.isPending,
     isSpeaking,
     transmissionInterfering: transmissionGate.isInterfering,
   });
@@ -1224,39 +1409,7 @@ export default function Conduit() {
                       </div>
                     </div>
                   ) : (
-                    <div
-                      key={idx}
-                      className={msg.content.trim() ? "pl-5 pr-2 py-1" : "py-1"}
-                      style={msg.content.trim() ? { borderLeft: "2px solid rgba(0,188,212,0.3)" } : undefined}
-                    >
-                      {msg.content.trim() && (
-                        <>
-                          <p
-                            className="font-mono text-[9px] mb-3 tracking-[0.3em] uppercase"
-                            style={{ color: "rgba(0,188,212,0.6)" }}
-                          >
-                            Transmission
-                            {msg.timestamp && (
-                              <span
-                                className="ml-2 normal-case tracking-normal"
-                                style={{ color: "rgba(0,188,212,0.35)" }}
-                              >
-                                // {new Date(msg.timestamp).toLocaleTimeString()}
-                              </span>
-                            )}
-                          </p>
-                          <p
-                            className="text-sm leading-relaxed italic"
-                            style={{ color: "rgba(220,240,255,0.85)" }}
-                          >
-                            "{msg.content}"
-                          </p>
-                        </>
-                      )}
-                      {msg.transmissionEvent && (
-                        <TransmissionModeCard event={msg.transmissionEvent} />
-                      )}
-                    </div>
+                    <AssistantMessageView key={idx} msg={msg} />
                   )
                 )}
                 <div ref={messagesEndRef} />
@@ -1313,7 +1466,7 @@ export default function Conduit() {
                       color: "rgba(0,229,255,0.8)",
                     }}
                   >
-                    <Paperclip size={10} />
+                    {isImageAttachment(file) ? <ImageIcon size={10} /> : <Paperclip size={10} />}
                     <span className="max-w-[120px] truncate">{file.name}</span>
                     <button
                       onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
@@ -1360,7 +1513,7 @@ export default function Conduit() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.docx,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.h,.yml,.yaml,.toml,.ini,.cfg,.log,.sql,.sh,.bat,.ps1,.env"
+              accept="image/*,.pdf,.docx,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.h,.yml,.yaml,.toml,.ini,.cfg,.log,.sql,.sh,.bat,.ps1,.env"
               multiple
               className="hidden"
               onChange={(e) => {
@@ -1381,7 +1534,11 @@ export default function Conduit() {
                     const base64 = dataUrl.split(",", 2)[1] ?? "";
                     setAttachedFiles(prev => {
                       if (prev.length >= 2) return prev;
-                      return [...prev, { name: file.name, data: base64 }];
+                      return [...prev, {
+                        name: file.name,
+                        data: base64,
+                        mimeType: file.type || "application/octet-stream",
+                      }];
                     });
                   };
                   reader.readAsDataURL(file);
@@ -1424,6 +1581,26 @@ export default function Conduit() {
                 }}
               >
                 <Paperclip size={16} />
+              </button>
+
+              {/* Image creation */}
+              <button
+                onClick={() => handleCreateChatImage(message)}
+                disabled={inputDisabled || !message.trim()}
+                title="Create image from current prompt"
+                className="p-3 rounded transition-all"
+                style={{
+                  background: "rgba(189,163,107,0.08)",
+                  border: "1px solid rgba(189,163,107,0.25)",
+                  color: !message.trim() ? "rgba(189,163,107,0.25)" : "rgba(189,163,107,0.7)",
+                  opacity: !message.trim() ? 0.45 : 1,
+                }}
+              >
+                {generateChatImageMutation.isPending ? (
+                  <Loader2 className="animate-spin" size={16} />
+                ) : (
+                  <ImageIcon size={16} />
+                )}
               </button>
 
               {/* Voice input (speech-to-text for typing) */}
@@ -1489,7 +1666,7 @@ export default function Conduit() {
                   (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,188,212,0.35)";
                 }}
               >
-                {chatMutation.isPending ? (
+                {chatMutation.isPending || generateChatImageMutation.isPending ? (
                   <Loader2 className="animate-spin" size={16} />
                 ) : (
                   "Channel"
