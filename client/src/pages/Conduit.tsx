@@ -137,6 +137,22 @@ function isImageAttachment(attachment: ChatAttachment) {
   return attachment.mimeType.toLowerCase().startsWith("image/");
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function isDuplicateFile(newFile: File, existing: ChatAttachment[]): boolean {
+  return existing.some(
+    f => f.name === newFile.name && 
+         // We don't have original size, so we approximate by name for now
+         true
+  );
+}
+
 function parseImageCreationCommand(rawMessage: string): string | null {
   const trimmed = rawMessage.trim();
   const slashCommand = trimmed.match(
@@ -1699,7 +1715,12 @@ export default function Conduit() {
                     ) : (
                       <Paperclip size={10} />
                     )}
-                    <span className="max-w-[120px] truncate">{file.name}</span>
+                    <span className="max-w-[110px] truncate">{file.name}</span>
+                    {(file as any).size && (
+                      <span className="opacity-50 text-[9px] ml-0.5">
+                        {formatFileSize((file as any).size)}
+                      </span>
+                    )}
                     <button
                       onClick={() =>
                         setAttachedFiles(prev =>
@@ -1777,7 +1798,7 @@ export default function Conduit() {
                     // Strip the "data:<mime>;base64," prefix to get raw base64
                     const base64 = dataUrl.split(",", 2)[1] ?? "";
                     setAttachedFiles(prev => {
-                      if (prev.length >= 2) return prev;
+                      if (prev.length >= 5) return prev;
                       return [
                         ...prev,
                         {
@@ -1867,18 +1888,31 @@ export default function Conduit() {
                 title={
                   attachedFiles.length >= 5 ? "Max 5 files" : "Attach file"
                 }
-                className="p-3 rounded transition-all"
+                className="p-3 rounded transition-all relative"
                 style={{
                   background: "rgba(189,163,107,0.06)",
                   border: "1px solid rgba(189,163,107,0.2)",
                   color:
-                    attachedFiles.length >= 2
+                    attachedFiles.length >= 5
                       ? "rgba(189,163,107,0.2)"
                       : "rgba(189,163,107,0.5)",
-                  opacity: attachedFiles.length >= 2 ? 0.4 : 1,
+                  opacity: attachedFiles.length >= 5 ? 0.4 : 1,
                 }}
               >
                 <Paperclip size={16} />
+                {attachedFiles.length > 0 && (
+                  <span 
+                    className="absolute -top-1 -right-1 text-[8px] px-1 rounded-full font-mono leading-none flex items-center justify-center"
+                    style={{
+                      background: "rgba(189,163,107,0.9)",
+                      color: "#111",
+                      height: "14px",
+                      minWidth: "14px",
+                    }}
+                  >
+                    {attachedFiles.length}
+                  </span>
+                )}
               </button>
 
               {/* Image creation */}
