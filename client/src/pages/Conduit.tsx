@@ -468,6 +468,7 @@ export default function Conduit() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<ChatAttachment[]>([]);
+  const [isReadingFiles, setIsReadingFiles] = useState(false);
   const [activeConversationId, setActiveConversationId] = useState<
     number | null
   >(null);
@@ -1699,7 +1700,7 @@ export default function Conduit() {
 
             {/* File chips */}
             {attachedFiles.length > 0 && (
-              <div className="flex gap-2 flex-wrap mb-2">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
                 {attachedFiles.map((file, idx) => (
                   <div
                     key={idx}
@@ -1734,6 +1735,23 @@ export default function Conduit() {
                     </button>
                   </div>
                 ))}
+
+                {attachedFiles.length > 1 && (
+                  <button
+                    onClick={() => setAttachedFiles([])}
+                    className="text-[10px] px-2 py-1 rounded font-mono opacity-60 hover:opacity-100 transition-opacity"
+                    style={{ color: "rgba(246,176,94,0.7)" }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* File reading indicator */}
+            {isReadingFiles && (
+              <div className="text-[10px] font-mono mb-1" style={{ color: "rgba(246,176,94,0.6)" }}>
+                Reading file(s)...
               </div>
             )}
 
@@ -1787,15 +1805,32 @@ export default function Conduit() {
                 const toAdd = files.slice(0, remaining);
                 const MAX_SIZE = 50 * 1024 * 1024;
 
+                if (toAdd.length > 0) {
+                  setIsReadingFiles(true);
+                }
+
+                let processed = 0;
+                const totalToProcess = toAdd.length;
+
                 toAdd.forEach(file => {
                   if (file.size > MAX_SIZE) {
                     alert(`File "${file.name}" exceeds the 50MB limit.`);
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
                     return;
                   }
+
+                  // Prevent exact duplicates by name
+                  if (attachedFiles.some(f => f.name === file.name)) {
+                    alert(`File "${file.name}" is already attached.`);
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
+                    return;
+                  }
+
                   const reader = new FileReader();
                   reader.onload = () => {
                     const dataUrl = reader.result as string;
-                    // Strip the "data:<mime>;base64," prefix to get raw base64
                     const base64 = dataUrl.split(",", 2)[1] ?? "";
                     setAttachedFiles(prev => {
                       if (prev.length >= 5) return prev;
@@ -1805,9 +1840,16 @@ export default function Conduit() {
                           name: file.name,
                           data: base64,
                           mimeType: file.type || "application/octet-stream",
-                        },
+                          size: file.size,
+                        } as any,
                       ];
                     });
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
+                  };
+                  reader.onerror = () => {
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
                   };
                   reader.readAsDataURL(file);
                 });
@@ -1884,23 +1926,27 @@ export default function Conduit() {
               {/* File attach */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={inputDisabled || attachedFiles.length >= 5}
+                disabled={inputDisabled || attachedFiles.length >= 5 || isReadingFiles}
                 title={
-                  attachedFiles.length >= 5 ? "Max 5 files" : "Attach file"
+                  isReadingFiles 
+                    ? "Reading files..." 
+                    : attachedFiles.length >= 5 
+                      ? "Max 5 files" 
+                      : "Attach file"
                 }
                 className="p-3 rounded transition-all relative"
                 style={{
                   background: "rgba(189,163,107,0.06)",
                   border: "1px solid rgba(189,163,107,0.2)",
                   color:
-                    attachedFiles.length >= 5
+                    attachedFiles.length >= 5 || isReadingFiles
                       ? "rgba(189,163,107,0.2)"
                       : "rgba(189,163,107,0.5)",
-                  opacity: attachedFiles.length >= 5 ? 0.4 : 1,
+                  opacity: (attachedFiles.length >= 5 || isReadingFiles) ? 0.4 : 1,
                 }}
               >
                 <Paperclip size={16} />
-                {attachedFiles.length > 0 && (
+                {attachedFiles.length > 0 && !isReadingFiles && (
                   <span 
                     className="absolute -top-1 -right-1 text-[8px] px-1 rounded-full font-mono leading-none flex items-center justify-center"
                     style={{
@@ -1911,6 +1957,11 @@ export default function Conduit() {
                     }}
                   >
                     {attachedFiles.length}
+                  </span>
+                )}
+                {isReadingFiles && (
+                  <span className="absolute -top-1 -right-1 text-[7px] px-1 rounded-full font-mono bg-amber-600 text-black">
+                    ...
                   </span>
                 )}
               </button>
