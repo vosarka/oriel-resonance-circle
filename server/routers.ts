@@ -474,7 +474,7 @@ export const appRouter = router({
           name: z.string(),
           data: z.string(), // base64-encoded file data
           mimeType: z.string().optional(),
-        })).max(2).optional(),
+        })).max(5).optional(),
         imageAttachments: z.array(z.object({
           name: z.string().max(255),
           data: z.string().min(1).max(14 * 1024 * 1024),
@@ -599,15 +599,18 @@ export const appRouter = router({
         // Build the full message with file contents prepended as context
         let fullMessage = input.message;
         if (input.fileContents && input.fileContents.length > 0) {
+          console.log(`[oriel.chat] Received ${input.fileContents.length} file attachment(s):`, 
+            input.fileContents.map(f => `${f.name} (${f.mimeType || 'unknown type'})`));
+
           const { extractTextFromFile } = await import('./file-parser');
           const extractions = await Promise.all(
             input.fileContents.map(async (f) => {
               const text = await extractTextFromFile(f.name, f.data);
-              return `--- FILE: ${f.name} ---\n${text}\n--- END FILE ---`;
+              return `--- ATTACHED FILE: ${f.name} ---\n${text}\n--- END OF FILE ---`;
             })
           );
           const fileBlocks = extractions.join('\n\n');
-          fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
+          fullMessage = `The user has attached the following file(s) for you to read and analyze:\n\n${fileBlocks}\n\nUser's message: ${input.message}`;
         }
 
         // Trim conversation history to avoid context flooding
