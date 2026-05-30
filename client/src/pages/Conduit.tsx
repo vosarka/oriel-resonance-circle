@@ -1820,6 +1820,20 @@ export default function Conduit() {
                     return;
                   }
 
+                  // Warn for very large non-image files (text extraction can be slow/unreliable)
+                  const isImage = file.type.startsWith('image/');
+                  if (!isImage && file.size > 5 * 1024 * 1024) {
+                    const proceed = confirm(
+                      `File "${file.name}" is quite large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n` +
+                      `Text extraction from large documents can be slow or incomplete. Continue?`
+                    );
+                    if (!proceed) {
+                      processed++;
+                      if (processed === totalToProcess) setIsReadingFiles(false);
+                      return;
+                    }
+                  }
+
                   // Prevent exact duplicates by name
                   if (attachedFiles.some(f => f.name === file.name)) {
                     alert(`File "${file.name}" is already attached.`);
