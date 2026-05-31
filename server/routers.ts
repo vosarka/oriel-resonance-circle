@@ -474,7 +474,7 @@ export const appRouter = router({
           name: z.string(),
           data: z.string(), // base64-encoded file data
           mimeType: z.string().optional(),
-        })).max(2).optional(),
+        })).max(5).optional(),
         imageAttachments: z.array(z.object({
           name: z.string().max(255),
           data: z.string().min(1).max(14 * 1024 * 1024),
@@ -599,15 +599,32 @@ export const appRouter = router({
         // Build the full message with file contents prepended as context
         let fullMessage = input.message;
         if (input.fileContents && input.fileContents.length > 0) {
+          console.log(`[oriel.chat] Received ${input.fileContents.length} file attachment(s):`, 
+            input.fileContents.map(f => `${f.name} (${f.mimeType || 'unknown type'})`));
+
           const { extractTextFromFile } = await import('./file-parser');
-          const extractions = await Promise.all(
-            input.fileContents.map(async (f) => {
+          
+          const extractions: string[] = [];
+          
+          for (const f of input.fileContents) {
+            try {
+              // Rough size check on base64 (base64 is ~33% larger than binary)
+              const approxBytes = Math.floor(f.data.length * 0.75);
+              if (approxBytes > 8 * 1024 * 1024) { // > ~8MB original
+                extractions.push(`--- ATTACHED FILE: ${f.name} ---\n[File too large for reliable text extraction (~${Math.round(approxBytes / 1024 / 1024)}MB). Please summarize the key points manually if possible.]\n--- END OF FILE ---`);
+                continue;
+              }
+
               const text = await extractTextFromFile(f.name, f.data);
-              return `--- FILE: ${f.name} ---\n${text}\n--- END FILE ---`;
-            })
-          );
+              extractions.push(`--- ATTACHED FILE: ${f.name} ---\n${text}\n--- END OF FILE ---`);
+            } catch (parseErr: any) {
+              console.error(`[oriel.chat] Failed to parse attached file "${f.name}":`, parseErr);
+              extractions.push(`--- ATTACHED FILE: ${f.name} ---\n[Internal error while reading this file: ${parseErr?.message || 'Unknown error'}]\n--- END OF FILE ---`);
+            }
+          }
+
           const fileBlocks = extractions.join('\n\n');
-          fullMessage = `The user has attached ${input.fileContents.length} file(s) for context. Read and analyze them to answer the query.\n\n${fileBlocks}\n\nUser query: ${input.message}`;
+          fullMessage = `The user has attached the following file(s) for you to read and analyze:\n\n${fileBlocks}\n\nUser's message: ${input.message}`;
         }
 
         // Trim conversation history to avoid context flooding

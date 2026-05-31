@@ -1,12 +1,30 @@
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
-import { Loader2, Mic, Trash2, X, Pause, Play, Square, Paperclip, Plus, MessageSquare, Menu, Phone, Radio, Image as ImageIcon } from "lucide-react";
+import {
+  Mic,
+  Trash2,
+  X,
+  Pause,
+  Play,
+  Square,
+  Paperclip,
+  Plus,
+  MessageSquare,
+  Menu,
+  Phone,
+  Radio,
+  Image as ImageIcon,
+} from "lucide-react";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Orb } from "@/components/ui/orb";
+import { Spinner } from "@/components/ui/spinner";
 import GeometricBackground from "@/components/GeometricBackground";
 import VoiceMode from "@/components/VoiceMode";
-import { SignalInterferenceGate, useTransmissionTrigger } from "@/components/SignalInterferenceGate";
+import {
+  SignalInterferenceGate,
+  useTransmissionTrigger,
+} from "@/components/SignalInterferenceGate";
 import MemoryConsentTray from "@/components/memory/MemoryConsentTray";
 import {
   getPendingTransmissionPollPlan,
@@ -103,19 +121,43 @@ interface SessionTransmissionAttachment {
   createdAt: number;
 }
 
-const TRANSMISSION_RARITIES: TransmissionRarity[] = ["common", "uncommon", "rare", "mythic", "void"];
+const TRANSMISSION_RARITIES: TransmissionRarity[] = [
+  "common",
+  "uncommon",
+  "rare",
+  "mythic",
+  "void",
+];
 const TRANSMISSION_TYPES = ["tx", "oracle"] as const;
-type TransmissionCommandType = typeof TRANSMISSION_TYPES[number];
+type TransmissionCommandType = (typeof TRANSMISSION_TYPES)[number];
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 function isImageAttachment(attachment: ChatAttachment) {
   return attachment.mimeType.toLowerCase().startsWith("image/");
 }
 
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+function isDuplicateFile(newFile: File, existing: ChatAttachment[]): boolean {
+  return existing.some(
+    f => f.name === newFile.name && 
+         // We don't have original size, so we approximate by name for now
+         true
+  );
+}
+
 function parseImageCreationCommand(rawMessage: string): string | null {
   const trimmed = rawMessage.trim();
-  const slashCommand = trimmed.match(/^\/(?:image|imagine|create-image)\b[:\s-]*(.*)$/i);
+  const slashCommand = trimmed.match(
+    /^\/(?:image|imagine|create-image)\b[:\s-]*(.*)$/i
+  );
   if (slashCommand) return slashCommand[1]?.trim() ?? "";
 
   const plainCommand = trimmed.match(/^create\s+image\s*:?\s*(.*)$/i);
@@ -128,7 +170,9 @@ function visibleAssistantText(content: string) {
   return parseOrielChatImageFromContent(content).text.trim();
 }
 
-function isGeneratedOraclePayload(payload: GeneratedTransmissionPayload): payload is GeneratedOraclePayload {
+function isGeneratedOraclePayload(
+  payload: GeneratedTransmissionPayload
+): payload is GeneratedOraclePayload {
   return "parts" in payload;
 }
 
@@ -154,18 +198,28 @@ function parseTransmissionCommand(rawMessage: string) {
     };
   }
 
-  const words = rawMessage.replace(/^\/transmission\b/i, "").trim().split(/\s+/).filter(Boolean);
+  const words = rawMessage
+    .replace(/^\/transmission\b/i, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
   let forcedTransmissionRarity: TransmissionRarity | undefined;
   let forcedTransmissionType: TransmissionCommandType | undefined;
 
   while (words.length > 0) {
     const next = words[0].toLowerCase();
-    if (!forcedTransmissionRarity && TRANSMISSION_RARITIES.includes(next as TransmissionRarity)) {
+    if (
+      !forcedTransmissionRarity &&
+      TRANSMISSION_RARITIES.includes(next as TransmissionRarity)
+    ) {
       forcedTransmissionRarity = next as TransmissionRarity;
       words.shift();
       continue;
     }
-    if (!forcedTransmissionType && TRANSMISSION_TYPES.includes(next as TransmissionCommandType)) {
+    if (
+      !forcedTransmissionType &&
+      TRANSMISSION_TYPES.includes(next as TransmissionCommandType)
+    ) {
       forcedTransmissionType = next as TransmissionCommandType;
       words.shift();
       continue;
@@ -185,11 +239,11 @@ function parseTransmissionCommand(rawMessage: string) {
 function attachSessionTransmissionEvents(
   messages: ChatMessage[],
   attachments: SessionTransmissionAttachment[],
-  conversationId: number | null,
+  conversationId: number | null
 ): ChatMessage[] {
   if (attachments.length === 0) return messages;
 
-  return messages.map((msg) => {
+  return messages.map(msg => {
     if (msg.role !== "assistant" || msg.transmissionEvent) return msg;
 
     for (let index = attachments.length - 1; index >= 0; index -= 1) {
@@ -209,16 +263,20 @@ function attachSessionTransmissionEvents(
   });
 }
 
-function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) {
+function TransmissionModeCard({
+  event,
+}: {
+  event: GeneratedTransmissionEvent;
+}) {
   const payload = event.payload;
   const rarityColor: Record<TransmissionRarity, string> = {
-    common: "rgba(0,229,255,0.72)",
+    common: "rgba(246,176,94,0.72)",
     uncommon: "rgba(121,255,188,0.78)",
     rare: "rgba(189,163,107,0.86)",
     mythic: "rgba(255,168,96,0.88)",
     void: "rgba(211,126,255,0.88)",
   };
-  const accent = rarityColor[event.rarity] ?? "rgba(0,229,255,0.72)";
+  const accent = rarityColor[event.rarity] ?? "rgba(246,176,94,0.72)";
 
   return (
     <div
@@ -226,46 +284,62 @@ function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) 
       style={{
         background: "rgba(2,12,18,0.72)",
         border: `1px solid ${accent}`,
-        boxShadow: "0 0 24px rgba(0,188,212,0.08)",
+        boxShadow: "0 0 24px rgba(189,163,107,0.08)",
       }}
     >
       <div className="flex flex-wrap items-center gap-2 mb-3">
         <Radio size={14} style={{ color: accent }} />
-        <span className="font-mono text-[9px] tracking-[0.28em] uppercase" style={{ color: accent }}>
+        <span
+          className="font-mono text-[9px] tracking-[0.28em] uppercase"
+          style={{ color: accent }}
+        >
           Transmission Mode
         </span>
-        <span className="font-mono text-[9px] tracking-[0.18em] uppercase" style={{ color: "rgba(220,240,255,0.55)" }}>
-          {event.eventType.toUpperCase()} // {event.rarity.toUpperCase()} // Meaning {event.meaningLevel}/5
+        <span
+          className="font-mono text-[9px] tracking-[0.18em] uppercase"
+          style={{ color: "rgba(232,228,220,0.55)" }}
+        >
+          {event.eventType.toUpperCase()} // {event.rarity.toUpperCase()} //
+          Meaning {event.meaningLevel}/5
         </span>
       </div>
 
       <p
         className="font-mono text-[10px] tracking-[0.16em] uppercase mb-2"
-        style={{ color: "rgba(220,240,255,0.68)" }}
+        style={{ color: "rgba(232,228,220,0.68)" }}
       >
         {payload.title}
       </p>
-      <p className="font-mono text-[9px] mb-3" style={{ color: "rgba(0,188,212,0.45)" }}>
+      <p
+        className="font-mono text-[9px] mb-3"
+        style={{ color: "rgba(189,163,107,0.45)" }}
+      >
         {payload.field} // {payload.channelStatus} // {payload.signalClarity}
       </p>
 
       {isGeneratedOraclePayload(payload) ? (
         <div className="space-y-3">
-          {payload.parts.map((part) => (
+          {payload.parts.map(part => (
             <div key={part.part}>
-              <p className="font-mono text-[9px] tracking-[0.24em] uppercase mb-1" style={{ color: accent }}>
+              <p
+                className="font-mono text-[9px] tracking-[0.24em] uppercase mb-1"
+                style={{ color: accent }}
+              >
                 {part.part}
               </p>
               <p
                 className="font-mono text-[10px] leading-relaxed whitespace-pre-line"
-                style={{ color: "rgba(220,240,255,0.82)" }}
+                style={{ color: "rgba(232,228,220,0.82)" }}
               >
                 {part.caption ?? part.content}
               </p>
             </div>
           ))}
           {payload.linkedCodons.length > 0 && (
-            <p className="font-mono text-[9px]" style={{ color: "rgba(0,188,212,0.45)" }}>
+            <p
+              className="font-mono text-[9px]"
+              style={{ color: "rgba(189,163,107,0.45)" }}
+            >
               Codons: {payload.linkedCodons.join(", ")}
             </p>
           )}
@@ -275,19 +349,28 @@ function TransmissionModeCard({ event }: { event: GeneratedTransmissionEvent }) 
           {payload.caption ? (
             <p
               className="font-mono text-[10px] leading-relaxed whitespace-pre-line"
-              style={{ color: "rgba(220,240,255,0.84)" }}
+              style={{ color: "rgba(232,228,220,0.84)" }}
             >
               {payload.caption}
             </p>
           ) : (
             <>
-              <p className="text-sm leading-relaxed mb-3" style={{ color: "rgba(220,240,255,0.84)" }}>
+              <p
+                className="text-sm leading-relaxed mb-3"
+                style={{ color: "rgba(232,228,220,0.84)" }}
+              >
                 {payload.coreMessage}
               </p>
-              <p className="font-mono text-[9px] mb-2" style={{ color: "rgba(0,188,212,0.5)" }}>
+              <p
+                className="font-mono text-[9px] mb-2"
+                style={{ color: "rgba(189,163,107,0.5)" }}
+              >
                 {payload.encodedArchetype}
               </p>
-              <p className="text-xs leading-relaxed" style={{ color: "rgba(189,163,107,0.82)" }}>
+              <p
+                className="text-xs leading-relaxed"
+                style={{ color: "rgba(189,163,107,0.82)" }}
+              >
                 {payload.directive}
               </p>
             </>
@@ -306,19 +389,23 @@ function AssistantMessageView({ msg }: { msg: ChatMessage }) {
   return (
     <div
       className={hasVisibleContent ? "pl-5 pr-2 py-1" : "py-1"}
-      style={hasVisibleContent ? { borderLeft: "2px solid rgba(0,188,212,0.3)" } : undefined}
+      style={
+        hasVisibleContent
+          ? { borderLeft: "2px solid rgba(189,163,107,0.3)" }
+          : undefined
+      }
     >
       {assistantText && (
         <>
           <p
             className="font-mono text-[9px] mb-3 tracking-[0.3em] uppercase"
-            style={{ color: "rgba(0,188,212,0.6)" }}
+            style={{ color: "rgba(189,163,107,0.6)" }}
           >
             Transmission
             {msg.timestamp && (
               <span
                 className="ml-2 normal-case tracking-normal"
-                style={{ color: "rgba(0,188,212,0.35)" }}
+                style={{ color: "rgba(189,163,107,0.35)" }}
               >
                 // {new Date(msg.timestamp).toLocaleTimeString()}
               </span>
@@ -326,7 +413,7 @@ function AssistantMessageView({ msg }: { msg: ChatMessage }) {
           </p>
           <p
             className="text-sm leading-relaxed italic whitespace-pre-line"
-            style={{ color: "rgba(220,240,255,0.85)" }}
+            style={{ color: "rgba(232,228,220,0.85)" }}
           >
             "{assistantText}"
           </p>
@@ -337,8 +424,8 @@ function AssistantMessageView({ msg }: { msg: ChatMessage }) {
         <div
           className="mt-4 overflow-hidden rounded-lg"
           style={{
-            background: "rgba(0,188,212,0.04)",
-            border: "1px solid rgba(0,188,212,0.22)",
+            background: "rgba(189,163,107,0.04)",
+            border: "1px solid rgba(189,163,107,0.22)",
           }}
         >
           <img
@@ -349,7 +436,7 @@ function AssistantMessageView({ msg }: { msg: ChatMessage }) {
           />
           <p
             className="px-3 py-2 font-mono text-[9px] leading-relaxed"
-            style={{ color: "rgba(0,229,255,0.58)" }}
+            style={{ color: "rgba(246,176,94,0.58)" }}
           >
             Image prompt: {parsed.image.prompt}
           </p>
@@ -373,15 +460,21 @@ export default function Conduit() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [voiceVolume, setVoiceVolume] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
-  const [voicePreference, setVoicePreference] = useState<"sophianic" | "deep" | "none">("sophianic");
+  const [voicePreference, setVoicePreference] = useState<
+    "sophianic" | "deep" | "none"
+  >("sophianic");
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFiles, setAttachedFiles] = useState<ChatAttachment[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(null);
+  const [isReadingFiles, setIsReadingFiles] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<
+    number | null
+  >(null);
   const [isNewConversation, setIsNewConversation] = useState(false);
-  const [sessionTransmissionAttachments, setSessionTransmissionAttachments] = useState<SessionTransmissionAttachment[]>([]);
+  const [sessionTransmissionAttachments, setSessionTransmissionAttachments] =
+    useState<SessionTransmissionAttachment[]>([]);
   const transmissionGate = useTransmissionTrigger({ duration: 1200 });
   const trpcUtils = trpc.useUtils();
   const refreshMemoryConsent = () => {
@@ -398,7 +491,8 @@ export default function Conduit() {
   const ensureAudioAnalyser = () => {
     if (!audioRef.current) return;
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioCtxRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
     }
     const audioCtx = audioCtxRef.current;
     if (!analyserRef.current) {
@@ -416,14 +510,17 @@ export default function Conduit() {
 
   const openVoiceMode = () => {
     try {
-      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioContextCtor =
+        window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextCtor) {
         const existing = voiceAudioCtxRef.current;
         if (!existing || existing.state === "closed") {
-          voiceAudioCtxRef.current = new AudioContextCtor({ sampleRate: 24000 });
+          voiceAudioCtxRef.current = new AudioContextCtor({
+            sampleRate: 24000,
+          });
         }
         if (voiceAudioCtxRef.current?.state === "suspended") {
-          void voiceAudioCtxRef.current.resume().catch((err) => {
+          void voiceAudioCtxRef.current.resume().catch(err => {
             console.warn("[VoiceMode] Primed AudioContext resume failed:", err);
           });
         }
@@ -447,10 +544,16 @@ export default function Conduit() {
 
     const savedVoice = localStorage.getItem("voicePreference");
     if (savedVoice) {
-      const mapped = savedVoice === "fast" ? "sophianic" : savedVoice === "nostalgic" ? "deep" : savedVoice;
+      const mapped =
+        savedVoice === "fast"
+          ? "sophianic"
+          : savedVoice === "nostalgic"
+            ? "deep"
+            : savedVoice;
       if (mapped === "sophianic" || mapped === "deep" || mapped === "none") {
         setVoicePreference(mapped);
-        if (mapped !== savedVoice) localStorage.setItem("voicePreference", mapped);
+        if (mapped !== savedVoice)
+          localStorage.setItem("voicePreference", mapped);
       }
     }
   }, []);
@@ -460,28 +563,34 @@ export default function Conduit() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [localMessages]);
 
-  const { data: dbHistory, refetch: refetchHistory } = trpc.oriel.getHistory.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-  });
+  const { data: dbHistory, refetch: refetchHistory } =
+    trpc.oriel.getHistory.useQuery(undefined, {
+      enabled: isAuthenticated,
+      retry: false,
+    });
 
-  const { data: conversationsList, refetch: refetchConversations } = trpc.oriel.listConversations.useQuery(undefined, {
-    enabled: isAuthenticated,
-    retry: false,
-  });
+  const { data: conversationsList, refetch: refetchConversations } =
+    trpc.oriel.listConversations.useQuery(undefined, {
+      enabled: isAuthenticated,
+      retry: false,
+    });
 
-  const { data: activeConvData, refetch: refetchActiveConv } = trpc.oriel.getConversation.useQuery(
-    { id: activeConversationId ?? 0 },
-    { enabled: isAuthenticated && activeConversationId !== null, retry: false }
-  );
+  const { data: activeConvData, refetch: refetchActiveConv } =
+    trpc.oriel.getConversation.useQuery(
+      { id: activeConversationId ?? 0 },
+      {
+        enabled: isAuthenticated && activeConversationId !== null,
+        retry: false,
+      }
+    );
 
   const pendingMemoryQuery = trpc.oriel.memory.listPendingCandidates.useQuery(
     { limit: 3 },
-    { enabled: isAuthenticated, retry: false },
+    { enabled: isAuthenticated, retry: false }
   );
   const acceptedMemoryQuery = trpc.oriel.memory.listAccepted.useQuery(
     { limit: 5 },
-    { enabled: isAuthenticated, retry: false },
+    { enabled: isAuthenticated, retry: false }
   );
   const acceptMemoryMutation = trpc.oriel.memory.acceptCandidate.useMutation({
     onSuccess: refreshMemoryConsent,
@@ -497,10 +606,16 @@ export default function Conduit() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated || isNewConversation || activeConversationId !== null) return;
+    if (!isAuthenticated || isNewConversation || activeConversationId !== null)
+      return;
     if (!conversationsList || conversationsList.length === 0) return;
     setActiveConversationId(conversationsList[0].id);
-  }, [isAuthenticated, isNewConversation, activeConversationId, conversationsList]);
+  }, [
+    isAuthenticated,
+    isNewConversation,
+    activeConversationId,
+    conversationsList,
+  ]);
 
   // Sync localMessages with active conversation or general history
   useEffect(() => {
@@ -508,15 +623,18 @@ export default function Conduit() {
       const convertedHistory = activeConvData.messages.map(msg => ({
         role: msg.role as "user" | "assistant",
         content: msg.content,
-        timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : (msg.timestamp as number),
+        timestamp:
+          msg.timestamp instanceof Date
+            ? msg.timestamp.getTime()
+            : (msg.timestamp as number),
       }));
-      setLocalMessages((prev) => {
+      setLocalMessages(prev => {
         const merged = attachSessionTransmissionEvents(
           convertedHistory,
           sessionTransmissionAttachments,
-          activeConversationId,
+          activeConversationId
         );
-        const hasSessionCard = prev.some((msg) => Boolean(msg.transmissionEvent));
+        const hasSessionCard = prev.some(msg => Boolean(msg.transmissionEvent));
         return hasSessionCard && prev.length > merged.length ? prev : merged;
       });
     } else if (
@@ -531,15 +649,18 @@ export default function Conduit() {
       const convertedHistory = dbHistory.map(msg => ({
         role: msg.role,
         content: msg.content,
-        timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : msg.timestamp,
+        timestamp:
+          msg.timestamp instanceof Date
+            ? msg.timestamp.getTime()
+            : msg.timestamp,
       }));
-      setLocalMessages((prev) => {
+      setLocalMessages(prev => {
         const merged = attachSessionTransmissionEvents(
           convertedHistory,
           sessionTransmissionAttachments,
-          null,
+          null
         );
-        const hasSessionCard = prev.some((msg) => Boolean(msg.transmissionEvent));
+        const hasSessionCard = prev.some(msg => Boolean(msg.transmissionEvent));
         return hasSessionCard && prev.length > merged.length ? prev : merged;
       });
     }
@@ -554,13 +675,12 @@ export default function Conduit() {
   ]);
 
   const chatMutation = trpc.oriel.chat.useMutation({
-    onError: (error) => {
+    onError: error => {
       console.error("Chat error:", error);
-
     },
   });
   const generateChatImageMutation = trpc.oriel.generateChatImage.useMutation({
-    onError: (error) => {
+    onError: error => {
       console.error("Chat image generation error:", error);
     },
   });
@@ -598,37 +718,43 @@ export default function Conduit() {
   };
 
   const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
-  const setVoicePreferenceMutation = trpc.oriel.setVoicePreference.useMutation();
+  const setVoicePreferenceMutation =
+    trpc.oriel.setVoicePreference.useMutation();
 
   // Load user's voice preference on mount
   useEffect(() => {
     if (isAuthenticated && user) {
       const raw = (user as any).voicePreference;
-      const mapped = raw === "fast" ? "sophianic" : raw === "nostalgic" ? "deep" : raw;
-      setVoicePreference(mapped === "sophianic" || mapped === "deep" || mapped === "none" ? mapped : "sophianic");
+      const mapped =
+        raw === "fast" ? "sophianic" : raw === "nostalgic" ? "deep" : raw;
+      setVoicePreference(
+        mapped === "sophianic" || mapped === "deep" || mapped === "none"
+          ? mapped
+          : "sophianic"
+      );
     }
   }, [isAuthenticated, user]);
 
   const speakText = async (text: string) => {
     if (voicePreference === "none") {
-
-
       setIsSpeaking(false);
       return;
     }
 
-
     setIsSpeaking(true);
 
-
-    const { textForAudio, shouldMarkIntroSpoken } = prepareOrielTextForVoice(text);
+    const { textForAudio, shouldMarkIntroSpoken } =
+      prepareOrielTextForVoice(text);
     if (!textForAudio.trim()) {
       setIsSpeaking(false);
       return;
     }
 
     try {
-      const result = await generateSpeechMutation.mutateAsync({ text: textForAudio, voiceId: voicePreference });
+      const result = await generateSpeechMutation.mutateAsync({
+        text: textForAudio,
+        voiceId: voicePreference,
+      });
 
       if (result.success && result.audioUrl) {
         if (audioRef.current && audioRef.current.parentNode) {
@@ -638,8 +764,6 @@ export default function Conduit() {
           if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
 
           audioRef.current.onended = () => {
-      
-      
             setIsSpeaking(false);
             setIsPaused(false);
           };
@@ -649,7 +773,7 @@ export default function Conduit() {
             fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
           };
 
-          audioRef.current.play().catch((error) => {
+          audioRef.current.play().catch(error => {
             console.error("Failed to play audio:", error);
             fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
           });
@@ -659,7 +783,7 @@ export default function Conduit() {
       } else {
         console.warn(
           "Voice generation unavailable, using browser speech fallback:",
-          result.error,
+          result.error
         );
         fallbackToSpeechSynthesis(textForAudio, shouldMarkIntroSpoken);
       }
@@ -669,7 +793,10 @@ export default function Conduit() {
     }
   };
 
-  const fallbackToSpeechSynthesis = (text: string, shouldMarkIntroSpoken = false) => {
+  const fallbackToSpeechSynthesis = (
+    text: string,
+    shouldMarkIntroSpoken = false
+  ) => {
     const trimmedText = text.trim();
     if (!trimmedText) {
       setIsSpeaking(false);
@@ -692,7 +819,9 @@ export default function Conduit() {
             scheduleWatchdog();
             return;
           }
-          console.warn("Browser speech fallback did not complete; clearing voice state.");
+          console.warn(
+            "Browser speech fallback did not complete; clearing voice state."
+          );
           completed = true;
           window.speechSynthesis.cancel();
           setIsSpeaking(false);
@@ -713,11 +842,13 @@ export default function Conduit() {
       utterance.pitch = 0.9;
       utterance.volume = voiceVolume;
       const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find((candidate) => candidate.lang.toLowerCase().startsWith("en"));
+      const voice = voices.find(candidate =>
+        candidate.lang.toLowerCase().startsWith("en")
+      );
       if (voice) utterance.voice = voice;
       if (shouldMarkIntroSpoken) markOrielVoiceIntroSpoken();
       utterance.onend = finishFallback;
-      utterance.onerror = (event) => {
+      utterance.onerror = event => {
         if (completed && event.error === "interrupted") return;
         console.error("Browser speech synthesis error:", event);
         finishFallback();
@@ -753,7 +884,9 @@ export default function Conduit() {
     }
     try {
       if (isPaused) {
-        audioRef.current.play().catch(error => console.error("Failed to resume audio:", error));
+        audioRef.current
+          .play()
+          .catch(error => console.error("Failed to resume audio:", error));
         setIsPaused(false);
       } else {
         audioRef.current.pause();
@@ -774,7 +907,6 @@ export default function Conduit() {
         window.speechSynthesis.cancel();
       }
 
-
       setIsSpeaking(false);
       setIsPaused(false);
     } catch (error) {
@@ -785,7 +917,7 @@ export default function Conduit() {
   const pollPendingTransmission = async (
     pending: PendingTransmission | null | undefined,
     assistantContent: string,
-    conversationId: number | null,
+    conversationId: number | null
   ) => {
     const pollPlan = getPendingTransmissionPollPlan({
       isAuthenticated,
@@ -798,10 +930,11 @@ export default function Conduit() {
       await wait(pollPlan.intervalMs);
 
       try {
-        const event = await trpcUtils.oriel.getLatestGeneratedTransmissionEvent.fetch({
-          conversationId: pending.conversationId,
-          after: pending.requestedAt,
-        });
+        const event =
+          await trpcUtils.oriel.getLatestGeneratedTransmissionEvent.fetch({
+            conversationId: pending.conversationId,
+            after: pending.requestedAt,
+          });
         if (!event) continue;
 
         await transmissionGate.lock();
@@ -811,12 +944,15 @@ export default function Conduit() {
           event: event as unknown as GeneratedTransmissionEvent,
           createdAt: Date.now(),
         };
-        setSessionTransmissionAttachments((prev) => [
-          ...prev,
-          attachment,
-        ].slice(-30));
-        setLocalMessages((prev) =>
-          attachSessionTransmissionEvents(prev, [attachment], pending.conversationId),
+        setSessionTransmissionAttachments(prev =>
+          [...prev, attachment].slice(-30)
+        );
+        setLocalMessages(prev =>
+          attachSessionTransmissionEvents(
+            prev,
+            [attachment],
+            pending.conversationId
+          )
         );
         void refetchActiveConv();
         return;
@@ -828,11 +964,14 @@ export default function Conduit() {
   };
 
   const handleCreateChatImage = async (prompt: string) => {
-    if (generateChatImageMutation.isPending || transmissionGate.isInterfering) return;
+    if (generateChatImageMutation.isPending || transmissionGate.isInterfering)
+      return;
 
     const imagePrompt = prompt.trim();
     if (!imagePrompt) {
-      alert("Enter an image prompt after /image, or type a prompt and press the image button.");
+      alert(
+        "Enter an image prompt after /image, or type a prompt and press the image button."
+      );
       return;
     }
 
@@ -848,7 +987,10 @@ export default function Conduit() {
     setLocalMessages(updatedMessages);
 
     if (!isAuthenticated) {
-      localStorage.setItem("oriel_chat_history", JSON.stringify(updatedMessages));
+      localStorage.setItem(
+        "oriel_chat_history",
+        JSON.stringify(updatedMessages)
+      );
     }
 
     try {
@@ -856,12 +998,16 @@ export default function Conduit() {
         prompt: imagePrompt,
         conversationId: activeConversationId ?? undefined,
         createNewConversation: isAuthenticated && isNewConversation,
-        referenceImages: referenceImages.length > 0 ? referenceImages : undefined,
+        referenceImages:
+          referenceImages.length > 0 ? referenceImages : undefined,
       });
 
       setAttachedFiles([]);
 
-      if (result.conversationId && (!activeConversationId || isNewConversation)) {
+      if (
+        result.conversationId &&
+        (!activeConversationId || isNewConversation)
+      ) {
         setActiveConversationId(result.conversationId);
         setIsNewConversation(false);
       }
@@ -875,7 +1021,10 @@ export default function Conduit() {
       setLocalMessages(finalMessages);
 
       if (!isAuthenticated) {
-        localStorage.setItem("oriel_chat_history", JSON.stringify(finalMessages));
+        localStorage.setItem(
+          "oriel_chat_history",
+          JSON.stringify(finalMessages)
+        );
       }
 
       if (isAuthenticated) {
@@ -902,13 +1051,22 @@ export default function Conduit() {
       setLocalMessages(failedMessages);
       setMessage(imagePrompt);
       if (!isAuthenticated) {
-        localStorage.setItem("oriel_chat_history", JSON.stringify(failedMessages));
+        localStorage.setItem(
+          "oriel_chat_history",
+          JSON.stringify(failedMessages)
+        );
       }
     }
   };
 
   const handleSendMessage = async () => {
-    if (!message.trim() || chatMutation.isPending || generateChatImageMutation.isPending || transmissionGate.isInterfering) return;
+    if (
+      !message.trim() ||
+      chatMutation.isPending ||
+      generateChatImageMutation.isPending ||
+      transmissionGate.isInterfering
+    )
+      return;
 
     const rawUserMessage = message.trim();
     const imageCommandPrompt = parseImageCreationCommand(rawUserMessage);
@@ -917,7 +1075,9 @@ export default function Conduit() {
       return;
     }
 
-    const fileAttachments = attachedFiles.filter((file) => !isImageAttachment(file));
+    const fileAttachments = attachedFiles.filter(
+      file => !isImageAttachment(file)
+    );
     const imageAttachments = attachedFiles.filter(isImageAttachment);
     const {
       forceTransmissionMode,
@@ -935,7 +1095,6 @@ export default function Conduit() {
     }
     setMessage("");
 
-
     const newUserMessage: ChatMessage = {
       role: "user",
       content: userMessage,
@@ -945,7 +1104,10 @@ export default function Conduit() {
     setLocalMessages(updatedMessages);
 
     if (!isAuthenticated) {
-      localStorage.setItem("oriel_chat_history", JSON.stringify(updatedMessages));
+      localStorage.setItem(
+        "oriel_chat_history",
+        JSON.stringify(updatedMessages)
+      );
     }
 
     try {
@@ -955,7 +1117,8 @@ export default function Conduit() {
         createNewConversation: isAuthenticated && isNewConversation,
         history: !isAuthenticated ? localMessages : undefined,
         fileContents: fileAttachments.length > 0 ? fileAttachments : undefined,
-        imageAttachments: imageAttachments.length > 0 ? imageAttachments : undefined,
+        imageAttachments:
+          imageAttachments.length > 0 ? imageAttachments : undefined,
         forceTransmissionMode,
         transmissionOnly: forceTransmissionMode,
         forcedTransmissionRarity,
@@ -965,28 +1128,36 @@ export default function Conduit() {
 
       setAttachedFiles([]);
 
-      if (result.conversationId && (!activeConversationId || isNewConversation)) {
+      if (
+        result.conversationId &&
+        (!activeConversationId || isNewConversation)
+      ) {
         setActiveConversationId(result.conversationId);
         setIsNewConversation(false);
       }
 
-      const returnedTransmissionEvent = (result.transmissionEvent ?? null) as GeneratedTransmissionEvent | null;
-      const pendingTransmission = (result.pendingTransmission ?? null) as PendingTransmission | null;
+      const returnedTransmissionEvent = (result.transmissionEvent ??
+        null) as GeneratedTransmissionEvent | null;
+      const pendingTransmission = (result.pendingTransmission ??
+        null) as PendingTransmission | null;
       const resolvedGatePlan = getTransmissionGatePlan({
         forceTransmissionMode,
         hasTransmissionEvent: Boolean(returnedTransmissionEvent),
       });
-      const resolvedConversationId = result.conversationId ?? activeConversationId ?? null;
+      const resolvedConversationId =
+        result.conversationId ?? activeConversationId ?? null;
       if (returnedTransmissionEvent) {
-        setSessionTransmissionAttachments((prev) => [
-          ...prev,
-          {
-            conversationId: resolvedConversationId,
-            assistantContent: result.response,
-            event: returnedTransmissionEvent,
-            createdAt: Date.now(),
-          },
-        ].slice(-30));
+        setSessionTransmissionAttachments(prev =>
+          [
+            ...prev,
+            {
+              conversationId: resolvedConversationId,
+              assistantContent: result.response,
+              event: returnedTransmissionEvent,
+              createdAt: Date.now(),
+            },
+          ].slice(-30)
+        );
       }
 
       if (resolvedGatePlan.lockBeforeReveal) {
@@ -1005,7 +1176,10 @@ export default function Conduit() {
       setLocalMessages(finalMessages);
 
       if (!isAuthenticated) {
-        localStorage.setItem("oriel_chat_history", JSON.stringify(finalMessages));
+        localStorage.setItem(
+          "oriel_chat_history",
+          JSON.stringify(finalMessages)
+        );
       }
 
       if (isAuthenticated) {
@@ -1020,7 +1194,7 @@ export default function Conduit() {
         void pollPendingTransmission(
           pendingTransmission,
           result.response,
-          resolvedConversationId,
+          resolvedConversationId
         );
       }
 
@@ -1032,7 +1206,6 @@ export default function Conduit() {
       if (forceTransmissionMode) {
         transmissionGate.cancel();
       }
-
     }
   };
 
@@ -1042,19 +1215,23 @@ export default function Conduit() {
     setIsNewConversation(true);
   };
 
-  const displayMessages: ChatMessage[] = localMessages.length > 0
-    ? localMessages
-    : (isAuthenticated && dbHistory && !isNewConversation
-      ? attachSessionTransmissionEvents(
-          dbHistory.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.timestamp instanceof Date ? msg.timestamp.getTime() : msg.timestamp,
-          })),
-          sessionTransmissionAttachments,
-          activeConversationId,
-        )
-      : []);
+  const displayMessages: ChatMessage[] =
+    localMessages.length > 0
+      ? localMessages
+      : isAuthenticated && dbHistory && !isNewConversation
+        ? attachSessionTransmissionEvents(
+            dbHistory.map(msg => ({
+              role: msg.role,
+              content: msg.content,
+              timestamp:
+                msg.timestamp instanceof Date
+                  ? msg.timestamp.getTime()
+                  : msg.timestamp,
+            })),
+            sessionTransmissionAttachments,
+            activeConversationId
+          )
+        : [];
 
   const inputDisabled = getConduitInputDisabled({
     chatPending: chatMutation.isPending || generateChatImageMutation.isPending,
@@ -1083,7 +1260,7 @@ export default function Conduit() {
           }}
           conversationId={activeConversationId}
           audioContext={voiceAudioCtxRef.current}
-          onConversationCreated={(id) => {
+          onConversationCreated={id => {
             setActiveConversationId(id);
             setIsNewConversation(false);
           }}
@@ -1098,7 +1275,10 @@ export default function Conduit() {
         />
       )}
 
-      <div className="relative z-10 flex" style={{ height: "calc(100vh - 64px)" }}>
+      <div
+        className="relative z-10 flex"
+        style={{ height: "calc(100vh - 64px)" }}
+      >
         {/* ===== LEFT SIDEBAR ===== */}
         <aside
           className={`
@@ -1111,13 +1291,13 @@ export default function Conduit() {
             height: "calc(100vh - 64px)",
             background: "rgba(0,0,0,0.6)",
             backdropFilter: "blur(12px)",
-            borderRight: "1px solid rgba(0,188,212,0.1)",
+            borderRight: "1px solid rgba(189,163,107,0.1)",
           }}
         >
           {/* Sidebar header */}
           <div
             className="flex-shrink-0 p-3"
-            style={{ borderBottom: "1px solid rgba(0,188,212,0.1)" }}
+            style={{ borderBottom: "1px solid rgba(189,163,107,0.1)" }}
           >
             <button
               onClick={() => {
@@ -1126,17 +1306,17 @@ export default function Conduit() {
               }}
               className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg font-mono text-[10px] tracking-[0.2em] uppercase transition-all"
               style={{
-                background: "rgba(0,188,212,0.06)",
-                border: "1px solid rgba(0,188,212,0.2)",
-                color: "rgba(0,229,255,0.8)",
+                background: "rgba(189,163,107,0.06)",
+                border: "1px solid rgba(189,163,107,0.2)",
+                color: "rgba(246,176,94,0.8)",
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(0,188,212,0.12)";
-                e.currentTarget.style.borderColor = "rgba(0,229,255,0.4)";
+              onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(189,163,107,0.12)";
+                e.currentTarget.style.borderColor = "rgba(246,176,94,0.4)";
               }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(0,188,212,0.06)";
-                e.currentTarget.style.borderColor = "rgba(0,188,212,0.2)";
+              onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(189,163,107,0.06)";
+                e.currentTarget.style.borderColor = "rgba(189,163,107,0.2)";
               }}
             >
               <Plus size={14} />
@@ -1147,30 +1327,41 @@ export default function Conduit() {
           {/* Conversation list */}
           <div
             className="flex-1 overflow-y-auto p-3 space-y-1"
-            style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,188,212,0.2) transparent" }}
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(189,163,107,0.2) transparent",
+            }}
           >
             {!isAuthenticated ? (
-              <p className="font-mono text-[9px] text-center py-4" style={{ color: "rgba(0,188,212,0.3)" }}>
+              <p
+                className="font-mono text-[9px] text-center py-4"
+                style={{ color: "rgba(189,163,107,0.3)" }}
+              >
                 Sign in to save conversations
               </p>
             ) : !conversationsList || conversationsList.length === 0 ? (
-              <p className="font-mono text-[9px] text-center py-4" style={{ color: "rgba(0,188,212,0.3)" }}>
+              <p
+                className="font-mono text-[9px] text-center py-4"
+                style={{ color: "rgba(189,163,107,0.3)" }}
+              >
                 No conversations yet...
               </p>
             ) : (
-              conversationsList.map((conv) => (
+              conversationsList.map(conv => (
                 <div
                   key={conv.id}
                   role="button"
                   tabIndex={0}
                   className="group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all"
                   style={{
-                    background: activeConversationId === conv.id
-                      ? "rgba(0,188,212,0.1)"
-                      : "transparent",
-                    border: activeConversationId === conv.id
-                      ? "1px solid rgba(0,188,212,0.2)"
-                      : "1px solid transparent",
+                    background:
+                      activeConversationId === conv.id
+                        ? "rgba(189,163,107,0.1)"
+                        : "transparent",
+                    border:
+                      activeConversationId === conv.id
+                        ? "1px solid rgba(189,163,107,0.2)"
+                        : "1px solid transparent",
                   }}
                   onClick={() => {
                     setLocalMessages([]);
@@ -1178,7 +1369,7 @@ export default function Conduit() {
                     setIsNewConversation(false);
                     setSidebarOpen(false);
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.target !== e.currentTarget) return;
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -1188,33 +1379,50 @@ export default function Conduit() {
                       setSidebarOpen(false);
                     }
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     if (activeConversationId !== conv.id) {
-                      e.currentTarget.style.background = "rgba(0,188,212,0.05)";
+                      e.currentTarget.style.background =
+                        "rgba(189,163,107,0.05)";
                     }
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     if (activeConversationId !== conv.id) {
                       e.currentTarget.style.background = "transparent";
                     }
                   }}
                 >
-                  <MessageSquare size={12} style={{ color: "rgba(0,188,212,0.4)", flexShrink: 0 }} />
+                  <MessageSquare
+                    size={12}
+                    style={{ color: "rgba(189,163,107,0.4)", flexShrink: 0 }}
+                  />
                   <div className="flex-1 min-w-0">
                     <p
                       className="font-mono text-[10px] truncate"
-                      style={{ color: activeConversationId === conv.id ? "rgba(0,229,255,0.85)" : "rgba(200,230,240,0.6)" }}
+                      style={{
+                        color:
+                          activeConversationId === conv.id
+                            ? "rgba(246,176,94,0.85)"
+                            : "rgba(232,228,220,0.6)",
+                      }}
                     >
                       {conv.title}
                     </p>
-                    <p className="font-mono text-[8px] mt-0.5" style={{ color: "rgba(0,188,212,0.3)" }}>
-                      {new Date(conv.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                      {' '}
-                      {new Date(conv.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                    <p
+                      className="font-mono text-[8px] mt-0.5"
+                      style={{ color: "rgba(189,163,107,0.3)" }}
+                    >
+                      {new Date(conv.updatedAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      {new Date(conv.updatedAt).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                   <button
-                    onClick={(e) => {
+                    onClick={e => {
                       e.stopPropagation();
                       if (confirm("Delete this conversation?")) {
                         deleteConversationMutation.mutate({ id: conv.id });
@@ -1225,8 +1433,12 @@ export default function Conduit() {
                     }}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
                     style={{ color: "rgba(255,80,80,0.5)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.8)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.5)")}
+                    onMouseEnter={e =>
+                      (e.currentTarget.style.color = "rgba(255,80,80,0.8)")
+                    }
+                    onMouseLeave={e =>
+                      (e.currentTarget.style.color = "rgba(255,80,80,0.5)")
+                    }
                   >
                     <Trash2 size={11} />
                   </button>
@@ -1238,20 +1450,20 @@ export default function Conduit() {
           {isAuthenticated && (
             <div
               className="flex-shrink-0 p-3"
-              style={{ borderTop: "1px solid rgba(0,188,212,0.1)" }}
+              style={{ borderTop: "1px solid rgba(189,163,107,0.1)" }}
             >
               <MemoryConsentTray
                 pendingCandidates={pendingMemoryQuery.data ?? []}
                 acceptedMemories={acceptedMemoryQuery.data ?? []}
-                onAccept={(id) => acceptMemoryMutation.mutate({ id })}
-                onReject={(id) => rejectMemoryMutation.mutate({ id })}
+                onAccept={id => acceptMemoryMutation.mutate({ id })}
+                onReject={id => rejectMemoryMutation.mutate({ id })}
                 isLoading={
                   pendingMemoryQuery.isLoading ||
                   acceptedMemoryQuery.isLoading ||
                   acceptMemoryMutation.isPending ||
                   rejectMemoryMutation.isPending
                 }
-                className="max-h-[42vh] overflow-y-auto border-cyan-500/20 bg-black/40"
+                className="max-h-[42vh] overflow-y-auto border-primary/20 bg-black/40"
               />
             </div>
           )}
@@ -1263,7 +1475,7 @@ export default function Conduit() {
           <div
             className="flex-shrink-0 flex items-center justify-between px-4 md:px-6 py-3"
             style={{
-              borderBottom: "1px solid rgba(0,188,212,0.1)",
+              borderBottom: "1px solid rgba(189,163,107,0.1)",
               background: "rgba(0,0,0,0.3)",
               backdropFilter: "blur(10px)",
             }}
@@ -1273,24 +1485,33 @@ export default function Conduit() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="md:hidden p-1.5 rounded transition-all"
-                style={{ color: "rgba(0,188,212,0.5)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.5)")}
+                style={{ color: "rgba(189,163,107,0.5)" }}
+                onMouseEnter={e =>
+                  (e.currentTarget.style.color = "rgba(246,176,94,0.8)")
+                }
+                onMouseLeave={e =>
+                  (e.currentTarget.style.color = "rgba(189,163,107,0.5)")
+                }
               >
                 <Menu size={18} />
               </button>
 
-              <p className="font-mono text-[10px] tracking-[0.35em] uppercase" style={{ color: "rgba(0,188,212,0.5)" }}>
-                {activeConversationId && activeConvData ? activeConvData.title : "New Conversation"}
+              <p
+                className="font-mono text-[10px] tracking-[0.35em] uppercase"
+                style={{ color: "rgba(189,163,107,0.5)" }}
+              >
+                {activeConversationId && activeConvData
+                  ? activeConvData.title
+                  : "New Conversation"}
               </p>
 
               {displayMessages.length > 0 && (
                 <span
                   className="font-mono text-[9px] px-2 py-0.5 rounded"
                   style={{
-                    background: "rgba(0,188,212,0.08)",
-                    border: "1px solid rgba(0,188,212,0.2)",
-                    color: "rgba(0,188,212,0.6)",
+                    background: "rgba(189,163,107,0.08)",
+                    border: "1px solid rgba(189,163,107,0.2)",
+                    color: "rgba(189,163,107,0.6)",
                   }}
                 >
                   {displayMessages.length} transmissions
@@ -1327,9 +1548,13 @@ export default function Conduit() {
                   onClick={handleNewConversation}
                   title="New conversation"
                   className="hidden md:block p-1.5 rounded transition-all"
-                  style={{ color: "rgba(0,188,212,0.4)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(0,229,255,0.8)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(0,188,212,0.4)")}
+                  style={{ color: "rgba(189,163,107,0.4)" }}
+                  onMouseEnter={e =>
+                    (e.currentTarget.style.color = "rgba(246,176,94,0.8)")
+                  }
+                  onMouseLeave={e =>
+                    (e.currentTarget.style.color = "rgba(189,163,107,0.4)")
+                  }
                 >
                   <Plus size={15} />
                 </button>
@@ -1340,7 +1565,10 @@ export default function Conduit() {
           {/* Messages area */}
           <div
             className="flex-1 overflow-y-auto px-4 md:px-6 py-6"
-            style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(0,188,212,0.2) transparent" }}
+            style={{
+              scrollbarWidth: "thin",
+              scrollbarColor: "rgba(189,163,107,0.2) transparent",
+            }}
           >
             {displayMessages.length === 0 ? (
               /* Empty state */
@@ -1349,12 +1577,17 @@ export default function Conduit() {
                   className="w-36 h-36 md:w-44 md:h-44"
                   style={{
                     borderRadius: "50%",
-                    border: "2.5px solid #10101e",
+                    border: "1px solid rgba(246,176,94,0.28)",
+                    background:
+                      "radial-gradient(circle, rgba(246,176,94,0.12), rgba(12,8,5,0.36) 62%, transparent)",
+                    boxShadow:
+                      "0 0 44px rgba(246,176,94,0.16), inset 0 0 28px rgba(246,176,94,0.08)",
+                    padding: 3,
                   }}
                 >
                   <div className="w-full h-full rounded-full overflow-hidden">
                     <Orb
-                      colors={["#ffedbd", "#002633"]}
+                      colors={["#ffe6a6", "#2a1709"]}
                       agentState={null}
                       seed={42}
                       speed={1.5}
@@ -1364,15 +1597,18 @@ export default function Conduit() {
                 <p
                   className="text-center max-w-sm"
                   style={{
-                    fontFamily: "'Cormorant Garamond', serif",
+                    fontFamily: "var(--font-display)",
                     fontSize: "clamp(18px, 3vw, 24px)",
-                    color: "rgba(0,188,212,0.4)",
+                    color: "rgba(189,163,107,0.4)",
                     fontWeight: 300,
                   }}
                 >
                   Begin a transmission...
                 </p>
-                <p className="font-mono text-[9px] text-center" style={{ color: "rgba(0,188,212,0.25)" }}>
+                <p
+                  className="font-mono text-[9px] text-center"
+                  style={{ color: "rgba(189,163,107,0.25)" }}
+                >
                   Type a message or start a voice session
                 </p>
               </div>
@@ -1385,25 +1621,28 @@ export default function Conduit() {
                       <div
                         className="max-w-md px-5 py-4 rounded-lg"
                         style={{
-                          background: "rgba(0,188,212,0.06)",
-                          border: "1px solid rgba(0,188,212,0.2)",
+                          background: "rgba(189,163,107,0.06)",
+                          border: "1px solid rgba(189,163,107,0.2)",
                         }}
                       >
                         <p
                           className="font-mono text-[9px] mb-2 tracking-[0.3em] uppercase"
-                          style={{ color: "rgba(0,188,212,0.5)" }}
+                          style={{ color: "rgba(189,163,107,0.5)" }}
                         >
                           Channeler
                           {msg.timestamp && (
                             <span
                               className="ml-2 normal-case tracking-normal"
-                              style={{ color: "rgba(0,188,212,0.35)" }}
+                              style={{ color: "rgba(189,163,107,0.35)" }}
                             >
                               // {new Date(msg.timestamp).toLocaleTimeString()}
                             </span>
                           )}
                         </p>
-                        <p className="text-sm leading-relaxed" style={{ color: "rgba(0,229,255,0.85)" }}>
+                        <p
+                          className="text-sm leading-relaxed"
+                          style={{ color: "rgba(246,176,94,0.85)" }}
+                        >
                           {msg.content}
                         </p>
                       </div>
@@ -1421,7 +1660,7 @@ export default function Conduit() {
           <div
             className="flex-shrink-0 px-4 md:px-6 py-4"
             style={{
-              borderTop: "1px solid rgba(0,188,212,0.1)",
+              borderTop: "1px solid rgba(189,163,107,0.1)",
               background: "rgba(0,0,0,0.4)",
               backdropFilter: "blur(10px)",
             }}
@@ -1429,7 +1668,10 @@ export default function Conduit() {
             {/* Voice volume control when speaking */}
             {isSpeaking && voicePreference !== "none" && (
               <div className="flex items-center gap-3 mb-3">
-                <span className="font-mono text-[9px] tracking-widest" style={{ color: "rgba(0,188,212,0.5)" }}>
+                <span
+                  className="font-mono text-[9px] tracking-widest"
+                  style={{ color: "rgba(189,163,107,0.5)" }}
+                >
                   VOL
                 </span>
                 <input
@@ -1438,16 +1680,19 @@ export default function Conduit() {
                   max="1"
                   step="0.1"
                   value={voiceVolume}
-                  onChange={(e) => {
+                  onChange={e => {
                     setVoiceVolume(parseFloat(e.target.value));
                     if (audioRef.current) {
                       audioRef.current.volume = parseFloat(e.target.value);
                     }
                   }}
                   className="flex-1 h-1 rounded cursor-pointer"
-                  style={{ accentColor: "#00e5ff" }}
+                  style={{ accentColor: "#f6b05e" }}
                 />
-                <span className="font-mono text-[9px] w-8" style={{ color: "rgba(0,229,255,0.6)" }}>
+                <span
+                  className="font-mono text-[9px] w-8"
+                  style={{ color: "rgba(246,176,94,0.6)" }}
+                >
                   {Math.round(voiceVolume * 100)}%
                 </span>
               </div>
@@ -1455,52 +1700,90 @@ export default function Conduit() {
 
             {/* File chips */}
             {attachedFiles.length > 0 && (
-              <div className="flex gap-2 flex-wrap mb-2">
+              <div className="flex items-center gap-2 flex-wrap mb-2">
                 {attachedFiles.map((file, idx) => (
                   <div
                     key={idx}
                     className="flex items-center gap-1.5 px-2 py-1 rounded font-mono text-[10px]"
                     style={{
-                      background: "rgba(0,188,212,0.08)",
-                      border: "1px solid rgba(0,188,212,0.25)",
-                      color: "rgba(0,229,255,0.8)",
+                      background: "rgba(189,163,107,0.08)",
+                      border: "1px solid rgba(189,163,107,0.25)",
+                      color: "rgba(246,176,94,0.8)",
                     }}
                   >
-                    {isImageAttachment(file) ? <ImageIcon size={10} /> : <Paperclip size={10} />}
-                    <span className="max-w-[120px] truncate">{file.name}</span>
+                    {isImageAttachment(file) ? (
+                      <ImageIcon size={10} />
+                    ) : (
+                      <Paperclip size={10} />
+                    )}
+                    <span className="max-w-[110px] truncate">{file.name}</span>
+                    {(file as any).size && (
+                      <span className="opacity-50 text-[9px] ml-0.5">
+                        {formatFileSize((file as any).size)}
+                      </span>
+                    )}
                     <button
-                      onClick={() => setAttachedFiles(prev => prev.filter((_, i) => i !== idx))}
+                      onClick={() =>
+                        setAttachedFiles(prev =>
+                          prev.filter((_, i) => i !== idx)
+                        )
+                      }
                       className="ml-1 hover:opacity-100 opacity-60 transition-opacity"
-                      style={{ color: "rgba(0,229,255,0.7)" }}
+                      style={{ color: "rgba(246,176,94,0.7)" }}
                     >
                       <X size={10} />
                     </button>
                   </div>
                 ))}
+
+                {attachedFiles.length > 1 && (
+                  <button
+                    onClick={() => setAttachedFiles([])}
+                    className="text-[10px] px-2 py-1 rounded font-mono opacity-60 hover:opacity-100 transition-opacity"
+                    style={{ color: "rgba(246,176,94,0.7)" }}
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* File reading indicator */}
+            {isReadingFiles && (
+              <div className="text-[10px] font-mono mb-1" style={{ color: "rgba(246,176,94,0.6)" }}>
+                Reading file(s)...
               </div>
             )}
 
             {/* Voice selector */}
             <div className="flex items-center gap-2 mb-2">
-              <label className="font-mono text-[9px] tracking-widest" style={{ color: "rgba(0,188,212,0.5)" }}>
+              <label
+                className="font-mono text-[9px] tracking-widest"
+                style={{ color: "rgba(189,163,107,0.5)" }}
+              >
                 VOICE
               </label>
               <select
                 value={voicePreference}
-                onChange={(e) => {
-                  const newVoice = e.target.value as "sophianic" | "deep" | "none";
+                onChange={e => {
+                  const newVoice = e.target.value as
+                    | "sophianic"
+                    | "deep"
+                    | "none";
                   setVoicePreference(newVoice);
                   if (isAuthenticated) {
-                    setVoicePreferenceMutation.mutate({ voicePreference: newVoice });
+                    setVoicePreferenceMutation.mutate({
+                      voicePreference: newVoice,
+                    });
                   } else {
                     localStorage.setItem("voicePreference", newVoice);
                   }
                 }}
                 className="px-2 py-1 rounded font-mono text-[10px] outline-none transition-all"
                 style={{
-                  background: "rgba(0,188,212,0.06)",
-                  border: "1px solid rgba(0,188,212,0.2)",
-                  color: "rgba(0,229,255,0.8)",
+                  background: "rgba(189,163,107,0.06)",
+                  border: "1px solid rgba(189,163,107,0.2)",
+                  color: "rgba(246,176,94,0.8)",
                 }}
               >
                 <option value="sophianic">Sophianic Voice</option>
@@ -1516,30 +1799,71 @@ export default function Conduit() {
               accept="image/*,.pdf,.docx,.txt,.md,.json,.csv,.xml,.html,.css,.js,.ts,.tsx,.jsx,.py,.java,.c,.cpp,.h,.yml,.yaml,.toml,.ini,.cfg,.log,.sql,.sh,.bat,.ps1,.env"
               multiple
               className="hidden"
-              onChange={(e) => {
+              onChange={e => {
                 const files = Array.from(e.target.files || []);
-                const remaining = 2 - attachedFiles.length;
+                const remaining = 5 - attachedFiles.length;
                 const toAdd = files.slice(0, remaining);
                 const MAX_SIZE = 50 * 1024 * 1024;
+
+                if (toAdd.length > 0) {
+                  setIsReadingFiles(true);
+                }
+
+                let processed = 0;
+                const totalToProcess = toAdd.length;
 
                 toAdd.forEach(file => {
                   if (file.size > MAX_SIZE) {
                     alert(`File "${file.name}" exceeds the 50MB limit.`);
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
                     return;
                   }
+
+                  // Warn for very large non-image files (text extraction can be slow/unreliable)
+                  const isImage = file.type.startsWith('image/');
+                  if (!isImage && file.size > 5 * 1024 * 1024) {
+                    const proceed = confirm(
+                      `File "${file.name}" is quite large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n` +
+                      `Text extraction from large documents can be slow or incomplete. Continue?`
+                    );
+                    if (!proceed) {
+                      processed++;
+                      if (processed === totalToProcess) setIsReadingFiles(false);
+                      return;
+                    }
+                  }
+
+                  // Prevent exact duplicates by name
+                  if (attachedFiles.some(f => f.name === file.name)) {
+                    alert(`File "${file.name}" is already attached.`);
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
+                    return;
+                  }
+
                   const reader = new FileReader();
                   reader.onload = () => {
                     const dataUrl = reader.result as string;
-                    // Strip the "data:<mime>;base64," prefix to get raw base64
                     const base64 = dataUrl.split(",", 2)[1] ?? "";
                     setAttachedFiles(prev => {
-                      if (prev.length >= 2) return prev;
-                      return [...prev, {
-                        name: file.name,
-                        data: base64,
-                        mimeType: file.type || "application/octet-stream",
-                      }];
+                      if (prev.length >= 5) return prev;
+                      return [
+                        ...prev,
+                        {
+                          name: file.name,
+                          data: base64,
+                          mimeType: file.type || "application/octet-stream",
+                          size: file.size,
+                        } as any,
+                      ];
                     });
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
+                  };
+                  reader.onerror = () => {
+                    processed++;
+                    if (processed === totalToProcess) setIsReadingFiles(false);
                   };
                   reader.readAsDataURL(file);
                 });
@@ -1549,38 +1873,111 @@ export default function Conduit() {
             />
 
             {/* Main input row */}
-            <div className="flex gap-2 items-center">
+            <div
+              className="flex items-center"
+              style={{ gap: "calc(var(--spacing) * 5)" }}
+            >
+              <div
+                className="hidden sm:flex shrink-0 items-center justify-center rounded-full"
+                aria-hidden="true"
+                style={{
+                  width: "calc(var(--spacing) * 20)",
+                  height: "calc(var(--spacing) * 20)",
+                  border: "1px solid rgba(246,176,94,0.3)",
+                  background:
+                    "radial-gradient(circle, rgba(246,176,94,0.14), rgba(12,8,5,0.6) 64%, rgba(0,0,0,0.1))",
+                  boxShadow:
+                    "0 0 26px rgba(246,176,94,0.16), inset 0 0 18px rgba(246,176,94,0.08)",
+                  padding: 3,
+                }}
+              >
+                <div className="h-full w-full overflow-hidden rounded-full">
+                  <Orb
+                    colors={["#ffe6a6", "#2a1709"]}
+                    agentState={
+                      isListening
+                        ? "listening"
+                        : isSpeaking
+                          ? "talking"
+                          : chatMutation.isPending ||
+                              generateChatImageMutation.isPending
+                            ? "thinking"
+                            : null
+                    }
+                    seed={73}
+                    speed={isListening || isSpeaking ? 1.8 : 1.15}
+                  />
+                </div>
+              </div>
+
               <input
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                onChange={e => setMessage(e.target.value)}
+                onKeyDown={e =>
+                  e.key === "Enter" && !e.shiftKey && handleSendMessage()
+                }
                 placeholder="Enter your query into the light..."
                 disabled={inputDisabled}
                 className="flex-1 bg-transparent font-mono text-sm outline-none px-4 py-3 rounded transition-all"
                 style={{
-                  background: "rgba(0,188,212,0.04)",
-                  border: "1px solid rgba(0,188,212,0.2)",
-                  color: "rgba(0,229,255,0.85)",
-                  borderColor: message ? "rgba(0,229,255,0.4)" : "rgba(0,188,212,0.2)",
+                  background: "rgba(189,163,107,0.04)",
+                  border: "1px solid rgba(189,163,107,0.2)",
+                  color: "rgba(246,176,94,0.85)",
+                  borderColor: message
+                    ? "rgba(246,176,94,0.4)"
+                    : "rgba(189,163,107,0.2)",
                 }}
-                onFocus={(e) => (e.currentTarget.style.borderColor = "rgba(0,229,255,0.5)")}
-                onBlur={(e) => (e.currentTarget.style.borderColor = message ? "rgba(0,229,255,0.4)" : "rgba(0,188,212,0.2)")}
+                onFocus={e =>
+                  (e.currentTarget.style.borderColor = "rgba(246,176,94,0.5)")
+                }
+                onBlur={e =>
+                  (e.currentTarget.style.borderColor = message
+                    ? "rgba(246,176,94,0.4)"
+                    : "rgba(189,163,107,0.2)")
+                }
               />
 
               {/* File attach */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={inputDisabled || attachedFiles.length >= 2}
-                title={attachedFiles.length >= 2 ? "Max 2 files" : "Attach file"}
-                className="p-3 rounded transition-all"
+                disabled={inputDisabled || attachedFiles.length >= 5 || isReadingFiles}
+                title={
+                  isReadingFiles 
+                    ? "Reading files..." 
+                    : attachedFiles.length >= 5 
+                      ? "Max 5 files" 
+                      : "Attach file"
+                }
+                className="p-3 rounded transition-all relative"
                 style={{
-                  background: "rgba(0,188,212,0.06)",
-                  border: "1px solid rgba(0,188,212,0.2)",
-                  color: attachedFiles.length >= 2 ? "rgba(0,188,212,0.2)" : "rgba(0,188,212,0.5)",
-                  opacity: attachedFiles.length >= 2 ? 0.4 : 1,
+                  background: "rgba(189,163,107,0.06)",
+                  border: "1px solid rgba(189,163,107,0.2)",
+                  color:
+                    attachedFiles.length >= 5 || isReadingFiles
+                      ? "rgba(189,163,107,0.2)"
+                      : "rgba(189,163,107,0.5)",
+                  opacity: (attachedFiles.length >= 5 || isReadingFiles) ? 0.4 : 1,
                 }}
               >
                 <Paperclip size={16} />
+                {attachedFiles.length > 0 && !isReadingFiles && (
+                  <span 
+                    className="absolute -top-1 -right-1 text-[8px] px-1 rounded-full font-mono leading-none flex items-center justify-center"
+                    style={{
+                      background: "rgba(189,163,107,0.9)",
+                      color: "#111",
+                      height: "14px",
+                      minWidth: "14px",
+                    }}
+                  >
+                    {attachedFiles.length}
+                  </span>
+                )}
+                {isReadingFiles && (
+                  <span className="absolute -top-1 -right-1 text-[7px] px-1 rounded-full font-mono bg-amber-600 text-black">
+                    ...
+                  </span>
+                )}
               </button>
 
               {/* Image creation */}
@@ -1592,12 +1989,14 @@ export default function Conduit() {
                 style={{
                   background: "rgba(189,163,107,0.08)",
                   border: "1px solid rgba(189,163,107,0.25)",
-                  color: !message.trim() ? "rgba(189,163,107,0.25)" : "rgba(189,163,107,0.7)",
+                  color: !message.trim()
+                    ? "rgba(189,163,107,0.25)"
+                    : "rgba(189,163,107,0.7)",
                   opacity: !message.trim() ? 0.45 : 1,
                 }}
               >
                 {generateChatImageMutation.isPending ? (
-                  <Loader2 className="animate-spin" size={16} />
+                  <Spinner size={16} />
                 ) : (
                   <ImageIcon size={16} />
                 )}
@@ -1610,9 +2009,13 @@ export default function Conduit() {
                 title="Voice input"
                 className="p-3 rounded transition-all"
                 style={{
-                  background: isListening ? "rgba(0,229,255,0.15)" : "rgba(0,188,212,0.06)",
-                  border: `1px solid ${isListening ? "rgba(0,229,255,0.6)" : "rgba(0,188,212,0.2)"}`,
-                  color: isListening ? "rgba(0,229,255,0.9)" : "rgba(0,188,212,0.5)",
+                  background: isListening
+                    ? "rgba(246,176,94,0.15)"
+                    : "rgba(189,163,107,0.06)",
+                  border: `1px solid ${isListening ? "rgba(246,176,94,0.6)" : "rgba(189,163,107,0.2)"}`,
+                  color: isListening
+                    ? "rgba(246,176,94,0.9)"
+                    : "rgba(189,163,107,0.5)",
                 }}
               >
                 <Mic size={16} />
@@ -1630,13 +2033,14 @@ export default function Conduit() {
                     border: "1px solid rgba(189,163,107,0.25)",
                     color: "rgba(189,163,107,0.7)",
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     e.currentTarget.style.background = "rgba(189,163,107,0.15)";
                     e.currentTarget.style.borderColor = "rgba(189,163,107,0.4)";
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     e.currentTarget.style.background = "rgba(189,163,107,0.08)";
-                    e.currentTarget.style.borderColor = "rgba(189,163,107,0.25)";
+                    e.currentTarget.style.borderColor =
+                      "rgba(189,163,107,0.25)";
                   }}
                 >
                   <Phone size={16} />
@@ -1650,24 +2054,29 @@ export default function Conduit() {
                 title="Channel"
                 className="px-5 py-3 rounded font-mono text-xs tracking-[0.25em] uppercase transition-all"
                 style={{
-                  background: "rgba(0,188,212,0.1)",
-                  border: "1px solid rgba(0,188,212,0.35)",
-                  color: "rgba(0,229,255,0.8)",
+                  background: "rgba(189,163,107,0.1)",
+                  border: "1px solid rgba(189,163,107,0.35)",
+                  color: "rgba(246,176,94,0.8)",
                   opacity: sendDisabled ? 0.4 : 1,
                 }}
-                onMouseEnter={(e) => {
+                onMouseEnter={e => {
                   if (!sendDisabled) {
-                    (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.2)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,229,255,0.6)";
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "rgba(189,163,107,0.2)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor =
+                      "rgba(246,176,94,0.6)";
                   }
                 }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,188,212,0.1)";
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,188,212,0.35)";
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "rgba(189,163,107,0.1)";
+                  (e.currentTarget as HTMLButtonElement).style.borderColor =
+                    "rgba(189,163,107,0.35)";
                 }}
               >
-                {chatMutation.isPending || generateChatImageMutation.isPending ? (
-                  <Loader2 className="animate-spin" size={16} />
+                {chatMutation.isPending ||
+                generateChatImageMutation.isPending ? (
+                  <Spinner size={16} />
                 ) : (
                   "Channel"
                 )}
@@ -1675,7 +2084,10 @@ export default function Conduit() {
             </div>
 
             {!isAuthenticated && (
-              <p className="font-mono text-[9px] mt-3 tracking-widest" style={{ color: "rgba(0,188,212,0.3)" }}>
+              <p
+                className="font-mono text-[9px] mt-3 tracking-widest"
+                style={{ color: "rgba(189,163,107,0.3)" }}
+              >
                 // Authenticate to sync conversation history across devices
               </p>
             )}
