@@ -1996,7 +1996,7 @@ export default function Conduit() {
                 }}
               >
                 {generateChatImageMutation.isPending ? (
-                  <Spinner size={16} />
+                  <Spinner className="size-4" />
                 ) : (
                   <ImageIcon size={16} />
                 )}
@@ -2076,7 +2076,7 @@ export default function Conduit() {
               >
                 {chatMutation.isPending ||
                 generateChatImageMutation.isPending ? (
-                  <Spinner size={16} />
+                  <Spinner className="size-4" />
                 ) : (
                   "Channel"
                 )}

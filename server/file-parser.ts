@@ -21,7 +21,8 @@ export async function extractTextFromFile(
     try {
         // PDF - use dynamic import for better ESM compatibility
         if (ext === 'pdf') {
-            const pdfParse = (await import('pdf-parse')).default;
+            const pdfParseMod: any = await import('pdf-parse');
+            const pdfParse = pdfParseMod.default ?? pdfParseMod;
             const result = await pdfParse(buffer);
             const text = result.text?.trim() || '';
             return text ? truncateText(text) : '[No text could be extracted from this PDF]';
