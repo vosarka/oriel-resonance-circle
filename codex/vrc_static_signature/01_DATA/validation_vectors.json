@@ -1,0 +1,25 @@
+{
+  "calibration_vector": {
+    "inputs": {
+      "date": "2024-01-01",
+      "time_utc": "12:00:00",
+      "latitude": 0.0,
+      "longitude": 0.0
+    },
+    "expected_outputs": {
+      "conscious_sun": {
+        "longitude": 280.44,
+        "codon_id": 38,
+        "codon_traditional_name": "Struggle",
+        "validation_alias": "The Fighter"
+      },
+      "design_sun": {
+        "longitude": 192.44,
+        "codon_id": 57,
+        "codon_traditional_name": "Intuition",
+        "validation_alias": "Intuitive Clarity",
+        "solar_arc_offset_deg": -88.0
+      }
+    }
+  }
+}

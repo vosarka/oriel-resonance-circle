@@ -1,0 +1,1154 @@
+[
+  {
+    "id": 1,
+    "code": "RC01",
+    "name": "AURORA",
+    "traditional_name": "The Creative",
+    "binary": "111111",
+    "chemical_marker": "Lysine",
+    "archetype_role": "The Initiator",
+    "somatic_marker": "Thoracic Pressure / Nervous Buzz",
+    "frequency": {
+      "shadow": "Entropy",
+      "shadow_desc": "The chaotic scattering of energy; numbness born from overwhelming potential.",
+      "gift": "Freshness",
+      "gift_desc": "The ability to channel pure creative fire into a singular, original act.",
+      "siddhi": "Beauty",
+      "siddhi_desc": "The radiant unity of all forms; the state where creation and creator are indistinguishable."
+    }
+  },
+  {
+    "id": 2,
+    "code": "RC02",
+    "name": "THE RECEIVER",
+    "traditional_name": "The Receptive",
+    "binary": "000000",
+    "chemical_marker": "Phenylalanine",
+    "archetype_role": "The Architect",
+    "somatic_marker": "Pelvic Grounding / Magnetic Pull",
+    "frequency": {
+      "shadow": "Dislocation",
+      "shadow_desc": "The feeling of being lost in time and space; looking for direction outside oneself.",
+      "gift": "Orientation",
+      "gift_desc": "The innate magnetic lock on one's true north; effortless alignment with the flow of events.",
+      "siddhi": "Unity",
+      "siddhi_desc": "The dissolution of the separate self into the perfect geometry of the whole."
+    }
+  },
+  {
+    "id": 3,
+    "code": "RC03",
+    "name": "THE MUTANT",
+    "traditional_name": "Difficulty at the Beginning",
+    "binary": "100010",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Innovator",
+    "somatic_marker": "Adrenal Pulse / Sacral Heat",
+    "frequency": {
+      "shadow": "Chaos",
+      "shadow_desc": "The terror of the unknown; the panic that arises when old structures dissolve.",
+      "gift": "Innovation",
+      "gift_desc": "The ability to adapt and birth new order from the wreckage of the old.",
+      "siddhi": "Innocence",
+      "siddhi_desc": "The playful acceptance of the moment, untainted by the need to control the outcome."
+    }
+  },
+  {
+    "id": 4,
+    "code": "RC04",
+    "name": "THE FORMULATOR",
+    "traditional_name": "Youthful Folly",
+    "binary": "010001",
+    "chemical_marker": "Valine",
+    "archetype_role": "The Logician",
+    "somatic_marker": "Cranial Tightness / Eye Strain",
+    "frequency": {
+      "shadow": "Intolerance",
+      "shadow_desc": "The demand for answers *now*. The emotional rejection of anything that cannot be logically proved.",
+      "gift": "Understanding",
+      "gift_desc": "The gentle unraveling of complexity. The patience to find the logic within the chaos.",
+      "siddhi": "Forgiveness",
+      "siddhi_desc": "The realization that all 'errors' were necessary deviations in the path of perfection."
+    }
+  },
+  {
+    "id": 5,
+    "code": "RC05",
+    "name": "THE METRONOME",
+    "traditional_name": "Waiting",
+    "binary": "010111",
+    "chemical_marker": "Threonine",
+    "archetype_role": "The Timekeeper",
+    "somatic_marker": "Sacral Pulse / Spinal Rhythm",
+    "frequency": {
+      "shadow": "Impatience",
+      "shadow_desc": "The anxiety of being 'out of time'; pushing the river; the biological distress of rushing.",
+      "gift": "Patience",
+      "gift_desc": "The cellular trust in natural timing; the ability to wait actively, like a predator or a saint.",
+      "siddhi": "Timelessness",
+      "siddhi_desc": "The collapse of linear time; existing purely in the eternal Now where waiting is impossible."
+    }
+  },
+  {
+    "id": 6,
+    "code": "RC06",
+    "name": "THE IMPACT",
+    "traditional_name": "Conflict",
+    "binary": "111010",
+    "chemical_marker": "Glycine / pH Balance",
+    "archetype_role": "The Guardian",
+    "somatic_marker": "Solar Plexus Heat / Skin Sensitivity",
+    "frequency": {
+      "shadow": "Friction",
+      "shadow_desc": "The clash of separate egos; emotional volatility used as a defense mechanism.",
+      "gift": "Diplomacy",
+      "gift_desc": "The art of using friction to create warmth; navigating emotional barriers to create intimacy.",
+      "siddhi": "Peace",
+      "siddhi_desc": "The dissolution of all boundaries; the state where defense is unnecessary because there is no 'other'."
+    }
+  },
+  {
+    "id": 7,
+    "code": "RC07",
+    "name": "THE VECTOR",
+    "traditional_name": "The Army",
+    "binary": "010000",
+    "chemical_marker": "Threonine",
+    "archetype_role": "The Commander",
+    "somatic_marker": "Sternum Pull / Diaphragm Lift",
+    "frequency": {
+      "shadow": "Division",
+      "shadow_desc": "The misuse of power to separate and conquer; leading others into a hierarchy of fear.",
+      "gift": "Guidance",
+      "gift_desc": "The magnetic authority that aligns others toward a common future; leadership by presence, not force.",
+      "siddhi": "Virtue",
+      "siddhi_desc": "The pure embodiment of the Good; the leader disappears, leaving only the correct direction."
+    }
+  },
+  {
+    "id": 8,
+    "code": "RC08",
+    "name": "THE VOICE",
+    "traditional_name": "Holding Together",
+    "binary": "010111",
+    "chemical_marker": "Phenylalanine",
+    "archetype_role": "The Agent",
+    "somatic_marker": "Throat Vibration / Thyroid Hum",
+    "frequency": {
+      "shadow": "Mediocrity",
+      "shadow_desc": "The fear of standing out; diluting one's truth to blend into the gray noise of the collective.",
+      "gift": "Style",
+      "gift_desc": "The courageous expression of uniqueness; the rebellion against the generic.",
+      "siddhi": "Exquisiteness",
+      "siddhi_desc": "The realization that every form is a perfect, unique facet of the diamond of consciousness."
+    }
+  },
+  {
+    "id": 9,
+    "code": "RC09",
+    "name": "THE LENS",
+    "traditional_name": "The Taming Power of the Small",
+    "binary": "111011",
+    "chemical_marker": "Threonine",
+    "archetype_role": "The Specialist",
+    "somatic_marker": "Visual Cortex Pressure / Sacral Lock",
+    "frequency": {
+      "shadow": "Inertia",
+      "shadow_desc": "The paralysis of seeing too many details; getting stuck in the trivial loop.",
+      "gift": "Determination",
+      "gift_desc": "The laser-like capacity to focus energy on a single, minute detail until it ignites.",
+      "siddhi": "Invincibility",
+      "siddhi_desc": "The realization that by mastering the smallest particle, one masters the universe."
+    }
+  },
+  {
+    "id": 10,
+    "code": "RC10",
+    "name": "THE VESSEL",
+    "traditional_name": "Treading",
+    "binary": "110111",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Individual",
+    "somatic_marker": "Chest Expansion / Gait Rhythm",
+    "frequency": {
+      "shadow": "Self-Obsession",
+      "shadow_desc": "The collapse of the world into the self; believing your pain or glory is the only reality.",
+      "gift": "Naturalness",
+      "gift_desc": "The effortless ease of being oneself; the refusal to perform for others.",
+      "siddhi": "Being",
+      "siddhi_desc": "The dissolution of the 'I' into the pure experience of existence. I Am that I Am."
+    }
+  },
+  {
+    "id": 11,
+    "code": "RC11",
+    "name": "THE PRISM",
+    "traditional_name": "Peace",
+    "binary": "111000",
+    "chemical_marker": "Threonine",
+    "archetype_role": "The Idealist",
+    "somatic_marker": "Third Eye Pressure / Visual Flooding",
+    "frequency": {
+      "shadow": "Obscurity",
+      "shadow_desc": "The darkness of too many ideas; the mental fog of unrelated images seeking form.",
+      "gift": "Idealism",
+      "gift_desc": "The capacity to see the potential in everything; the magical realism of the soul.",
+      "siddhi": "Light",
+      "siddhi_desc": "The pure white radiance where all images dissolve back into the source."
+    }
+  },
+  {
+    "id": 12,
+    "code": "RC12",
+    "name": "THE CHANNEL",
+    "traditional_name": "Standstill",
+    "binary": "000111",
+    "chemical_marker": "Threonine (Stop Codon)",
+    "archetype_role": "The Articulator",
+    "somatic_marker": "Throat Constriction / Acoustic Sensitivity",
+    "frequency": {
+      "shadow": "Vanity",
+      "shadow_desc": "The misuse of the voice to hide the self; loving the sound of one's own cleverness.",
+      "gift": "Discrimination",
+      "gift_desc": "The ability to know *when* to speak and when to remain silent; the art of high-frequency communication.",
+      "siddhi": "Purity",
+      "siddhi_desc": "The voice becomes the silence; the transmission of truth without the distortion of words."
+    }
+  },
+  {
+    "id": 13,
+    "code": "RC13",
+    "name": "THE LISTENER",
+    "traditional_name": "Fellowship with Men",
+    "binary": "101111",
+    "chemical_marker": "Glutamine",
+    "archetype_role": "The Witness",
+    "somatic_marker": "Ear Pressure / Chest Resonance",
+    "frequency": {
+      "shadow": "Discord",
+      "shadow_desc": "The inability to filter the emotional noise of the past; hearing only the pain and trauma.",
+      "gift": "Discernment",
+      "gift_desc": "The capacity to listen not to the words, but to the frequency behind them; hearing the secret history.",
+      "siddhi": "Empathy",
+      "siddhi_desc": "The dissolution of the barrier between self and other; hearing the One Voice singing through seven billion mouths."
+    }
+  },
+  {
+    "id": 14,
+    "code": "RC14",
+    "name": "THE DRIVER",
+    "traditional_name": "Possession in Great Measure",
+    "binary": "111101",
+    "chemical_marker": "Lysine",
+    "archetype_role": "The Fuel",
+    "somatic_marker": "Sacral Heat / Adrenal Surge",
+    "frequency": {
+      "shadow": "Compromise",
+      "shadow_desc": "Using your immense energy to build someone else's dream for safety; selling the soul for security.",
+      "gift": "Competence",
+      "gift_desc": "The efficient application of power to creative work; the ability to fuel a vision until it becomes reality.",
+      "siddhi": "Bounteousness",
+      "siddhi_desc": "The realization that you *are* the source of wealth; the infinite generator that feeds the world."
+    }
+  },
+  {
+    "id": 15,
+    "code": "RC15",
+    "name": "THE RHYTHM",
+    "traditional_name": "Modesty",
+    "binary": "001000",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Naturalist",
+    "somatic_marker": "Magnetic Skin / Variable Pulse",
+    "frequency": {
+      "shadow": "Dullness",
+      "shadow_desc": "The fear of one's own extremes; hiding the wildness to appear 'normal' and safe.",
+      "gift": "Magnetism",
+      "gift_desc": "The acceptance of all of life's rhythms; the capacity to attract others by being visibly alive and diverse.",
+      "siddhi": "Flowering",
+      "siddhi_desc": "The eternal spring where every being is allowed to bloom in its own time and way."
+    }
+  },
+  {
+    "id": 16,
+    "code": "RC16",
+    "name": "THE SKILL",
+    "traditional_name": "Enthusiasm",
+    "binary": "000100",
+    "chemical_marker": "Cysteine",
+    "archetype_role": "The Artisan",
+    "somatic_marker": "Throat Buzz / Hand Dexterity",
+    "frequency": {
+      "shadow": "Indifference",
+      "shadow_desc": "The diffusion of energy into a thousand shallow hobbies; the refusal to commit to the depth of mastery.",
+      "gift": "Versatility",
+      "gift_desc": "The joy of experimentation; the ability to pick up any tool and quickly find the rhythm.",
+      "siddhi": "Mastery",
+      "siddhi_desc": "The moment the tool disappears and the creator becomes the act of creation itself."
+    }
+  },
+  {
+    "id": 17,
+    "code": "RC17",
+    "name": "THE SCOPE",
+    "traditional_name": "Following",
+    "binary": "011001",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Architect",
+    "somatic_marker": "Ocular Tension / Right Eye Dominance",
+    "frequency": {
+      "shadow": "Opinion",
+      "shadow_desc": "The rigid attachment to a single perspective; confusing the map for the territory.",
+      "gift": "Far-Sightedness",
+      "gift_desc": "The ability to see the architectural structure of the future; logic that serves the whole.",
+      "siddhi": "Omniscience",
+      "siddhi_desc": "The single eye of God that sees all perspectives simultaneously as one holographic truth."
+    }
+  },
+  {
+    "id": 18,
+    "code": "RC18",
+    "name": "THE EDITOR",
+    "traditional_name": "Work on What Has Been Spoilt",
+    "binary": "011001",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Improver",
+    "somatic_marker": "Spleen Quiver / Lymphatic Pulse",
+    "frequency": {
+      "shadow": "Judgment",
+      "shadow_desc": "The relentless criticism of self and others; the fear of imperfection manifest as blame.",
+      "gift": "Integrity",
+      "gift_desc": "The high standard that demands wholeness; the courage to fix what is broken for the good of all.",
+      "siddhi": "Perfection",
+      "siddhi_desc": "The realization that even the flaw is perfect; the cosmic acceptance of the 'glitch' as essential."
+    }
+  },
+  {
+    "id": 19,
+    "code": "RC19",
+    "name": "THE SENSOR",
+    "traditional_name": "Approach",
+    "binary": "110000",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Attuner",
+    "somatic_marker": "Skin Hypersensitivity / Piloerection",
+    "frequency": {
+      "shadow": "Co-Dependence",
+      "shadow_desc": "The desperate need for outside attention to feel safe; sacrificing the self to keep the tribe close.",
+      "gift": "Sensitivity",
+      "gift_desc": "The ability to feel the needs of others before they speak; the master of emotional synthesis.",
+      "siddhi": "Sacrifice",
+      "siddhi_desc": "The willingness to give up one's separate form for the greater life of the whole."
+    }
+  },
+  {
+    "id": 20,
+    "code": "RC20",
+    "name": "THE PRESENCE",
+    "traditional_name": "Contemplation",
+    "binary": "000011",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Mystic",
+    "somatic_marker": "Breath Awareness / Spinal Column",
+    "frequency": {
+      "shadow": "Superficiality",
+      "shadow_desc": "Skimming the surface of life; being everywhere but here; the busy-ness that avoids the void.",
+      "gift": "Self-Assurance",
+      "gift_desc": "The total confidence that arises from being fully in the Now; correct action without thought.",
+      "siddhi": "Presence",
+      "siddhi_desc": "The cessation of time; the realization that there is only the Eternal Moment."
+    }
+  },
+  {
+    "id": 21,
+    "code": "RC21",
+    "name": "THE TREASURER",
+    "traditional_name": "Biting Through",
+    "binary": "100101",
+    "chemical_marker": "Histidine / Arginine",
+    "archetype_role": "The Steward",
+    "somatic_marker": "Jaw Tension / Heart Grip",
+    "frequency": {
+      "shadow": "Control",
+      "shadow_desc": "The desperate need to micromanage life because you do not trust the flow; leading through fear.",
+      "gift": "Authority",
+      "gift_desc": "The natural command of resources and people; leading by serving the needs of the tribe.",
+      "siddhi": "Valour",
+      "siddhi_desc": "The courage to surrender all control to the Divine, realizing that true power is allowing."
+    }
+  },
+  {
+    "id": 22,
+    "code": "RC22",
+    "name": "THE GRACE",
+    "traditional_name": "Grace",
+    "binary": "100101",
+    "chemical_marker": "Proline",
+    "archetype_role": "The Courtier",
+    "somatic_marker": "Breath Depth / Emotional Waves",
+    "frequency": {
+      "shadow": "Dishonour",
+      "shadow_desc": "Behaving without dignity to get what you want; emotional manipulation and social disgrace.",
+      "gift": "Graciousness",
+      "gift_desc": "The ability to handle intense emotional energy with elegance; suffering transmuted into art.",
+      "siddhi": "Grace",
+      "siddhi_desc": "The descent of the Divine into the human form; the final erasure of karma through pure forgiveness."
+    }
+  },
+  {
+    "id": 23,
+    "code": "RC23",
+    "name": "THE SPLIT",
+    "traditional_name": "Splitting Apart",
+    "binary": "000001",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Simplifier",
+    "somatic_marker": "Throat Tightness / Mental Buzzing",
+    "frequency": {
+      "shadow": "Complexity",
+      "shadow_desc": "The fragmentation of the mind into endless, fearful details; using jargon to hide insecurity.",
+      "gift": "Simplicity",
+      "gift_desc": "The genius of cutting through the noise to find the essential truth; saying much with few words.",
+      "siddhi": "Quintessence",
+      "siddhi_desc": "The alchemical extraction of the gold from the lead; touching the pure essence of consciousness."
+    }
+  },
+  {
+    "id": 24,
+    "code": "RC24",
+    "name": "THE RETURN",
+    "traditional_name": "Return",
+    "binary": "000001",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Inventor",
+    "somatic_marker": "Neural Looping / Third Eye Pulse",
+    "frequency": {
+      "shadow": "Addiction",
+      "shadow_desc": "The loop of the mind trying to fill the void; repetitive patterns of thought and substance.",
+      "gift": "Invention",
+      "gift_desc": "The realization that the gap in the pattern is not a hole, but a womb for the new.",
+      "siddhi": "Silence",
+      "siddhi_desc": "The cessation of the oscillating mind; the return to the absolute zero point of awareness."
+    }
+  },
+  {
+    "id": 25,
+    "code": "RC25",
+    "name": "THE SHAMAN",
+    "traditional_name": "Innocence",
+    "binary": "100111",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Priest",
+    "somatic_marker": "Blood Heat / Heart Constriction",
+    "frequency": {
+      "shadow": "Constriction",
+      "shadow_desc": "The narrowing of the spirit due to the wound of existence; breathless anxiety and spiritual panic.",
+      "gift": "Acceptance",
+      "gift_desc": "The radical embrace of the present moment, including the pain; the return to the 'Beginner's Mind.'",
+      "siddhi": "Universal Love",
+      "siddhi_desc": "The realization that you are not the one loving, but the Love itself observing the form."
+    }
+  },
+  {
+    "id": 26,
+    "code": "RC26",
+    "name": "THE EGOIST",
+    "traditional_name": "The Taming Power of the Great",
+    "binary": "111001",
+    "chemical_marker": "Threonine",
+    "archetype_role": "The Salesman",
+    "somatic_marker": "Thymus Pulse / Immune Activation",
+    "frequency": {
+      "shadow": "Pride",
+      "shadow_desc": "The inflation of the ego to mask a deep fear of worthlessness; the need to force the world to value you.",
+      "gift": "Artfulness",
+      "gift_desc": "The ability to manipulate energy and resources to create win-win scenarios; the master of the deal.",
+      "siddhi": "Invisibility",
+      "siddhi_desc": "The ego becomes so transparent that it can act without leaving a trace; the hidden hand of God."
+    }
+  },
+  {
+    "id": 27,
+    "code": "RC27",
+    "name": "THE CARETAKER",
+    "traditional_name": "Nourishment",
+    "binary": "100001",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Guardian",
+    "somatic_marker": "Salivary Glands / Stomach",
+    "frequency": {
+      "shadow": "Selfishness",
+      "shadow_desc": "The fear that there is not enough for you, leading to hoarding or draining others.",
+      "gift": "Altruism",
+      "gift_desc": "The natural impulse to use one's surplus to feed the tribe; care that empowers rather than cripples.",
+      "siddhi": "Selflessness",
+      "siddhi_desc": "The realization that there is no 'other' to feed; the universal circulation of light."
+    }
+  },
+  {
+    "id": 28,
+    "code": "RC28",
+    "name": "THE PLAYER",
+    "traditional_name": "Preponderance of the Great",
+    "binary": "011110",
+    "chemical_marker": "Aspartic Acid",
+    "archetype_role": "The Risk Taker",
+    "somatic_marker": "Adrenal Spike / Kidney Pressure",
+    "frequency": {
+      "shadow": "Purposelessness",
+      "shadow_desc": "The deep existential dread that life has no meaning; the collapse of the will to fight.",
+      "gift": "Totality",
+      "gift_desc": "The courage to play the game of life fully, without attachment to the outcome; the embrace of risk.",
+      "siddhi": "Immortality",
+      "siddhi_desc": "The realization that the soul is a player outside the game, untouched by the death of the avatar."
+    }
+  },
+  {
+    "id": 29,
+    "code": "RC29",
+    "name": "THE ABYSSAL",
+    "traditional_name": "The Abysmal",
+    "binary": "010010",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Devotee",
+    "somatic_marker": "Sacral Persistence / Cyclic Energy",
+    "frequency": {
+      "shadow": "Half-Heartedness",
+      "shadow_desc": "The inability to fully commit to the cycle; saying 'yes' but holding back the energy; chronic flakiness.",
+      "gift": "Commitment",
+      "gift_desc": "The power to enter a cycle and stay until it is finished, regardless of the difficulty; total immersion.",
+      "siddhi": "Devotion",
+      "siddhi_desc": "The realization that every cycle is a prayer; the dissolution of the 'I' into the act of service."
+    }
+  },
+  {
+    "id": 30,
+    "code": "RC30",
+    "name": "THE FATES",
+    "traditional_name": "The Clinging Fire",
+    "binary": "101101",
+    "chemical_marker": "Glutamine",
+    "archetype_role": "The Visionary",
+    "somatic_marker": "Solar Plexus Burn / Gut Fire",
+    "frequency": {
+      "shadow": "Desire",
+      "shadow_desc": "The hunger for what is not here; the burning need to fill the void with experience, leading to disappointment.",
+      "gift": "Lightness",
+      "gift_desc": "The acceptance of desire without the attachment to the outcome; the ability to burn brightly without consuming the self.",
+      "siddhi": "Rapture",
+      "siddhi_desc": "The burning up of the separate self in the fire of existence; the state of pure, causeless bliss."
+    }
+  },
+  {
+    "id": 31,
+    "code": "RC31",
+    "name": "THE ALPHA",
+    "traditional_name": "Influence",
+    "binary": "001110",
+    "chemical_marker": "Tyrosine",
+    "archetype_role": "The Leader",
+    "somatic_marker": "Throat Vibration / Voice Projection",
+    "frequency": {
+      "shadow": "Arrogance",
+      "shadow_desc": "The belief that you know what is best for others; leadership disconnected from the heart.",
+      "gift": "Leadership",
+      "gift_desc": "The art of articulating the collective vision; leading by representing the voice of the people.",
+      "siddhi": "Humility",
+      "siddhi_desc": "The realization that the leader is the servant of the led; the total dissolution of the 'I' into the 'We'."
+    }
+  },
+  {
+    "id": 32,
+    "code": "RC32",
+    "name": "THE ANCHOR",
+    "traditional_name": "Duration",
+    "binary": "001110",
+    "chemical_marker": "Aspartic Acid",
+    "archetype_role": "The Conservator",
+    "somatic_marker": "Spleen Pulse / Olfactory Sense",
+    "frequency": {
+      "shadow": "Failure",
+      "shadow_desc": "The deep, biological fear of lack; the terror that the tribe will not survive the winter.",
+      "gift": "Preservation",
+      "gift_desc": "The instinctive knowledge of what to keep and what to discard to ensure survival; financial and tribal endurance.",
+      "siddhi": "Veneration",
+      "siddhi_desc": "The recognition of the sacred in all things; the preservation of life as an act of worship."
+    }
+  },
+  {
+    "id": 33,
+    "code": "RC33",
+    "name": "THE RETREAT",
+    "traditional_name": "Retreat",
+    "binary": "001111",
+    "chemical_marker": "Valine (Stop Codon)",
+    "archetype_role": "The Hermit",
+    "somatic_marker": "Neck Tension / Voice Drop",
+    "frequency": {
+      "shadow": "Forgetting",
+      "shadow_desc": "The misuse of retreat to hide from life; getting lost in the past without extracting the wisdom.",
+      "gift": "Mindfulness",
+      "gift_desc": "The ability to step back from the stream of events to see the pattern; the witness consciousness.",
+      "siddhi": "Revelation",
+      "siddhi_desc": "The sudden unveiling of the divine structure of reality; the memory of the Source."
+    }
+  },
+  {
+    "id": 34,
+    "code": "RC34",
+    "name": "THE POWER",
+    "traditional_name": "The Power of the Great",
+    "binary": "111100",
+    "chemical_marker": "Asparagine",
+    "archetype_role": "The Giant",
+    "somatic_marker": "Sacral Throb / Muscle Density",
+    "frequency": {
+      "shadow": "Force",
+      "shadow_desc": "The clumsy application of power; bullying reality to fit your will; unawareness of your own strength.",
+      "gift": "Strength",
+      "gift_desc": "The majestic, effortless display of power; doing difficult things with grace; the peaceful warrior.",
+      "siddhi": "Majesty",
+      "siddhi_desc": "The power that requires no action; the presence that commands the elements simply by being."
+    }
+  },
+  {
+    "id": 35,
+    "code": "RC35",
+    "name": "THE PROGRESS",
+    "traditional_name": "Progress",
+    "binary": "000101",
+    "chemical_marker": "Tryptophan",
+    "archetype_role": "The Explorer",
+    "somatic_marker": "Thyroid Heat / Restless Legs",
+    "frequency": {
+      "shadow": "Hunger",
+      "shadow_desc": "The insatiable void that consumes experiences without digesting them; the boredom that destroys.",
+      "gift": "Adventure",
+      "gift_desc": "The joy of the journey for its own sake; the willingness to explore the unknown without a map.",
+      "siddhi": "Boundlessness",
+      "siddhi_desc": "The realization that space and time are the playground of consciousness; being everywhere at once."
+    }
+  },
+  {
+    "id": 36,
+    "code": "RC36",
+    "name": "THE CRISIS",
+    "traditional_name": "Darkening of the Light",
+    "binary": "101000",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Survivor",
+    "somatic_marker": "Solar Plexus Cramp / Heart Palpitations",
+    "frequency": {
+      "shadow": "Turbulence",
+      "shadow_desc": "The addiction to emotional drama; the belief that life is a constant emergency.",
+      "gift": "Humanity",
+      "gift_desc": "The profound compassion born from surviving the darkness; the ability to hold space for others' pain.",
+      "siddhi": "Compassion",
+      "siddhi_desc": "The total embrace of suffering as a necessary mechanism for the opening of the heart."
+    }
+  },
+  {
+    "id": 37,
+    "code": "RC37",
+    "name": "THE HEARTH",
+    "traditional_name": "The Family",
+    "binary": "101011",
+    "chemical_marker": "Proline",
+    "archetype_role": "The Matriarch/Patriarch",
+    "somatic_marker": "Solar Plexus Warmth / Touch Hunger",
+    "frequency": {
+      "shadow": "Weakness",
+      "shadow_desc": "The collapse of boundaries due to a desperate need for approval; over-sentimentality that ignores truth.",
+      "gift": "Equality",
+      "gift_desc": "The ability to hold the family together without dissolving into it; creating a community of equals.",
+      "siddhi": "Tenderness",
+      "siddhi_desc": "The universal embrace that recognizes every being as a member of the divine family."
+    }
+  },
+  {
+    "id": 38,
+    "code": "RC38",
+    "name": "THE FIGHTER",
+    "traditional_name": "Opposition",
+    "binary": "110101",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Warrior",
+    "somatic_marker": "Adrenal Tension / Spinal Bracing",
+    "frequency": {
+      "shadow": "Struggle",
+      "shadow_desc": "Fighting because you don't know how to stop; the addiction to resistance; making life harder than it needs to be.",
+      "gift": "Perseverance",
+      "gift_desc": "The indomitable spirit that finds meaning in the obstacle; fighting only for what matters.",
+      "siddhi": "Honor",
+      "siddhi_desc": "The recognition that the enemy is also the self; the fight becomes a dance of unity."
+    }
+  },
+  {
+    "id": 39,
+    "code": "RC39",
+    "name": "THE PROVOCATEUR",
+    "traditional_name": "Obstruction",
+    "binary": "001010",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Liberator",
+    "somatic_marker": "Root Pressure / Explosive Burst",
+    "frequency": {
+      "shadow": "Provocation",
+      "shadow_desc": "Poking the wound just to see the reaction; projecting internal pain onto others to create a release.",
+      "gift": "Dynamism",
+      "gift_desc": "The energy that breaks stagnation; the pressure that cracks the seed so it can grow.",
+      "siddhi": "Liberation",
+      "siddhi_desc": "The final breaking of all chains; the realization that the obstacle was the path all along."
+    }
+  },
+  {
+    "id": 40,
+    "code": "RC40",
+    "name": "THE ALTAR",
+    "traditional_name": "Deliverance",
+    "binary": "001010",
+    "chemical_marker": "Glycine",
+    "archetype_role": "The Provider",
+    "somatic_marker": "Stomach Knot / Shoulder Weight",
+    "frequency": {
+      "shadow": "Exhaustion",
+      "shadow_desc": "The inability to say no; giving resources until the well is dry; the loneliness of the provider.",
+      "gift": "Resolve",
+      "gift_desc": "The will to provide for the tribe while setting sacred boundaries; the power to say 'It is enough.'",
+      "siddhi": "Divine Will",
+      "siddhi_desc": "The surrender of the personal will to the Will of the Whole; absolute deliverance from the need to prove worth."
+    }
+  },
+  {
+    "id": 41,
+    "code": "RC41",
+    "name": "THE ORIGIN",
+    "traditional_name": "Decrease",
+    "binary": "110001",
+    "chemical_marker": "Methionine (Start Codon)",
+    "archetype_role": "The Initiator",
+    "somatic_marker": "Kidney Thirst / Adrenal Itch",
+    "frequency": {
+      "shadow": "Fantasy",
+      "shadow_desc": "The loop of dreaming about the future to escape the present; the addiction to 'what if' without the will to manifest.",
+      "gift": "Anticipation",
+      "gift_desc": "The energetic fueling of the future; using the imagination to blueprint the next evolutionary leap.",
+      "siddhi": "Emanation",
+      "siddhi_desc": "The realization that the dreamer and the dream are one; reality flows effortlessly from the zero point."
+    }
+  },
+  {
+    "id": 42,
+    "code": "RC42",
+    "name": "THE CLOSER",
+    "traditional_name": "Increase",
+    "binary": "100011",
+    "chemical_marker": "Leucine",
+    "archetype_role": "The Finisher",
+    "somatic_marker": "Gut Expansion / Sacral Weight",
+    "frequency": {
+      "shadow": "Expectation",
+      "shadow_desc": "The attachment to a specific outcome; the inability to let the cycle die naturally; grief disguised as control.",
+      "gift": "Detachment",
+      "gift_desc": "The ability to fully engage in the process while letting go of the result; the master of endings.",
+      "siddhi": "Celebration",
+      "siddhi_desc": "The joy of the cycle itself; seeing birth and death as the same festive movement of energy."
+    }
+  },
+  {
+    "id": 43,
+    "code": "RC43",
+    "name": "THE BREAKTHROUGH",
+    "traditional_name": "Break-through",
+    "binary": "011111",
+    "chemical_marker": "Aspartic Acid",
+    "archetype_role": "The Maverick",
+    "somatic_marker": "Inner Ear Pressure / Acoustic Shield",
+    "frequency": {
+      "shadow": "Deafness",
+      "shadow_desc": "The inability to hear others because the inner noise is too loud; paranoia that you are misunderstood.",
+      "gift": "Insight",
+      "gift_desc": "The creative rebellion that hears a frequency no one else hears; the genius of the mutant mind.",
+      "siddhi": "Epiphany",
+      "siddhi_desc": "The thunderbolt of pure knowing; the silence where the individual mind merges with the Universal Mind."
+    }
+  },
+  {
+    "id": 44,
+    "code": "RC44",
+    "name": "THE WEAVER",
+    "traditional_name": "Coming to Meet",
+    "binary": "111110",
+    "chemical_marker": "Glutamic Acid",
+    "archetype_role": "The Merchant",
+    "somatic_marker": "Olfactory Alert / Spleen Chill",
+    "frequency": {
+      "shadow": "Interference",
+      "shadow_desc": "The fear of the past repeating itself; the chaotic relationships formed out of old trauma patterns.",
+      "gift": "Teamwork",
+      "gift_desc": "The instinctive ability to recognize the right people for the right fractal; the master of personnel.",
+      "siddhi": "Synarchy",
+      "siddhi_desc": "The self-organizing social order where every being is perfectly placed by the intelligence of the whole."
+    }
+  },
+  {
+    "id": 45,
+    "code": "RC45",
+    "name": "THE MONARCH",
+    "traditional_name": "Gathering Together",
+    "binary": "000110",
+    "chemical_marker": "Cysteine",
+    "archetype_role": "The King / The Queen",
+    "somatic_marker": "Throat Constriction / Chest Expansion",
+    "frequency": {
+      "shadow": "Dominance",
+      "shadow_desc": "The fear of losing territory; using hierarchy to suppress others; hoarding resources out of insecurity.",
+      "gift": "Synergy",
+      "gift_desc": "The ability to gather disparate elements into a unified whole; leadership that multiplies value for everyone.",
+      "siddhi": "Communion",
+      "siddhi_desc": "The realization that we are all gathering around the same central fire; the distribution of grace."
+    }
+  },
+  {
+    "id": 46,
+    "code": "RC46",
+    "name": "THE TEMPLE",
+    "traditional_name": "Pushing Upward",
+    "binary": "011000",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Ecstatic",
+    "somatic_marker": "Spinal Alignment / Sacral Heat",
+    "frequency": {
+      "shadow": "Seriousness",
+      "shadow_desc": "The rejection of the physical body; living in the mind to avoid the messiness of flesh; rigidity.",
+      "gift": "Delight",
+      "gift_desc": "The pure joy of being in a body; the realization that spirit is not 'up there' but 'in here.'",
+      "siddhi": "Ecstasy",
+      "siddhi_desc": "The continuous orgasm of existence; the cellular realization of the Divine in every atom."
+    }
+  },
+  {
+    "id": 47,
+    "code": "RC47",
+    "name": "THE ALCHEMIST",
+    "traditional_name": "Oppression",
+    "binary": "010110",
+    "chemical_marker": "Glycine",
+    "archetype_role": "The Transmuter",
+    "somatic_marker": "Frontal Lobe Pressure / Eye Strain",
+    "frequency": {
+      "shadow": "Oppression",
+      "shadow_desc": "The weight of the past pressing on the mind; the loop of 'why did this happen?'; mental suffering.",
+      "gift": "Transmutation",
+      "gift_desc": "The ability to turn the lead of trauma into the gold of wisdom; the 'Aha!' moment that dissolves the weight.",
+      "siddhi": "Transfiguration",
+      "siddhi_desc": "The painting becomes the painter; the total rewriting of the past into a holy scripture."
+    }
+  },
+  {
+    "id": 48,
+    "code": "RC48",
+    "name": "THE DEPTH",
+    "traditional_name": "The Well",
+    "binary": "011010",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Wizard",
+    "somatic_marker": "Spleen Quiver / Pelvic Floor",
+    "frequency": {
+      "shadow": "Inadequacy",
+      "shadow_desc": "The fear that you do not know enough; the bottomless pit of needing more credentials before you act.",
+      "gift": "Resourcefulness",
+      "gift_desc": "The trust that the solution is not in the book, but in the well; accessing wisdom in the moment.",
+      "siddhi": "Wisdom",
+      "siddhi_desc": "The knowing that requires no knowledge; the direct link to the Akashic source."
+    }
+  },
+  {
+    "id": 49,
+    "code": "RC49",
+    "name": "THE CATALYST",
+    "traditional_name": "Revolution",
+    "binary": "101110",
+    "chemical_marker": "Histidine",
+    "archetype_role": "The Revolutionary",
+    "somatic_marker": "Solar Plexus Heat / Skin Sensitivity",
+    "frequency": {
+      "shadow": "Reaction",
+      "shadow_desc": "The knee-jerk emotional rejection of anything different; cutting people off out of fear rather than principle.",
+      "gift": "Revolution",
+      "gift_desc": "The burning need to change the system for the higher good; the ability to reject the corrupt to make space for the new.",
+      "siddhi": "Rebirth",
+      "siddhi_desc": "The shedding of the old skin without violence; the realization that death is just a costume change."
+    }
+  },
+  {
+    "id": 50,
+    "code": "RC50",
+    "name": "THE GUARDIAN",
+    "traditional_name": "The Cauldron",
+    "binary": "011101",
+    "chemical_marker": "Glutamic Acid",
+    "archetype_role": "The Lawgiver",
+    "somatic_marker": "Spleen Pulse / Digestive Fire",
+    "frequency": {
+      "shadow": "Corruption",
+      "shadow_desc": "The decay of values to serve the ego; changing the rules to benefit the self at the expense of the tribe.",
+      "gift": "Equilibrium",
+      "gift_desc": "The balancing of ingredients to create a healthy society; the maintenance of the values that ensure survival.",
+      "siddhi": "Harmony",
+      "siddhi_desc": "The celestial music of the spheres; the state where human law aligns perfectly with Cosmic Law."
+    }
+  },
+  {
+    "id": 51,
+    "code": "RC51",
+    "name": "THE THUNDER",
+    "traditional_name": "The Arousal",
+    "binary": "100100",
+    "chemical_marker": "Arginine",
+    "archetype_role": "The Warrior",
+    "somatic_marker": "Heart Palpitation / Adrenal Shock",
+    "frequency": {
+      "shadow": "Agitation",
+      "shadow_desc": "The anxiety of the ego trying to control the uncontrollable; using shock to create drama; competitiveness.",
+      "gift": "Initiation",
+      "gift_desc": "The ability to use shock to wake people up; the courage to leap into the void first.",
+      "siddhi": "Awakening",
+      "siddhi_desc": "The realization that you were never asleep; the thunderbolt that obliterates the illusion of separation."
+    }
+  },
+  {
+    "id": 52,
+    "code": "RC52",
+    "name": "THE MOUNTAIN",
+    "traditional_name": "Keeping Still",
+    "binary": "001001",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Monk",
+    "somatic_marker": "Root Pressure / Spinal Stillness",
+    "frequency": {
+      "shadow": "Stress",
+      "shadow_desc": "The pressure to act when it is not time; the vibration of fear trapped in the body; inability to be still.",
+      "gift": "Restraint",
+      "gift_desc": "The power to hold the energy back until the perfect moment; the focus of the laser beam.",
+      "siddhi": "Stillness",
+      "siddhi_desc": "The cosmic pause; the point of absolute rest around which the entire universe spins."
+    }
+  },
+  {
+    "id": 53,
+    "code": "RC53",
+    "name": "THE STARTER",
+    "traditional_name": "Development",
+    "binary": "001011",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Initiator",
+    "somatic_marker": "Root Pressure / Adrenal Surge",
+    "frequency": {
+      "shadow": "Immaturity",
+      "shadow_desc": "The addiction to starting without the will to finish; escaping the hard work of the middle by jumping to a new beginning.",
+      "gift": "Expansion",
+      "gift_desc": "The pressure to evolve through cycles; the ability to lay the perfect foundation for growth.",
+      "siddhi": "Superabundance",
+      "siddhi_desc": "The realization that life is infinite initiation; the end of linear time and the entry into eternal unfolding."
+    }
+  },
+  {
+    "id": 54,
+    "code": "RC54",
+    "name": "THE ASPIRANT",
+    "traditional_name": "The Marrying Maiden",
+    "binary": "001101",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Climber",
+    "somatic_marker": "Root Burn / Spinal Drive",
+    "frequency": {
+      "shadow": "Greed",
+      "shadow_desc": "The desperate need to be 'more' than you are; using others as rungs on a ladder; spiritual or material materialism.",
+      "gift": "Aspiration",
+      "gift_desc": "The healthy drive to transform base energy into higher consciousness; the fuel for success and enlightenment.",
+      "siddhi": "Ascension",
+      "siddhi_desc": "The alchemical sublimation of the ego into light; the ladder disappears because you have become the sky."
+    }
+  },
+  {
+    "id": 55,
+    "code": "RC55",
+    "name": "THE SPIRIT",
+    "traditional_name": "Abundance",
+    "binary": "001101",
+    "chemical_marker": "Histidine",
+    "archetype_role": "The Romantic",
+    "somatic_marker": "Solar Plexus Wave / Breath Depth",
+    "frequency": {
+      "shadow": "Victimization",
+      "shadow_desc": "The belief that your mood is caused by the world; drowning in the emotional wave; complaining as a lifestyle.",
+      "gift": "Freedom",
+      "gift_desc": "The realization that the mood is internal weather; the ability to create your own emotional reality regardless of circumstance.",
+      "siddhi": "Freedom",
+      "siddhi_desc": "The final liberation from the binary of pleasure and pain; the spirit dancing purely for the joy of the dance."
+    }
+  },
+  {
+    "id": 56,
+    "code": "RC56",
+    "name": "THE WANDERER",
+    "traditional_name": "The Wanderer",
+    "binary": "111100",
+    "chemical_marker": "Stop Codon",
+    "archetype_role": "The Storyteller",
+    "somatic_marker": "Throat Itch / Restless Eyes",
+    "frequency": {
+      "shadow": "Distraction",
+      "shadow_desc": "The addiction to new stimuli to avoid the silence; skimming the surface of life; the 'shiny object' syndrome.",
+      "gift": "Enrichment",
+      "gift_desc": "The ability to gather diverse experiences and weave them into a unified story that uplifts the listener.",
+      "siddhi": "Intoxication",
+      "siddhi_desc": "The realization that life itself is the story of God; getting drunk on the divine play of existence."
+    }
+  },
+  {
+    "id": 57,
+    "code": "RC57",
+    "name": "THE WHISPER",
+    "traditional_name": "The Gentle",
+    "binary": "011011",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Oracle",
+    "somatic_marker": "Right Ear Acoustic / Spleen Chill",
+    "frequency": {
+      "shadow": "Unease",
+      "shadow_desc": "The fear of the future manifesting as a constant, low-level vibration of anxiety; the inability to trust the Now.",
+      "gift": "Intuition",
+      "gift_desc": "The acoustic clarity that hears the truth before it is spoken; the immediate biological knowing of safety or danger.",
+      "siddhi": "Clarity",
+      "siddhi_desc": "The absolute silence where the listener becomes the sound; the dissolution of time into pure knowing."
+    }
+  },
+  {
+    "id": 58,
+    "code": "RC58",
+    "name": "THE VITALIST",
+    "traditional_name": "The Joyous",
+    "binary": "011011",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Improver",
+    "somatic_marker": "Adrenal Spark / Root Pressure",
+    "frequency": {
+      "shadow": "Dissatisfaction",
+      "shadow_desc": "The constant focus on what is missing or broken; the loss of the joy of living in the pursuit of the perfect.",
+      "gift": "Vitality",
+      "gift_desc": "The joyous energy to improve the world; the uncontainable life force that challenges authority to serve the people.",
+      "siddhi": "Bliss",
+      "siddhi_desc": "The realization that perfection is not a destination but the nature of the moment itself."
+    }
+  },
+  {
+    "id": 59,
+    "code": "RC59",
+    "name": "THE FUSION",
+    "traditional_name": "Dispersion",
+    "binary": "010011",
+    "chemical_marker": "Phenylalanine",
+    "archetype_role": "The Mate",
+    "somatic_marker": "Sacral Heat / Pheromone Spike",
+    "frequency": {
+      "shadow": "Dishonesty",
+      "shadow_desc": "Hiding the true self to gain acceptance or intimacy; the manipulation of the aura to trap a mate.",
+      "gift": "Intimacy",
+      "gift_desc": "The ability to break down the barriers between self and other; the courage to let the aura penetrate.",
+      "siddhi": "Transparency",
+      "siddhi_desc": "The clear pane of glass where the Creator looks through the eyes of the creature; no secrets, no walls."
+    }
+  },
+  {
+    "id": 60,
+    "code": "RC60",
+    "name": "THE STRUCTURE",
+    "traditional_name": "Limitation",
+    "binary": "010011",
+    "chemical_marker": "Isoleucine",
+    "archetype_role": "The Magician",
+    "somatic_marker": "Root Pressure / Pulse Lock",
+    "frequency": {
+      "shadow": "Limitation",
+      "shadow_desc": "The feeling of being trapped by form, time, or circumstance; the rage against the cage.",
+      "gift": "Realism",
+      "gift_desc": "The acceptance of the container; understanding that without the banks, the river is just a swamp; magic through structure.",
+      "siddhi": "Justice",
+      "siddhi_desc": "The perfect balance of form and emptiness; the realization that the limitation *is* the liberation."
+    }
+  },
+  {
+    "id": 61,
+    "code": "RC61",
+    "name": "THE MYSTERY",
+    "traditional_name": "Inner Truth",
+    "binary": "110011",
+    "chemical_marker": "Alanine",
+    "archetype_role": "The Mystic",
+    "somatic_marker": "Skull Pressure / Pineal Pulse",
+    "frequency": {
+      "shadow": "Psychosis",
+      "shadow_desc": "The mind breaking under the pressure of the unknown; the desperate need to know 'Why?' turning into delusion.",
+      "gift": "Inspiration",
+      "gift_desc": "The ability to channel the unknowable into music, art, or thought; making the divine accessible.",
+      "siddhi": "Sanctity",
+      "siddhi_desc": "The realization that the Mystery is not a problem to be solved, but a presence to be inhabited."
+    }
+  },
+  {
+    "id": 62,
+    "code": "RC62",
+    "name": "THE PRECISIAN",
+    "traditional_name": "Preponderance of the Small",
+    "binary": "001100",
+    "chemical_marker": "Tyrosine",
+    "archetype_role": "The Translator",
+    "somatic_marker": "Throat Click / Eye Darting",
+    "frequency": {
+      "shadow": "Intellect",
+      "shadow_desc": "Using facts as a defense mechanism; obsessing over details to avoid feeling the emotion.",
+      "gift": "Precision",
+      "gift_desc": "The ability to name the thing exactly; the use of language to unlock understanding for others.",
+      "siddhi": "Impeccability",
+      "siddhi_desc": "The perfect alignment of thought, word, and deed; the state where language creates reality."
+    }
+  },
+  {
+    "id": 63,
+    "code": "RC63",
+    "name": "THE SKEPTIC",
+    "traditional_name": "After Completion",
+    "binary": "010101",
+    "chemical_marker": "Valine",
+    "archetype_role": "The Scientist",
+    "somatic_marker": "Head Pressure / Spiral Thinking",
+    "frequency": {
+      "shadow": "Doubt",
+      "shadow_desc": "The self-destructive questioning that paralyzes action; suspicion of self and others.",
+      "gift": "Inquiry",
+      "gift_desc": "The healthy skepticism that tests the pattern to ensure it is true; the question that opens the door.",
+      "siddhi": "Truth",
+      "siddhi_desc": "The end of the question; the silence of absolute knowing where doubt is impossible."
+    }
+  },
+  {
+    "id": 64,
+    "code": "RC64",
+    "name": "THE DOWNLOAD",
+    "traditional_name": "Before Completion",
+    "binary": "101010",
+    "chemical_marker": "Serine",
+    "archetype_role": "The Dreamer",
+    "somatic_marker": "Visual Cortex Flash / Dream State",
+    "frequency": {
+      "shadow": "Confusion",
+      "shadow_desc": "The chaos of unorganized images; the inability to distinguish between the past, present, and future.",
+      "gift": "Imagination",
+      "gift_desc": "The ability to organize the chaos into a narrative; thinking in pictures; the artist's mind.",
+      "siddhi": "Illumination",
+      "siddhi_desc": "The realization that you are the light projecting the movie; the dreamer waking up within the dream."
+    }
+  }
+]
