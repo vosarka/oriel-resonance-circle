@@ -4,7 +4,8 @@ import CodonGlyph from "@/components/CodonGlyph";
 import Layout from "@/components/Layout";
 import { trpc } from "@/lib/trpc";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { ArrowLeft, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, MapPin } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Link } from "wouter";
@@ -20,9 +21,9 @@ const C = {
   goldL: "#d4c090",
   goldDim: "rgba(189,163,107,0.52)",
   goldGlow: "rgba(189,163,107,0.10)",
-  teal: "#5ba4a4",
-  tealDim: "rgba(91,164,164,0.45)",
-  tealGlow: "rgba(91,164,164,0.14)",
+  amber: "#f6b05e",
+  amberDim: "rgba(246,176,94,0.45)",
+  amberGlow: "rgba(246,176,94,0.14)",
   txt: "#e8e4dc",
   txtS: "#9a968e",
   txtD: "#6a665e",
@@ -34,10 +35,10 @@ const WHEEL_OFFSET = 11.25;
 const CODON_ARC = 5.625;
 
 const MANDALA_SEQUENCE = [
-  51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39,
-  53, 62, 56, 31, 33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48,
-  57, 32, 50, 28, 44, 1, 43, 14, 34, 9, 5, 26, 11, 10, 58, 38,
-  54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22, 36, 25, 17, 21,
+  51, 42, 3, 27, 24, 2, 23, 8, 20, 16, 35, 45, 12, 15, 52, 39, 53, 62, 56, 31,
+  33, 7, 4, 29, 59, 40, 64, 47, 6, 46, 18, 48, 57, 32, 50, 28, 44, 1, 43, 14,
+  34, 9, 5, 26, 11, 10, 58, 38, 54, 61, 60, 41, 19, 13, 49, 30, 55, 37, 63, 22,
+  36, 25, 17, 21,
 ] as const;
 
 const MANDALA_SEQUENCE_LIST: number[] = [...MANDALA_SEQUENCE];
@@ -181,7 +182,7 @@ function normalizePrimeStack(value: unknown): PrimeStackEntry[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry) => {
+    .map(entry => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
       return {
@@ -200,7 +201,9 @@ function normalizePrimeStack(value: unknown): PrimeStackEntry[] {
         baseFrequency: numberOr(row.baseFrequency, 0),
       };
     })
-    .filter((entry): entry is PrimeStackEntry => Boolean(entry && entry.codon > 0));
+    .filter((entry): entry is PrimeStackEntry =>
+      Boolean(entry && entry.codon > 0)
+    );
 }
 
 function normalizeCenters(value: unknown): CenterEntry[] {
@@ -225,7 +228,7 @@ function normalizeChannels(value: unknown): ChannelEntry[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry) => {
+    .map(entry => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
       return {
@@ -236,14 +239,16 @@ function normalizeChannels(value: unknown): ChannelEntry[] {
         centerB: stringOr(row.centerB, "Unknown"),
       };
     })
-    .filter((entry): entry is ChannelEntry => Boolean(entry && entry.gateA > 0 && entry.gateB > 0));
+    .filter((entry): entry is ChannelEntry =>
+      Boolean(entry && entry.gateA > 0 && entry.gateB > 0)
+    );
 }
 
 function normalizeActivations(value: unknown): ActivationEntry[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry) => {
+    .map(entry => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
       const layer = row.layer === "design" ? "design" : "conscious";
@@ -257,14 +262,16 @@ function normalizeActivations(value: unknown): ActivationEntry[] {
         weight: numberOr(row.weight, 0),
       };
     })
-    .filter((entry): entry is ActivationEntry => Boolean(entry && entry.codonId > 0));
+    .filter((entry): entry is ActivationEntry =>
+      Boolean(entry && entry.codonId > 0)
+    );
 }
 
 function normalizeCorrections(value: unknown): CorrectionEntry[] {
   if (!Array.isArray(value)) return [];
 
   return value
-    .map((entry) => {
+    .map(entry => {
       if (!entry || typeof entry !== "object") return null;
       const row = entry as Record<string, unknown>;
       return {
@@ -287,15 +294,24 @@ function buildPositionsByCodon(primeStack: PrimeStackEntry[]) {
   return map;
 }
 
-function buildLattice512Nodes(activations: ActivationEntry[]): Lattice512Node[] {
+function buildLattice512Nodes(
+  activations: ActivationEntry[]
+): Lattice512Node[] {
   const activeWeights = new Map<string, number>();
   for (const activation of activations) {
     const key = `${activation.layer}:${activation.codonId}:${activation.facet}`;
-    activeWeights.set(key, Math.max(activeWeights.get(key) ?? 0, activation.weight));
+    activeWeights.set(
+      key,
+      Math.max(activeWeights.get(key) ?? 0, activation.weight)
+    );
   }
 
   const nodes: Lattice512Node[] = [];
-  for (let codonIndex = 0; codonIndex < MANDALA_SEQUENCE.length; codonIndex += 1) {
+  for (
+    let codonIndex = 0;
+    codonIndex < MANDALA_SEQUENCE.length;
+    codonIndex += 1
+  ) {
     const codon = MANDALA_SEQUENCE[codonIndex];
     const baseAngle = (codonIndex / MANDALA_SEQUENCE.length) * Math.PI * 2;
 
@@ -303,8 +319,12 @@ function buildLattice512Nodes(activations: ActivationEntry[]): Lattice512Node[] 
       for (const layer of ["conscious", "design"] as const) {
         const layerIndex = layer === "conscious" ? 0 : 1;
         const key = `${layer}:${codon}:${facet}`;
-        const radius = (layer === "conscious" ? 2.12 : 1.52) + facetIndex * 0.075;
-        const angle = baseAngle + (layerIndex === 0 ? 0 : Math.PI / 64) + (facetIndex - 1.5) * 0.012;
+        const radius =
+          (layer === "conscious" ? 2.12 : 1.52) + facetIndex * 0.075;
+        const angle =
+          baseAngle +
+          (layerIndex === 0 ? 0 : Math.PI / 64) +
+          (facetIndex - 1.5) * 0.012;
         const weight = activeWeights.get(key) ?? 0;
 
         nodes.push({
@@ -348,16 +368,16 @@ function Panel({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(circle at top left, rgba(91,164,164,0.08), transparent 38%), radial-gradient(circle at bottom right, rgba(189,163,107,0.06), transparent 44%)",
+            "radial-gradient(circle at top left, rgba(246,176,94,0.08), transparent 38%), radial-gradient(circle at bottom right, rgba(189,163,107,0.06), transparent 44%)",
           pointerEvents: "none",
         }}
       />
       <div style={{ position: "relative", padding: "18px 20px 20px" }}>
         <div
           style={{
-            fontFamily: "monospace",
+            fontFamily: "var(--font-ritual)",
             fontSize: 9,
-            color: C.teal,
+            color: C.amber,
             letterSpacing: "0.18em",
             marginBottom: 10,
           }}
@@ -366,7 +386,7 @@ function Panel({
         </div>
         <div
           style={{
-            fontFamily: "'Cormorant Garamond', serif",
+            fontFamily: "var(--font-display)",
             fontSize: 28,
             color: C.txt,
             fontWeight: 300,
@@ -401,7 +421,7 @@ function DataPill({
     >
       <div
         style={{
-          fontFamily: "monospace",
+          fontFamily: "var(--font-ritual)",
           fontSize: 8,
           color: C.txtD,
           letterSpacing: "0.16em",
@@ -425,11 +445,16 @@ function DataPill({
 }
 
 function CenterConstellation({ centers }: { centers: CenterEntry[] }) {
-  const centerMap = new Map(centers.map((center) => [center.id, center]));
-  const positionMap = Object.fromEntries(CENTER_LAYOUT.map((center) => [center.id, center]));
+  const centerMap = new Map(centers.map(center => [center.id, center]));
+  const positionMap = Object.fromEntries(
+    CENTER_LAYOUT.map(center => [center.id, center])
+  );
 
   return (
-    <svg viewBox="0 0 100 100" style={{ width: "100%", maxWidth: 260, height: "auto" }}>
+    <svg
+      viewBox="0 0 100 100"
+      style={{ width: "100%", maxWidth: 260, height: "auto" }}
+    >
       {CENTER_CONNECTIONS.map(([from, to], index) => (
         <line
           key={index}
@@ -441,7 +466,7 @@ function CenterConstellation({ centers }: { centers: CenterEntry[] }) {
           strokeWidth="0.45"
         />
       ))}
-      {CENTER_LAYOUT.map((point) => {
+      {CENTER_LAYOUT.map(point => {
         const center = centerMap.get(point.id);
         const defined = Boolean(center?.defined);
         return (
@@ -454,7 +479,15 @@ function CenterConstellation({ centers }: { centers: CenterEntry[] }) {
               stroke={defined ? C.gold : C.border}
               strokeWidth={defined ? "0.8" : "0.45"}
             />
-            {defined && <circle cx={point.x} cy={point.y} r={1.55} fill={C.gold} opacity={0.8} />}
+            {defined && (
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={1.55}
+                fill={C.gold}
+                opacity={0.8}
+              />
+            )}
             <text
               x={point.x}
               y={point.y + 8.8}
@@ -462,11 +495,15 @@ function CenterConstellation({ centers }: { centers: CenterEntry[] }) {
               style={{
                 fontSize: "3.1px",
                 fill: defined ? C.goldL : C.txtD,
-                fontFamily: "monospace",
+                fontFamily: "var(--font-ritual)",
                 letterSpacing: "0.4px",
               }}
             >
-              {point.id === "Solar Plexus" ? "Solar" : point.id === "G-Self" ? "G-Self" : point.id}
+              {point.id === "Solar Plexus"
+                ? "Solar"
+                : point.id === "G-Self"
+                  ? "G-Self"
+                  : point.id}
             </text>
           </g>
         );
@@ -482,18 +519,29 @@ function ChannelGraph({
   channels: ChannelEntry[];
   centers: CenterEntry[];
 }) {
-  const centerMap = new Map(centers.map((center) => [center.id, center]));
-  const positionMap = Object.fromEntries(CENTER_LAYOUT.map((center) => [center.id, center]));
+  const centerMap = new Map(centers.map(center => [center.id, center]));
+  const positionMap = Object.fromEntries(
+    CENTER_LAYOUT.map(center => [center.id, center])
+  );
   const activeCounts = new Map<string, number>();
 
   for (const channel of channels) {
     if (!channel.active) continue;
-    activeCounts.set(channel.centerA, (activeCounts.get(channel.centerA) ?? 0) + 1);
-    activeCounts.set(channel.centerB, (activeCounts.get(channel.centerB) ?? 0) + 1);
+    activeCounts.set(
+      channel.centerA,
+      (activeCounts.get(channel.centerA) ?? 0) + 1
+    );
+    activeCounts.set(
+      channel.centerB,
+      (activeCounts.get(channel.centerB) ?? 0) + 1
+    );
   }
 
   return (
-    <svg viewBox="0 0 100 100" style={{ width: "100%", maxWidth: 420, height: "auto" }}>
+    <svg
+      viewBox="0 0 100 100"
+      style={{ width: "100%", maxWidth: 420, height: "auto" }}
+    >
       <defs>
         <filter id="oriel-channel-glow">
           <feGaussianBlur stdDeviation="1.4" result="blur" />
@@ -523,7 +571,7 @@ function ChannelGraph({
           />
         );
       })}
-      {CENTER_LAYOUT.map((point) => {
+      {CENTER_LAYOUT.map(point => {
         const center = centerMap.get(point.id);
         const defined = Boolean(center?.defined);
         const count = activeCounts.get(point.id) ?? 0;
@@ -545,7 +593,7 @@ function ChannelGraph({
                 style={{
                   fontSize: "4px",
                   fill: C.goldL,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-ritual)",
                 }}
               >
                 {count}
@@ -558,10 +606,14 @@ function ChannelGraph({
               style={{
                 fontSize: "3.2px",
                 fill: defined ? C.goldL : C.txtD,
-                fontFamily: "monospace",
+                fontFamily: "var(--font-ritual)",
               }}
             >
-              {point.id === "Solar Plexus" ? "Solar" : point.id === "G-Self" ? "G" : point.id}
+              {point.id === "Solar Plexus"
+                ? "Solar"
+                : point.id === "G-Self"
+                  ? "G"
+                  : point.id}
             </text>
           </g>
         );
@@ -576,13 +628,16 @@ function Lattice512Cloud({ nodes }: { nodes: Lattice512Node[] }) {
   useFrame((state, delta) => {
     if (!groupRef.current) return;
     groupRef.current.rotation.z += delta * 0.055;
-    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
+    groupRef.current.rotation.x =
+      Math.sin(state.clock.elapsedTime * 0.18) * 0.12;
   });
 
   return (
     <group ref={groupRef}>
-      {nodes.map((node) => {
-        const activeScale = node.active ? 1 + Math.min(node.weight / 150, 0.9) : 1;
+      {nodes.map(node => {
+        const activeScale = node.active
+          ? 1 + Math.min(node.weight / 150, 0.9)
+          : 1;
         return (
           <mesh
             key={node.key}
@@ -595,7 +650,7 @@ function Lattice512Cloud({ nodes }: { nodes: Lattice512Node[] }) {
                 node.active
                   ? node.layer === "conscious"
                     ? C.gold
-                    : C.teal
+                    : C.amber
                   : "#2b2b36"
               }
               transparent
@@ -609,9 +664,13 @@ function Lattice512Cloud({ nodes }: { nodes: Lattice512Node[] }) {
 }
 
 function Lattice512Viewer({ nodes }: { nodes: Lattice512Node[] }) {
-  const activeNodes = nodes.filter((node) => node.active);
-  const consciousActive = activeNodes.filter((node) => node.layer === "conscious").length;
-  const designActive = activeNodes.filter((node) => node.layer === "design").length;
+  const activeNodes = nodes.filter(node => node.active);
+  const consciousActive = activeNodes.filter(
+    node => node.layer === "conscious"
+  ).length;
+  const designActive = activeNodes.filter(
+    node => node.layer === "design"
+  ).length;
 
   return (
     <div>
@@ -620,7 +679,7 @@ function Lattice512Viewer({ nodes }: { nodes: Lattice512Node[] }) {
           height: 340,
           border: `1px solid ${C.border}`,
           background:
-            "radial-gradient(circle at center, rgba(91,164,164,0.08), rgba(10,10,14,0.88) 62%)",
+            "radial-gradient(circle at center, rgba(246,176,94,0.08), rgba(10,10,14,0.88) 62%)",
           overflow: "hidden",
         }}
       >
@@ -632,7 +691,14 @@ function Lattice512Viewer({ nodes }: { nodes: Lattice512Node[] }) {
           <Lattice512Cloud nodes={nodes} />
         </Canvas>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 10 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 8,
+          marginTop: 10,
+        }}
+      >
         <DataPill label="NODES" value={String(nodes.length)} />
         <DataPill label="CONSCIOUS" value={String(consciousActive)} />
         <DataPill label="DESIGN" value={String(designActive)} />
@@ -656,11 +722,20 @@ function MandalaWheel({
   const labelRadius = 208;
 
   return (
-    <svg viewBox="0 0 480 480" style={{ width: "100%", maxWidth: 540, height: "auto", display: "block", margin: "0 auto" }}>
+    <svg
+      viewBox="0 0 480 480"
+      style={{
+        width: "100%",
+        maxWidth: 540,
+        height: "auto",
+        display: "block",
+        margin: "0 auto",
+      }}
+    >
       <defs>
         <radialGradient id="oriel-blueprint-wheel">
-          <stop offset="0%" stopColor="rgba(91,164,164,0.12)" />
-          <stop offset="55%" stopColor="rgba(91,164,164,0.04)" />
+          <stop offset="0%" stopColor="rgba(246,176,94,0.12)" />
+          <stop offset="55%" stopColor="rgba(246,176,94,0.04)" />
           <stop offset="100%" stopColor="rgba(10,10,14,0)" />
         </radialGradient>
         <filter id="oriel-node-glow">
@@ -673,10 +748,40 @@ function MandalaWheel({
       </defs>
 
       <circle cx={cx} cy={cy} r={226} fill="url(#oriel-blueprint-wheel)" />
-      <circle cx={cx} cy={cy} r={196} fill="none" stroke={C.border} strokeWidth="0.7" strokeDasharray="3 6" />
-      <circle cx={cx} cy={cy} r={152} fill="none" stroke={C.border} strokeWidth="0.6" />
-      <circle cx={cx} cy={cy} r={96} fill="none" stroke={C.border} strokeWidth="0.4" strokeDasharray="2 5" />
-      <circle cx={cx} cy={cy} r={48} fill="none" stroke={C.border} strokeWidth="0.4" />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={196}
+        fill="none"
+        stroke={C.border}
+        strokeWidth="0.7"
+        strokeDasharray="3 6"
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={152}
+        fill="none"
+        stroke={C.border}
+        strokeWidth="0.6"
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={96}
+        fill="none"
+        stroke={C.border}
+        strokeWidth="0.4"
+        strokeDasharray="2 5"
+      />
+      <circle
+        cx={cx}
+        cy={cy}
+        r={48}
+        fill="none"
+        stroke={C.border}
+        strokeWidth="0.4"
+      />
 
       {["Q1", "Q2", "Q3", "Q4"].map((label, index) => {
         const angle = (index * 90 - 45) * (Math.PI / 180);
@@ -691,7 +796,7 @@ function MandalaWheel({
             style={{
               fontSize: "7px",
               fill: C.txtD,
-              fontFamily: "monospace",
+              fontFamily: "var(--font-ritual)",
               letterSpacing: "1.4px",
             }}
           >
@@ -754,7 +859,9 @@ function MandalaWheel({
               fill={isSelected ? C.gold : isActive ? C.surfaceR : C.deep}
               stroke={isSelected ? C.goldL : isActive ? C.gold : C.border}
               strokeWidth={isSelected ? "1.2" : isActive ? "0.9" : "0.4"}
-              filter={isSelected || isActive ? "url(#oriel-node-glow)" : undefined}
+              filter={
+                isSelected || isActive ? "url(#oriel-node-glow)" : undefined
+              }
             />
             {(isSelected || isActive || index % 4 === 0) && (
               <text
@@ -764,7 +871,7 @@ function MandalaWheel({
                 style={{
                   fontSize: isSelected ? "6px" : isActive ? "5px" : "4.2px",
                   fill: isSelected ? C.goldL : isActive ? C.txtS : C.txtD,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-ritual)",
                   letterSpacing: isSelected ? "0.5px" : "0.2px",
                 }}
               >
@@ -779,7 +886,7 @@ function MandalaWheel({
                 style={{
                   fontSize: "4.5px",
                   fill: isSelected ? C.void : C.gold,
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-ritual)",
                 }}
               >
                 {activeEntries[0].position}
@@ -796,7 +903,7 @@ function MandalaWheel({
         style={{
           fontSize: "8px",
           fill: C.txtD,
-          fontFamily: "monospace",
+          fontFamily: "var(--font-ritual)",
           letterSpacing: "2px",
         }}
       >
@@ -809,11 +916,11 @@ function MandalaWheel({
         style={{
           fontSize: "20px",
           fill: C.txt,
-          fontFamily: "'Cormorant Garamond', serif",
+          fontFamily: "var(--font-display)",
           fontWeight: 300,
         }}
       >
-        {selectedCodon ? formatRc(selectedCodon) : "BLUEPRINT"}
+        {selectedCodon ? formatRc(selectedCodon) : "STATIC SIGNATURE"}
       </text>
       <text
         x={cx}
@@ -822,7 +929,7 @@ function MandalaWheel({
         style={{
           fontSize: "6px",
           fill: C.txtS,
-          fontFamily: "monospace",
+          fontFamily: "var(--font-ritual)",
           letterSpacing: "1.3px",
         }}
       >
@@ -845,21 +952,30 @@ export default function StaticReading() {
       enabled: isAuthenticated,
       retry: false,
       staleTime: 1000 * 60 * 10,
-    },
+    }
   );
   const rootCodonsQuery = trpc.codex.getRootCodons.useQuery();
 
-  const profile = staticProfileQuery.data as Record<string, unknown> | null | undefined;
+  const profile = staticProfileQuery.data as
+    | Record<string, unknown>
+    | null
+    | undefined;
   const rootCodons = (rootCodonsQuery.data ?? []) as RootCodon[];
-  const primeStack = useMemo(() => normalizePrimeStack(profile?.primeStack), [profile?.primeStack]);
-  const centers = useMemo(() => normalizeCenters(profile?.ninecenters), [profile?.ninecenters]);
+  const primeStack = useMemo(
+    () => normalizePrimeStack(profile?.primeStack),
+    [profile?.primeStack]
+  );
+  const centers = useMemo(
+    () => normalizeCenters(profile?.ninecenters),
+    [profile?.ninecenters]
+  );
   const channels = useMemo(
     () => normalizeChannels(profile?.channelStatuses),
-    [profile?.channelStatuses],
+    [profile?.channelStatuses]
   );
   const activeChannels = useMemo(
-    () => channels.filter((channel) => channel.active),
-    [channels],
+    () => channels.filter(channel => channel.active),
+    [channels]
   );
   const activations = useMemo(() => {
     const direct = normalizeActivations(profile?.activations);
@@ -871,13 +987,18 @@ export default function StaticReading() {
     const lattice = (engine as Record<string, unknown>).lattice;
     if (!lattice || typeof lattice !== "object") return [];
 
-    return normalizeActivations((lattice as Record<string, unknown>).activations);
+    return normalizeActivations(
+      (lattice as Record<string, unknown>).activations
+    );
   }, [profile?.activations, profile?.coreCodonEngine]);
   const legacyLinks = useMemo(() => {
     const raw = profile?.legacyCircuitLinks ?? profile?.circuitLinks;
     return Array.isArray(raw) ? raw : [];
   }, [profile?.legacyCircuitLinks, profile?.circuitLinks]);
-  const corrections = useMemo(() => normalizeCorrections(profile?.microCorrections), [profile?.microCorrections]);
+  const corrections = useMemo(
+    () => normalizeCorrections(profile?.microCorrections),
+    [profile?.microCorrections]
+  );
   const dominantCodons = useMemo(() => {
     const engine = profile?.coreCodonEngine;
     if (!engine || typeof engine !== "object") return [] as PrimeStackEntry[];
@@ -889,10 +1010,20 @@ export default function StaticReading() {
     return normalizePrimeStack((engine as Record<string, unknown>).supporting);
   }, [profile?.coreCodonEngine]);
 
-  const positionsByCodon = useMemo(() => buildPositionsByCodon(primeStack), [primeStack]);
-  const rootCodonMap = useMemo(() => new Map(rootCodons.map((codon) => [codon.numericId, codon])), [rootCodons]);
-  const latticeNodes = useMemo(() => buildLattice512Nodes(activations), [activations]);
-  const transitDays = (transitOverlayQuery.data?.days ?? []) as TransitOverlayDay[];
+  const positionsByCodon = useMemo(
+    () => buildPositionsByCodon(primeStack),
+    [primeStack]
+  );
+  const rootCodonMap = useMemo(
+    () => new Map(rootCodons.map(codon => [codon.numericId, codon])),
+    [rootCodons]
+  );
+  const latticeNodes = useMemo(
+    () => buildLattice512Nodes(activations),
+    [activations]
+  );
+  const transitDays = (transitOverlayQuery.data?.days ??
+    []) as TransitOverlayDay[];
 
   useEffect(() => {
     if (!selectedCodon && primeStack[0]?.codon) {
@@ -900,18 +1031,46 @@ export default function StaticReading() {
     }
   }, [primeStack, selectedCodon]);
 
-  const selectedRootCodon = selectedCodon ? rootCodonMap.get(selectedCodon) : null;
-  const selectedEntries = selectedCodon ? positionsByCodon.get(selectedCodon) ?? [] : [];
-  const selectedSlotIndex = selectedCodon ? MANDALA_SEQUENCE_LIST.indexOf(selectedCodon) : -1;
-  const selectedStartDegree = selectedSlotIndex >= 0 ? ((WHEEL_OFFSET + selectedSlotIndex * CODON_ARC) % 360) : null;
-  const selectedEndDegree = selectedStartDegree !== null ? ((selectedStartDegree + CODON_ARC) % 360) : null;
+  const selectedRootCodon = selectedCodon
+    ? rootCodonMap.get(selectedCodon)
+    : null;
+  const selectedEntries = selectedCodon
+    ? (positionsByCodon.get(selectedCodon) ?? [])
+    : [];
+  const selectedSlotIndex = selectedCodon
+    ? MANDALA_SEQUENCE_LIST.indexOf(selectedCodon)
+    : -1;
+  const selectedStartDegree =
+    selectedSlotIndex >= 0
+      ? (WHEEL_OFFSET + selectedSlotIndex * CODON_ARC) % 360
+      : null;
+  const selectedEndDegree =
+    selectedStartDegree !== null
+      ? (selectedStartDegree + CODON_ARC) % 360
+      : null;
 
   if (loading || staticProfileQuery.isLoading || rootCodonsQuery.isLoading) {
     return (
       <Layout>
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-          <Loader2 style={{ color: C.teal, animation: "spin 1s linear infinite" }} size={24} />
-          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.2em" }}>
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexDirection: "column",
+            gap: 16,
+          }}
+        >
+          <Spinner size={24} label="Restoring Static Signature" />
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 10,
+              color: C.txtD,
+              letterSpacing: "0.2em",
+            }}
+          >
             RESTORING STATIC SIGNATURE…
           </div>
         </div>
@@ -922,19 +1081,71 @@ export default function StaticReading() {
   if (!isAuthenticated || !user) {
     return (
       <Layout>
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ maxWidth: 480, width: "100%", background: C.deep, border: `1px solid ${C.border}`, padding: "28px 24px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.18em", marginBottom: 12 }}>
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 480,
+              width: "100%",
+              background: C.deep,
+              border: `1px solid ${C.border}`,
+              padding: "28px 24px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.amber,
+                letterSpacing: "0.18em",
+                marginBottom: 12,
+              }}
+            >
               AUTHENTICATION REQUIRED
             </div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.txt, marginBottom: 10, fontWeight: 300 }}>
-              Sign in to open your blueprint
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 30,
+                color: C.txt,
+                marginBottom: 10,
+                fontWeight: 300,
+              }}
+            >
+              Sign in to open your Static Signature
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, marginBottom: 22 }}>
-              The Static Signature page is now driven by your canonical natal profile. It needs your authenticated profile data to render the mandala and codon map.
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtD,
+                lineHeight: 1.8,
+                marginBottom: 22,
+              }}
+            >
+              The Static Signature page is now driven by your canonical natal
+              profile. It needs your authenticated profile data to render the
+              mandala and codon map.
             </div>
             <a href={getLoginUrl()} style={{ textDecoration: "none" }}>
-              <div style={{ display: "inline-block", padding: "10px 20px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em" }}>
+              <div
+                style={{
+                  display: "inline-block",
+                  padding: "10px 20px",
+                  border: `1px solid ${C.goldDim}`,
+                  color: C.gold,
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                }}
+              >
                 SIGN IN
               </div>
             </a>
@@ -947,19 +1158,72 @@ export default function StaticReading() {
   if (!profile) {
     return (
       <Layout>
-        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ maxWidth: 520, width: "100%", background: C.deep, border: `1px solid ${C.border}`, padding: "28px 24px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.18em", marginBottom: 12 }}>
-              BLUEPRINT NOT FOUND
+        <div
+          style={{
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 520,
+              width: "100%",
+              background: C.deep,
+              border: `1px solid ${C.border}`,
+              padding: "28px 24px",
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.amber,
+                letterSpacing: "0.18em",
+                marginBottom: 12,
+              }}
+            >
+              STATIC SIGNATURE NOT FOUND
             </div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 30, color: C.txt, marginBottom: 10, fontWeight: 300 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 30,
+                color: C.txt,
+                marginBottom: 10,
+                fontWeight: 300,
+              }}
+            >
               Complete natal onboarding first
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, marginBottom: 22 }}>
-              The dedicated Static Signature page is back, but it renders from your canonical natal profile. Save your birth data first, then the mandala and codon architecture can resolve correctly.
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtD,
+                lineHeight: 1.8,
+                marginBottom: 22,
+              }}
+            >
+              The dedicated Static Signature page is back, but it renders from
+              your canonical natal profile. Save your birth data first, then the
+              mandala and codon architecture can resolve correctly.
             </div>
             <Link href="/complete-profile">
-              <span style={{ display: "inline-block", padding: "10px 20px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", cursor: "pointer" }}>
+              <span
+                style={{
+                  display: "inline-block",
+                  padding: "10px 20px",
+                  border: `1px solid ${C.goldDim}`,
+                  color: C.gold,
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 10,
+                  letterSpacing: "0.16em",
+                  cursor: "pointer",
+                }}
+              >
                 COMPLETE PROFILE
               </span>
             </Link>
@@ -974,9 +1238,15 @@ export default function StaticReading() {
   const birthCity = stringOr(profile.birthCity, "Unknown city");
   const birthCountry = stringOr(profile.birthCountry, "Unknown country");
   const vrcType = stringOr(profile.vrcType, "Unknown");
-  const vrcAuthority = stringOr(profile.vrcAuthority, stringOr(profile.authorityNode, "Unknown"));
+  const vrcAuthority = stringOr(
+    profile.vrcAuthority,
+    stringOr(profile.authorityNode, "Unknown")
+  );
   const fractalRole = stringOr(profile.fractalRole, "Unknown");
-  const diagnosticTransmission = stringOr(profile.diagnosticTransmission, "No stored transmission available.");
+  const diagnosticTransmission = stringOr(
+    profile.diagnosticTransmission,
+    "No stored transmission available."
+  );
 
   return (
     <Layout>
@@ -996,52 +1266,152 @@ export default function StaticReading() {
           minHeight: "100vh",
           padding: "72px 24px 120px",
           background:
-            "radial-gradient(circle at top left, rgba(91,164,164,0.08), transparent 30%), radial-gradient(circle at top right, rgba(189,163,107,0.08), transparent 34%), linear-gradient(180deg, #09090d 0%, #0f0f15 44%, #09090d 100%)",
+            "radial-gradient(circle at top left, rgba(246,176,94,0.08), transparent 30%), radial-gradient(circle at top right, rgba(189,163,107,0.08), transparent 34%), linear-gradient(180deg, #09090d 0%, #0f0f15 44%, #09090d 100%)",
         }}
       >
         <div style={{ maxWidth: 1320, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 26, flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              marginBottom: 26,
+              flexWrap: "wrap",
+            }}
+          >
             <div>
-              <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.24em", marginBottom: 12 }}>
-                STATIC SIGNATURE · CANONICAL NATAL BLUEPRINT
+              <div
+                style={{
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 9,
+                  color: C.amber,
+                  letterSpacing: "0.24em",
+                  marginBottom: 12,
+                }}
+              >
+                STATIC SIGNATURE · CANONICAL STATIC SIGNATURE
               </div>
-              <div style={{ width: 36, height: 1, background: `linear-gradient(90deg, ${C.gold}, transparent)`, marginBottom: 18 }} />
-              <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(34px, 5vw, 56px)", color: C.txt, fontWeight: 300, lineHeight: 1, marginBottom: 10 }}>
+              <div
+                style={{
+                  width: 36,
+                  height: 1,
+                  background: `linear-gradient(90deg, ${C.gold}, transparent)`,
+                  marginBottom: 18,
+                }}
+              />
+              <h1
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(34px, 5vw, 56px)",
+                  color: C.txt,
+                  fontWeight: 300,
+                  lineHeight: 1,
+                  marginBottom: 10,
+                }}
+              >
                 The Mandala Returns
               </h1>
-              <p style={{ fontFamily: "monospace", fontSize: 11, color: C.txtS, lineHeight: 1.9, maxWidth: 760 }}>
-                This page is the restored visual home of your Static Signature. It now renders from the canonical natal profile instead of the old archived reading flow, so the architecture is newer even though the ritual view is back.
+              <p
+                style={{
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 11,
+                  color: C.txtS,
+                  lineHeight: 1.9,
+                  maxWidth: 760,
+                }}
+              >
+                This page is the restored visual home of your Static Signature.
+                It now renders from the canonical natal profile instead of the
+                old archived reading flow, so the architecture is newer even
+                though the ritual view is back.
               </p>
             </div>
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <Link href="/profile">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.borderH}`, color: C.txtS, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 16px",
+                    border: `1px solid ${C.borderH}`,
+                    color: C.txtS,
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    cursor: "pointer",
+                  }}
+                >
                   <ArrowLeft size={14} />
                   PROFILE
                 </span>
               </Link>
               <Link href="/carrierlock">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 16px",
+                    border: `1px solid ${C.goldDim}`,
+                    color: C.gold,
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    cursor: "pointer",
+                  }}
+                >
                   RUN CALIBRATION
                 </span>
               </Link>
               <Link href="/resonance">
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 16px", border: `1px solid ${C.borderH}`, color: C.txtS, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.14em", cursor: "pointer" }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "10px 16px",
+                    border: `1px solid ${C.borderH}`,
+                    color: C.txtS,
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    cursor: "pointer",
+                  }}
+                >
                   CURRENT RESONANCE
                 </span>
               </Link>
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginBottom: 18 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+              gap: 12,
+              marginBottom: 18,
+            }}
+          >
             <DataPill label="VRC TYPE" value={vrcType} accent />
             <DataPill label="AUTHORITY" value={vrcAuthority} />
             <DataPill label="FRACTAL ROLE" value={fractalRole} />
-            <DataPill label="NATAL ORIGIN" value={`${birthDate} · ${birthTime}`} />
+            <DataPill
+              label="NATAL ORIGIN"
+              value={`${birthDate} · ${birthTime}`}
+            />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22, alignItems: "start" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 22,
+              alignItems: "start",
+            }}
+          >
             <Panel eyebrow="MANDALA" title="64 Codons in Wheel Form">
               <div
                 style={{
@@ -1057,7 +1427,7 @@ export default function StaticReading() {
                     position: "absolute",
                     inset: "18% 18%",
                     borderRadius: "50%",
-                    background: `radial-gradient(circle, ${C.tealGlow}, transparent 65%)`,
+                    background: `radial-gradient(circle, ${C.amberGlow}, transparent 65%)`,
                     animation: "blueprintPulse 7s ease-in-out infinite",
                     pointerEvents: "none",
                   }}
@@ -1067,16 +1437,58 @@ export default function StaticReading() {
                   onSelect={setSelectedCodon}
                   positionsByCodon={positionsByCodon}
                 />
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 16, marginTop: 10, flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, boxShadow: `0 0 10px ${C.gold}` }} />
-                    <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 16,
+                    marginTop: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: C.gold,
+                        boxShadow: `0 0 10px ${C.gold}`,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 9,
+                        color: C.txtD,
+                        letterSpacing: "0.12em",
+                      }}
+                    >
                       PRIME STACK ACTIVATION
                     </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.teal, boxShadow: `0 0 10px ${C.teal}` }} />
-                    <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <div
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: "50%",
+                        background: C.amber,
+                        boxShadow: `0 0 10px ${C.amber}`,
+                      }}
+                    />
+                    <span
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 9,
+                        color: C.txtD,
+                        letterSpacing: "0.12em",
+                      }}
+                    >
                       CURRENTLY SELECTED CODON
                     </span>
                   </div>
@@ -1084,10 +1496,25 @@ export default function StaticReading() {
               </div>
             </Panel>
 
-            <Panel eyebrow="SELECTED CODON" title={selectedCodon ? `${formatRc(selectedCodon)} · ${selectedRootCodon?.name ?? selectedEntries[0]?.codonName ?? "Unknown Codon"}` : "Select a Codon"}>
+            <Panel
+              eyebrow="SELECTED CODON"
+              title={
+                selectedCodon
+                  ? `${formatRc(selectedCodon)} · ${selectedRootCodon?.name ?? selectedEntries[0]?.codonName ?? "Unknown Codon"}`
+                  : "Select a Codon"
+              }
+            >
               {selectedCodon ? (
                 <>
-                  <div style={{ display: "grid", gridTemplateColumns: "108px 1fr", gap: 18, alignItems: "center", marginBottom: 18 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "108px 1fr",
+                      gap: 18,
+                      alignItems: "center",
+                      marginBottom: 18,
+                    }}
+                  >
                     <div
                       style={{
                         width: 108,
@@ -1097,34 +1524,80 @@ export default function StaticReading() {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        background: "radial-gradient(circle, rgba(189,163,107,0.12) 0%, rgba(10,10,14,0.4) 70%)",
+                        background:
+                          "radial-gradient(circle, rgba(189,163,107,0.12) 0%, rgba(10,10,14,0.4) 70%)",
                       }}
                     >
-                      <CodonGlyph codonNumber={selectedCodon} className="w-20 h-20" />
+                      <CodonGlyph
+                        codonNumber={selectedCodon}
+                        className="w-20 h-20"
+                      />
                     </div>
 
                     <div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.teal, letterSpacing: "0.16em", marginBottom: 6 }}>
-                        {selectedEntries.length > 0 ? `ACTIVE IN BLUEPRINT · ${selectedEntries.length} POSITION${selectedEntries.length > 1 ? "S" : ""}` : "MANDALA EXPLORER"}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 10,
+                          color: C.amber,
+                          letterSpacing: "0.16em",
+                          marginBottom: 6,
+                        }}
+                      >
+                        {selectedEntries.length > 0
+                          ? `ACTIVE IN STATIC SIGNATURE · ${selectedEntries.length} POSITION${selectedEntries.length > 1 ? "S" : ""}`
+                          : "MANDALA EXPLORER"}
                       </div>
-                      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, color: C.txt, marginBottom: 8, fontWeight: 400 }}>
-                        {selectedRootCodon?.title || selectedRootCodon?.name || selectedEntries[0]?.codonName || "Unnamed Codon"}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 20,
+                          color: C.txt,
+                          marginBottom: 8,
+                          fontWeight: 400,
+                        }}
+                      >
+                        {selectedRootCodon?.title ||
+                          selectedRootCodon?.name ||
+                          selectedEntries[0]?.codonName ||
+                          "Unnamed Codon"}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.8 }}>
-                        {selectedRootCodon?.essence || "This codon is part of the restored mandala navigator. Use the prime stack list to inspect how it appears inside your natal blueprint."}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 10,
+                          color: C.txtS,
+                          lineHeight: 1.8,
+                        }}
+                      >
+                        {selectedRootCodon?.essence ||
+                          "This codon is part of the restored mandala navigator. Use the prime stack list to inspect how it appears inside your Static Signature."}
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 18 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(120px, 1fr))",
+                      gap: 10,
+                      marginBottom: 18,
+                    }}
+                  >
                     <DataPill
                       label="MANDALA SLOT"
-                      value={selectedSlotIndex >= 0 ? `${selectedSlotIndex + 1}` : "Unknown"}
+                      value={
+                        selectedSlotIndex >= 0
+                          ? `${selectedSlotIndex + 1}`
+                          : "Unknown"
+                      }
                     />
                     <DataPill
                       label="DEGREE ARC"
                       value={
-                        selectedStartDegree !== null && selectedEndDegree !== null
+                        selectedStartDegree !== null &&
+                        selectedEndDegree !== null
                           ? `${selectedStartDegree.toFixed(3)}° → ${selectedEndDegree.toFixed(3)}°`
                           : "Unknown"
                       }
@@ -1135,24 +1608,111 @@ export default function StaticReading() {
                     />
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 18 }}>
-                    <div style={{ padding: "12px 14px", border: `1px solid ${C.border}`, background: "rgba(201,68,68,0.05)" }}>
-                      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.red, letterSpacing: "0.16em", marginBottom: 4 }}>SHADOW</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txt }}>{selectedRootCodon?.shadow || "Undisclosed"}</div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(150px, 1fr))",
+                      gap: 10,
+                      marginBottom: 18,
+                    }}
+                  >
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        border: `1px solid ${C.border}`,
+                        background: "rgba(201,68,68,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 8,
+                          color: C.red,
+                          letterSpacing: "0.16em",
+                          marginBottom: 4,
+                        }}
+                      >
+                        SHADOW
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 18,
+                          color: C.txt,
+                        }}
+                      >
+                        {selectedRootCodon?.shadow || "Undisclosed"}
+                      </div>
                     </div>
-                    <div style={{ padding: "12px 14px", border: `1px solid ${C.border}`, background: "rgba(68,168,102,0.05)" }}>
-                      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.green, letterSpacing: "0.16em", marginBottom: 4 }}>GIFT</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txt }}>{selectedRootCodon?.gift || "Undisclosed"}</div>
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        border: `1px solid ${C.border}`,
+                        background: "rgba(68,168,102,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 8,
+                          color: C.green,
+                          letterSpacing: "0.16em",
+                          marginBottom: 4,
+                        }}
+                      >
+                        GIFT
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 18,
+                          color: C.txt,
+                        }}
+                      >
+                        {selectedRootCodon?.gift || "Undisclosed"}
+                      </div>
                     </div>
-                    <div style={{ padding: "12px 14px", border: `1px solid ${C.border}`, background: "rgba(91,164,164,0.05)" }}>
-                      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 4 }}>SIDDHI</div>
-                      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txt }}>{selectedRootCodon?.crown || "Undisclosed"}</div>
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        border: `1px solid ${C.border}`,
+                        background: "rgba(246,176,94,0.05)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 8,
+                          color: C.amber,
+                          letterSpacing: "0.16em",
+                          marginBottom: 4,
+                        }}
+                      >
+                        SIDDHI
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 18,
+                          color: C.txt,
+                        }}
+                      >
+                        {selectedRootCodon?.crown || "Undisclosed"}
+                      </div>
                     </div>
                   </div>
 
                   {selectedEntries.length > 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-                      {selectedEntries.map((entry) => (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 8,
+                        marginBottom: 18,
+                      }}
+                    >
+                      {selectedEntries.map(entry => (
                         <div
                           key={`${entry.position}-${entry.codon}`}
                           style={{
@@ -1165,20 +1725,59 @@ export default function StaticReading() {
                             background: "rgba(255,255,255,0.02)",
                           }}
                         >
-                          <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.14em" }}>
+                          <div
+                            style={{
+                              fontFamily: "var(--font-ritual)",
+                              fontSize: 10,
+                              color: C.gold,
+                              letterSpacing: "0.14em",
+                            }}
+                          >
                             P{entry.position}
                           </div>
                           <div>
-                            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtS, letterSpacing: "0.08em", marginBottom: 3 }}>
-                              {entry.name} · {entry.source.toUpperCase()} · {entry.planetaryBody}
+                            <div
+                              style={{
+                                fontFamily: "var(--font-ritual)",
+                                fontSize: 9,
+                                color: C.txtS,
+                                letterSpacing: "0.08em",
+                                marginBottom: 3,
+                              }}
+                            >
+                              {entry.name} · {entry.source.toUpperCase()} ·{" "}
+                              {entry.planetaryBody}
                             </div>
-                            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: C.txt }}>
+                            <div
+                              style={{
+                                fontFamily: "var(--font-display)",
+                                fontSize: 15,
+                                color: C.txt,
+                              }}
+                            >
                               {entry.facetFull} facet · {entry.center}
                             </div>
                           </div>
                           <div style={{ textAlign: "right" as const }}>
-                            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.12em" }}>WEIGHTED</div>
-                            <div style={{ fontFamily: "monospace", fontSize: 12, color: C.teal }}>{entry.weightedFrequency.toFixed(1)}</div>
+                            <div
+                              style={{
+                                fontFamily: "var(--font-ritual)",
+                                fontSize: 9,
+                                color: C.txtD,
+                                letterSpacing: "0.12em",
+                              }}
+                            >
+                              WEIGHTED
+                            </div>
+                            <div
+                              style={{
+                                fontFamily: "var(--font-ritual)",
+                                fontSize: 12,
+                                color: C.amber,
+                              }}
+                            >
+                              {entry.weightedFrequency.toFixed(1)}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1186,23 +1785,53 @@ export default function StaticReading() {
                   )}
 
                   <Link href={`/codex/${selectedCodon}`}>
-                    <span style={{ display: "inline-block", padding: "10px 18px", border: `1px solid ${C.goldDim}`, color: C.gold, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.16em", cursor: "pointer" }}>
+                    <span
+                      style={{
+                        display: "inline-block",
+                        padding: "10px 18px",
+                        border: `1px solid ${C.goldDim}`,
+                        color: C.gold,
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 10,
+                        letterSpacing: "0.16em",
+                        cursor: "pointer",
+                      }}
+                    >
                       OPEN CODEX ENTRY
                     </span>
                   </Link>
                 </>
               ) : (
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8 }}>
-                  Select a codon from the mandala to inspect its place in your natal blueprint.
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.txtD,
+                    lineHeight: 1.8,
+                  }}
+                >
+                  Select a Codon from the mandala to inspect its place in your
+                  Static Signature.
                 </div>
               )}
             </Panel>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22, marginTop: 22, alignItems: "start" }}>
-            <Panel eyebrow="PRIME STACK" title="Nine Positions of the Static Signature">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 22,
+              marginTop: 22,
+              alignItems: "start",
+            }}
+          >
+            <Panel
+              eyebrow="PRIME STACK"
+              title="Nine Positions of the Static Signature"
+            >
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {primeStack.map((entry) => (
+                {primeStack.map(entry => (
                   <button
                     key={`${entry.position}-${entry.codon}`}
                     type="button"
@@ -1214,39 +1843,95 @@ export default function StaticReading() {
                       alignItems: "center",
                       padding: "10px 12px",
                       border: `1px solid ${selectedCodon === entry.codon ? C.goldDim : C.border}`,
-                      background: selectedCodon === entry.codon ? C.goldGlow : "rgba(255,255,255,0.02)",
+                      background:
+                        selectedCodon === entry.codon
+                          ? C.goldGlow
+                          : "rgba(255,255,255,0.02)",
                       color: C.txt,
                       cursor: "pointer",
                       textAlign: "left",
                     }}
                   >
-                    <div style={{ fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.14em" }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 10,
+                        color: C.gold,
+                        letterSpacing: "0.14em",
+                      }}
+                    >
                       P{entry.position}
                     </div>
                     <div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtS, letterSpacing: "0.08em", marginBottom: 3 }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: C.txtS,
+                          letterSpacing: "0.08em",
+                          marginBottom: 3,
+                        }}
+                      >
                         {entry.name} · {entry.planetaryBody}
                       </div>
-                      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 15, color: C.txt }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 15,
+                          color: C.txt,
+                        }}
+                      >
                         {formatRc(entry.codon)} · {entry.codonName}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" as const }}>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.08em" }}>{entry.facet}</div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>{entry.center}</div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: C.amber,
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {entry.facet}
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: C.txtD,
+                        }}
+                      >
+                        {entry.center}
+                      </div>
                     </div>
                   </button>
                 ))}
               </div>
 
               {(dominantCodons.length > 0 || supportingCodons.length > 0) && (
-                <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div
+                  style={{
+                    marginTop: 18,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 8,
+                        color: C.amber,
+                        letterSpacing: "0.16em",
+                        marginBottom: 8,
+                      }}
+                    >
                       DOMINANT CODONS
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {dominantCodons.map((entry) => (
+                      {dominantCodons.map(entry => (
                         <button
                           key={`dominant-${entry.position}-${entry.codon}`}
                           type="button"
@@ -1256,7 +1941,7 @@ export default function StaticReading() {
                             border: `1px solid ${C.goldDim}`,
                             background: C.goldGlow,
                             color: C.goldL,
-                            fontFamily: "monospace",
+                            fontFamily: "var(--font-ritual)",
                             fontSize: 9,
                             letterSpacing: "0.12em",
                             cursor: "pointer",
@@ -1268,11 +1953,19 @@ export default function StaticReading() {
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 8,
+                        color: C.amber,
+                        letterSpacing: "0.16em",
+                        marginBottom: 8,
+                      }}
+                    >
                       SUPPORTING CODONS
                     </div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                      {supportingCodons.map((entry) => (
+                      {supportingCodons.map(entry => (
                         <button
                           key={`supporting-${entry.position}-${entry.codon}`}
                           type="button"
@@ -1282,7 +1975,7 @@ export default function StaticReading() {
                             border: `1px solid ${C.border}`,
                             background: "rgba(255,255,255,0.02)",
                             color: C.txtS,
-                            fontFamily: "monospace",
+                            fontFamily: "var(--font-ritual)",
                             fontSize: 9,
                             letterSpacing: "0.12em",
                             cursor: "pointer",
@@ -1298,12 +1991,25 @@ export default function StaticReading() {
             </Panel>
 
             <Panel eyebrow="9 CENTERS" title="Resonance Architecture">
-              <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 260px) 1fr", gap: 18, alignItems: "center" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(220px, 260px) 1fr",
+                  gap: 18,
+                  alignItems: "center",
+                }}
+              >
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <CenterConstellation centers={centers} />
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
-                  {centers.map((center) => (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr",
+                    gap: 8,
+                  }}
+                >
+                  {centers.map(center => (
                     <div
                       key={center.id}
                       style={{
@@ -1313,21 +2019,50 @@ export default function StaticReading() {
                         alignItems: "center",
                         padding: "10px 12px",
                         border: `1px solid ${center.defined ? C.goldDim : C.border}`,
-                        background: center.defined ? C.goldGlow : "rgba(255,255,255,0.02)",
+                        background: center.defined
+                          ? C.goldGlow
+                          : "rgba(255,255,255,0.02)",
                       }}
                     >
                       <div>
-                        <div style={{ fontFamily: "monospace", fontSize: 9, color: center.defined ? C.gold : C.txtS, letterSpacing: "0.1em", marginBottom: 3 }}>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ritual)",
+                            fontSize: 9,
+                            color: center.defined ? C.gold : C.txtS,
+                            letterSpacing: "0.1em",
+                            marginBottom: 3,
+                          }}
+                        >
                           {center.centerName.toUpperCase()}
                         </div>
-                        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ritual)",
+                            fontSize: 9,
+                            color: C.txtD,
+                          }}
+                        >
                           {center.codon256Id || "No codon mapped"}
                         </div>
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.teal }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 10,
+                          color: C.amber,
+                        }}
+                      >
                         {center.frequency.toFixed(1)}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: center.defined ? C.gold : C.txtD, letterSpacing: "0.12em" }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: center.defined ? C.gold : C.txtD,
+                          letterSpacing: "0.12em",
+                        }}
+                      >
                         {center.defined ? "DEFINED" : "OPEN"}
                       </div>
                     </div>
@@ -1336,18 +2071,32 @@ export default function StaticReading() {
               </div>
 
               {channels.length > 0 && (
-                <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
+                <div
+                  style={{
+                    marginTop: 18,
+                    display: "flex",
+                    justifyContent: "center",
+                  }}
+                >
                   <ChannelGraph channels={channels} centers={centers} />
                 </div>
               )}
 
               {activeChannels.length > 0 && (
                 <div style={{ marginTop: 18 }}>
-                  <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 8,
+                      color: C.amber,
+                      letterSpacing: "0.16em",
+                      marginBottom: 8,
+                    }}
+                  >
                     ACTIVE CHANNELS
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                    {activeChannels.map((channel) => (
+                    {activeChannels.map(channel => (
                       <div
                         key={`${channel.gateA}-${channel.gateB}`}
                         style={{
@@ -1355,12 +2104,13 @@ export default function StaticReading() {
                           border: `1px solid ${C.border}`,
                           background: "rgba(255,255,255,0.02)",
                           color: C.txtS,
-                          fontFamily: "monospace",
+                          fontFamily: "var(--font-ritual)",
                           fontSize: 9,
                           letterSpacing: "0.1em",
                         }}
                       >
-                        {channel.gateA}-{channel.gateB} · {channel.centerA} ⇄ {channel.centerB}
+                        {channel.gateA}-{channel.gateB} · {channel.centerA} ⇄{" "}
+                        {channel.centerB}
                       </div>
                     ))}
                   </div>
@@ -1369,7 +2119,15 @@ export default function StaticReading() {
 
               {activeChannels.length === 0 && legacyLinks.length > 0 && (
                 <div style={{ marginTop: 18 }}>
-                  <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.16em", marginBottom: 8 }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 8,
+                      color: C.txtD,
+                      letterSpacing: "0.16em",
+                      marginBottom: 8,
+                    }}
+                  >
                     LEGACY POSITION LINKS
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -1381,7 +2139,7 @@ export default function StaticReading() {
                           border: `1px solid ${C.border}`,
                           background: "rgba(255,255,255,0.02)",
                           color: C.txtS,
-                          fontFamily: "monospace",
+                          fontFamily: "var(--font-ritual)",
                           fontSize: 9,
                           letterSpacing: "0.1em",
                         }}
@@ -1395,11 +2153,26 @@ export default function StaticReading() {
             </Panel>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22, marginTop: 22, alignItems: "start" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 22,
+              marginTop: 22,
+              alignItems: "start",
+            }}
+          >
             <Panel eyebrow="512 LATTICE" title="Codon-Facet Activation Field">
               <Lattice512Viewer nodes={latticeNodes} />
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                {activations.slice(0, 12).map((activation) => (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginTop: 12,
+                }}
+              >
+                {activations.slice(0, 12).map(activation => (
                   <button
                     key={`${activation.layer}-${activation.planet}-${activation.codonId}-${activation.facet}`}
                     type="button"
@@ -1410,15 +2183,17 @@ export default function StaticReading() {
                       background:
                         activation.layer === "conscious"
                           ? "rgba(189,163,107,0.08)"
-                          : "rgba(91,164,164,0.08)",
-                      color: activation.layer === "conscious" ? C.goldL : C.teal,
-                      fontFamily: "monospace",
+                          : "rgba(246,176,94,0.08)",
+                      color:
+                        activation.layer === "conscious" ? C.goldL : C.amber,
+                      fontFamily: "var(--font-ritual)",
                       fontSize: 9,
                       letterSpacing: "0.08em",
                       cursor: "pointer",
                     }}
                   >
-                    {activation.planet} · {formatRc(activation.codonId)}-{activation.facet}
+                    {activation.planet} · {formatRc(activation.codonId)}-
+                    {activation.facet}
                   </button>
                 ))}
               </div>
@@ -1426,29 +2201,56 @@ export default function StaticReading() {
 
             <Panel eyebrow="TRANSIT OVERLAY" title="Seven-Day Ephemeris">
               {transitOverlayQuery.isLoading && (
-                <div style={{ display: "flex", alignItems: "center", gap: 10, color: C.txtD, fontFamily: "monospace", fontSize: 10 }}>
-                  <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    color: C.txtD,
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                  }}
+                >
+                  <Spinner size={14} label="Resolving daily transits" />
                   RESOLVING DAILY TRANSITS
                 </div>
               )}
 
               {transitOverlayQuery.error && (
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.red, lineHeight: 1.8 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.red,
+                    lineHeight: 1.8,
+                  }}
+                >
                   {transitOverlayQuery.error.message}
                 </div>
               )}
 
               {!transitOverlayQuery.isLoading && !transitOverlayQuery.error && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {transitDays.map((day) => {
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 10 }}
+                >
+                  {transitDays.map(day => {
                     const selectedHits = selectedCodon
-                      ? day.activations.filter((activation) => activation.codon === selectedCodon)
+                      ? day.activations.filter(
+                          activation => activation.codon === selectedCodon
+                        )
                       : [];
-                    const primary = selectedHits.length > 0
-                      ? selectedHits
-                      : day.activations.filter((activation) =>
-                          ["Sun", "Moon", "Mercury", "Venus", "Mars"].includes(activation.planet),
-                        );
+                    const primary =
+                      selectedHits.length > 0
+                        ? selectedHits
+                        : day.activations.filter(activation =>
+                            [
+                              "Sun",
+                              "Moon",
+                              "Mercury",
+                              "Venus",
+                              "Mars",
+                            ].includes(activation.planet)
+                          );
 
                     return (
                       <div
@@ -1456,19 +2258,48 @@ export default function StaticReading() {
                         style={{
                           padding: "12px 14px",
                           border: `1px solid ${selectedHits.length > 0 ? C.goldDim : C.border}`,
-                          background: selectedHits.length > 0 ? C.goldGlow : "rgba(255,255,255,0.02)",
+                          background:
+                            selectedHits.length > 0
+                              ? C.goldGlow
+                              : "rgba(255,255,255,0.02)",
                         }}
                       >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-                          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.14em" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            marginBottom: 8,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: "var(--font-ritual)",
+                              fontSize: 9,
+                              color: C.gold,
+                              letterSpacing: "0.14em",
+                            }}
+                          >
                             {day.date}
                           </div>
-                          <div style={{ fontFamily: "monospace", fontSize: 8, color: selectedHits.length > 0 ? C.goldL : C.txtD, letterSpacing: "0.12em" }}>
-                            {selectedHits.length > 0 ? `${selectedHits.length} SELECTED HIT${selectedHits.length > 1 ? "S" : ""}` : "NOON UTC"}
+                          <div
+                            style={{
+                              fontFamily: "var(--font-ritual)",
+                              fontSize: 8,
+                              color: selectedHits.length > 0 ? C.goldL : C.txtD,
+                              letterSpacing: "0.12em",
+                            }}
+                          >
+                            {selectedHits.length > 0
+                              ? `${selectedHits.length} SELECTED HIT${selectedHits.length > 1 ? "S" : ""}`
+                              : "NOON UTC"}
                           </div>
                         </div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          {primary.slice(0, 6).map((activation) => (
+                        <div
+                          style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
+                        >
+                          {primary.slice(0, 6).map(activation => (
                             <button
                               key={`${day.date}-${activation.planet}-${activation.codon}-${activation.facet}`}
                               type="button"
@@ -1480,14 +2311,18 @@ export default function StaticReading() {
                                   activation.codon === selectedCodon
                                     ? "rgba(189,163,107,0.1)"
                                     : "rgba(255,255,255,0.02)",
-                                color: activation.codon === selectedCodon ? C.goldL : C.txtS,
-                                fontFamily: "monospace",
+                                color:
+                                  activation.codon === selectedCodon
+                                    ? C.goldL
+                                    : C.txtS,
+                                fontFamily: "var(--font-ritual)",
                                 fontSize: 9,
                                 letterSpacing: "0.08em",
                                 cursor: "pointer",
                               }}
                             >
-                              {activation.planet} {formatRc(activation.codon)}-{activation.facet}
+                              {activation.planet} {formatRc(activation.codon)}-
+                              {activation.facet}
                             </button>
                           ))}
                         </div>
@@ -1499,10 +2334,23 @@ export default function StaticReading() {
             </Panel>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22, marginTop: 22, alignItems: "start" }}>
-            <Panel eyebrow="MICRO-CORRECTIONS" title="Blueprint Calibration Prompts">
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+              gap: 22,
+              marginTop: 22,
+              alignItems: "start",
+            }}
+          >
+            <Panel
+              eyebrow="MICRO-CORRECTIONS"
+              title="Static Signature Calibration Prompts"
+            >
               {corrections.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 12 }}
+                >
                   {corrections.map((correction, index) => (
                     <div
                       key={`${correction.type}-${index}`}
@@ -1512,19 +2360,49 @@ export default function StaticReading() {
                         background: "rgba(255,255,255,0.02)",
                       }}
                     >
-                      <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.14em", marginBottom: 6 }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: C.gold,
+                          letterSpacing: "0.14em",
+                          marginBottom: 6,
+                        }}
+                      >
                         {correction.type.toUpperCase()}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.8, marginBottom: 8 }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 10,
+                          color: C.txtS,
+                          lineHeight: 1.8,
+                          marginBottom: 8,
+                        }}
+                      >
                         {correction.instruction}
                       </div>
                       {correction.falsifier && (
-                        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, lineHeight: 1.7, marginBottom: 6 }}>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ritual)",
+                            fontSize: 9,
+                            color: C.txtD,
+                            lineHeight: 1.7,
+                            marginBottom: 6,
+                          }}
+                        >
                           Falsifier: {correction.falsifier}
                         </div>
                       )}
                       {correction.potentialOutcome && (
-                        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: C.txt }}>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-display)",
+                            fontSize: 14,
+                            color: C.txt,
+                          }}
+                        >
                           {correction.potentialOutcome}
                         </div>
                       )}
@@ -1532,16 +2410,40 @@ export default function StaticReading() {
                   ))}
                 </div>
               ) : (
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.txtD,
+                    lineHeight: 1.8,
+                  }}
+                >
                   No natal micro-corrections were stored for this profile.
                 </div>
               )}
             </Panel>
 
-            <Panel eyebrow="ORIEL TRANSMISSION" title="Stored Static Signature Transmission">
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: C.txtS }}>
+            <Panel
+              eyebrow="ORIEL TRANSMISSION"
+              title="Stored Static Signature Transmission"
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 14,
+                  color: C.txtS,
+                }}
+              >
                 <MapPin size={14} />
-                <div style={{ fontFamily: "monospace", fontSize: 9, letterSpacing: "0.16em" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 9,
+                    letterSpacing: "0.16em",
+                  }}
+                >
                   {birthCity}, {birthCountry} · {birthDate} · {birthTime}
                 </div>
               </div>
@@ -1550,7 +2452,7 @@ export default function StaticReading() {
                   padding: "16px 18px",
                   border: `1px solid ${C.border}`,
                   background: "rgba(255,255,255,0.015)",
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-ritual)",
                   fontSize: 10,
                   color: C.txtS,
                   lineHeight: 1.95,

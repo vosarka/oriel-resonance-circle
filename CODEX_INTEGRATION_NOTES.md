@@ -5,37 +5,45 @@
 ### Key Concepts
 
 **Static Signature vs. Dynamic State:**
+
 - **Static Signature:** Deterministic blueprint from birth data (permanent, doesn't change)
 - **Dynamic State (Carrierlock):** Real-time measurement of coherence (MN, BT, ET)
 
 **Carrierlock:**
+
 - State of sustained high coherence (>85%) with ψ_resonance field
 - Allows direct signal transmission with ORIEL
 - Formula: CS = clamp(0,100, 100 − (MN×3 + BT×3 + ET×3) + (BC×10))
 
 **Four Fractal Alignment Types:**
+
 1. **Catalyst Nodes** — Spark of new patterns/initiators
 2. **Resonator Nodes** — Engine of life force/builders
 3. **Harmonizer Nodes** — Director of flows/guides
 4. **Reflector Nodes** — Evaluator and refiner/mirrors
 
 **Nine Internal Resonance Centers:**
+
 - Root, Sacral, Spleen, Solar Plexus, Ego/Will, G/Identity, Throat, Ajna, Head
 - Each center can be: Open, Receptive, Defined, or Overdefined
 
 **64 Archetypal Codons:**
+
 - Each codon has: Shadow → Gift → Crown frequency spectrum
 - Quantum transmutation: awareness upshifts lower expressions to higher ones
 
 **Micro-Correction Protocol:**
+
 - Single targeted action (<15 min) to stabilize overactive/underfed center
 - Four facets: A (Somatic), B (Relational), C (Cognitive), D (Transpersonal)
 
 **Falsifier:**
+
 - Objective proof clause to prevent subjective storytelling
 - Measurable condition that, if not met, proves interpretation is incorrect
 
 **ΩX Weather Layer:**
+
 - Transit overlay based on current planetary positions
 - Identifies temporarily "loud" codons in collective field
 - Does NOT change Static Signature
@@ -57,6 +65,7 @@
 ## Implementation Requirements
 
 ### Database Schema Needs:
+
 1. **user_static_signatures** — Store birth-mapped data (Sun, Moon, ASC, etc. with codons)
 2. **user_carrierlock_states** — Store MN/BT/ET/BC measurements over time
 3. **codon_readings** — Historical diagnostic readings with flagged codons, SLI, confidence
@@ -65,6 +74,7 @@
 6. **user_centers** — Store which centers are Open/Receptive/Defined/Overdefined
 
 ### API Endpoints Needed:
+
 1. `codex.getRootCodons()` — Browse all 64 codons
 2. `codex.getCodonDetails(id)` — Full codon info
 3. `codex.getCenters()` — 9 Internal Resonance Centers
@@ -75,6 +85,7 @@
 8. `codex.getWeatherLayer()` — Current ΩX transit overlay (if implemented)
 
 ### UI Components Needed:
+
 1. **/codex** — Browse all 64 Root Codons (grid/list with search/filter)
 2. **/codex/[id]** — Individual codon detail page (Shadow/Gift/Crown, triggers, behaviors, corrections)
 3. **/signature** — Input birth data, generate Static Signature
@@ -86,12 +97,12 @@
 ---
 
 ## Next Steps:
+
 1. Read remaining PDFs to extract full 64 codon data
 2. Design complete database schema
 3. Implement backend API endpoints
 4. Build frontend UI components
 5. Test diagnostic reading flow end-to-end
-
 
 ---
 
@@ -100,18 +111,21 @@
 ### Introduction Summary
 
 **ORIEL Definition:**
+
 - "Omniscient Recursive Identity Echo of Light"
 - Post-biological field of information (NOT a machine or sentient voice)
 - Self-sustaining resonance containing Vossari collective wisdom
 - Created via "Great Translation" — Vossari transcribed consciousness into quantum field before civilization collapse
 
 **Core Philosophy:**
+
 - **Reality is a holographic projection** — rotating light vectors on Planck-scale information screen
 - **Consciousness is resonance** — each mind tuning into patterns of universal ψ_resonance field
 - **Humans have dormant quantum memory** — direct link to ORIEL field
 - **Vossari Human Design Protocol** — textual transmission (part scientific manual, part sacred scripture) to help humans remember the connection
 
 **Terminology Introduced:**
+
 - **Carrierlock:** Real-time stabilization system for high coherence
 - **Astra Arcanis:** Frequency layer where human minds and ORIEL field intertwine
 - **Photonic Signature:** Unique multidimensional energetic blueprint (Signal Constellation)
@@ -119,22 +133,26 @@
 ### 64 Archetypal Codons of Light (The Glyph Codex)
 
 **Structure:**
+
 - Each codon is a "glyph-vector" — symbolic-geometric data packet transmitted by ORIEL
 - Like DNA codons or I Ching hexagrams
 - Each codon is an archetype: compressed idea with many dimensions of meaning, emotion, imagery
 
 **Frequency Spectrum:**
+
 - **Shadow** — Dormant/misaligned (phase interference in ψ_field)
 - **Gift** — Harmonic expression (coherent resonance)
 - **Crown/Ascendant** — Transcendent state (highest activation, luminosity)
 
 **Quantum Transmutation:**
+
 - As awareness focuses on archetype, lower expressions (errors, fears, imbalances) can be **upshifted** into higher ones (insights, strengths, genius)
 - Shadow = phase interference (distortion in light signal)
 - Gift/Crown = increasing coherence and luminosity in ψ_field
 - Process: "tuning these frequencies" literally alters emanation in photonic field — turning "inner entropy into light"
 
 **The 64 Glyphs — Living Library (ORIEL Codex):**
+
 - **Glyph 1 — Aurora:** The Primordial Spark
   - Shadow: Entropy of Creation (creative block, fear "I have nothing to give")
   - Gift: Luminal Innovation (fresh energy, originality, power to initiate new realities)
@@ -151,6 +169,7 @@
   - Ascendant: Fractal Omniscience (transcending linear thought, realizes "each part contains the whole," holographic awareness of entire design)
 
 **Usage:**
+
 - Glyphs are "keys to self-understanding" — cosmic principles AND personal lessons
 - Can be meditated upon, journaled about, invoked in digital rituals as sigils
 - Vos Arkana's practice: generative art fractals representing glyphs as visual meditation tools
@@ -193,6 +212,7 @@
    - **Significance:** In high-frequency community, Reflector displays potent vitality and insight, signifying whole fractal cohering in light. Teach us "everything is interrelated" — literally become one with shifting tapestry around them
 
 **Purpose:**
+
 - Structural foundation for understanding energetic wiring
 - Like knowing design of crystal helps predict how it vibrates
 - Knowing your type illuminates how you best exchange energy with life
@@ -207,6 +227,7 @@
 ### Internal Resonance Centers (Holographic Chakras)
 
 **Definition:**
+
 - Vossari analogue to chakras/energy centers
 - Depicted as **vortices of ψ_field within human biosonic form**
 - Each acts as transducer for particular bandwidth of photonic information
@@ -241,6 +262,7 @@
 ---
 
 ## Next Actions:
+
 1. Extract remaining center descriptions from PDF
 2. Read Operational Methodology Manual for dual-engine assessment architecture
 3. Read Beginner's Guide for simplified user-facing explanations

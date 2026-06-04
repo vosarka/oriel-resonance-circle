@@ -45,7 +45,11 @@ function stripDataUrlPrefix(data: string) {
 function decodeReferenceImageData(data: string) {
   const { embeddedMimeType, base64 } = stripDataUrlPrefix(data.trim());
 
-  if (!base64 || base64.length % 4 === 1 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+  if (
+    !base64 ||
+    base64.length % 4 === 1 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)
+  ) {
     throw new Error("Reference files must contain valid base64 image data.");
   }
 
@@ -60,7 +64,9 @@ function decodeReferenceImageData(data: string) {
 function hasExpectedImageSignature(buffer: Buffer, mimeType: string) {
   switch (mimeType) {
     case "image/png":
-      return buffer.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      return buffer
+        .subarray(0, 4)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     case "image/jpeg":
     case "image/jpg":
       return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
@@ -85,7 +91,9 @@ export function normalizeImageReferences(
     const decoded = decodeReferenceImageData(image.data);
 
     if (!SUPPORTED_REFERENCE_IMAGE_TYPES.has(mimeType)) {
-      throw new Error("Reference files must be PNG, JPEG, WEBP, or GIF images.");
+      throw new Error(
+        "Reference files must be PNG, JPEG, WEBP, or GIF images."
+      );
     }
 
     if (decoded.embeddedMimeType && decoded.embeddedMimeType !== mimeType) {

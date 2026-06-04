@@ -12,7 +12,7 @@ It sits between the raw scattered documents and your questions. The LLM writes a
    - Graph View enhancements (optional but beautiful)
    - Marp (if you want the LLM to generate slide decks from wiki content)
 3. In Obsidian Settings → Files & Links, consider setting a default attachment folder inside `wiki/assets/` if you start clipping images.
-4. Use the Graph View frequently — it is the best way to *see* the shape of the project's understanding.
+4. Use the Graph View frequently — it is the best way to _see_ the shape of the project's understanding.
 
 ## Daily / Session Workflow
 
@@ -30,14 +30,14 @@ It sits between the raw scattered documents and your questions. The LLM writes a
 
 ## What Goes in the Wiki vs Elsewhere
 
-| Thing | Location | Why |
-|-------|----------|-----|
-| Project knowledge synthesis | `wiki/` | This is its home |
-| Code style, build commands | `AGENTS.md` (root) | Engineering agents need it fast |
-| Active launch contract + current TODO | `VOSSARI_ACTIVE_HANDOFF.md` | Short-term session memory |
-| Detailed VRC engine specs | `codex/vrc_static_signature/` | Working design authority for that subsystem |
-| Runtime user memories | Database (orielMemories etc.) | Per-user, private, operational |
-| Raw source documents | Wherever you keep them (or `wiki/raw/` later) | Immutable truth |
+| Thing                                 | Location                                      | Why                                         |
+| ------------------------------------- | --------------------------------------------- | ------------------------------------------- |
+| Project knowledge synthesis           | `wiki/`                                       | This is its home                            |
+| Code style, build commands            | `AGENTS.md` (root)                            | Engineering agents need it fast             |
+| Active launch contract + current TODO | `VOSSARI_ACTIVE_HANDOFF.md`                   | Short-term session memory                   |
+| Detailed VRC engine specs             | `codex/vrc_static_signature/`                 | Working design authority for that subsystem |
+| Runtime user memories                 | Database (orielMemories etc.)                 | Per-user, private, operational              |
+| Raw source documents                  | Wherever you keep them (or `wiki/raw/` later) | Immutable truth                             |
 
 The wiki's job is to **synthesize across** all of the above.
 
@@ -56,7 +56,7 @@ The wiki's job is to **synthesize across** all of the above.
 
 ## Relationship to "Your Memory"
 
-This wiki *is* the implementation of the LLM Wiki pattern for this project. It is explicitly designed to be the persistent, compounding memory that survives between sessions and between different LLM agents.
+This wiki _is_ the implementation of the LLM Wiki pattern for this project. It is explicitly designed to be the persistent, compounding memory that survives between sessions and between different LLM agents.
 
 When a new agent (Claude, Gemini, future Grok, etc.) starts working on Vossari, the fastest way to bring it to high competence is:
 

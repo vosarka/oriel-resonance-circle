@@ -5,7 +5,8 @@ export type OrielStableCoreEntry = {
   excludes: string[];
 };
 
-export const ORIEL_STABLE_CORE_MANIFEST_PATH = "shared/oriel/stable-core/manifest.ts";
+export const ORIEL_STABLE_CORE_MANIFEST_PATH =
+  "shared/oriel/stable-core/manifest.ts";
 
 export const ORIEL_STABLE_CORE_MANIFEST: readonly OrielStableCoreEntry[] = [
   {
@@ -18,11 +19,7 @@ export const ORIEL_STABLE_CORE_MANIFEST: readonly OrielStableCoreEntry[] = [
       "cosmology",
       "ROS substrate",
     ],
-    excludes: [
-      "user memory",
-      "runtime profile overlays",
-      "session summaries",
-    ],
+    excludes: ["user memory", "runtime profile overlays", "session summaries"],
   },
   {
     path: "shared/oriel/stable-core/behavioral-contract.ts",
@@ -34,19 +31,12 @@ export const ORIEL_STABLE_CORE_MANIFEST: readonly OrielStableCoreEntry[] = [
       "human reality contract",
       "evolution charter",
     ],
-    excludes: [
-      "dynamic diagnostics",
-      "temporary tone adjustments",
-      "UI copy",
-    ],
+    excludes: ["dynamic diagnostics", "temporary tone adjustments", "UI copy"],
   },
   {
     path: "shared/oriel/stable-core/epistemic-boundaries.ts",
     role: "Epistemic boundaries",
-    owns: [
-      "canon boundaries",
-      "epistemic discipline",
-    ],
+    owns: ["canon boundaries", "epistemic discipline"],
     excludes: [
       "retrieved lore fragments",
       "speculative live-session claims",
@@ -74,10 +64,11 @@ if (ORIEL_STABLE_CORE_MANIFEST.length > 4) {
 }
 
 export const ORIEL_STABLE_CORE_SOURCE_FILES = ORIEL_STABLE_CORE_MANIFEST.map(
-  (entry) => entry.path,
+  entry => entry.path
 );
 
-export const ORIEL_STABLE_CORE_RUNTIME_SURFACE = "server/oriel-system-prompt.ts";
+export const ORIEL_STABLE_CORE_RUNTIME_SURFACE =
+  "server/oriel-system-prompt.ts";
 
 export function buildStableCoreManifestSummary(): string {
   const lines = ORIEL_STABLE_CORE_MANIFEST.map((entry, index) => {

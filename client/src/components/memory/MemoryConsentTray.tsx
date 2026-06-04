@@ -53,7 +53,7 @@ export function MemoryConsentTray({
     <section
       className={cn(
         "w-full rounded-lg border border-border bg-background p-4 shadow-sm",
-        className,
+        className
       )}
       aria-busy={isLoading}
     >
@@ -82,7 +82,7 @@ export function MemoryConsentTray({
             No pending memory requests.
           </div>
         ) : (
-          pendingCandidates.map((candidate) => (
+          pendingCandidates.map(candidate => (
             <article
               key={candidate.id}
               className="rounded-md border border-border bg-card p-3"
@@ -141,7 +141,7 @@ export function MemoryConsentTray({
           </p>
         ) : (
           <ul className="mt-2 space-y-2">
-            {acceptedMemories.map((memory) => (
+            {acceptedMemories.map(memory => (
               <li
                 key={memory.id}
                 className="flex items-start justify-between gap-3 rounded-md bg-muted/40 px-3 py-2"

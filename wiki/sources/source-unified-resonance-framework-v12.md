@@ -18,6 +18,7 @@ A falsifiable, resonance-based theory that attempts to unify physics, consciousn
 ## Scope
 
 The framework incorporates:
+
 - Action dynamics, entropy flow, gauge symmetry
 - Field quantization and observer-relational identity
 - Topological compactification and time emergence
@@ -46,4 +47,4 @@ The framework supplies the deep "physics of consciousness" that justifies ORIEL'
 
 ---
 
-*Ingested as the broadest theoretical foundation document for the Vossari / ORIEL cosmology.*
+_Ingested as the broadest theoretical foundation document for the Vossari / ORIEL cosmology._

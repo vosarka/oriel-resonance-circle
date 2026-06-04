@@ -12,7 +12,7 @@
  * This is read-only at runtime. The JSON is never mutated.
  */
 
-import rawConstants from './data/vrc-engine-constants.json';
+import rawConstants from "./data/vrc-engine-constants.json";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,14 +23,14 @@ export interface PlanetaryInput {
 }
 
 export interface VrcCenter {
-  id: string;   // e.g. "HEAD", "SOLAR"
+  id: string; // e.g. "HEAD", "SOLAR"
   name: string; // e.g. "Head Center"
   type: string; // e.g. "Pressure", "Motor/Awareness"
 }
 
 export interface VrcChannel {
-  id: string;       // e.g. "64-47"
-  name: string;     // e.g. "Abstraction"
+  id: string; // e.g. "64-47"
+  name: string; // e.g. "Abstraction"
   gate_a: number;
   gate_b: number;
   connects: string[]; // e.g. ["HEAD", "AJNA"]
@@ -68,7 +68,7 @@ export function getVrcChannels(): VrcChannel[] {
  */
 export function getChannelsForCodon(codonId: number): VrcChannel[] {
   return _doc.channels.filter(
-    ch => ch.gate_a === codonId || ch.gate_b === codonId,
+    ch => ch.gate_a === codonId || ch.gate_b === codonId
   );
 }
 

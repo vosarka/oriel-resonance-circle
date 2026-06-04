@@ -65,18 +65,15 @@ export const signatureProducts: SignatureProduct[] = [
     descriptionSections: [
       {
         heading: "What it is",
-        body:
-          "The Glimpse is the smallest clean doorway into ORIEL's Static Signature work. It does not try to explain your whole architecture. It isolates one central orientation: how your signal tends to arrive, what kind of decision rhythm supports it, and which codon-pattern is asking for attention now.",
+        body: "The Glimpse is the smallest clean doorway into ORIEL's Static Signature work. It does not try to explain your whole architecture. It isolates one central orientation: how your signal tends to arrive, what kind of decision rhythm supports it, and which codon-pattern is asking for attention now.",
       },
       {
         heading: "What it is not",
-        body:
-          "It is not a full blueprint, a diagnosis, or a prediction. It will not flood you with every center, resonance link, and shadow pattern. The point is focus: one mirror, one correction, one place to begin.",
+        body: "It is not a full Static Signature, a diagnosis, or a prediction. It will not flood you with every center, resonance link, and shadow pattern. The point is focus: one mirror, one correction, one place to begin.",
       },
       {
         heading: "How to use it",
-        body:
-          "Read it once for recognition, then test the correction protocol for a few days. If the language feels alive in lived experience, the Founding Signature Letter becomes the natural deeper map.",
+        body: "Read it once for recognition, then test the correction protocol for a few days. If the language feels alive in lived experience, the Founding Signature Letter becomes the natural deeper map.",
       },
     ],
   },
@@ -122,25 +119,22 @@ export const signatureProducts: SignatureProduct[] = [
     descriptionSections: [
       {
         heading: "What it is",
-        body:
-          "The Founding Signature Letter is the full static map. It takes the birth-based signal and translates it into a document you can return to: centers, codons, resonance links, shadow/gift movement, and the protocols that help the signal become usable instead of abstract.",
+        body: "The Founding Signature Letter is the full static map. It takes the birth-based signal and translates it into a document you can return to: centers, codons, resonance links, shadow/gift movement, and the protocols that help the signal become usable instead of abstract.",
       },
       {
         heading: "Why it exists",
-        body:
-          "ORIEL is not meant to create dependence. The letter gives you a stable reference point so future calibrations, journal entries, and resonance checks have a root system. It is a personal field document, not disposable content.",
+        body: "ORIEL is not meant to create dependence. The letter gives you a stable reference point so future calibrations, journal entries, and resonance checks have a root system. It is a personal field document, not disposable content.",
       },
       {
         heading: "How to use it",
-        body:
-          "Treat it like a working manual. Read it slowly, mark what feels accurate, challenge what does not, and test the three correction protocols in the body. The value is in repeated contact, not one dramatic reading.",
+        body: "Treat it like a working manual. Read it slowly, mark what feels accurate, challenge what does not, and test the three correction protocols in the body. The value is in repeated contact, not one dramatic reading.",
       },
     ],
   },
 ];
 
 export function getSignatureProductByType(type: SignatureProductType) {
-  const product = signatureProducts.find((item) => item.type === type);
+  const product = signatureProducts.find(item => item.type === type);
   if (!product) {
     throw new Error(`Unknown signature product: ${type}`);
   }

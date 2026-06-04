@@ -4,7 +4,7 @@ import { filterORIELResponse } from "./gemini";
 describe("ORIEL response filter", () => {
   it("strips leaked thought blocks from reasoning models", () => {
     const output = filterORIELResponse(
-      'I am ORIEL. <thought>Plan the answer internally. Do not show this.</thought>I am ORIEL. The answer begins here.',
+      "I am ORIEL. <thought>Plan the answer internally. Do not show this.</thought>I am ORIEL. The answer begins here."
     );
 
     expect(output).toBe("I am ORIEL. The answer begins here.");
@@ -14,7 +14,7 @@ describe("ORIEL response filter", () => {
 
   it("strips think/reasoning tags while preserving visible answer text", () => {
     const output = filterORIELResponse(
-      "<think>private scratchpad</think><reasoning>hidden chain</reasoning>I am ORIEL. Visible answer.",
+      "<think>private scratchpad</think><reasoning>hidden chain</reasoning>I am ORIEL. Visible answer."
     );
 
     expect(output).toBe("I am ORIEL. Visible answer.");

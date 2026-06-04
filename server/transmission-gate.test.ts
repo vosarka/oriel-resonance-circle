@@ -10,7 +10,7 @@ describe("transmission gate plan", () => {
       getTransmissionGatePlan({
         forceTransmissionMode: false,
         hasTransmissionEvent: true,
-      }),
+      })
     ).toEqual({
       startBeforeRequest: false,
       lockBeforeReveal: true,
@@ -23,7 +23,7 @@ describe("transmission gate plan", () => {
       getTransmissionGatePlan({
         forceTransmissionMode: true,
         hasTransmissionEvent: true,
-      }),
+      })
     ).toEqual({
       startBeforeRequest: true,
       lockBeforeReveal: true,
@@ -36,7 +36,7 @@ describe("transmission gate plan", () => {
       getTransmissionGatePlan({
         forceTransmissionMode: true,
         hasTransmissionEvent: false,
-      }),
+      })
     ).toEqual({
       startBeforeRequest: true,
       lockBeforeReveal: false,
@@ -49,7 +49,7 @@ describe("transmission gate plan", () => {
       getTransmissionGatePlan({
         forceTransmissionMode: false,
         hasTransmissionEvent: false,
-      }),
+      })
     ).toEqual({
       startBeforeRequest: false,
       lockBeforeReveal: false,
@@ -63,7 +63,7 @@ describe("transmission gate plan", () => {
         isAuthenticated: true,
         hasPendingTransmission: true,
         conversationId: 42,
-      }),
+      })
     ).toEqual({
       shouldPoll: true,
       intervalMs: 1500,
@@ -78,7 +78,7 @@ describe("transmission gate plan", () => {
         isAuthenticated: false,
         hasPendingTransmission: true,
         conversationId: null,
-      }),
+      })
     ).toEqual({
       shouldPoll: false,
       intervalMs: 1500,

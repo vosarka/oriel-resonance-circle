@@ -52,7 +52,7 @@ function requirePdfStorageConfig() {
 
 function assertOwner<T extends { userId: number }>(
   order: T | null,
-  userId: number,
+  userId: number
 ): asserts order is T {
   if (!order || order.userId !== userId) {
     throw new TRPCError({
@@ -72,7 +72,7 @@ function assertAdminOrder<T>(order: T | null | undefined): asserts order is T {
 }
 
 function intakePayloadFromRow(
-  intake: Awaited<ReturnType<typeof db.getSignatureIntakeByOrderId>>,
+  intake: Awaited<ReturnType<typeof db.getSignatureIntakeByOrderId>>
 ): SignatureIntakePayload {
   if (!intake) {
     throw new TRPCError({
@@ -97,7 +97,7 @@ function intakePayloadFromRow(
 }
 
 function normalizedSnapshotFromRow(
-  snapshot: Awaited<ReturnType<typeof db.getLatestSignatureSnapshot>>,
+  snapshot: Awaited<ReturnType<typeof db.getLatestSignatureSnapshot>>
 ): NormalizedSignatureSnapshot {
   if (!snapshot?.normalizedSignatureJson) {
     throw new TRPCError({
@@ -110,7 +110,7 @@ function normalizedSnapshotFromRow(
 }
 
 async function fetchStripeCheckoutSession(
-  payload: ReturnType<typeof buildStripeCheckoutSessionRequest>,
+  payload: ReturnType<typeof buildStripeCheckoutSessionRequest>
 ) {
   requireStripeSecret();
 
@@ -134,15 +134,15 @@ async function fetchStripeCheckoutSession(
     body.set(`${prefix}[price_data][currency]`, lineItem.price_data.currency);
     body.set(
       `${prefix}[price_data][product_data][name]`,
-      lineItem.price_data.product_data.name,
+      lineItem.price_data.product_data.name
     );
     body.set(
       `${prefix}[price_data][product_data][description]`,
-      lineItem.price_data.product_data.description,
+      lineItem.price_data.product_data.description
     );
     body.set(
       `${prefix}[price_data][unit_amount]`,
-      String(lineItem.price_data.unit_amount),
+      String(lineItem.price_data.unit_amount)
     );
   });
   Object.entries(payload.metadata).forEach(([key, value]) => {
@@ -266,12 +266,12 @@ export async function submitSignatureIntake(input: {
 export async function listSignatureLetterAdminOrders() {
   const orders = await db.listSignatureOrders(200);
   return Promise.all(
-    orders.map(async (order) => ({
+    orders.map(async order => ({
       order,
       intake: await db.getSignatureIntakeByOrderId(order.id),
       snapshot: await db.getLatestSignatureSnapshot(order.id),
       draft: await db.getSignatureLetterDraft(order.id),
-    })),
+    }))
   );
 }
 
@@ -309,7 +309,7 @@ export async function generateSignatureSnapshotForOrder(orderId: number) {
   if (latitude === null || longitude === null) {
     try {
       const location = await geocodeCity(
-        `${intake.birthPlace}, ${intake.birthCountry}`,
+        `${intake.birthPlace}, ${intake.birthCountry}`
       );
       latitude = location.latitude;
       longitude = location.longitude;
@@ -350,7 +350,7 @@ export async function generateSignatureSnapshotForOrder(orderId: number) {
   });
   const normalized = normalizeSignatureSnapshot(
     rawSignature,
-    order.productType,
+    order.productType
   );
 
   return db.createSignatureSnapshot({

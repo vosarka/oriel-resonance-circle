@@ -70,7 +70,7 @@ function statusTone(status: ProposalStatus) {
     case "applied":
       return "border-emerald-500/40 bg-emerald-500/10 text-emerald-200";
     case "evaluated":
-      return "border-sky-500/40 bg-sky-500/10 text-sky-200";
+      return "border-primary/40 bg-primary/10 text-primary/80";
     case "blocked":
     case "rejected":
       return "border-red-500/40 bg-red-500/10 text-red-200";
@@ -501,7 +501,7 @@ export default function ArchitectConsole() {
         <header className="rounded-md border border-zinc-800 bg-black/40 p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.28em] text-cyan-300">
+              <p className="text-xs uppercase tracking-[0.28em] text-primary/80">
                 ORIEL Architect Console
               </p>
               <h1 className="mt-2 text-2xl font-semibold text-zinc-50 md:text-3xl">

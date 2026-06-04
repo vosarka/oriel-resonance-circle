@@ -41,6 +41,7 @@ wiki/
 ```
 
 **Page locations by type (use these folders):**
+
 - `entities/` — ORIEL, VRC Engine, Static Signature, Consciousness Lattice, specific major subsystems
 - `concepts/` — Resonance, Coherence, Prime Stack, Micro-corrections, ROS, Fractal Thread, Oversoul, etc.
 - `syntheses/` — Living Codex, Emergent Architecture, Memory Architecture, Project Evolution, Vossari Cosmology
@@ -57,13 +58,14 @@ type: entity | concept | synthesis | source | meta
 status: living | stable | draft | deprecated
 tags: [comma, separated, tags]
 last_updated: YYYY-MM-DD
-sources: 3                    # how many raw sources contributed
+sources: 3 # how many raw sources contributed
 importance: critical | high | medium | low
 aliases: ["Display Name", "Alternative Name"]
 ---
 ```
 
 **Body conventions:**
+
 - Start with a 1-2 sentence definition / essence.
 - Use `##` headings for major sections.
 - Use Obsidian `[[WikiLinks]]` aggressively for every meaningful entity or concept mentioned.

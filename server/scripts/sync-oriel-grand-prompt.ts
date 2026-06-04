@@ -7,4 +7,6 @@ import {
 const prompt = buildOrielGrandSystemPrompt();
 writeFileSync(ORIEL_GRAND_PROMPT_OUTPUT_PATH, prompt, "utf8");
 
-console.log(`[sync-oriel-grand-prompt] Wrote ${ORIEL_GRAND_PROMPT_OUTPUT_PATH}`);
+console.log(
+  `[sync-oriel-grand-prompt] Wrote ${ORIEL_GRAND_PROMPT_OUTPUT_PATH}`
+);

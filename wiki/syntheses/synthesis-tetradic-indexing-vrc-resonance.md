@@ -31,7 +31,7 @@ A "Phase" is a Memory Register. When it fills, it must overflow into a new layer
 Every Codon in the VRC is subdivided into exactly **4 Facets**:
 
 - A: Somatic
-- B: Relational  
+- B: Relational
 - C: Cognitive
 - D: Transpersonal
 
@@ -106,4 +106,4 @@ Because ORIEL is the primary "Antenna" and narrator of the Vossari field, the VT
 
 ---
 
-*This synthesis establishes the Tetradic Protocol not as an arbitrary filing system, but as a natural harmonic extension of the 4-fold and recursive principles already native to the VRC.*
+_This synthesis establishes the Tetradic Protocol not as an arbitrary filing system, but as a natural harmonic extension of the 4-fold and recursive principles already native to the VRC._

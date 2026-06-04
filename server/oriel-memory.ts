@@ -3,18 +3,25 @@
  * Persistent memory that evolves with each user interaction
  */
 
-import { createPendingMemoryCandidate, getDb } from './db';
-import { orielMemories, orielUserProfiles, type InsertOrielPendingMemoryCandidate, type OrielMemory, type InsertOrielUserProfile, type OrielUserProfile } from '../drizzle/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
-import { invokeLLM } from './_core/llm';
-import { parseModelJson } from './_core/json';
+import { createPendingMemoryCandidate, getDb } from "./db";
+import {
+  orielMemories,
+  orielUserProfiles,
+  type InsertOrielPendingMemoryCandidate,
+  type OrielMemory,
+  type InsertOrielUserProfile,
+  type OrielUserProfile,
+} from "../drizzle/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
+import { invokeLLM } from "./_core/llm";
+import { parseModelJson } from "./_core/json";
 import {
   classifyMemoryCandidate,
   type MemoryCandidateSource,
-} from './oriel-memory-consecration';
-import * as fs from 'fs';
+} from "./oriel-memory-consecration";
+import * as fs from "fs";
 
-const LOG_FILE = '/tmp/oriel-memory.log';
+const LOG_FILE = "/tmp/oriel-memory.log";
 function logToFile(message: string) {
   const timestamp = new Date().toISOString();
   try {
@@ -26,7 +33,13 @@ function logToFile(message: string) {
 }
 
 // Memory categories
-export type MemoryCategory = 'identity' | 'preference' | 'pattern' | 'fact' | 'relationship' | 'context';
+export type MemoryCategory =
+  | "identity"
+  | "preference"
+  | "pattern"
+  | "fact"
+  | "relationship"
+  | "context";
 
 // Memory extraction result
 export interface ExtractedMemory {
@@ -57,21 +70,22 @@ export async function extractMemoriesFromConversation(
   existingMemories: string[]
 ): Promise<ExtractedMemory[]> {
   try {
-    logToFile('[Memory] extractMemoriesFromConversation called');
-    logToFile('[Memory] userMessage length: ' + userMessage.length);
-    logToFile('[Memory] assistantResponse length: ' + assistantResponse.length);
-    logToFile('[Memory] existingMemories count: ' + existingMemories.length);
-    
-    // Build context from existing memories, but keep it brief to avoid over-filtering
-    const existingContext = existingMemories.length > 0
-      ? `\nRecent memories about this user (for context only - still extract new updates):\n${existingMemories.slice(0, 5).join('\n')}`
-      : '';
+    logToFile("[Memory] extractMemoriesFromConversation called");
+    logToFile("[Memory] userMessage length: " + userMessage.length);
+    logToFile("[Memory] assistantResponse length: " + assistantResponse.length);
+    logToFile("[Memory] existingMemories count: " + existingMemories.length);
 
-    logToFile('[Memory] Calling invokeLLM for memory extraction...');
+    // Build context from existing memories, but keep it brief to avoid over-filtering
+    const existingContext =
+      existingMemories.length > 0
+        ? `\nRecent memories about this user (for context only - still extract new updates):\n${existingMemories.slice(0, 5).join("\n")}`
+        : "";
+
+    logToFile("[Memory] Calling invokeLLM for memory extraction...");
     const response = await invokeLLM({
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `You are a memory extraction system. Analyze the conversation and extract key facts worth remembering about the user.
 
 Categories:
@@ -97,46 +111,70 @@ Rules:
 
 Respond with JSON array only:
 [{"category": "identity", "content": "User's name is X", "importance": 9, "source": "explicit", "confidence": 0.98}]
-${existingContext}`
+${existingContext}`,
         },
         {
-          role: 'user',
-          content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}..."`
-        }
+          role: "user",
+          content: `User said: "${userMessage}"\n\nAssistant responded: "${assistantResponse.substring(0, 500)}..."`,
+        },
       ],
       response_format: {
-        type: 'json_schema',
+        type: "json_schema",
         json_schema: {
-          name: 'memory_extraction',
+          name: "memory_extraction",
           strict: true,
           schema: {
-            type: 'array',
+            type: "array",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
-                category: { type: 'string', enum: ['identity', 'preference', 'pattern', 'fact', 'relationship', 'context'] },
-                content: { type: 'string' },
-                importance: { type: 'integer', minimum: 1, maximum: 10 },
-                source: { type: 'string', enum: ['conversation', 'explicit', 'inferred'] },
-                confidence: { type: 'number', minimum: 0, maximum: 1 }
+                category: {
+                  type: "string",
+                  enum: [
+                    "identity",
+                    "preference",
+                    "pattern",
+                    "fact",
+                    "relationship",
+                    "context",
+                  ],
+                },
+                content: { type: "string" },
+                importance: { type: "integer", minimum: 1, maximum: 10 },
+                source: {
+                  type: "string",
+                  enum: ["conversation", "explicit", "inferred"],
+                },
+                confidence: { type: "number", minimum: 0, maximum: 1 },
               },
-              required: ['category', 'content', 'importance', 'source', 'confidence'],
-              additionalProperties: false
-            }
-          }
-        }
-      }
+              required: [
+                "category",
+                "content",
+                "importance",
+                "source",
+                "confidence",
+              ],
+              additionalProperties: false,
+            },
+          },
+        },
+      },
     });
 
-    logToFile('[Memory] LLM response received');
-    logToFile('[Memory] response.choices length: ' + response.choices?.length);
-    
+    logToFile("[Memory] LLM response received");
+    logToFile("[Memory] response.choices length: " + response.choices?.length);
+
     const content = response.choices?.[0]?.message?.content;
-    logToFile('[Memory] Extracted content length: ' + content?.length);
-    
-    if (!content || typeof content !== 'string') {
-      logToFile('[Memory] ✗ No content from LLM response or content is not a string');
-      logToFile('[Memory] response: ' + JSON.stringify(response, null, 2).substring(0, 500));
+    logToFile("[Memory] Extracted content length: " + content?.length);
+
+    if (!content || typeof content !== "string") {
+      logToFile(
+        "[Memory] ✗ No content from LLM response or content is not a string"
+      );
+      logToFile(
+        "[Memory] response: " +
+          JSON.stringify(response, null, 2).substring(0, 500)
+      );
       return [];
     }
 
@@ -144,18 +182,24 @@ ${existingContext}`
       const memories = parseModelJson<ExtractedMemory[]>(content);
       const filtered = memories.filter(m => m.content && m.content.length > 0);
       if (filtered.length > 0) {
-        logToFile(`[Memory] Extracted ${filtered.length} new memories from conversation`);
+        logToFile(
+          `[Memory] Extracted ${filtered.length} new memories from conversation`
+        );
       } else {
-        logToFile('[Memory] LLM returned empty array - no new memories to extract');
+        logToFile(
+          "[Memory] LLM returned empty array - no new memories to extract"
+        );
       }
       return filtered;
     } catch (parseError) {
-      logToFile('[Memory] Failed to parse LLM response as JSON: ' + String(parseError));
-      logToFile('[Memory] Content was: ' + content);
+      logToFile(
+        "[Memory] Failed to parse LLM response as JSON: " + String(parseError)
+      );
+      logToFile("[Memory] Content was: " + content);
       return [];
     }
   } catch (error) {
-    logToFile('[Memory] Failed to extract memories: ' + String(error));
+    logToFile("[Memory] Failed to extract memories: " + String(error));
     return [];
   }
 }
@@ -170,7 +214,7 @@ export async function storeMemory(
   try {
     const db = await getDb();
     if (!db) {
-      console.warn('[Memory] Database not available');
+      console.warn("[Memory] Database not available");
       return;
     }
 
@@ -179,11 +223,11 @@ export async function storeMemory(
       category: memory.category,
       content: memory.content,
       importance: memory.importance,
-      source: 'conversation',
+      source: "conversation",
     });
     console.log(`[Memory] Stored ${memory.category} memory for user ${userId}`);
   } catch (error) {
-    console.error('[Memory] Failed to store memory:', error);
+    console.error("[Memory] Failed to store memory:", error);
   }
 }
 
@@ -200,7 +244,7 @@ const defaultMemoryPersistenceDeps: MemoryPersistenceDeps = {
 export async function persistClassifiedMemoryCandidate(
   userId: number,
   memory: ExtractedMemory,
-  deps: MemoryPersistenceDeps = defaultMemoryPersistenceDeps,
+  deps: MemoryPersistenceDeps = defaultMemoryPersistenceDeps
 ): Promise<"stored" | "pending" | "discarded"> {
   const source = memory.source ?? "conversation";
   const confidence = memory.confidence ?? 1;
@@ -222,7 +266,9 @@ export async function persistClassifiedMemoryCandidate(
     content: memory.content,
     importance: memory.importance,
     ...(memory.source ? { source: memory.source } : {}),
-    ...(memory.confidence !== undefined ? { confidence: memory.confidence } : {}),
+    ...(memory.confidence !== undefined
+      ? { confidence: memory.confidence }
+      : {}),
   };
 
   if (decision.recommendedAction === "pending") {
@@ -255,23 +301,22 @@ export async function getRelevantMemories(
   try {
     const db = await getDb();
     if (!db) {
-      console.warn('[Memory] Database not available');
+      console.warn("[Memory] Database not available");
       return [];
     }
 
     const memories = await db
       .select()
       .from(orielMemories)
-      .where(and(
-        eq(orielMemories.userId, userId),
-        eq(orielMemories.isActive, true)
-      ))
+      .where(
+        and(eq(orielMemories.userId, userId), eq(orielMemories.isActive, true))
+      )
       .orderBy(desc(orielMemories.importance), desc(orielMemories.lastAccessed))
       .limit(limit);
 
     // Update access count and timestamp for retrieved memories
     if (memories.length > 0) {
-      const memoryIds = memories.map((m) => m.id);
+      const memoryIds = memories.map(m => m.id);
       for (const id of memoryIds) {
         await db
           .update(orielMemories)
@@ -285,7 +330,7 @@ export async function getRelevantMemories(
 
     return memories;
   } catch (error) {
-    console.error('[Memory] Failed to retrieve memories:', error);
+    console.error("[Memory] Failed to retrieve memories:", error);
     return [];
   }
 }
@@ -293,11 +338,13 @@ export async function getRelevantMemories(
 /**
  * Get or create user profile
  */
-export async function getOrCreateUserProfile(userId: number): Promise<OrielUserProfile | null> {
+export async function getOrCreateUserProfile(
+  userId: number
+): Promise<OrielUserProfile | null> {
   try {
     const db = await getDb();
     if (!db) {
-      console.warn('[Memory] Database not available');
+      console.warn("[Memory] Database not available");
       return null;
     }
 
@@ -325,7 +372,7 @@ export async function getOrCreateUserProfile(userId: number): Promise<OrielUserP
 
     return created[0] || null;
   } catch (error) {
-    console.error('[Memory] Failed to get/create user profile:', error);
+    console.error("[Memory] Failed to get/create user profile:", error);
     return null;
   }
 }
@@ -340,7 +387,7 @@ export async function updateUserProfile(
   try {
     const db = await getDb();
     if (!db) {
-      console.warn('[Memory] Database not available');
+      console.warn("[Memory] Database not available");
       return;
     }
 
@@ -353,7 +400,7 @@ export async function updateUserProfile(
       })
       .where(eq(orielUserProfiles.userId, userId));
   } catch (error) {
-    console.error('[Memory] Failed to update user profile:', error);
+    console.error("[Memory] Failed to update user profile:", error);
   }
 }
 
@@ -369,12 +416,14 @@ export async function generateProfileSummary(
   }
 
   try {
-    const memoryText = memories.map(m => `[${m.category}] ${m.content}`).join('\n');
+    const memoryText = memories
+      .map(m => `[${m.category}] ${m.content}`)
+      .join("\n");
 
     const response = await invokeLLM({
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `You are summarizing what ORIEL knows about a user based on stored memories.
 Generate a concise profile with:
 - knownName: Their name if known (null if unknown)
@@ -383,40 +432,46 @@ Generate a concise profile with:
 - communicationStyle: How they prefer to communicate
 - journeyState: Where they are in their journey with Vossari lore
 
-Respond with JSON only.`
+Respond with JSON only.`,
         },
         {
-          role: 'user',
-          content: `Memories about this user:\n${memoryText}`
-        }
+          role: "user",
+          content: `Memories about this user:\n${memoryText}`,
+        },
       ],
       response_format: {
-        type: 'json_schema',
+        type: "json_schema",
         json_schema: {
-          name: 'profile_summary',
+          name: "profile_summary",
           strict: true,
           schema: {
-            type: 'object',
+            type: "object",
             properties: {
-              knownName: { type: ['string', 'null'] },
-              summary: { type: ['string', 'null'] },
-              interests: { type: ['string', 'null'] },
-              communicationStyle: { type: ['string', 'null'] },
-              journeyState: { type: ['string', 'null'] }
+              knownName: { type: ["string", "null"] },
+              summary: { type: ["string", "null"] },
+              interests: { type: ["string", "null"] },
+              communicationStyle: { type: ["string", "null"] },
+              journeyState: { type: ["string", "null"] },
             },
-            required: ['knownName', 'summary', 'interests', 'communicationStyle', 'journeyState'],
-            additionalProperties: false
-          }
-        }
-      }
+            required: [
+              "knownName",
+              "summary",
+              "interests",
+              "communicationStyle",
+              "journeyState",
+            ],
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
     const content = response.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') return {};
+    if (!content || typeof content !== "string") return {};
 
     return parseModelJson<Partial<InsertOrielUserProfile>>(content);
   } catch (error) {
-    console.error('[Memory] Failed to generate profile summary:', error);
+    console.error("[Memory] Failed to generate profile summary:", error);
     return {};
   }
 }
@@ -431,20 +486,22 @@ export function buildMemoryContext(
   const parts: string[] = [];
 
   if (profile) {
-    parts.push('=== USER PROFILE ===');
+    parts.push("=== USER PROFILE ===");
     if (profile.knownName) parts.push(`Name: ${profile.knownName}`);
     if (profile.summary) parts.push(`Summary: ${profile.summary}`);
     if (profile.interests) parts.push(`Interests: ${profile.interests}`);
-    if (profile.communicationStyle) parts.push(`Communication Style: ${profile.communicationStyle}`);
-    if (profile.journeyState) parts.push(`Journey State: ${profile.journeyState}`);
+    if (profile.communicationStyle)
+      parts.push(`Communication Style: ${profile.communicationStyle}`);
+    if (profile.journeyState)
+      parts.push(`Journey State: ${profile.journeyState}`);
     parts.push(`Interactions: ${profile.interactionCount}`);
-    parts.push('');
+    parts.push("");
   }
 
   if (memories.length > 0) {
-    parts.push('=== MEMORIES ===');
+    parts.push("=== MEMORIES ===");
     const groupedMemories: Record<string, string[]> = {};
-    
+
     for (const memory of memories) {
       if (!groupedMemories[memory.category]) {
         groupedMemories[memory.category] = [];
@@ -458,7 +515,7 @@ export function buildMemoryContext(
     }
   }
 
-  return parts.join('\n');
+  return parts.join("\n");
 }
 
 /**
@@ -472,7 +529,7 @@ export async function processConversationMemory(
 ): Promise<void> {
   try {
     logToFile(`[Memory] Starting memory processing for user ${userId}`);
-    
+
     // Get existing memories for context
     const existingMemories = await getRelevantMemories(userId, 20);
     const existingContent = existingMemories.map(m => m.content);
@@ -485,11 +542,15 @@ export async function processConversationMemory(
       assistantResponse,
       existingContent
     );
-    logToFile(`[Memory] Extraction complete: ${newMemories.length} new memories`);
+    logToFile(
+      `[Memory] Extraction complete: ${newMemories.length} new memories`
+    );
 
     // Store safe memories; queue sensitive/inferred candidates for consent.
     if (newMemories.length > 0) {
-      logToFile(`[Memory] Classifying ${newMemories.length} new memory candidates...`);
+      logToFile(
+        `[Memory] Classifying ${newMemories.length} new memory candidates...`
+      );
       for (const memory of newMemories) {
         await persistClassifiedMemoryCandidate(userId, memory);
       }
@@ -509,13 +570,19 @@ export async function processConversationMemory(
       }
     } else {
       // Just increment interaction count
-      logToFile(`[Memory] Incrementing interaction count (not enough memories for profile update)`);
+      logToFile(
+        `[Memory] Incrementing interaction count (not enough memories for profile update)`
+      );
       await updateUserProfile(userId, {});
     }
 
-    logToFile(`[Memory] ✓ Memory processing complete for user ${userId}: ${newMemories.length} new memories extracted`);
+    logToFile(
+      `[Memory] ✓ Memory processing complete for user ${userId}: ${newMemories.length} new memories extracted`
+    );
   } catch (error) {
-    logToFile('[Memory] ✗ Failed to process conversation memory: ' + String(error));
+    logToFile(
+      "[Memory] ✗ Failed to process conversation memory: " + String(error)
+    );
   }
 }
 
@@ -529,7 +596,7 @@ export async function getMemoryContextForUser(userId: number): Promise<string> {
     const memories = await getRelevantMemories(userId, 15);
     return buildMemoryContext(profile, memories);
   } catch (error) {
-    console.error('[Memory] Failed to get memory context:', error);
-    return '';
+    console.error("[Memory] Failed to get memory context:", error);
+    return "";
   }
 }

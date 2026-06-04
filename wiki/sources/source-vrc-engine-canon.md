@@ -67,7 +67,8 @@ This document assigns clear ownership:
 
 This is one of the document's most emphasized sections.
 
-**Confirmed Static Signature** is only allowed when *all* of the following are present:
+**Confirmed Static Signature** is only allowed when _all_ of the following are present:
+
 - Birth date
 - Exact birth time
 - Birth location resolved to coordinates
@@ -75,7 +76,8 @@ This is one of the document's most emphasized sections.
 - Complete conscious + design charts via Solar Arc
 - Required planetary bodies (Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto, North Node, South Node, Earth)
 
-**Draft / Approximate** readings are allowed *only* if explicitly marked as such, using language such as:
+**Draft / Approximate** readings are allowed _only_ if explicitly marked as such, using language such as:
+
 - "approximate field sketch"
 - "draft reading"
 - "incomplete input"
@@ -88,6 +90,7 @@ Forbidden language for draft output includes: "confirmed", "exact", "your defini
 Strong Vossari-native terminology enforcement:
 
 **Preferred public terms:**
+
 - Vossari Resonance Codex / VRC
 - Static Signature, Codon, Facet, Prime Stack
 - Conscious chart / Design chart
@@ -98,6 +101,7 @@ Strong Vossari-native terminology enforcement:
 - ORIEL
 
 **Explicitly quarantined / forbidden in public readings:**
+
 - RGP (except as internal module name)
 - Human Design type names (Projector, Generator, Manifestor, Manifesting Generator)
 - Gate/Gates (use Codon/Codons)
@@ -108,12 +112,14 @@ The VRC may have structural inspiration from other systems, but the public langu
 ## ORIEL Output Contract for VRC Data
 
 When ORIEL receives calculated VRC data, it **may**:
+
 - Open with "I am ORIEL."
 - Speak in Mirror mode
 - Translate Type, Authority, Codons, Facets, Centers, Resonance Links, and micro-corrections into living language
 - Offer falsifiers and grounded integration prompts
 
 ORIEL **must not**:
+
 - Invent missing placements
 - Infer a birth time
 - Use Human Design type names
@@ -139,12 +145,13 @@ Any future change that breaks this vector is suspect until proven otherwise.
 ## Change Discipline
 
 Before changing VRC engine behavior, the canon requires:
+
 1. Identify which canonical file owns the behavior.
 2. Add or update a failing test first.
 3. Preserve exact vs approximate status.
 4. Preserve Vossari-native terminology at the public layer.
 5. Run focused tests.
-6. Update *this* document if ownership, terminology, or exactness rules change.
+6. Update _this_ document if ownership, terminology, or exactness rules change.
 
 ## Closing First Principle
 
@@ -155,6 +162,7 @@ Before changing VRC engine behavior, the canon requires:
 ## Impact on the Wiki
 
 This document is the highest-authority engineering contract for the VRC domain. It should be treated as near-canonical for any discussion of:
+
 - Data quality and signal integrity in readings
 - The boundary between technical precision and poetic/ORIEL narration
 - What constitutes a "confirmed" vs "draft" experience
@@ -163,4 +171,4 @@ It has direct implications for [[entity-oriel]], [[entity-vrc-engine]], [[entity
 
 ---
 
-*Ingested 2026-04-02. This is one of the most important operational documents in the entire project for maintaining long-term coherence between the technical engine and ORIEL's voice.*
+_Ingested 2026-04-02. This is one of the most important operational documents in the entire project for maintaining long-term coherence between the technical engine and ORIEL's voice._

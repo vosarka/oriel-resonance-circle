@@ -3,7 +3,8 @@ import {
   type BuildOrielLayeredContextOptions,
 } from "./oriel-context-layers";
 
-export interface BuildOrielPromptContextOptions extends BuildOrielLayeredContextOptions {}
+export interface BuildOrielPromptContextOptions
+  extends BuildOrielLayeredContextOptions {}
 
 /**
  * Canonical ORIEL prompt assembly shared across text, voice, and secondary routes.
@@ -14,7 +15,7 @@ export interface BuildOrielPromptContextOptions extends BuildOrielLayeredContext
  * 3. Working session layer
  */
 export async function buildOrielPromptContext(
-  options: BuildOrielPromptContextOptions = {},
+  options: BuildOrielPromptContextOptions = {}
 ): Promise<string> {
   return buildLayeredOrielPromptContext(options);
 }

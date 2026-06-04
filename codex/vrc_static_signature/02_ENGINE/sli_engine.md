@@ -1,11 +1,13 @@
 # Engine Specification: sli-engine
 
 ## 1. PURPOSE
+
 The `sli-engine` (Shadow Loudness Index Engine) computes the active distortion levels across the Prime Stack positions. It evaluates how much the subject's current dynamic state (weather) is interfering with their structural potentials (hardware).
 
 ---
 
 ## 2. INPUTS
+
 - `coherenceScore`: Float ($[0.0, 100.0]$) from the `carrierlock-engine`.
 - `primeStackPositions`: List of 9 stack nodes, each containing:
   - `positionIndex`: Integer ($0$ to $8$)
@@ -21,6 +23,7 @@ The `sli-engine` (Shadow Loudness Index Engine) computes the active distortion l
 ---
 
 ## 3. OUTPUTS
+
 - `sliScores`: List of 9 objects containing:
   - `positionIndex`: Integer
   - `sliValue`: Float ($0.0 - 100.0$, or **UNSPECIFIED** if inputs are missing)
@@ -30,22 +33,26 @@ The `sli-engine` (Shadow Loudness Index Engine) computes the active distortion l
 ---
 
 ## 4. DEPENDENCIES
+
 - `/01_DATA/planetary_weights.json` (for weights/multipliers).
 
 ---
 
 ## 5. OWNERSHIP
+
 - File: `server/rgp-sli-micro-correction-engine.ts`
 
 ---
 
 ## 6. FAIL CONDITIONS
+
 - **Missing Coherence Score**: CS is null or out of bounds.
 - **Missing Facet Amplitudes**: Amplitude mapping is incomplete.
 
 ---
 
 ## 7. VALIDATION RULES
+
 1. **Formula Application**:
    $$\text{StateAmplifier} = \frac{100 - \text{CS}}{100}$$
    $$\text{SLI}(r) = \text{PCS}(r) \times \text{StateAmplifier} \times \text{FacetAmplitude}(r)$$
@@ -57,6 +64,7 @@ The `sli-engine` (Shadow Loudness Index Engine) computes the active distortion l
 
 > [!WARNING]
 > **UNRESOLVED CANON GAPS**:
+>
 > 1. **PCS(r) Derivation**: The baseline frequency $\text{PCS}(r)$ is not defined in the canon files. Until defined, default $\text{PCS}(r) = 100.0$ and flag as **UNSPECIFIED**.
 > 2. **FacetAmplitude(r) Derivation**: The derivation of `FacetAmplitude(r)` is not defined. Default to $100.0$ and flag as **UNSPECIFIED**.
 > 3. **Mathematical Paradox**: $\text{CS} = 100 \rightarrow \text{StateAmplifier} = 0 \rightarrow \text{SLI} = 0$. In the range mapping, $0$ falls under `Chaotic` ($< 25$), which contradicts the definition of perfect coherence. The engine must intercept $\text{CS} = 100$ and override pattern output to `Coherent` with a custom diagnostic flag.
@@ -64,6 +72,7 @@ The `sli-engine` (Shadow Loudness Index Engine) computes the active distortion l
 ---
 
 ## 8. TEST STRATEGY
+
 - **Perfect Coherence Test**: Pass $\text{CS} = 100.0$. Verify that the engine intercepts and returns `Coherent` instead of `Chaotic` (reconciling the range paradox).
 - **Calculated Distortion Test**: Pass $\text{CS} = 50.0$, $\text{PCS}(r) = 100.0$, $\text{FacetAmplitude}(r) = 80.0$.
   - $\text{StateAmplifier} = 0.5$

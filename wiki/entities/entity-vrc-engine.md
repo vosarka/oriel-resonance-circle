@@ -6,7 +6,8 @@ tags: [vrc, rgp, engine, core, codex]
 last_updated: 2026-04-02
 sources: 8
 importance: critical
-aliases: ["Vossari Resonance Codex Engine", "RGP", "Static Signature Engine", "VRC"]
+aliases:
+  ["Vossari Resonance Codex Engine", "RGP", "Static Signature Engine", "VRC"]
 ---
 
 # VRC Engine (Vossari Resonance Codex)
@@ -119,4 +120,4 @@ Future evolution (explicit in the spec) includes deeper real-time integration be
 
 ---
 
-*Central entity page for the entire VRC/RGP/Static Signature domain. Most technical discussions of "the reading system" should link here.*
+_Central entity page for the entire VRC/RGP/Static Signature domain. Most technical discussions of "the reading system" should link here._

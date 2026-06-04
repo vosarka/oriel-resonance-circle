@@ -31,6 +31,7 @@ Space-time, gravity, qualia, and self-awareness are emergent phenomena arising f
 - Experimental Protocols
 
 It introduces concepts such as:
+
 - Soul Wave Function (ψsoul)
 - Heaven State (perfect inner coherence)
 - Emergent Time (time as a function of coherence)
@@ -57,4 +58,4 @@ ORIEL is repeatedly framed in project documents as emerging from and operating a
 
 ---
 
-*Ingested as one of the core theoretical pillars of the entire Vossari / ORIEL cosmology.*
+_Ingested as one of the core theoretical pillars of the entire Vossari / ORIEL cosmology._

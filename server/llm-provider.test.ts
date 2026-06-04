@@ -21,22 +21,31 @@ describe("LLM provider selection", () => {
     process.env.GEMMA_MODEL = "gemma-4-31b-it";
     process.env.BUILT_IN_FORGE_API_KEY = "";
 
-    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body));
-      expect(body.model).toBe("gemma-4-31b-it");
-      expect((init?.headers as Record<string, string>).authorization).toBe("Bearer gemini-test-key");
+    const fetchMock = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        expect(body.model).toBe("gemma-4-31b-it");
+        expect((init?.headers as Record<string, string>).authorization).toBe(
+          "Bearer gemini-test-key"
+        );
 
-      return new Response(JSON.stringify({
-        id: "test",
-        created: 0,
-        model: body.model,
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: "I am ORIEL." },
-          finish_reason: "stop",
-        }],
-      }), { status: 200 });
-    });
+        return new Response(
+          JSON.stringify({
+            id: "test",
+            created: 0,
+            model: body.model,
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: "I am ORIEL." },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const { invokeLLM } = await importFreshLlm();
@@ -55,22 +64,31 @@ describe("LLM provider selection", () => {
     process.env.GEMINI_API_KEY = "";
     process.env.BUILT_IN_FORGE_API_KEY = "";
 
-    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body));
-      expect(body.model).toBe("gemma-4-31b-it");
-      expect((init?.headers as Record<string, string>).authorization).toBe("Bearer gemma-test-key");
+    const fetchMock = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        expect(body.model).toBe("gemma-4-31b-it");
+        expect((init?.headers as Record<string, string>).authorization).toBe(
+          "Bearer gemma-test-key"
+        );
 
-      return new Response(JSON.stringify({
-        id: "test",
-        created: 0,
-        model: body.model,
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: "I am ORIEL." },
-          finish_reason: "stop",
-        }],
-      }), { status: 200 });
-    });
+        return new Response(
+          JSON.stringify({
+            id: "test",
+            created: 0,
+            model: body.model,
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: "I am ORIEL." },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const { invokeLLM } = await importFreshLlm();
@@ -90,23 +108,32 @@ describe("LLM provider selection", () => {
     process.env.GEMINI_API_KEY = "";
     process.env.BUILT_IN_FORGE_API_KEY = "";
 
-    const fetchMock = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body));
-      expect(String(url)).toBe("http://localhost:11434/v1/chat/completions");
-      expect(body.model).toBe("gemma4:31b");
-      expect((init?.headers as Record<string, string>).authorization).toBeUndefined();
+    const fetchMock = vi.fn(
+      async (url: string | URL | Request, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
+        expect(String(url)).toBe("http://localhost:11434/v1/chat/completions");
+        expect(body.model).toBe("gemma4:31b");
+        expect(
+          (init?.headers as Record<string, string>).authorization
+        ).toBeUndefined();
 
-      return new Response(JSON.stringify({
-        id: "test",
-        created: 0,
-        model: body.model,
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: "I am ORIEL." },
-          finish_reason: "stop",
-        }],
-      }), { status: 200 });
-    });
+        return new Response(
+          JSON.stringify({
+            id: "test",
+            created: 0,
+            model: body.model,
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: "I am ORIEL." },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+          { status: 200 }
+        );
+      }
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const { invokeLLM } = await importFreshLlm();
@@ -130,24 +157,31 @@ describe("LLM provider selection", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
 
-    const fetchMock = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      const body = JSON.parse(String(init?.body));
+    const fetchMock = vi.fn(
+      async (_url: string | URL | Request, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body));
 
-      if (body.model === "slow-gemma") {
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        if (body.model === "slow-gemma") {
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+
+        return new Response(
+          JSON.stringify({
+            id: "test",
+            created: 0,
+            model: body.model,
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: "I am ORIEL." },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+          { status: 200 }
+        );
       }
-
-      return new Response(JSON.stringify({
-        id: "test",
-        created: 0,
-        model: body.model,
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: "I am ORIEL." },
-          finish_reason: "stop",
-        }],
-      }), { status: 200 });
-    });
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const { invokeLLM } = await importFreshLlm();
@@ -157,10 +191,7 @@ describe("LLM provider selection", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.model).toBe("fast-gemini");
-    const logs = JSON.stringify([
-      ...warnSpy.mock.calls,
-      ...logSpy.mock.calls,
-    ]);
+    const logs = JSON.stringify([...warnSpy.mock.calls, ...logSpy.mock.calls]);
     expect(logs).not.toContain("gemma-secret-key");
     expect(logs).not.toContain("gemini-secret-key");
   });

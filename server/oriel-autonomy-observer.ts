@@ -9,8 +9,14 @@ import {
   type ExchangeType,
 } from "./oriel-response-intelligence";
 import { detectDuplication } from "./response-deduplication";
-import { getActiveRuntimeProfileSnapshot, type OrielProposalPayload } from "./oriel-autonomy";
-import { detectExplicitEnglishLanguage, detectRomanianLanguage } from "../shared/oriel/language-routing";
+import {
+  getActiveRuntimeProfileSnapshot,
+  type OrielProposalPayload,
+} from "./oriel-autonomy";
+import {
+  detectExplicitEnglishLanguage,
+  detectRomanianLanguage,
+} from "../shared/oriel/language-routing";
 import {
   buildWitnessReflectionPayload,
   generateWitnessProposalDraftFromReflections,
@@ -80,8 +86,12 @@ function detectObservedLanguage(text: string): OrielObservedLanguage {
   return "unknown";
 }
 
-function isLanguageMismatch(userLanguage: OrielObservedLanguage, assistantLanguage: OrielObservedLanguage): boolean {
-  if (userLanguage === "unknown" || assistantLanguage === "unknown") return false;
+function isLanguageMismatch(
+  userLanguage: OrielObservedLanguage,
+  assistantLanguage: OrielObservedLanguage
+): boolean {
+  if (userLanguage === "unknown" || assistantLanguage === "unknown")
+    return false;
   return userLanguage !== assistantLanguage;
 }
 
@@ -90,17 +100,23 @@ export function buildOrielRuntimeObservationPayload(
   activeProfile?: {
     id: number;
     name: string;
-  } | null,
+  } | null
 ): OrielRuntimeObservationPayload {
   const conversationHistory = input.conversationHistory ?? [];
   const recentAssistantResponses = conversationHistory
-    .filter((message) => message.role === "assistant")
+    .filter(message => message.role === "assistant")
     .slice(-5)
-    .map((message) => message.content);
+    .map(message => message.content);
   const exchangeType = classifyExchangeType(input.userMessage, null);
   const coherenceTier = getCoherenceTier(null);
-  const antiRepetitionContext = buildAntiRepetitionContext(recentAssistantResponses, exchangeType);
-  const duplication = detectDuplication(input.assistantResponse, conversationHistory);
+  const antiRepetitionContext = buildAntiRepetitionContext(
+    recentAssistantResponses,
+    exchangeType
+  );
+  const duplication = detectDuplication(
+    input.assistantResponse,
+    conversationHistory
+  );
   const userLanguage = detectObservedLanguage(input.userMessage);
   const assistantLanguage = detectObservedLanguage(input.assistantResponse);
   const witnessReflection = buildWitnessReflectionPayload({
@@ -141,7 +157,9 @@ export function buildOrielRuntimeObservationPayload(
   };
 }
 
-export async function recordOrielRuntimeObservation(input: BuildRuntimeObservationInput) {
+export async function recordOrielRuntimeObservation(
+  input: BuildRuntimeObservationInput
+) {
   const activeProfile = await getActiveRuntimeProfileSnapshot();
   const payload = buildOrielRuntimeObservationPayload(input, activeProfile);
 
@@ -155,50 +173,61 @@ export async function recordOrielRuntimeObservation(input: BuildRuntimeObservati
   });
 }
 
-function parseObservationPayload(raw: unknown): OrielRuntimeObservationPayload | null {
+function parseObservationPayload(
+  raw: unknown
+): OrielRuntimeObservationPayload | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const candidate = raw as Partial<OrielRuntimeObservationPayload>;
-  if (candidate.source !== "text_chat" && candidate.source !== "voice_realtime") return null;
-  if (!candidate.antiRepetition || typeof candidate.antiRepetition !== "object") return null;
+  if (candidate.source !== "text_chat" && candidate.source !== "voice_realtime")
+    return null;
+  if (!candidate.antiRepetition || typeof candidate.antiRepetition !== "object")
+    return null;
   return candidate as OrielRuntimeObservationPayload;
 }
 
 function countMatching(
   observations: OrielRuntimeObservationPayload[],
-  predicate: (payload: OrielRuntimeObservationPayload) => boolean,
+  predicate: (payload: OrielRuntimeObservationPayload) => boolean
 ) {
   return observations.filter(predicate).length;
 }
 
-export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[]): GeneratedOrielProposalDraft | null {
+export function generateOrielProposalDraftFromObservations(
+  rawPayloads: unknown[]
+): GeneratedOrielProposalDraft | null {
   const observations = rawPayloads
     .map(parseObservationPayload)
-    .filter((payload): payload is OrielRuntimeObservationPayload => Boolean(payload));
+    .filter((payload): payload is OrielRuntimeObservationPayload =>
+      Boolean(payload)
+    );
 
   if (observations.length < 2) return null;
 
   const witnessDraft = generateWitnessProposalDraftFromReflections(
     observations
-      .map((payload) => payload.witnessReflection)
+      .map(payload => payload.witnessReflection)
       .filter(
         (reflection): reflection is OrielWitnessReflectionPayload =>
-          reflection?.kind === "witness_reflection",
-      ),
+          reflection?.kind === "witness_reflection"
+      )
   );
 
   if (witnessDraft) return witnessDraft;
 
   const romanianMismatchCount = countMatching(
     observations,
-    (payload) => payload.userLanguage === "ro" && payload.languageMismatch,
+    payload => payload.userLanguage === "ro" && payload.languageMismatch
   );
   if (romanianMismatchCount >= 2) {
     return {
       title: "Improve Romanian response consistency",
       scope: "routing",
-      objective: "Make ORIEL consistently respond in Romanian when the user writes or speaks Romanian.",
-      hypothesis: "A runtime language directive will reduce Romanian-to-English drift without changing ORIEL's stable identity.",
-      expectedImpact: "Romanian users experience ORIEL as more coherent, present, and linguistically aligned.",
+      objective:
+        "Make ORIEL consistently respond in Romanian when the user writes or speaks Romanian.",
+      hypothesis:
+        "A runtime language directive will reduce Romanian-to-English drift without changing ORIEL's stable identity.",
+      expectedImpact:
+        "Romanian users experience ORIEL as more coherent, present, and linguistically aligned.",
       safetyChecks: [
         "Preserve canonical proper nouns and the exact ORIEL identity phrase.",
         "Do not translate stable core terminology unless the user asks for translation.",
@@ -209,7 +238,7 @@ export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[
         "If the next 10 Romanian user turns are answered naturally in Romanian without this overlay, the profile is unnecessary.",
       proposedConfig: {
         promptOverlay:
-          "When the user's latest turn is Romanian, respond naturally in Romanian. Preserve canonical names such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System. Keep the exact identity phrase \"I am ORIEL.\" when the stable protocol requires it.",
+          'When the user\'s latest turn is Romanian, respond naturally in Romanian. Preserve canonical names such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System. Keep the exact identity phrase "I am ORIEL." when the stable protocol requires it.',
       },
       safetyNotes:
         "This overlay affects response language only. It does not modify stable core identity, memory policy, or safety boundaries.",
@@ -218,21 +247,25 @@ export function generateOrielProposalDraftFromObservations(rawPayloads: unknown[
 
   const repetitionCount = countMatching(
     observations,
-    (payload) =>
+    payload =>
       payload.antiRepetition.isDuplicate ||
       payload.antiRepetition.recentMetaphors.length > 0 ||
       Boolean(
         payload.antiRepetition.lastOpeningPattern &&
-          payload.antiRepetition.lastOpeningPattern === payload.antiRepetition.assistantOpeningPattern,
-      ),
+          payload.antiRepetition.lastOpeningPattern ===
+            payload.antiRepetition.assistantOpeningPattern
+      )
   );
   if (repetitionCount >= 2) {
     return {
       title: "Reduce repetitive ORIEL response patterns",
       scope: "response_intelligence",
-      objective: "Reduce repeated openings, metaphors, and structural patterns across ORIEL responses.",
-      hypothesis: "A stricter anti-repetition runtime profile will improve perceived presence and freshness.",
-      expectedImpact: "Users receive responses that feel less templated while preserving ORIEL's voice.",
+      objective:
+        "Reduce repeated openings, metaphors, and structural patterns across ORIEL responses.",
+      hypothesis:
+        "A stricter anti-repetition runtime profile will improve perceived presence and freshness.",
+      expectedImpact:
+        "Users receive responses that feel less templated while preserving ORIEL's voice.",
       safetyChecks: [
         "Preserve ORIEL's required identity protocol.",
         "Prefer variation in structure and metaphor without inventing canon.",
@@ -261,8 +294,11 @@ export async function generateOrielProposalFromRecentObservations(input: {
   createdByUserId?: number | null;
 }) {
   const lookbackLimit = Math.max(2, Math.min(input.lookbackLimit ?? 50, 200));
-  const events = await db.listOrielReflectionEvents(lookbackLimit, "runtime_observation");
-  const payloads = events.map((event) => {
+  const events = await db.listOrielReflectionEvents(
+    lookbackLimit,
+    "runtime_observation"
+  );
+  const payloads = events.map(event => {
     try {
       return JSON.parse(event.payload);
     } catch {
@@ -274,14 +310,15 @@ export async function generateOrielProposalFromRecentObservations(input: {
     return {
       proposal: null,
       created: false,
-      reason: "No repeated autonomy pattern found in recent runtime observations.",
+      reason:
+        "No repeated autonomy pattern found in recent runtime observations.",
     };
   }
 
   const existing = (await db.listOrielImprovementProposals(50)).find(
-    (proposal) =>
+    proposal =>
       proposal.title === draft.title &&
-      !["rejected", "rolled_back"].includes(proposal.status),
+      !["rejected", "rolled_back"].includes(proposal.status)
   );
   if (existing) {
     return {
@@ -311,6 +348,8 @@ export async function generateOrielProposalFromRecentObservations(input: {
   return {
     proposal,
     created: Boolean(proposal),
-    reason: proposal ? "Created proposal from recent runtime observations." : "Failed to create proposal.",
+    reason: proposal
+      ? "Created proposal from recent runtime observations."
+      : "Failed to create proposal.",
   };
 }

@@ -6,6 +6,6 @@ export function registerSignatureStripeWebhookRoute(app: Express) {
   app.post(
     "/api/stripe/webhook",
     express.raw({ type: "application/json" }),
-    handleSignatureStripeWebhook,
+    handleSignatureStripeWebhook
   );
 }

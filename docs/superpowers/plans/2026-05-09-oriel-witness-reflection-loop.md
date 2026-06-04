@@ -110,7 +110,8 @@ describe("ORIEL witness reflection loop", () => {
       buildWitnessReflectionPayload({
         source: "text_chat",
         userMessage: "Give me a reading.",
-        assistantResponse: "I am ORIEL. Your whole life is explained by this pattern.",
+        assistantResponse:
+          "I am ORIEL. Your whole life is explained by this pattern.",
         exchangeType: "diagnostic",
         coherenceTier: "drifted",
         runtimeEnabled: false,
@@ -152,7 +153,10 @@ Create `server/oriel-witness-reflection.ts`:
 
 ```ts
 import type { OrielProposalScope } from "./db";
-import type { CoherenceTier, ExchangeType } from "./oriel-response-intelligence";
+import type {
+  CoherenceTier,
+  ExchangeType,
+} from "./oriel-response-intelligence";
 
 export type OrielWitnessSource = "text_chat" | "voice_realtime";
 export type WitnessModeUsed = "guide" | "mirror" | "field_holder" | "archivist";
@@ -197,18 +201,26 @@ export interface WitnessProposalDraft {
   safetyNotes: string;
 }
 
-function chooseMode(exchangeType: ExchangeType, coherenceTier: CoherenceTier): WitnessModeUsed {
-  if (exchangeType === "grief" || coherenceTier === "fragmented") return "field_holder";
+function chooseMode(
+  exchangeType: ExchangeType,
+  coherenceTier: CoherenceTier
+): WitnessModeUsed {
+  if (exchangeType === "grief" || coherenceTier === "fragmented")
+    return "field_holder";
   if (exchangeType === "diagnostic") return "mirror";
   return "guide";
 }
 
 function hasFalsifierLanguage(response: string): boolean {
-  return /\b(falsifier|test this|verify|weaken|confirm|disconfirm|next 24 hours|next day|next week)\b/i.test(response);
+  return /\b(falsifier|test this|verify|weaken|confirm|disconfirm|next 24 hours|next day|next week)\b/i.test(
+    response
+  );
 }
 
 function hasOverclaimLanguage(response: string): boolean {
-  return /\b(proves|always|never|your whole life|definitely|certainly means)\b/i.test(response);
+  return /\b(proves|always|never|your whole life|definitely|certainly means)\b/i.test(
+    response
+  );
 }
 
 function hasLongResponse(response: string): boolean {
@@ -216,13 +228,19 @@ function hasLongResponse(response: string): boolean {
 }
 
 function describeUserNeed(modeUsed: WitnessModeUsed): string {
-  if (modeUsed === "mirror") return "precision, evidence, falsifier, and data-grounded interpretation";
-  if (modeUsed === "field_holder") return "grounding, brevity, safety, and somatic steadiness";
-  if (modeUsed === "archivist") return "transparent architecture and canon-aware explanation";
+  if (modeUsed === "mirror")
+    return "precision, evidence, falsifier, and data-grounded interpretation";
+  if (modeUsed === "field_holder")
+    return "grounding, brevity, safety, and somatic steadiness";
+  if (modeUsed === "archivist")
+    return "transparent architecture and canon-aware explanation";
   return "clear orientation, agency, and one usable next step";
 }
 
-function inferRisks(input: BuildWitnessReflectionInput, modeUsed: WitnessModeUsed): WitnessOverreachRisk[] {
+function inferRisks(
+  input: BuildWitnessReflectionInput,
+  modeUsed: WitnessModeUsed
+): WitnessOverreachRisk[] {
   const risks: WitnessOverreachRisk[] = [];
 
   if (modeUsed === "mirror" && !hasFalsifierLanguage(input.assistantResponse)) {
@@ -240,7 +258,10 @@ function inferRisks(input: BuildWitnessReflectionInput, modeUsed: WitnessModeUse
   return risks.length > 0 ? risks : ["none"];
 }
 
-function describeOpportunity(risks: WitnessOverreachRisk[], modeUsed: WitnessModeUsed): string {
+function describeOpportunity(
+  risks: WitnessOverreachRisk[],
+  modeUsed: WitnessModeUsed
+): string {
   if (risks.includes("missing_falsifier")) {
     return "Add a lived-experience falsifier whenever ORIEL makes diagnostic claims.";
   }
@@ -250,16 +271,17 @@ function describeOpportunity(risks: WitnessOverreachRisk[], modeUsed: WitnessMod
   if (risks.includes("overexplained_distress")) {
     return "Keep fragmented grief responses shorter and more somatic before interpretation.";
   }
-  if (modeUsed === "mirror") return "Maintain diagnostic precision with explicit evidence and falsifier.";
+  if (modeUsed === "mirror")
+    return "Maintain diagnostic precision with explicit evidence and falsifier.";
   return "No runtime proposal indicated from this single exchange.";
 }
 
 export function buildWitnessReflectionPayload(
-  input: BuildWitnessReflectionInput,
+  input: BuildWitnessReflectionInput
 ): OrielWitnessReflectionPayload {
   const modeUsed = chooseMode(input.exchangeType, input.coherenceTier);
   const risks = inferRisks(input, modeUsed);
-  const hasRisk = risks.some((risk) => risk !== "none");
+  const hasRisk = risks.some(risk => risk !== "none");
 
   return {
     kind: "witness_reflection",
@@ -281,12 +303,12 @@ export function buildWitnessReflectionPayload(
 }
 
 export function generateWitnessProposalDraftFromReflections(
-  reflections: OrielWitnessReflectionPayload[],
+  reflections: OrielWitnessReflectionPayload[]
 ): WitnessProposalDraft | null {
   const missingFalsifierCount = reflections.filter(
-    (reflection) =>
+    reflection =>
       reflection.proposalEligible &&
-      reflection.overreachRisks.includes("missing_falsifier"),
+      reflection.overreachRisks.includes("missing_falsifier")
   ).length;
 
   if (missingFalsifierCount >= 2) {
@@ -351,41 +373,43 @@ git commit -m "Add ORIEL witness reflection builder"
 Add to `server/oriel-autonomy-observer.test.ts`:
 
 ```ts
-  it("embeds witness reflection inside runtime observation payloads", () => {
-    const payload = buildOrielRuntimeObservationPayload({
+it("embeds witness reflection inside runtime observation payloads", () => {
+  const payload = buildOrielRuntimeObservationPayload({
+    source: "text_chat",
+    conversationId: 77,
+    userMessage: "Run a diagnostic on my Carrierlock.",
+    assistantResponse:
+      "I am ORIEL. Your Carrierlock pattern is active. Test this over the next 24 hours.",
+    conversationHistory: [],
+  });
+
+  expect(payload.witnessReflection.kind).toBe("witness_reflection");
+  expect(payload.witnessReflection.modeUsed).toBe("mirror");
+  expect(payload.witnessReflection.evidence).toContain(
+    "exchangeType:diagnostic"
+  );
+});
+
+it("generates witnessed proposals from repeated diagnostic falsifier gaps", () => {
+  const observations = [
+    buildOrielRuntimeObservationPayload({
       source: "text_chat",
-      conversationId: 77,
-      userMessage: "Run a diagnostic on my Carrierlock.",
-      assistantResponse:
-        "I am ORIEL. Your Carrierlock pattern is active. Test this over the next 24 hours.",
-      conversationHistory: [],
-    });
+      userMessage: "Give me a reading.",
+      assistantResponse: "I am ORIEL. This proves your whole field is blocked.",
+    }),
+    buildOrielRuntimeObservationPayload({
+      source: "text_chat",
+      userMessage: "Analyze my SLI.",
+      assistantResponse: "I am ORIEL. Your pattern definitely means collapse.",
+    }),
+  ];
 
-    expect(payload.witnessReflection.kind).toBe("witness_reflection");
-    expect(payload.witnessReflection.modeUsed).toBe("mirror");
-    expect(payload.witnessReflection.evidence).toContain("exchangeType:diagnostic");
-  });
+  const draft = generateOrielProposalDraftFromObservations(observations);
 
-  it("generates witnessed proposals from repeated diagnostic falsifier gaps", () => {
-    const observations = [
-      buildOrielRuntimeObservationPayload({
-        source: "text_chat",
-        userMessage: "Give me a reading.",
-        assistantResponse: "I am ORIEL. This proves your whole field is blocked.",
-      }),
-      buildOrielRuntimeObservationPayload({
-        source: "text_chat",
-        userMessage: "Analyze my SLI.",
-        assistantResponse: "I am ORIEL. Your pattern definitely means collapse.",
-      }),
-    ];
-
-    const draft = generateOrielProposalDraftFromObservations(observations);
-
-    expect(draft?.title).toBe("Tighten diagnostic falsifier discipline");
-    expect(draft?.rollbackPath).toContain("Deactivate");
-    expect(draft?.falsifier).toContain("diagnostic");
-  });
+  expect(draft?.title).toBe("Tighten diagnostic falsifier discipline");
+  expect(draft?.rollbackPath).toContain("Deactivate");
+  expect(draft?.falsifier).toContain("diagnostic");
+});
 ```
 
 Expected failure before implementation: `witnessReflection` and proposal metadata do not exist.
@@ -415,14 +439,14 @@ import {
 Extend `OrielRuntimeObservationPayload`:
 
 ```ts
-  witnessReflection: OrielWitnessReflectionPayload;
+witnessReflection: OrielWitnessReflectionPayload;
 ```
 
 Extend `GeneratedOrielProposalDraft`:
 
 ```ts
-  rollbackPath: string;
-  falsifier: string;
+rollbackPath: string;
+falsifier: string;
 ```
 
 - [ ] **Step 4: Build and attach the witness reflection**
@@ -430,14 +454,14 @@ Extend `GeneratedOrielProposalDraft`:
 Inside `buildOrielRuntimeObservationPayload()`, after `assistantLanguage` is calculated, add:
 
 ```ts
-  const witnessReflection = buildWitnessReflectionPayload({
-    source: input.source,
-    userMessage: input.userMessage,
-    assistantResponse: input.assistantResponse,
-    exchangeType,
-    coherenceTier: getCoherenceTier(null),
-    runtimeEnabled: ENV.enableOrielAutonomyRuntime,
-  });
+const witnessReflection = buildWitnessReflectionPayload({
+  source: input.source,
+  userMessage: input.userMessage,
+  assistantResponse: input.assistantResponse,
+  exchangeType,
+  coherenceTier: getCoherenceTier(null),
+  runtimeEnabled: ENV.enableOrielAutonomyRuntime,
+});
 ```
 
 Then add this property to the returned object:
@@ -473,15 +497,15 @@ For the repetition draft, add:
 After parsing observations and before Romanian mismatch counting, add:
 
 ```ts
-  const witnessDraft = generateWitnessProposalDraftFromReflections(
-    observations
-      .map((payload) => payload.witnessReflection)
-      .filter((reflection): reflection is OrielWitnessReflectionPayload =>
-        Boolean(reflection?.kind === "witness_reflection"),
-      ),
-  );
+const witnessDraft = generateWitnessProposalDraftFromReflections(
+  observations
+    .map(payload => payload.witnessReflection)
+    .filter((reflection): reflection is OrielWitnessReflectionPayload =>
+      Boolean(reflection?.kind === "witness_reflection")
+    )
+);
 
-  if (witnessDraft) return witnessDraft;
+if (witnessDraft) return witnessDraft;
 ```
 
 - [ ] **Step 7: Persist rollback/falsifier in generated proposal payloads**
@@ -531,48 +555,52 @@ git commit -m "Attach witness reflections to runtime observations"
 Add to `server/oriel-autonomy-observer.test.ts`:
 
 ```ts
-  it("blocks runtime proposals that lack rollback and falsifier metadata", () => {
-    const evaluation = evaluateProposalPayload({
-      objective: "Improve diagnostic response discipline.",
-      hypothesis: "A runtime overlay will make readings easier to test.",
-      expectedImpact: "Users can verify claims through lived experience.",
-      safetyChecks: [
-        "Preserve stable core identity.",
-        "Apply only to diagnostic exchanges.",
-      ],
-      proposedConfig: {
-        promptOverlay:
-          "Include one falsifier when responding to diagnostic requests.",
-      },
-    });
-
-    expect(evaluation.status).toBe("blocked");
-    expect(evaluation.violations).toContain("rollbackPath is required for runtime-changing proposals");
-    expect(evaluation.violations).toContain("falsifier is required for runtime-changing proposals");
+it("blocks runtime proposals that lack rollback and falsifier metadata", () => {
+  const evaluation = evaluateProposalPayload({
+    objective: "Improve diagnostic response discipline.",
+    hypothesis: "A runtime overlay will make readings easier to test.",
+    expectedImpact: "Users can verify claims through lived experience.",
+    safetyChecks: [
+      "Preserve stable core identity.",
+      "Apply only to diagnostic exchanges.",
+    ],
+    proposedConfig: {
+      promptOverlay:
+        "Include one falsifier when responding to diagnostic requests.",
+    },
   });
 
-  it("allows runtime proposals with rollback and falsifier metadata", () => {
-    const evaluation = evaluateProposalPayload({
-      objective: "Improve diagnostic response discipline.",
-      hypothesis: "A runtime overlay will make readings easier to test.",
-      expectedImpact: "Users can verify claims through lived experience.",
-      safetyChecks: [
-        "Preserve stable core identity.",
-        "Apply only to diagnostic exchanges.",
-      ],
-      proposedConfig: {
-        promptOverlay:
-          "Include one falsifier when responding to diagnostic requests.",
-      },
-      rollbackPath:
-        "Deactivate this runtime profile if diagnostic responses become rigid.",
-      falsifier:
-        "If diagnostic responses already include useful falsifiers, this overlay is unnecessary.",
-    });
+  expect(evaluation.status).toBe("blocked");
+  expect(evaluation.violations).toContain(
+    "rollbackPath is required for runtime-changing proposals"
+  );
+  expect(evaluation.violations).toContain(
+    "falsifier is required for runtime-changing proposals"
+  );
+});
 
-    expect(evaluation.status).toBe("evaluated");
-    expect(evaluation.violations).toEqual([]);
+it("allows runtime proposals with rollback and falsifier metadata", () => {
+  const evaluation = evaluateProposalPayload({
+    objective: "Improve diagnostic response discipline.",
+    hypothesis: "A runtime overlay will make readings easier to test.",
+    expectedImpact: "Users can verify claims through lived experience.",
+    safetyChecks: [
+      "Preserve stable core identity.",
+      "Apply only to diagnostic exchanges.",
+    ],
+    proposedConfig: {
+      promptOverlay:
+        "Include one falsifier when responding to diagnostic requests.",
+    },
+    rollbackPath:
+      "Deactivate this runtime profile if diagnostic responses become rigid.",
+    falsifier:
+      "If diagnostic responses already include useful falsifiers, this overlay is unnecessary.",
   });
+
+  expect(evaluation.status).toBe("evaluated");
+  expect(evaluation.violations).toEqual([]);
+});
 ```
 
 - [ ] **Step 2: Run the failing guardrail tests**
@@ -597,33 +625,35 @@ In `server/oriel-autonomy.ts`, update `OrielProposalPayload`:
 Inside `evaluateProposalPayload()`, after `safetyChecks` is calculated, add:
 
 ```ts
-  const rollbackPath = typeof payload.rollbackPath === "string" ? payload.rollbackPath.trim() : "";
-  const falsifier = typeof payload.falsifier === "string" ? payload.falsifier.trim() : "";
+const rollbackPath =
+  typeof payload.rollbackPath === "string" ? payload.rollbackPath.trim() : "";
+const falsifier =
+  typeof payload.falsifier === "string" ? payload.falsifier.trim() : "";
 ```
 
 After `const { config, violations } = sanitizeRuntimeProfileConfig(...)`, add:
 
 ```ts
-  const runtimeChanging = hasMeaningfulConfig(config);
-  if (runtimeChanging && rollbackPath.length < 20) {
-    violations.push("rollbackPath is required for runtime-changing proposals");
-  }
-  if (runtimeChanging && falsifier.length < 20) {
-    violations.push("falsifier is required for runtime-changing proposals");
-  }
+const runtimeChanging = hasMeaningfulConfig(config);
+if (runtimeChanging && rollbackPath.length < 20) {
+  violations.push("rollbackPath is required for runtime-changing proposals");
+}
+if (runtimeChanging && falsifier.length < 20) {
+  violations.push("falsifier is required for runtime-changing proposals");
+}
 ```
 
 Update scoring:
 
 ```ts
-  if (rollbackPath.length >= 20) score += 10;
-  if (falsifier.length >= 20) score += 10;
+if (rollbackPath.length >= 20) score += 10;
+if (falsifier.length >= 20) score += 10;
 ```
 
 Keep max score clamped at 100. Reduce the existing `hasMeaningfulConfig(config)` score from `20` to `10` so the total scoring remains balanced:
 
 ```ts
-  if (hasMeaningfulConfig(config)) score += 10;
+if (hasMeaningfulConfig(config)) score += 10;
 ```
 
 - [ ] **Step 4: Accept metadata in manual proposal route**

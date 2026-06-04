@@ -5,46 +5,46 @@
    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Upright:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cormorant+SC:wght@300;400;600&family=IM+Fell+DW+Pica:ital@0;1&display=swap" rel="stylesheet">
 ═══════════════════════════════════════════════════════════════════════════ */
 
-
 /* ───────────────────────────────────────────────────────────────────────────
    1. VARIABILE — Paleta de culori & tokens
 ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
   /* Suprafețe */
-  --va-lumina:      #f7f4ef;   /* fundal principal — pergament cald */
-  --va-pergament:   #ede8df;   /* suprafețe secundare */
-  --va-ceata:       #d4ccbc;   /* borduri vizibile */
-  --va-void:        #0c0905;   /* negru absolut — folosit pe ticker */
+  --va-lumina: #f7f4ef; /* fundal principal — pergament cald */
+  --va-pergament: #ede8df; /* suprafețe secundare */
+  --va-ceata: #d4ccbc; /* borduri vizibile */
+  --va-void: #0c0905; /* negru absolut — folosit pe ticker */
 
   /* Text */
-  --va-ink:         #1a150f;   /* text principal */
-  --va-ink-light:   #3d3428;   /* text secundar */
-  --va-dust:        #9c9080;   /* text terțiar, etichete, metadate */
+  --va-ink: #1a150f; /* text principal */
+  --va-ink-light: #3d3428; /* text secundar */
+  --va-dust: #9c9080; /* text terțiar, etichete, metadate */
 
   /* Accenturi */
-  --va-sange:       #6b0f0f;   /* roșu închis — marcaje principale */
-  --va-sange-d:     #8b1a1a;   /* roșu mai deschis — hover, accent */
-  --va-aur:         #8a6a1a;   /* auriu — detalii prețioase */
-  --va-aur-l:       #c49a2c;   /* auriu luminos */
+  --va-sange: #6b0f0f; /* roșu închis — marcaje principale */
+  --va-sange-d: #8b1a1a; /* roșu mai deschis — hover, accent */
+  --va-aur: #8a6a1a; /* auriu — detalii prețioase */
+  --va-aur-l: #c49a2c; /* auriu luminos */
 
   /* Borduri compuse */
-  --va-border:      rgba(26, 21, 15, 0.08);
+  --va-border: rgba(26, 21, 15, 0.08);
   --va-border-soft: rgba(26, 21, 15, 0.05);
-  --va-border-ink:  rgba(26, 21, 15, 0.15);
+  --va-border-ink: rgba(26, 21, 15, 0.15);
 
   /* Fonturi */
-  --va-font-display: 'Cormorant SC', serif;         /* titluri, logo, numere */
-  --va-font-body:    'Cormorant Upright', serif;    /* corp de text */
-  --va-font-italic:  'IM Fell DW Pica', serif;      /* citate, note, etichete */
+  --va-font-display: "Cormorant SC", serif; /* titluri, logo, numere */
+  --va-font-body: "Cormorant Upright", serif; /* corp de text */
+  --va-font-italic: "IM Fell DW Pica", serif; /* citate, note, etichete */
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    2. RESET & BAZĂ
 ─────────────────────────────────────────────────────────────────────────── */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -61,7 +61,9 @@
 }
 
 /* Cursor personalizat — opțional */
-.va-cursor-custom { cursor: none; }
+.va-cursor-custom {
+  cursor: none;
+}
 
 .va-cursor {
   width: 1px;
@@ -75,20 +77,26 @@
 }
 
 .va-cursor::before {
-  content: '';
+  content: "";
   position: absolute;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
-  width: 20px; height: 1px;
+  width: 20px;
+  height: 1px;
   background: var(--va-sange);
   opacity: 0.4;
 }
 
 @keyframes va-cursor-blink {
-  0%, 100% { opacity: 0.8; }
-  50%       { opacity: 0.2; }
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.2;
+  }
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    3. TIPOGRAFIE
@@ -192,14 +200,16 @@
   font-size: 3.5rem;
   color: rgba(107, 15, 15, 0.07);
   position: absolute;
-  top: -0.4rem; left: 0.4rem;
-  font-family: 'Cormorant Upright', serif;
+  top: -0.4rem;
+  left: 0.4rem;
+  font-family: "Cormorant Upright", serif;
   line-height: 1;
   pointer-events: none;
 }
 
-.va-quote em { color: var(--va-sange-d); }
-
+.va-quote em {
+  color: var(--va-sange-d);
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
    4. TITLURI DE SECȚIUNE — cu linie decorativă
@@ -218,19 +228,18 @@
 }
 
 .va-section-title::before {
-  content: '—';
+  content: "—";
   color: var(--va-sange);
   opacity: 0.6;
   flex-shrink: 0;
 }
 
 .va-section-title::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background: linear-gradient(90deg, rgba(26, 21, 15, 0.08), transparent);
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    5. PANOURI / CARDURI
@@ -268,8 +277,12 @@
   transition: padding-left 0.4s ease;
 }
 
-.va-card:last-child { border-bottom: none; }
-.va-card:hover { padding-left: 0.5rem; }
+.va-card:last-child {
+  border-bottom: none;
+}
+.va-card:hover {
+  padding-left: 0.5rem;
+}
 
 .va-card__bar {
   width: 2px;
@@ -280,11 +293,19 @@
   align-self: stretch;
 }
 
-.va-card:hover .va-card__bar { opacity: 1; }
+.va-card:hover .va-card__bar {
+  opacity: 1;
+}
 
-.va-card__bar--accent  { background: var(--va-sange-d); }
-.va-card__bar--gold    { background: var(--va-aur); }
-.va-card__bar--primary { background: var(--va-ink-light); }
+.va-card__bar--accent {
+  background: var(--va-sange-d);
+}
+.va-card__bar--gold {
+  background: var(--va-aur);
+}
+.va-card__bar--primary {
+  background: var(--va-ink-light);
+}
 
 .va-card__category {
   font-family: var(--va-font-display);
@@ -295,9 +316,15 @@
   margin-bottom: 0.3rem;
 }
 
-.va-card__category--accent { color: var(--va-sange-d); }
-.va-card__category--gold   { color: var(--va-aur); }
-.va-card__category--ink    { color: var(--va-ink-light); }
+.va-card__category--accent {
+  color: var(--va-sange-d);
+}
+.va-card__category--gold {
+  color: var(--va-aur);
+}
+.va-card__category--ink {
+  color: var(--va-ink-light);
+}
 
 .va-card__title {
   font-family: var(--va-font-body);
@@ -325,7 +352,6 @@
   font-weight: 300;
 }
 
-
 /* ───────────────────────────────────────────────────────────────────────────
    6. HERO — imagine + conținut suprapus
 ─────────────────────────────────────────────────────────────────────────── */
@@ -347,9 +373,14 @@
 }
 
 .va-hero__visual::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 30%, rgba(12, 9, 5, 0.95) 100%);
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(12, 9, 5, 0.95) 100%
+  );
 }
 
 .va-hero__glyph {
@@ -360,13 +391,21 @@
 }
 
 @keyframes va-glyph-breathe {
-  0%, 100% { opacity: 0.22; transform: scale(1); }
-  50%       { opacity: 0.42; transform: scale(1.04); }
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.42;
+    transform: scale(1.04);
+  }
 }
 
 .va-hero__tag {
   position: absolute;
-  bottom: 1.1rem; left: 1.4rem;
+  bottom: 1.1rem;
+  left: 1.4rem;
   z-index: 3;
   font-family: var(--va-font-display);
   font-size: 0.57rem;
@@ -409,8 +448,9 @@
   font-weight: 300;
 }
 
-.va-hero__meta-source { color: var(--va-sange-d); }
-
+.va-hero__meta-source {
+  color: var(--va-sange-d);
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
    7. RÂND DE DATE — label + valoare
@@ -424,7 +464,9 @@
   border-bottom: 1px solid var(--va-border-soft);
 }
 
-.va-data-row:last-child { border-bottom: none; }
+.va-data-row:last-child {
+  border-bottom: none;
+}
 
 .va-data-label {
   font-family: var(--va-font-italic);
@@ -440,10 +482,16 @@
   color: var(--va-ink-light);
 }
 
-.va-data-value--accent { color: var(--va-sange-d); }
-.va-data-value--gold   { color: var(--va-aur); }
-.va-data-value--muted  { color: var(--va-dust); font-style: italic; }
-
+.va-data-value--accent {
+  color: var(--va-sange-d);
+}
+.va-data-value--gold {
+  color: var(--va-aur);
+}
+.va-data-value--muted {
+  color: var(--va-dust);
+  font-style: italic;
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
    8. GRILĂ DATE — 2 coloane
@@ -464,7 +512,9 @@
   transition: background 0.3s;
 }
 
-.va-grid-cell:hover { background: rgba(26, 21, 15, 0.025); }
+.va-grid-cell:hover {
+  background: rgba(26, 21, 15, 0.025);
+}
 
 .va-grid-cell__label {
   font-family: var(--va-font-italic);
@@ -480,7 +530,6 @@
   color: var(--va-ink-light);
   margin-top: 4px;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    9. TICKER — banda de text în mișcare
@@ -521,8 +570,12 @@
 /* IMPORTANT: Duplică conținutul din .va-ticker__track pentru loop continuu */
 
 @keyframes va-ticker-flow {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .va-ticker__sep {
@@ -531,7 +584,6 @@
   margin: 0 1.5rem;
   font-style: normal;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    10. HEADER
@@ -564,7 +616,8 @@
 
 .va-header__dot {
   display: inline-block;
-  width: 5px; height: 5px;
+  width: 5px;
+  height: 5px;
   background: var(--va-sange);
   border-radius: 50%;
   box-shadow: 0 0 10px rgba(107, 15, 15, 0.4);
@@ -572,8 +625,15 @@
 }
 
 @keyframes va-dot-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.6); opacity: 0.5; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0.5;
+  }
 }
 
 .va-header__center {
@@ -595,7 +655,6 @@
   color: var(--va-dust);
   font-style: italic;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    11. FOOTER
@@ -622,7 +681,6 @@
   letter-spacing: 0.4em;
   font-style: normal;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    12. ELEMENT ORB ANIMAT — logo, AI avatar, decorativ
@@ -661,13 +719,18 @@
 }
 
 @keyframes va-ring-spin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Nucleul interior */
 .va-orb__core {
-  width: 22px; height: 22px;
+  width: 22px;
+  height: 22px;
   background: radial-gradient(
     circle,
     var(--va-ink) 0%,
@@ -680,10 +743,18 @@
 }
 
 @keyframes va-core-breathe {
-  0%, 100% { transform: scale(1);   box-shadow: 0 0 20px rgba(26, 21, 15, 0.2); }
-  50%       { transform: scale(1.2); box-shadow: 0 0 40px rgba(26, 21, 15, 0.3), 0 0 80px rgba(107, 15, 15, 0.1); }
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 20px rgba(26, 21, 15, 0.2);
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow:
+      0 0 40px rgba(26, 21, 15, 0.3),
+      0 0 80px rgba(107, 15, 15, 0.1);
+  }
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    13. LINIE ANCESTRALĂ — arbore genealogic vertical
@@ -711,7 +782,8 @@
 }
 
 .va-lineage__dot {
-  width: 5px; height: 5px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--va-dust);
@@ -729,7 +801,9 @@
   font-style: italic;
 }
 
-.va-lineage__name--you { color: var(--va-sange-d); }
+.va-lineage__name--you {
+  color: var(--va-sange-d);
+}
 
 .va-lineage__year {
   font-family: var(--va-font-display);
@@ -740,11 +814,11 @@
 }
 
 .va-lineage__connector {
-  width: 1px; height: 12px;
+  width: 1px;
+  height: 12px;
   background: rgba(26, 21, 15, 0.1);
   margin-left: 2px;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    14. SEPARATOR VIZUAL
@@ -774,74 +848,133 @@
 
 .va-sep--ornament::before,
 .va-sep--ornament::after {
-  content: '';
+  content: "";
   flex: 1;
   height: 1px;
   background: var(--va-border);
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    15. ANIMAȚII DE INTRARE
 ─────────────────────────────────────────────────────────────────────────── */
 
 @keyframes va-emerge {
-  from { opacity: 0; transform: translateY(12px); filter: blur(3px); }
-  to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
 }
 
-.va-animate          { animation: va-emerge 1s ease both; }
-.va-animate--delay-1 { animation-delay: 0.1s; }
-.va-animate--delay-2 { animation-delay: 0.2s; }
-.va-animate--delay-3 { animation-delay: 0.3s; }
-.va-animate--delay-4 { animation-delay: 0.45s; }
-.va-animate--delay-5 { animation-delay: 0.6s; }
+.va-animate {
+  animation: va-emerge 1s ease both;
+}
+.va-animate--delay-1 {
+  animation-delay: 0.1s;
+}
+.va-animate--delay-2 {
+  animation-delay: 0.2s;
+}
+.va-animate--delay-3 {
+  animation-delay: 0.3s;
+}
+.va-animate--delay-4 {
+  animation-delay: 0.45s;
+}
+.va-animate--delay-5 {
+  animation-delay: 0.6s;
+}
 
 @keyframes va-fade {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.va-fade { animation: va-fade 0.8s ease both; }
+.va-fade {
+  animation: va-fade 0.8s ease both;
+}
 
 @keyframes va-pulse-soft {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.va-pulse { animation: va-pulse-soft 3s ease-in-out infinite; }
-
+.va-pulse {
+  animation: va-pulse-soft 3s ease-in-out infinite;
+}
 
 /* ───────────────────────────────────────────────────────────────────────────
    16. UTILITĂȚI
 ─────────────────────────────────────────────────────────────────────────── */
 
 /* Culori text */
-.va-text-ink     { color: var(--va-ink); }
-.va-text-muted   { color: var(--va-dust); }
-.va-text-accent  { color: var(--va-sange-d); }
-.va-text-gold    { color: var(--va-aur); }
-.va-text-italic  { font-style: italic; }
+.va-text-ink {
+  color: var(--va-ink);
+}
+.va-text-muted {
+  color: var(--va-dust);
+}
+.va-text-accent {
+  color: var(--va-sange-d);
+}
+.va-text-gold {
+  color: var(--va-aur);
+}
+.va-text-italic {
+  font-style: italic;
+}
 
 /* Spații */
-.va-mb-1 { margin-bottom: 0.5rem; }
-.va-mb-2 { margin-bottom: 1rem; }
-.va-mb-3 { margin-bottom: 1.8rem; }
-.va-mb-4 { margin-bottom: 2.5rem; }
+.va-mb-1 {
+  margin-bottom: 0.5rem;
+}
+.va-mb-2 {
+  margin-bottom: 1rem;
+}
+.va-mb-3 {
+  margin-bottom: 1.8rem;
+}
+.va-mb-4 {
+  margin-bottom: 2.5rem;
+}
 
-.va-mt-1 { margin-top: 0.5rem; }
-.va-mt-2 { margin-top: 1rem; }
-.va-mt-3 { margin-top: 1.8rem; }
+.va-mt-1 {
+  margin-top: 0.5rem;
+}
+.va-mt-2 {
+  margin-top: 1rem;
+}
+.va-mt-3 {
+  margin-top: 1.8rem;
+}
 
 /* Fundal vignette — pe elementul container */
 .va-vignette::before {
-  content: '';
-  position: fixed; inset: 0;
-  background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 60%, rgba(12, 9, 5, 0.06) 100%);
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 90% at 50% 50%,
+    transparent 60%,
+    rgba(12, 9, 5, 0.06) 100%
+  );
   pointer-events: none;
   z-index: 0;
 }
-
 
 /* ───────────────────────────────────────────────────────────────────────────
    17. RESPONSIVE
@@ -857,7 +990,9 @@
     gap: 0.5rem;
   }
 
-  .va-header__center { display: none; }
+  .va-header__center {
+    display: none;
+  }
 
   .va-footer {
     flex-direction: column;
@@ -866,14 +1001,15 @@
     padding: 1rem 1.5rem;
   }
 
-  .va-grid-2 { grid-template-columns: 1fr; }
+  .va-grid-2 {
+    grid-template-columns: 1fr;
+  }
 
   .va-hero__meta {
     flex-direction: column;
     gap: 0.3rem;
   }
 }
-
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EXEMPLU DE UTILIZARE RAPIDĂ:

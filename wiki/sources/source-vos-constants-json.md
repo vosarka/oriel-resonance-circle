@@ -20,14 +20,18 @@ This file contains the core immutable data arrays that the VRC Engine relies on.
 ## Contents
 
 ### 1. `planetary_inputs`
+
 13 celestial bodies used for calculations:
+
 - Sun, Moon, Mercury, Venus, Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
 - North Node, South Node, Earth
 
 Each entry includes the `swiss_eph_id` used by the Swiss Ephemeris library.
 
 ### 2. `centers`
+
 The 9 Centers of Photonic Resonance:
+
 - HEAD (Pressure)
 - AJNA (Awareness)
 - THROAT (Manifestation)
@@ -39,7 +43,9 @@ The 9 Centers of Photonic Resonance:
 - ROOT (Pressure/Motor)
 
 ### 3. `channels`
+
 The complete list of 36 Resonance Links (channels), each with:
+
 - `id` (e.g., "64-47")
 - `name` (e.g., "Abstraction")
 - `gate_a` and `gate_b`
@@ -65,4 +71,4 @@ This is a small but high-authority file. Any change to centers, channels, or pla
 
 ---
 
-*Ingested as the immutable constants reference for the VRC system.*
+_Ingested as the immutable constants reference for the VRC system._

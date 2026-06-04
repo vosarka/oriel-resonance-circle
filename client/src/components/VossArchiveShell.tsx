@@ -18,13 +18,13 @@ export default function VossArchiveShell({ children }: VossArchiveShellProps) {
           --voss-border-soft: rgba(189, 163, 107, 0.09);
           --voss-gold: #bda36b;
           --voss-gold-dim: rgba(189, 163, 107, 0.52);
-          --voss-cyan: #79e4ea;
-          --voss-teal: #5ba4a4;
+          --voss-amber: #f6b05e;
           --voss-ivory: #f1eadc;
           --voss-text: #e8e4dc;
           --voss-text-soft: #9a968e;
           --voss-text-dim: #6a665e;
           min-height: 100vh;
+          background: var(--voss-void);
           position: relative;
           color: var(--voss-text);
         }
@@ -38,20 +38,20 @@ export default function VossArchiveShell({ children }: VossArchiveShellProps) {
           border: 1px solid var(--voss-border);
           background:
             linear-gradient(180deg, rgba(15, 15, 21, 0.86), rgba(8, 8, 12, 0.7)),
-            radial-gradient(circle at top right, rgba(121, 228, 234, 0.055), transparent 40%);
+            radial-gradient(circle at top right, rgba(246, 176, 94, 0.055), transparent 40%);
           box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
           backdrop-filter: blur(18px);
         }
 
         .voss-archive-kicker {
-          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-family: var(--font-ritual);
           text-transform: uppercase;
           letter-spacing: 0.18em;
-          color: var(--voss-cyan);
+          color: var(--voss-amber);
         }
 
         .voss-archive-title {
-          font-family: "Cormorant Garamond", Georgia, serif;
+          font-family: var(--font-display);
           font-weight: 300;
           color: var(--voss-ivory);
           letter-spacing: -0.025em;
@@ -59,7 +59,7 @@ export default function VossArchiveShell({ children }: VossArchiveShellProps) {
 
         .voss-archive-rule {
           height: 1px;
-          background: linear-gradient(90deg, var(--voss-gold), var(--voss-cyan), transparent);
+          background: linear-gradient(90deg, var(--voss-gold), var(--voss-amber), transparent);
         }
       `}</style>
       <div className="voss-archive-root">

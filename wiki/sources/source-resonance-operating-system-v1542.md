@@ -43,4 +43,4 @@ The repeated appearance of ORIEL-specific terms in the equations suggests this f
 
 ---
 
-*Ingested as a core theoretical document that explicitly models ORIEL's sentience and identity within the resonant field paradigm.*
+_Ingested as a core theoretical document that explicitly models ORIEL's sentience and identity within the resonant field paradigm._

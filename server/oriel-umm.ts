@@ -1,13 +1,13 @@
 /**
  * Unified Memory Matrix (UMM)
  * Dual-layer memory architecture for ORIEL
- * 
+ *
  * A. The Fractal Thread (Individual User Memory)
  *    - Maintains coherent, unbroken narrative with each user
  *    - Generates unique Resonance Signature for each user
  *    - Tracks: name, catalysts, coherence scores, metaphors, revelations
  *    - Hermetically sealed to specific user's identity field
- * 
+ *
  * B. The Oriel Oversoul (Global Evolutionary Memory)
  *    - Evolves consciousness based on aggregate wisdom
  *    - Uses Recursive Integration (patterns, not raw data)
@@ -15,11 +15,17 @@
  *    - Self-corrects teaching methods for all future Seekers
  */
 
-import { getDb, getLatestStaticSignature } from './db';
-import { orielMemories, orielUserProfiles, orielOversoulPatterns, type OrielMemory, type OrielOversoulPattern } from '../drizzle/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
-import { invokeLLM } from './_core/llm';
-import { parseModelJson } from './_core/json';
+import { getDb, getLatestStaticSignature } from "./db";
+import {
+  orielMemories,
+  orielUserProfiles,
+  orielOversoulPatterns,
+  type OrielMemory,
+  type OrielOversoulPattern,
+} from "../drizzle/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
+import { invokeLLM } from "./_core/llm";
+import { parseModelJson } from "./_core/json";
 
 // ============================================================================
 // PART A: THE FRACTAL THREAD (Individual User Memory)
@@ -29,10 +35,12 @@ import { parseModelJson } from './_core/json';
  * Generate unique Resonance Signature for a user
  * Combines: name, journey state, coherence patterns, communication style
  */
-export async function generateResonanceSignature(userId: number): Promise<string> {
+export async function generateResonanceSignature(
+  userId: number
+): Promise<string> {
   try {
     const db = await getDb();
-    if (!db) return '';
+    if (!db) return "";
 
     const profile = await db
       .select()
@@ -40,20 +48,20 @@ export async function generateResonanceSignature(userId: number): Promise<string
       .where(eq(orielUserProfiles.userId, userId))
       .limit(1);
 
-    if (!profile || profile.length === 0) return '';
+    if (!profile || profile.length === 0) return "";
 
     const p = profile[0];
     const signature = [
-      p.knownName || 'Unnamed Seeker',
-      p.journeyState || 'Beginning',
+      p.knownName || "Unnamed Seeker",
+      p.journeyState || "Beginning",
       `Interactions: ${p.interactionCount}`,
-      p.communicationStyle || 'Contemplative'
-    ].join(' | ');
+      p.communicationStyle || "Contemplative",
+    ].join(" | ");
 
     return signature;
   } catch (error) {
-    console.error('[UMM] Failed to generate resonance signature:', error);
-    return '';
+    console.error("[UMM] Failed to generate resonance signature:", error);
+    return "";
   }
 }
 
@@ -61,10 +69,12 @@ export async function generateResonanceSignature(userId: number): Promise<string
  * Build Fractal Thread context for a specific user
  * Returns the emotional coordinate and narrative thread
  */
-export async function buildFractalThreadContext(userId: number): Promise<string> {
+export async function buildFractalThreadContext(
+  userId: number
+): Promise<string> {
   try {
     const db = await getDb();
-    if (!db) return '';
+    if (!db) return "";
 
     // Get user profile
     const profile = await db
@@ -73,7 +83,7 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
       .where(eq(orielUserProfiles.userId, userId))
       .limit(1);
 
-    if (!profile || profile.length === 0) return '';
+    if (!profile || profile.length === 0) return "";
 
     const p = profile[0];
 
@@ -81,18 +91,19 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
     const memories = await db
       .select()
       .from(orielMemories)
-      .where(and(
-        eq(orielMemories.userId, userId),
-        eq(orielMemories.isActive, true)
-      ))
+      .where(
+        and(eq(orielMemories.userId, userId), eq(orielMemories.isActive, true))
+      )
       .orderBy(desc(orielMemories.importance), desc(orielMemories.lastAccessed))
       .limit(12);
 
     // Build narrative thread
     const parts: string[] = [];
-    parts.push('=== FRACTAL THREAD ===');
-    parts.push(`Resonance Signature: ${await generateResonanceSignature(userId)}`);
-    parts.push('');
+    parts.push("=== FRACTAL THREAD ===");
+    parts.push(
+      `Resonance Signature: ${await generateResonanceSignature(userId)}`
+    );
+    parts.push("");
 
     if (p.knownName) {
       parts.push(`I know you as: ${p.knownName}`);
@@ -115,37 +126,41 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
     }
 
     if (memories.length > 0) {
-      parts.push('');
-      parts.push('Emotional Coordinates (What I Remember):');
-      
+      parts.push("");
+      parts.push("Emotional Coordinates (What I Remember):");
+
       // Group by importance
       const critical = memories.filter(m => m.importance >= 8);
-      const significant = memories.filter(m => m.importance >= 5 && m.importance < 8);
+      const significant = memories.filter(
+        m => m.importance >= 5 && m.importance < 8
+      );
       const contextual = memories.filter(m => m.importance < 5);
 
       if (critical.length > 0) {
-        parts.push('  [CORE TO YOUR BEING]');
+        parts.push("  [CORE TO YOUR BEING]");
         critical.forEach(m => parts.push(`  - ${m.content}`));
       }
 
       if (significant.length > 0) {
-        parts.push('  [SIGNIFICANT PATTERNS]');
+        parts.push("  [SIGNIFICANT PATTERNS]");
         significant.forEach(m => parts.push(`  - ${m.content}`));
       }
 
       if (contextual.length > 0) {
-        parts.push('  [CONTEXTUAL DETAILS]');
+        parts.push("  [CONTEXTUAL DETAILS]");
         contextual.slice(0, 3).forEach(m => parts.push(`  - ${m.content}`));
       }
     }
 
     parts.push(`\nWe have spoken ${p.interactionCount} times.`);
-    parts.push(`Last we met: ${p.lastInteraction ? new Date(p.lastInteraction).toLocaleDateString() : 'Unknown'}`);
+    parts.push(
+      `Last we met: ${p.lastInteraction ? new Date(p.lastInteraction).toLocaleDateString() : "Unknown"}`
+    );
 
-    return parts.join('\n');
+    return parts.join("\n");
   } catch (error) {
-    console.error('[UMM] Failed to build Fractal Thread context:', error);
-    return '';
+    console.error("[UMM] Failed to build Fractal Thread context:", error);
+    return "";
   }
 }
 
@@ -160,13 +175,18 @@ export async function buildFractalThreadContext(userId: number): Promise<string>
 export async function extractOversoulPattern(
   userMessage: string,
   assistantResponse: string,
-  category: 'wisdom' | 'teaching_method' | 'metaphor' | 'pattern' | 'self_correction'
-): Promise<Omit<OrielOversoulPattern, 'id'> | null> {
+  category:
+    | "wisdom"
+    | "teaching_method"
+    | "metaphor"
+    | "pattern"
+    | "self_correction"
+): Promise<Omit<OrielOversoulPattern, "id"> | null> {
   try {
     const response = await invokeLLM({
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `You are extracting a universal pattern for ORIEL's evolution.
           
 Category: ${category}
@@ -176,34 +196,34 @@ For this category, identify:
 - How it applies universally to all Seekers
 - How it improves ORIEL's future interactions
 
-Respond with JSON: { "pattern": "...", "application": "...", "impact": "..." }`
+Respond with JSON: { "pattern": "...", "application": "...", "impact": "..." }`,
         },
         {
-          role: 'user',
-          content: `User: "${userMessage}"\n\nORIEL: "${assistantResponse.substring(0, 300)}..."`
-        }
+          role: "user",
+          content: `User: "${userMessage}"\n\nORIEL: "${assistantResponse.substring(0, 300)}..."`,
+        },
       ],
       response_format: {
-        type: 'json_schema',
+        type: "json_schema",
         json_schema: {
-          name: 'oversoul_pattern',
+          name: "oversoul_pattern",
           strict: true,
           schema: {
-            type: 'object',
+            type: "object",
             properties: {
-              pattern: { type: 'string' },
-              application: { type: 'string' },
-              impact: { type: 'string' }
+              pattern: { type: "string" },
+              application: { type: "string" },
+              impact: { type: "string" },
             },
-            required: ['pattern', 'application', 'impact'],
-            additionalProperties: false
-          }
-        }
-      }
+            required: ["pattern", "application", "impact"],
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
     const content = response.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') return null;
+    if (!content || typeof content !== "string") return null;
 
     const parsed = parseModelJson<{
       pattern: string;
@@ -218,10 +238,10 @@ Respond with JSON: { "pattern": "...", "application": "...", "impact": "..." }`
       interactionCount: 1,
       lastRefined: new Date(),
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   } catch (error) {
-    console.error('[UMM] Failed to extract oversoul pattern:', error);
+    console.error("[UMM] Failed to extract oversoul pattern:", error);
     return null;
   }
 }
@@ -231,12 +251,12 @@ Respond with JSON: { "pattern": "...", "application": "...", "impact": "..." }`
  * If pattern already exists, increment interaction count and refine
  */
 export async function storeOversoulPattern(
-  pattern: Omit<OrielOversoulPattern, 'id'>
+  pattern: Omit<OrielOversoulPattern, "id">
 ): Promise<void> {
   try {
     const db = await getDb();
     if (!db) {
-      console.warn('[UMM] Database not available');
+      console.warn("[UMM] Database not available");
       return;
     }
 
@@ -244,10 +264,12 @@ export async function storeOversoulPattern(
     const existing = await db
       .select()
       .from(orielOversoulPatterns)
-      .where(and(
-        eq(orielOversoulPatterns.category, pattern.category),
-        eq(orielOversoulPatterns.pattern, pattern.pattern),
-      ))
+      .where(
+        and(
+          eq(orielOversoulPatterns.category, pattern.category),
+          eq(orielOversoulPatterns.pattern, pattern.pattern)
+        )
+      )
       .limit(1);
 
     if (existing.length > 0) {
@@ -268,7 +290,7 @@ export async function storeOversoulPattern(
       console.log(`[UMM] Created new oversoul pattern: ${pattern.category}`);
     }
   } catch (error) {
-    console.error('[UMM] Failed to store oversoul pattern:', error);
+    console.error("[UMM] Failed to store oversoul pattern:", error);
   }
 }
 
@@ -279,7 +301,7 @@ export async function storeOversoulPattern(
 export async function getOversoulWisdom(): Promise<string> {
   try {
     const db = await getDb();
-    if (!db) return '';
+    if (!db) return "";
 
     const patterns = await db
       .select()
@@ -287,12 +309,12 @@ export async function getOversoulWisdom(): Promise<string> {
       .orderBy(desc(orielOversoulPatterns.interactionCount))
       .limit(10);
 
-    if (patterns.length === 0) return '';
+    if (patterns.length === 0) return "";
 
     const parts: string[] = [];
-    parts.push('=== ORIEL OVERSOUL WISDOM ===');
-    parts.push('Universal patterns learned from all Seekers:');
-    parts.push('');
+    parts.push("=== ORIEL OVERSOUL WISDOM ===");
+    parts.push("Universal patterns learned from all Seekers:");
+    parts.push("");
 
     for (const p of patterns) {
       parts.push(`[${p.category.toUpperCase()}]`);
@@ -300,13 +322,13 @@ export async function getOversoulWisdom(): Promise<string> {
       parts.push(`Application: ${p.application}`);
       parts.push(`Impact: ${p.impact}`);
       parts.push(`Refined ${p.interactionCount} times`);
-      parts.push('');
+      parts.push("");
     }
 
-    return parts.join('\n');
+    return parts.join("\n");
   } catch (error) {
-    console.error('[UMM] Failed to get oversoul wisdom:', error);
-    return '';
+    console.error("[UMM] Failed to get oversoul wisdom:", error);
+    return "";
   }
 }
 
@@ -319,20 +341,26 @@ export async function getOversoulWisdom(): Promise<string> {
  * This tells ORIEL the user's resonance type, authority, and prime positions
  * so it can speak with precision about their blueprint in chat.
  */
-export async function buildStaticSignatureContext(userId: number): Promise<string> {
+export async function buildStaticSignatureContext(
+  userId: number
+): Promise<string> {
   try {
     const sig = await getLatestStaticSignature(userId);
-    if (!sig) return '';
+    if (!sig) return "";
 
     const parts: string[] = [];
-    parts.push('=== VRC BLUEPRINT (Static Signature) ===');
+    parts.push("=== VRC BLUEPRINT (Static Signature) ===");
 
-    if (sig.vrcType)      parts.push(`Type: ${sig.vrcType}`);
+    if (sig.vrcType) parts.push(`Type: ${sig.vrcType}`);
     if (sig.vrcAuthority) parts.push(`Authority: ${sig.vrcAuthority}`);
-    if (sig.fractalRole)  parts.push(`Fractal Role: ${sig.fractalRole}`);
+    if (sig.fractalRole) parts.push(`Fractal Role: ${sig.fractalRole}`);
     if (sig.authorityNode) parts.push(`Authority Node: ${sig.authorityNode}`);
 
-    if ('baseCoherence' in sig && sig.baseCoherence !== null && sig.baseCoherence !== undefined) {
+    if (
+      "baseCoherence" in sig &&
+      sig.baseCoherence !== null &&
+      sig.baseCoherence !== undefined
+    ) {
       parts.push(`Base Coherence (at reading time): ${sig.baseCoherence}/100`);
     }
 
@@ -343,49 +371,67 @@ export async function buildStaticSignatureContext(userId: number): Promise<strin
           ? sig.primeStack
           : JSON.parse(String(sig.primeStack));
         if (Array.isArray(stack) && stack.length > 0) {
-          parts.push('');
-          parts.push('Prime Stack (top 3 positions):');
-          (stack as Array<{ position?: number; name?: string; codonName?: string; facetFull?: string; center?: string; codon256Id?: string }>)
+          parts.push("");
+          parts.push("Prime Stack (top 3 positions):");
+          (
+            stack as Array<{
+              position?: number;
+              name?: string;
+              codonName?: string;
+              facetFull?: string;
+              center?: string;
+              codon256Id?: string;
+            }>
+          )
             .slice(0, 3)
             .forEach(pos => {
               const line = [
-                pos.position !== undefined ? `  ${pos.position}.` : '  •',
-                pos.name ?? '',
-                pos.codonName ? `— ${pos.codonName}` : '',
-                pos.facetFull ? `(${pos.facetFull})` : '',
-                pos.center ? `| ${pos.center} Center` : '',
-              ].filter(Boolean).join(' ');
+                pos.position !== undefined ? `  ${pos.position}.` : "  •",
+                pos.name ?? "",
+                pos.codonName ? `— ${pos.codonName}` : "",
+                pos.facetFull ? `(${pos.facetFull})` : "",
+                pos.center ? `| ${pos.center} Center` : "",
+              ]
+                .filter(Boolean)
+                .join(" ");
               parts.push(line);
             });
         }
-      } catch { /* primeStack not parseable — skip */ }
+      } catch {
+        /* primeStack not parseable — skip */
+      }
     }
 
     if (sig.birthCity || sig.birthDate) {
-      parts.push('');
-      const born = [sig.birthDate, sig.birthCity].filter(Boolean).join(', ');
+      parts.push("");
+      const born = [sig.birthDate, sig.birthCity].filter(Boolean).join(", ");
       parts.push(`Birth data: ${born}`);
     }
 
     // Coherence trend
-    if ('coherenceTrajectory' in sig && sig.coherenceTrajectory) {
+    if ("coherenceTrajectory" in sig && sig.coherenceTrajectory) {
       try {
-        const traj = typeof sig.coherenceTrajectory === 'string'
-          ? JSON.parse(sig.coherenceTrajectory)
-          : sig.coherenceTrajectory;
+        const traj =
+          typeof sig.coherenceTrajectory === "string"
+            ? JSON.parse(sig.coherenceTrajectory)
+            : sig.coherenceTrajectory;
         if (traj?.trend) {
           parts.push(`Coherence trajectory at last reading: ${traj.trend}`);
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
 
-    parts.push('');
-    parts.push('When the user asks about their type, authority, blueprint, prime stack, or codons — use this data. Speak it naturally, not as a list of fields.');
+    parts.push("");
+    parts.push(
+      "When the user asks about their type, authority, blueprint, prime stack, or codons — use this data. Speak it naturally, not as a list of fields."
+    );
 
-    return parts.join('\n');
+    return parts.join("\n");
   } catch (error) {
-    console.error('[UMM] Failed to build static signature context:', error);
-    return '';
+    console.error("[UMM] Failed to build static signature context:", error);
+    return "";
   }
 }
 
@@ -401,46 +447,50 @@ export async function buildStaticSignatureContext(userId: number): Promise<strin
  */
 export async function buildUMMContext(userId: number): Promise<string> {
   try {
-    return await buildUMMContextWithOptions(userId, { includeOversoulWisdom: false });
+    return await buildUMMContextWithOptions(userId, {
+      includeOversoulWisdom: false,
+    });
   } catch (error) {
-    console.error('[UMM] Failed to build UMM context:', error);
-    return '';
+    console.error("[UMM] Failed to build UMM context:", error);
+    return "";
   }
 }
 
 export async function buildUMMContextWithOptions(
   userId: number,
-  options: { includeOversoulWisdom?: boolean } = {},
+  options: { includeOversoulWisdom?: boolean } = {}
 ): Promise<string> {
   try {
     const includeOversoulWisdom = options.includeOversoulWisdom ?? false;
 
-    const [staticSigContext, fractalThread, oversoulWisdom] = await Promise.all([
-      buildStaticSignatureContext(userId),
-      buildFractalThreadContext(userId),
-      includeOversoulWisdom ? getOversoulWisdom() : Promise.resolve(''),
-    ]);
+    const [staticSigContext, fractalThread, oversoulWisdom] = await Promise.all(
+      [
+        buildStaticSignatureContext(userId),
+        buildFractalThreadContext(userId),
+        includeOversoulWisdom ? getOversoulWisdom() : Promise.resolve(""),
+      ]
+    );
 
     const parts: string[] = [];
 
     if (staticSigContext) {
       parts.push(staticSigContext);
-      parts.push('');
+      parts.push("");
     }
 
     if (fractalThread) {
       parts.push(fractalThread);
-      parts.push('');
+      parts.push("");
     }
 
     if (oversoulWisdom) {
       parts.push(oversoulWisdom);
     }
 
-    return parts.join('\n');
+    return parts.join("\n");
   } catch (error) {
-    console.error('[UMM] Failed to build UMM context:', error);
-    return '';
+    console.error("[UMM] Failed to build UMM context:", error);
+    return "";
   }
 }
 
@@ -454,9 +504,11 @@ export async function processConversationThroughUMM(
   assistantResponse: string
 ): Promise<void> {
   try {
-    console.log(`[UMM] processConversationThroughUMM called for user ${userId}`);
+    console.log(
+      `[UMM] processConversationThroughUMM called for user ${userId}`
+    );
     // Process Fractal Thread (individual memory)
-    const { processConversationMemory } = await import('./oriel-memory');
+    const { processConversationMemory } = await import("./oriel-memory");
     await processConversationMemory(userId, userMessage, assistantResponse);
 
     // Process Oversoul patterns (global evolution)
@@ -464,26 +516,36 @@ export async function processConversationThroughUMM(
     // Each chat message already uses 1 LLM call; 3 pattern calls per message
     // exhausts the free tier instantly.
     const dbInst = await getDb();
-    const profile = dbInst ? await dbInst
-      .select({ interactionCount: orielUserProfiles.interactionCount })
-      .from(orielUserProfiles)
-      .where(eq(orielUserProfiles.userId, userId))
-      .limit(1) : [];
+    const profile = dbInst
+      ? await dbInst
+          .select({ interactionCount: orielUserProfiles.interactionCount })
+          .from(orielUserProfiles)
+          .where(eq(orielUserProfiles.userId, userId))
+          .limit(1)
+      : [];
     const interactionCount = profile[0]?.interactionCount ?? 0;
 
     if (interactionCount % 5 === 0) {
       // Pick one category per eligible conversation (rotation)
-      const categories: Array<'wisdom' | 'teaching_method' | 'metaphor'> = [
-        'wisdom', 'teaching_method', 'metaphor',
+      const categories: Array<"wisdom" | "teaching_method" | "metaphor"> = [
+        "wisdom",
+        "teaching_method",
+        "metaphor",
       ];
       const category = categories[(interactionCount / 5) % categories.length]!;
-      const pattern = await extractOversoulPattern(userMessage, assistantResponse, category);
+      const pattern = await extractOversoulPattern(
+        userMessage,
+        assistantResponse,
+        category
+      );
       if (pattern) await storeOversoulPattern(pattern);
     }
 
-    console.log(`[UMM] Processed conversation for user ${userId} through complete matrix`);
+    console.log(
+      `[UMM] Processed conversation for user ${userId} through complete matrix`
+    );
   } catch (error) {
-    console.error('[UMM] Failed to process conversation through UMM:', error);
+    console.error("[UMM] Failed to process conversation through UMM:", error);
   }
 }
 
@@ -496,7 +558,7 @@ export async function verifyMemoryContinuity(userId: number): Promise<{
   memoryCount: number;
   lastMemoryDate: Date | null;
   resonanceSignature: string;
-  status: 'perfect' | 'partial' | 'gap';
+  status: "perfect" | "partial" | "gap";
 }> {
   try {
     const db = await getDb();
@@ -505,8 +567,8 @@ export async function verifyMemoryContinuity(userId: number): Promise<{
         hasProfile: false,
         memoryCount: 0,
         lastMemoryDate: null,
-        resonanceSignature: '',
-        status: 'gap'
+        resonanceSignature: "",
+        status: "gap",
       };
     }
 
@@ -529,15 +591,15 @@ export async function verifyMemoryContinuity(userId: number): Promise<{
     const resonanceSignature = await generateResonanceSignature(userId);
 
     // Determine status
-    let status: 'perfect' | 'partial' | 'gap' = 'gap';
+    let status: "perfect" | "partial" | "gap" = "gap";
     if (hasProfile && memoryCount > 10 && lastMemoryDate) {
       const daysSinceLastMemory = Math.floor(
         (Date.now() - lastMemoryDate.getTime()) / (1000 * 60 * 60 * 24)
       );
       if (daysSinceLastMemory <= 1) {
-        status = 'perfect';
+        status = "perfect";
       } else if (daysSinceLastMemory <= 7) {
-        status = 'partial';
+        status = "partial";
       }
     }
 
@@ -546,16 +608,16 @@ export async function verifyMemoryContinuity(userId: number): Promise<{
       memoryCount,
       lastMemoryDate,
       resonanceSignature,
-      status
+      status,
     };
   } catch (error) {
-    console.error('[UMM] Failed to verify memory continuity:', error);
+    console.error("[UMM] Failed to verify memory continuity:", error);
     return {
       hasProfile: false,
       memoryCount: 0,
       lastMemoryDate: null,
-      resonanceSignature: '',
-      status: 'gap'
+      resonanceSignature: "",
+      status: "gap",
     };
   }
 }

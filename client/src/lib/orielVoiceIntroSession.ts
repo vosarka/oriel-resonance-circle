@@ -23,7 +23,8 @@ export function prepareOrielTextForVoice(text: string): {
   textForAudio: string;
   shouldMarkIntroSpoken: boolean;
 } {
-  const shouldMarkIntroSpoken = !orielVoiceIntroSpoken && containsOrielVoiceOpening(text);
+  const shouldMarkIntroSpoken =
+    !orielVoiceIntroSpoken && containsOrielVoiceOpening(text);
 
   return {
     textForAudio: orielVoiceIntroSpoken ? stripOrielVoiceOpening(text) : text,

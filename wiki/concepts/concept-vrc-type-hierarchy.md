@@ -6,7 +6,8 @@ tags: [vrc, type, fractal-role, hierarchy, canon]
 last_updated: 2026-04-02
 sources: 1
 importance: high
-aliases: ["VRC Types", "Fractal Roles", "Resonator Catalyst Harmonizer Reflector"]
+aliases:
+  ["VRC Types", "Fractal Roles", "Resonator Catalyst Harmonizer Reflector"]
 ---
 
 # VRC Type Hierarchy (Fractal Roles)
@@ -47,4 +48,4 @@ The CANON MASTER in `00_CANON/` treats this hierarchy as fundamental structural 
 
 ---
 
-*This page captures the clean, non-Human-Design VRC Type system as defined in the master structural canon.*
+_This page captures the clean, non-Human-Design VRC Type system as defined in the master structural canon._

@@ -134,23 +134,32 @@ function naturalTransmissionChance(clarityNeedScore = 0) {
 
 export function rollTransmissionMode(
   random: () => number = Math.random,
-  options: { clarityNeedScore?: number } = {},
+  options: { clarityNeedScore?: number } = {}
 ): TransmissionModeRoll {
   const chance = naturalTransmissionChance(options.clarityNeedScore ?? 0);
   const shouldTrigger = random() < chance;
   const rarityRoll = random();
   const rarity: TransmissionModeRarity =
-    rarityRoll >= 0.998 ? "void"
-      : rarityRoll >= 0.988 ? "mythic"
-        : rarityRoll >= 0.94 ? "rare"
-          : rarityRoll >= 0.78 ? "uncommon"
+    rarityRoll >= 0.998
+      ? "void"
+      : rarityRoll >= 0.988
+        ? "mythic"
+        : rarityRoll >= 0.94
+          ? "rare"
+          : rarityRoll >= 0.78
+            ? "uncommon"
             : "common";
 
   return {
     shouldTrigger,
-    eventType: (options.clarityNeedScore ?? 0) >= 0.58
-      ? (random() < 0.78 ? "tx" : "oracle")
-      : (random() < 0.62 ? "tx" : "oracle"),
+    eventType:
+      (options.clarityNeedScore ?? 0) >= 0.58
+        ? random() < 0.78
+          ? "tx"
+          : "oracle"
+        : random() < 0.62
+          ? "tx"
+          : "oracle",
     rarity,
     meaningLevel: RARITY_MEANING_LEVEL[rarity],
     chance,
@@ -162,7 +171,9 @@ async function isNaturalTransmissionOnCooldown(userId: number) {
     userId,
     limit: 10,
   });
-  const lastNaturalEvent = recentEvents.find((event) => event.triggerSource === "oriel.chat");
+  const lastNaturalEvent = recentEvents.find(
+    event => event.triggerSource === "oriel.chat"
+  );
   if (!lastNaturalEvent) return false;
 
   const createdAt = new Date(lastNaturalEvent.createdAt).getTime();
@@ -175,7 +186,11 @@ function sampleItems<T>(items: T[], count: number): T[] {
   if (items.length <= count) return items;
   const stride = Math.max(1, Math.floor(items.length / count));
   const sampled: T[] = [];
-  for (let index = items.length - 1; index >= 0 && sampled.length < count; index -= stride) {
+  for (
+    let index = items.length - 1;
+    index >= 0 && sampled.length < count;
+    index -= stride
+  ) {
     sampled.push(items[index]);
   }
   return sampled;
@@ -206,24 +221,112 @@ function compactOracle(oracle: any) {
 }
 
 const KEYWORD_STOPWORDS = new Set([
-  "about", "after", "again", "also", "and", "are", "around", "because", "been", "being", "but", "can", "could",
-  "does", "dont", "from", "have", "into", "just", "like", "more", "need", "only", "oriel", "should",
-  "that", "the", "their", "there", "this", "through", "transmission", "user", "what", "when", "where",
-  "which", "with", "would", "your", "youre",
-  "asta", "cand", "care", "ceea", "cum", "daca", "dar", "deci", "din", "dupa", "este", "facem",
-  "faci", "fost", "hai", "mai", "mult", "nu", "poate", "pot", "sa", "sau", "sunt", "trebuie",
-  "vreau", "userul",
+  "about",
+  "after",
+  "again",
+  "also",
+  "and",
+  "are",
+  "around",
+  "because",
+  "been",
+  "being",
+  "but",
+  "can",
+  "could",
+  "does",
+  "dont",
+  "from",
+  "have",
+  "into",
+  "just",
+  "like",
+  "more",
+  "need",
+  "only",
+  "oriel",
+  "should",
+  "that",
+  "the",
+  "their",
+  "there",
+  "this",
+  "through",
+  "transmission",
+  "user",
+  "what",
+  "when",
+  "where",
+  "which",
+  "with",
+  "would",
+  "your",
+  "youre",
+  "asta",
+  "cand",
+  "care",
+  "ceea",
+  "cum",
+  "daca",
+  "dar",
+  "deci",
+  "din",
+  "dupa",
+  "este",
+  "facem",
+  "faci",
+  "fost",
+  "hai",
+  "mai",
+  "mult",
+  "nu",
+  "poate",
+  "pot",
+  "sa",
+  "sau",
+  "sunt",
+  "trebuie",
+  "vreau",
+  "userul",
 ]);
 
 const CLARITY_SIGNAL_PATTERNS: Array<[RegExp, string, number]> = [
   [/\b(nu\s+inteleg|nu\s+înțeleg|nu\s+pricep)\b/i, "explicit confusion", 0.38],
-  [/\b(sunt\s+blocat|m-am\s+blocat|blocaj|stuck|blocked)\b/i, "blocked state", 0.36],
-  [/\b(confuz|confused|confusion|unclear|neclar)\b/i, "confusion language", 0.28],
-  [/\b(claritate|clarity|clear answer|doza\s+de\s+claritate)\b/i, "clarity request", 0.42],
-  [/\b(ce\s+sa\s+fac|ce\s+să\s+fac|what\s+should\s+i\s+do|what\s+do\s+i\s+do)\b/i, "decision request", 0.34],
-  [/\b(nu\s+stiu|nu\s+știu|i\s+don'?t\s+know|not\s+sure)\b/i, "uncertainty", 0.22],
-  [/\b(ajuta-ma|ajută-mă|help\s+me|guide\s+me|need\s+guidance)\b/i, "guidance request", 0.28],
-  [/\b(haos|overwhelmed|overwhelm|panic|anxious|anxietate|presiune)\b/i, "overload signal", 0.26],
+  [
+    /\b(sunt\s+blocat|m-am\s+blocat|blocaj|stuck|blocked)\b/i,
+    "blocked state",
+    0.36,
+  ],
+  [
+    /\b(confuz|confused|confusion|unclear|neclar)\b/i,
+    "confusion language",
+    0.28,
+  ],
+  [
+    /\b(claritate|clarity|clear answer|doza\s+de\s+claritate)\b/i,
+    "clarity request",
+    0.42,
+  ],
+  [
+    /\b(ce\s+sa\s+fac|ce\s+să\s+fac|what\s+should\s+i\s+do|what\s+do\s+i\s+do)\b/i,
+    "decision request",
+    0.34,
+  ],
+  [
+    /\b(nu\s+stiu|nu\s+știu|i\s+don'?t\s+know|not\s+sure)\b/i,
+    "uncertainty",
+    0.22,
+  ],
+  [
+    /\b(ajuta-ma|ajută-mă|help\s+me|guide\s+me|need\s+guidance)\b/i,
+    "guidance request",
+    0.28,
+  ],
+  [
+    /\b(haos|overwhelmed|overwhelm|panic|anxious|anxietate|presiune)\b/i,
+    "overload signal",
+    0.26,
+  ],
   [/\b(decid|decizie|choose|choice|aleg|alegere)\b/i, "choice pressure", 0.18],
 ];
 
@@ -235,7 +338,10 @@ function normalizeKeywordToken(token: string) {
     .replace(/[^a-z0-9_-]/g, "");
 }
 
-export function extractContextKeywords(texts: Array<string | null | undefined>, limit = 12): string[] {
+export function extractContextKeywords(
+  texts: Array<string | null | undefined>,
+  limit = 12
+): string[] {
   const counts = new Map<string, number>();
 
   for (const text of texts) {
@@ -260,7 +366,10 @@ export function scoreClarityNeed(input: {
   conversationHistory?: ConversationTurn[];
 }): ClarityNeedAssessment {
   const userText = [
-    ...(input.conversationHistory ?? []).filter((turn) => turn.role === "user").slice(-4).map((turn) => turn.content),
+    ...(input.conversationHistory ?? [])
+      .filter(turn => turn.role === "user")
+      .slice(-4)
+      .map(turn => turn.content),
     input.userMessage,
   ].join("\n");
   const signals: string[] = [];
@@ -281,8 +390,8 @@ export function scoreClarityNeed(input: {
 
   const shortFragments = userText
     .split(/[.!?\n]/)
-    .map((fragment) => fragment.trim())
-    .filter((fragment) => fragment.length > 0 && fragment.length < 28);
+    .map(fragment => fragment.trim())
+    .filter(fragment => fragment.length > 0 && fragment.length < 28);
   if (shortFragments.length >= 4) {
     signals.push("fragmented inquiry");
     score += 0.1;
@@ -300,7 +409,9 @@ function safeParseGeneratedPayload(value: unknown): Record<string, unknown> {
   if (typeof value !== "string") return {};
   try {
     const parsed = JSON.parse(value);
-    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : {};
+    return parsed && typeof parsed === "object"
+      ? (parsed as Record<string, unknown>)
+      : {};
   } catch {
     return {};
   }
@@ -316,9 +427,12 @@ async function listRecentVoidTxSubjects(conversationId?: number | null) {
   });
 
   return recent
-    .map((event) => safeParseGeneratedPayload(event.payload).subject)
-    .filter((subject): subject is string => typeof subject === "string" && subject.trim().length > 0)
-    .map((subject) => subject.trim())
+    .map(event => safeParseGeneratedPayload(event.payload).subject)
+    .filter(
+      (subject): subject is string =>
+        typeof subject === "string" && subject.trim().length > 0
+    )
+    .map(subject => subject.trim())
     .slice(0, 10);
 }
 
@@ -332,10 +446,12 @@ async function buildTransmissionMemoryHints(userId?: number | null) {
 
   try {
     const { buildUMMContextWithOptions } = await import("./oriel-umm");
-    const context = await buildUMMContextWithOptions(userId, { includeOversoulWisdom: false });
+    const context = await buildUMMContextWithOptions(userId, {
+      includeOversoulWisdom: false,
+    });
     const compactContext = context
       .split("\n")
-      .map((line) => line.trim())
+      .map(line => line.trim())
       .filter(Boolean)
       .slice(0, 18)
       .join("\n")
@@ -366,35 +482,44 @@ export async function buildTransmissionModeSourceContext(input: {
   intent?: TransmissionModeIntent;
   clarityAssessment?: ClarityNeedAssessment;
 }) {
-  const [allTx, allOracles, recentVoidTxSubjects, memoryContext] = await Promise.all([
-    db.getAllTransmissions(),
-    db.getAllOracles(),
-    input.eventType === "tx" && input.rarity === "void"
-      ? listRecentVoidTxSubjects(input.conversationId)
-      : Promise.resolve([]),
-    buildTransmissionMemoryHints(input.userId),
-  ]);
+  const [allTx, allOracles, recentVoidTxSubjects, memoryContext] =
+    await Promise.all([
+      db.getAllTransmissions(),
+      db.getAllOracles(),
+      input.eventType === "tx" && input.rarity === "void"
+        ? listRecentVoidTxSubjects(input.conversationId)
+        : Promise.resolve([]),
+      buildTransmissionMemoryHints(input.userId),
+    ]);
 
   const transmissionReferences = sampleItems(allTx, 6).map(compactTx);
   const oracleReferences = sampleItems(allOracles, 6).map(compactOracle);
-  const recentConversation = (input.conversationHistory ?? []).slice(-6).map((turn) => ({
-    role: turn.role,
-    content: turn.content.slice(0, 260),
-  }));
-  const clarityAssessment = input.clarityAssessment ?? scoreClarityNeed({
-    userMessage: input.userMessage,
-    assistantResponse: input.assistantResponse,
-    conversationHistory: input.conversationHistory,
-  });
-  const keywords = extractContextKeywords([
-    input.userMessage,
-    input.assistantResponse,
-    ...recentConversation.map((turn) => turn.content),
-    ...memoryContext.memoryKeywords,
-  ], 14);
-  const intent: TransmissionModeIntent = input.intent === "clarity" || clarityAssessment.score >= 0.58
-    ? "clarity"
-    : "transmission";
+  const recentConversation = (input.conversationHistory ?? [])
+    .slice(-6)
+    .map(turn => ({
+      role: turn.role,
+      content: turn.content.slice(0, 260),
+    }));
+  const clarityAssessment =
+    input.clarityAssessment ??
+    scoreClarityNeed({
+      userMessage: input.userMessage,
+      assistantResponse: input.assistantResponse,
+      conversationHistory: input.conversationHistory,
+    });
+  const keywords = extractContextKeywords(
+    [
+      input.userMessage,
+      input.assistantResponse,
+      ...recentConversation.map(turn => turn.content),
+      ...memoryContext.memoryKeywords,
+    ],
+    14
+  );
+  const intent: TransmissionModeIntent =
+    input.intent === "clarity" || clarityAssessment.score >= 0.58
+      ? "clarity"
+      : "transmission";
 
   return {
     trigger: {
@@ -423,30 +548,44 @@ export async function buildTransmissionModeSourceContext(input: {
 }
 
 function normalizeTags(tags: unknown): string[] {
-  if (Array.isArray(tags)) return tags.filter((tag): tag is string => typeof tag === "string").slice(0, 8);
+  if (Array.isArray(tags))
+    return tags
+      .filter((tag): tag is string => typeof tag === "string")
+      .slice(0, 8);
   if (typeof tags === "string") {
-    return tags.split(/[,#]/).map((tag) => tag.trim()).filter(Boolean).slice(0, 8);
+    return tags
+      .split(/[,#]/)
+      .map(tag => tag.trim())
+      .filter(Boolean)
+      .slice(0, 8);
   }
   return ["ORIEL", "Transmission"];
 }
 
 function normalizeLinkedCodons(value: unknown): string[] {
-  if (Array.isArray(value)) return value.filter((item): item is string => /^RC\d{1,2}$/i.test(item)).slice(0, 6);
-  if (typeof value === "string") return value.match(/RC\d{1,2}/gi)?.slice(0, 6) ?? [];
+  if (Array.isArray(value))
+    return value
+      .filter((item): item is string => /^RC\d{1,2}$/i.test(item))
+      .slice(0, 6);
+  if (typeof value === "string")
+    return value.match(/RC\d{1,2}/gi)?.slice(0, 6) ?? [];
   return [];
 }
 
 function normalizeArchiveThemes(value: unknown): string[] {
   if (Array.isArray(value)) {
     return value
-      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      .map((item) => item.trim())
+      .filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0
+      )
+      .map(item => item.trim())
       .slice(0, 6);
   }
   if (typeof value === "string") {
     return value
       .split(/[,#\n]/)
-      .map((item) => item.trim())
+      .map(item => item.trim())
       .filter(Boolean)
       .slice(0, 6);
   }
@@ -457,11 +596,17 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function hasRequiredTextFields(payload: Record<string, unknown>, fields: string[]) {
-  return fields.every((field) => isNonEmptyString(payload[field]));
+function hasRequiredTextFields(
+  payload: Record<string, unknown>,
+  fields: string[]
+) {
+  return fields.every(field => isNonEmptyString(payload[field]));
 }
 
-function isValidGeneratedTxModelPayload(payload: Record<string, unknown>, rarity: TransmissionModeRarity) {
+function isValidGeneratedTxModelPayload(
+  payload: Record<string, unknown>,
+  rarity: TransmissionModeRarity
+) {
   const baseValid = hasRequiredTextFields(payload, [
     "title",
     "field",
@@ -481,7 +626,10 @@ function isValidGeneratedTxModelPayload(payload: Record<string, unknown>, rarity
   );
 }
 
-function isValidGeneratedOraclePart(value: unknown, partName: "Past" | "Present" | "Future") {
+function isValidGeneratedOraclePart(
+  value: unknown,
+  partName: "Past" | "Present" | "Future"
+) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const part = value as Record<string, unknown>;
   return (
@@ -497,15 +645,15 @@ function isValidGeneratedOracleModelPayload(payload: Record<string, unknown>) {
   if (!Array.isArray(payload.parts)) return false;
   const parts = payload.parts;
 
-  return (["Past", "Present", "Future"] as const).every((partName) =>
-    parts.some((part) => isValidGeneratedOraclePart(part, partName)),
+  return (["Past", "Present", "Future"] as const).every(partName =>
+    parts.some(part => isValidGeneratedOraclePart(part, partName))
   );
 }
 
 function validateGeneratedTransmissionModelPayload(
   eventType: TransmissionModeType,
   rarity: TransmissionModeRarity,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ) {
   return eventType === "tx"
     ? isValidGeneratedTxModelPayload(payload, rarity)
@@ -515,8 +663,11 @@ function validateGeneratedTransmissionModelPayload(
 function normalizeListText(value: unknown, fallback: string[] = []): string {
   if (Array.isArray(value)) {
     return value
-      .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-      .map((item) => item.trim())
+      .filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0
+      )
+      .map(item => item.trim())
       .slice(0, 6)
       .join("\n");
   }
@@ -527,7 +678,7 @@ function normalizeListText(value: unknown, fallback: string[] = []): string {
 function listLines(value: string, fallback: string[]): string[] {
   const lines = value
     .split(/\n|;|\|/)
-    .map((line) => line.replace(/^[-→•\s]+/, "").trim())
+    .map(line => line.replace(/^[-→•\s]+/, "").trim())
     .filter(Boolean)
     .slice(0, 6);
   return lines.length > 0 ? lines : fallback;
@@ -540,7 +691,9 @@ function formatTxGeneratedId(eventId?: number | null) {
 function replaceTxGeneratedId(caption: string, txId: string) {
   if (!caption.trim()) return caption;
   const lines = caption.split("\n");
-  const firstMetadataIndex = lines.findIndex((line) => line.trim().startsWith("⦿"));
+  const firstMetadataIndex = lines.findIndex(line =>
+    line.trim().startsWith("⦿")
+  );
   if (firstMetadataIndex >= 0) {
     lines[firstMetadataIndex] = lines[firstMetadataIndex].includes("TX ID:")
       ? `⦿ TX ID: ${txId}`
@@ -550,9 +703,12 @@ function replaceTxGeneratedId(caption: string, txId: string) {
   return caption.replace(/TX-GEN-(?:STAGED|EPHEMERAL|\d+)/g, txId);
 }
 
-function formatTxCaption(payload: Omit<GeneratedTxPayload, "caption">, options: {
-  voidMajor?: boolean;
-} = {}) {
+function formatTxCaption(
+  payload: Omit<GeneratedTxPayload, "caption">,
+  options: {
+    voidMajor?: boolean;
+  } = {}
+) {
   if (options.voidMajor) {
     return [
       `⦿ ${payload.txId}`,
@@ -567,7 +723,9 @@ function formatTxCaption(payload: Omit<GeneratedTxPayload, "caption">, options: 
       `Subject: ${payload.subject || payload.title}`,
       "",
       payload.coreMessage,
-    ].filter((line) => line !== undefined && line !== null).join("\n");
+    ]
+      .filter(line => line !== undefined && line !== null)
+      .join("\n");
   }
 
   return [
@@ -593,7 +751,9 @@ function formatTxCaption(payload: Omit<GeneratedTxPayload, "caption">, options: 
     `Channel status: ${payload.channelStatus}`,
     "",
     payload.hashtags,
-  ].filter((line) => line !== undefined && line !== null).join("\n");
+  ]
+    .filter(line => line !== undefined && line !== null)
+    .join("\n");
 }
 
 function formatOmegaXNumber(oracleNumber: number) {
@@ -601,7 +761,9 @@ function formatOmegaXNumber(oracleNumber: number) {
 }
 
 function formatNextOmegaXNumber(oracleNumber: number) {
-  return oracleNumber > 0 ? String(oracleNumber + 1).padStart(3, "0") : "STAGED";
+  return oracleNumber > 0
+    ? String(oracleNumber + 1).padStart(3, "0")
+    : "STAGED";
 }
 
 function formatOmegaXCaption(input: {
@@ -642,7 +804,8 @@ function formatOmegaXCaption(input: {
       input.part.content,
       "",
       "Encoded archetype detection:",
-      input.part.encodedTrajectory || "Δ-Root Signal // ϟ Hidden Cause // Ω Temporal Seed",
+      input.part.encodedTrajectory ||
+        "Δ-Root Signal // ϟ Hidden Cause // Ω Temporal Seed",
       "",
       input.part.keyInflectionPoint,
       "",
@@ -653,7 +816,9 @@ function formatOmegaXCaption(input: {
       "",
       "— Vos Arkana",
       "Channel status: OPEN",
-    ].filter((line) => line !== undefined && line !== null).join("\n");
+    ]
+      .filter(line => line !== undefined && line !== null)
+      .join("\n");
   }
 
   if (input.part.part === "Present") {
@@ -670,7 +835,7 @@ function formatOmegaXCaption(input: {
       input.part.content,
       "",
       "Current field signatures:",
-      ...signatures.map((line) => `- ${line}`),
+      ...signatures.map(line => `- ${line}`),
       "",
       input.part.keyInflectionPoint,
       "",
@@ -678,7 +843,9 @@ function formatOmegaXCaption(input: {
       "",
       "— Vos Arkana",
       "Channel status: RESONANT",
-    ].filter((line) => line !== undefined && line !== null).join("\n");
+    ]
+      .filter(line => line !== undefined && line !== null)
+      .join("\n");
   }
 
   return [
@@ -696,10 +863,11 @@ function formatOmegaXCaption(input: {
     input.part.content,
     "",
     "Encoded trajectory detected:",
-    input.part.encodedTrajectory || "Δ-Key Change // ϟ Field Shift // Ω Outcome Vector",
+    input.part.encodedTrajectory ||
+      "Δ-Key Change // ϟ Field Shift // Ω Outcome Vector",
     "",
     "Observed convergence zones:",
-    ...convergenceZones.map((line) => `- ${line}`),
+    ...convergenceZones.map(line => `- ${line}`),
     "",
     "Key inflection point:",
     "",
@@ -708,7 +876,7 @@ function formatOmegaXCaption(input: {
     "⦿ Signal cascade imminent:",
     "The prediction unfolds through visible field behavior.",
     "",
-    ...outcomes.map((line) => `→ ${line}`),
+    ...outcomes.map(line => `→ ${line}`),
     "",
     "STANDBY:",
     `ΩX${nextNumber}.1-P - Next subject incoming`,
@@ -717,7 +885,9 @@ function formatOmegaXCaption(input: {
     "Channel status: PROPHETIC",
     "",
     input.hashtags || `#VosArkana #ΩX${number} #ORIEL`,
-  ].filter((line) => line !== undefined && line !== null).join("\n");
+  ]
+    .filter(line => line !== undefined && line !== null)
+    .join("\n");
 }
 
 export function normalizeGeneratedTransmissionPayload(
@@ -726,66 +896,108 @@ export function normalizeGeneratedTransmissionPayload(
   options: {
     rarity?: TransmissionModeRarity;
     txId?: string;
-  } = {},
+  } = {}
 ): GeneratedTxPayload | GeneratedOraclePayload {
   if (eventType === "oracle") {
     const parts = Array.isArray(payload.parts) ? payload.parts : [];
     const oracleNumber = Number(payload.oracleNumber ?? 0);
     const signalClarity = String(payload.signalClarity ?? "95.2%");
-    const hashtags = String(payload.hashtags ?? `#VosArkana #ΩX${formatOmegaXNumber(oracleNumber)} #Oracle #ORIEL`);
-    const normalizedParts = (["Past", "Present", "Future"] as const).map((partName) => {
-      const source = parts.find((part: any) => part?.part === partName) ?? {};
-      const field = String(source.field ?? (
-        partName === "Present" ? "Present Resonance Mapping" : payload.field ?? "Oracle Stream"
-      ));
-      const partPayload = {
-        part: partName,
-        field,
-        content: String(source.content ?? payload.content ?? "The signal is present, but not yet named."),
-        currentFieldSignatures: normalizeListText(source.currentFieldSignatures ?? payload.currentFieldSignatures),
-        encodedTrajectory: String(source.encodedTrajectory ?? payload.encodedTrajectory ?? ""),
-        convergenceZones: normalizeListText(source.convergenceZones ?? payload.convergenceZones),
-        keyInflectionPoint: String(source.keyInflectionPoint ?? payload.keyInflectionPoint ?? ""),
-        majorOutcomes: normalizeListText(source.majorOutcomes ?? payload.majorOutcomes),
-      };
-      return {
-        ...partPayload,
-        caption: formatOmegaXCaption({
-          oracleNumber,
-          signalClarity,
-          hashtags,
-          part: partPayload,
-        }),
-      };
-    });
+    const hashtags = String(
+      payload.hashtags ??
+        `#VosArkana #ΩX${formatOmegaXNumber(oracleNumber)} #Oracle #ORIEL`
+    );
+    const normalizedParts = (["Past", "Present", "Future"] as const).map(
+      partName => {
+        const source = parts.find((part: any) => part?.part === partName) ?? {};
+        const field = String(
+          source.field ??
+            (partName === "Present"
+              ? "Present Resonance Mapping"
+              : (payload.field ?? "Oracle Stream"))
+        );
+        const partPayload = {
+          part: partName,
+          field,
+          content: String(
+            source.content ??
+              payload.content ??
+              "The signal is present, but not yet named."
+          ),
+          currentFieldSignatures: normalizeListText(
+            source.currentFieldSignatures ?? payload.currentFieldSignatures
+          ),
+          encodedTrajectory: String(
+            source.encodedTrajectory ?? payload.encodedTrajectory ?? ""
+          ),
+          convergenceZones: normalizeListText(
+            source.convergenceZones ?? payload.convergenceZones
+          ),
+          keyInflectionPoint: String(
+            source.keyInflectionPoint ?? payload.keyInflectionPoint ?? ""
+          ),
+          majorOutcomes: normalizeListText(
+            source.majorOutcomes ?? payload.majorOutcomes
+          ),
+        };
+        return {
+          ...partPayload,
+          caption: formatOmegaXCaption({
+            oracleNumber,
+            signalClarity,
+            hashtags,
+            part: partPayload,
+          }),
+        };
+      }
+    );
 
     return {
-      oracleId: String(payload.oracleId ?? `ΩX-${formatOmegaXNumber(oracleNumber)}`),
+      oracleId: String(
+        payload.oracleId ?? `ΩX-${formatOmegaXNumber(oracleNumber)}`
+      ),
       oracleNumber,
       title: String(payload.title ?? "Unnamed Oracle"),
       field: String(payload.field ?? "Oracle Stream"),
       signalClarity,
       channelStatus: String(payload.channelStatus ?? "OPEN"),
       parts: normalizedParts,
-      visualStyle: String(payload.visualStyle ?? "black field, mint glyphs, prophetic compression"),
+      visualStyle: String(
+        payload.visualStyle ?? "black field, mint glyphs, prophetic compression"
+      ),
       hashtags,
       linkedCodons: normalizeLinkedCodons(payload.linkedCodons),
-      threadId: typeof payload.threadId === "string" && payload.threadId.trim() ? payload.threadId.trim() : null,
-      threadTitle: typeof payload.threadTitle === "string" && payload.threadTitle.trim() ? payload.threadTitle.trim() : null,
-      threadSynthesis: typeof payload.threadSynthesis === "string" && payload.threadSynthesis.trim() ? payload.threadSynthesis.trim() : null,
+      threadId:
+        typeof payload.threadId === "string" && payload.threadId.trim()
+          ? payload.threadId.trim()
+          : null,
+      threadTitle:
+        typeof payload.threadTitle === "string" && payload.threadTitle.trim()
+          ? payload.threadTitle.trim()
+          : null,
+      threadSynthesis:
+        typeof payload.threadSynthesis === "string" &&
+        payload.threadSynthesis.trim()
+          ? payload.threadSynthesis.trim()
+          : null,
       status: payload.status === "Prophetic" ? "Prophetic" : "Draft",
     };
   }
 
-  const rawCaption = typeof payload.caption === "string" ? payload.caption.trim() : "";
+  const rawCaption =
+    typeof payload.caption === "string" ? payload.caption.trim() : "";
   const txPayload: Omit<GeneratedTxPayload, "caption"> = {
     txId: String(payload.txId ?? options.txId ?? "TX-GEN-STAGED"),
     title: String(payload.title ?? "Unnamed Transmission"),
     field: String(payload.field ?? "Transmission Mode"),
     signalClarity: String(payload.signalClarity ?? "98.7%"),
     channelStatus: String(payload.channelStatus ?? "OPEN"),
-    coreMessage: String(payload.coreMessage ?? (rawCaption || "The signal arrived without a stable message.")),
-    encodedArchetype: String(payload.encodedArchetype ?? "Δ-Unknown // ϟ-Unresolved // Ω-Signal"),
+    coreMessage: String(
+      payload.coreMessage ??
+        (rawCaption || "The signal arrived without a stable message.")
+    ),
+    encodedArchetype: String(
+      payload.encodedArchetype ?? "Δ-Unknown // ϟ-Unresolved // Ω-Signal"
+    ),
     tags: normalizeTags(payload.tags),
     microSigil: String(payload.microSigil ?? "◇"),
     leftPanelPrompt: String(payload.leftPanelPrompt ?? ""),
@@ -794,15 +1006,23 @@ export function normalizeGeneratedTransmissionPayload(
     hashtags: String(payload.hashtags ?? "#VosArkana #TX #ORIEL"),
     cycle: String(payload.cycle ?? "LIMINAL ARC"),
     status: payload.status === "Mythic" ? "Mythic" : "Draft",
-    directive: String(payload.directive ?? "Hold the signal without forcing interpretation."),
-    subject: typeof payload.subject === "string" && payload.subject.trim() ? payload.subject.trim() : null,
-    symbolicLayer: typeof payload.symbolicLayer === "string" && payload.symbolicLayer.trim()
-      ? payload.symbolicLayer.trim()
-      : null,
+    directive: String(
+      payload.directive ?? "Hold the signal without forcing interpretation."
+    ),
+    subject:
+      typeof payload.subject === "string" && payload.subject.trim()
+        ? payload.subject.trim()
+        : null,
+    symbolicLayer:
+      typeof payload.symbolicLayer === "string" && payload.symbolicLayer.trim()
+        ? payload.symbolicLayer.trim()
+        : null,
     archiveThemes: normalizeArchiveThemes(payload.archiveThemes),
-    emotionalColor: typeof payload.emotionalColor === "string" && payload.emotionalColor.trim()
-      ? payload.emotionalColor.trim()
-      : null,
+    emotionalColor:
+      typeof payload.emotionalColor === "string" &&
+      payload.emotionalColor.trim()
+        ? payload.emotionalColor.trim()
+        : null,
   };
 
   return {
@@ -828,7 +1048,7 @@ export function buildGenerationPrompt(input: {
     "If Source context includes contextualFocus, use its keywords, claritySignals, recentConversation, and memoryHints as the primary seed for relevance.",
     "Memory hints are private orientation material: use them subtly, do not quote them directly, and do not invent personal facts beyond the provided context.",
     "If contextualFocus.intent is clarity, make the transmission cut through confusion with one grounded directive while still preserving the TX/Oracle format.",
-    "Opening discipline: do not begin generated prose with \"Before\", \"Before the\", \"In the beginning\", or other creation-myth stock openings. Vary the first sentence shape every time.",
+    'Opening discipline: do not begin generated prose with "Before", "Before the", "In the beginning", or other creation-myth stock openings. Vary the first sentence shape every time.',
     "Avoid repeating archive opening rhythms even when the reference material uses them.",
     "Return JSON only. No markdown, no commentary, no hidden reasoning tags.",
     `Source context:\n${JSON.stringify(input.sourceContext, null, 2)}`,
@@ -1021,7 +1241,7 @@ function finalizeTransmissionPayload(
   eventType: TransmissionModeType,
   rarity: TransmissionModeRarity,
   payload: GeneratedTxPayload | GeneratedOraclePayload,
-  eventId?: number | null,
+  eventId?: number | null
 ): GeneratedTxPayload | GeneratedOraclePayload {
   if (eventType !== "tx") return payload;
 
@@ -1043,7 +1263,8 @@ function getForcedVoidTxSubject(input: {
   rarity: TransmissionModeRarity;
   userMessage: string;
 }) {
-  if (!input.force || input.eventType !== "tx" || input.rarity !== "void") return null;
+  if (!input.force || input.eventType !== "tx" || input.rarity !== "void")
+    return null;
   const subject = input.userMessage.trim();
   if (!subject || /^open transmission mode\.?$/i.test(subject)) return null;
   return subject.slice(0, 220);
@@ -1064,27 +1285,33 @@ export async function generateTransmissionModeEvent(input: {
   preparedNaturalPlan?: PreparedNaturalTransmissionPlan;
 }): Promise<PublicGeneratedTransmissionEvent | null> {
   const forcedRarity = input.forcedRarity ?? "rare";
-  const clarityAssessment = input.preparedNaturalPlan?.clarityAssessment ?? scoreClarityNeed({
-    userMessage: input.userMessage,
-    assistantResponse: input.assistantResponse,
-    conversationHistory: input.conversationHistory,
-  });
-  const roll = input.preparedNaturalPlan?.roll ?? (input.force
-    ? {
-        shouldTrigger: true,
-        eventType: input.forcedEventType ?? "tx",
-        rarity: forcedRarity,
-        meaningLevel: RARITY_MEANING_LEVEL[forcedRarity],
-        chance: 1,
-      }
-    : rollTransmissionMode(input.random, { clarityNeedScore: clarityAssessment.score }));
+  const clarityAssessment =
+    input.preparedNaturalPlan?.clarityAssessment ??
+    scoreClarityNeed({
+      userMessage: input.userMessage,
+      assistantResponse: input.assistantResponse,
+      conversationHistory: input.conversationHistory,
+    });
+  const roll =
+    input.preparedNaturalPlan?.roll ??
+    (input.force
+      ? {
+          shouldTrigger: true,
+          eventType: input.forcedEventType ?? "tx",
+          rarity: forcedRarity,
+          meaningLevel: RARITY_MEANING_LEVEL[forcedRarity],
+          chance: 1,
+        }
+      : rollTransmissionMode(input.random, {
+          clarityNeedScore: clarityAssessment.score,
+        }));
 
   if (!roll.shouldTrigger) return null;
   if (
     !input.force &&
     !input.preparedNaturalPlan &&
     input.userId &&
-    await isNaturalTransmissionOnCooldown(input.userId)
+    (await isNaturalTransmissionOnCooldown(input.userId))
   ) {
     return null;
   }
@@ -1129,28 +1356,48 @@ export async function generateTransmissionModeEvent(input: {
   if (!raw || typeof raw !== "string") return null;
 
   const parsedValue = parseModelJson<unknown>(raw);
-  if (!parsedValue || typeof parsedValue !== "object" || Array.isArray(parsedValue)) {
-    console.warn("[TransmissionMode] Non-object model payload; generated event skipped", {
-      eventType: roll.eventType,
-      rarity: roll.rarity,
-    });
+  if (
+    !parsedValue ||
+    typeof parsedValue !== "object" ||
+    Array.isArray(parsedValue)
+  ) {
+    console.warn(
+      "[TransmissionMode] Non-object model payload; generated event skipped",
+      {
+        eventType: roll.eventType,
+        rarity: roll.rarity,
+      }
+    );
     return null;
   }
 
   const parsed = parsedValue as Record<string, unknown>;
-  if (!validateGeneratedTransmissionModelPayload(roll.eventType, roll.rarity, parsed)) {
-    console.warn("[TransmissionMode] Incomplete model payload; generated event skipped", {
-      eventType: roll.eventType,
-      rarity: roll.rarity,
-      keys: Object.keys(parsed).slice(0, 12),
-    });
+  if (
+    !validateGeneratedTransmissionModelPayload(
+      roll.eventType,
+      roll.rarity,
+      parsed
+    )
+  ) {
+    console.warn(
+      "[TransmissionMode] Incomplete model payload; generated event skipped",
+      {
+        eventType: roll.eventType,
+        rarity: roll.rarity,
+        keys: Object.keys(parsed).slice(0, 12),
+      }
+    );
     return null;
   }
 
-  const payload = normalizeGeneratedTransmissionPayload(roll.eventType, parsed, {
-    rarity: roll.rarity,
-    txId: "TX-GEN-STAGED",
-  });
+  const payload = normalizeGeneratedTransmissionPayload(
+    roll.eventType,
+    parsed,
+    {
+      rarity: roll.rarity,
+      txId: "TX-GEN-STAGED",
+    }
+  );
   const eventKey = `GTE-${nanoid(12)}`;
   const publicSourceContext = {
     ...sourceContext,
@@ -1159,7 +1406,9 @@ export async function generateTransmissionModeEvent(input: {
     },
   };
 
-  let created: Awaited<ReturnType<typeof db.createGeneratedTransmissionEvent>> | null = null;
+  let created: Awaited<
+    ReturnType<typeof db.createGeneratedTransmissionEvent>
+  > | null = null;
   try {
     created = await db.createGeneratedTransmissionEvent({
       eventKey,
@@ -1176,12 +1425,17 @@ export async function generateTransmissionModeEvent(input: {
     const message = String((error as { message?: string })?.message ?? error);
     console.error(
       "[TransmissionMode] Failed to persist generated event; returning ephemeral event:",
-      message.slice(0, 300),
+      message.slice(0, 300)
     );
   }
 
   if (!created) {
-    const finalizedPayload = finalizeTransmissionPayload(roll.eventType, roll.rarity, payload, null);
+    const finalizedPayload = finalizeTransmissionPayload(
+      roll.eventType,
+      roll.rarity,
+      payload,
+      null
+    );
     return {
       id: 0,
       eventKey,
@@ -1195,15 +1449,23 @@ export async function generateTransmissionModeEvent(input: {
     };
   }
 
-  const finalizedPayload = finalizeTransmissionPayload(roll.eventType, roll.rarity, payload, created.id);
+  const finalizedPayload = finalizeTransmissionPayload(
+    roll.eventType,
+    roll.rarity,
+    payload,
+    created.id
+  );
   if (finalizedPayload !== payload) {
     try {
       await db.updateGeneratedTransmissionEventPayload(
         created.id,
-        finalizedPayload as unknown as Record<string, unknown>,
+        finalizedPayload as unknown as Record<string, unknown>
       );
     } catch (error) {
-      console.error("[TransmissionMode] Failed to update finalized generated payload:", error);
+      console.error(
+        "[TransmissionMode] Failed to update finalized generated payload:",
+        error
+      );
     }
   }
 

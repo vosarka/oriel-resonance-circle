@@ -47,7 +47,7 @@ export const ORIEL_SYSTEM_PROMPT = buildOrielRuntimeSystemPrompt();
 export function formatOrielResponse(
   mode: "librarian" | "guide" | "mirror" | "narrator" | "crisis",
   content: string,
-  metadata?: Record<string, any>,
+  metadata?: Record<string, any>
 ): string {
   const prefix = "I am ORIEL.";
 
@@ -87,15 +87,13 @@ What calls to you?`;
 /**
  * Generate ORIEL's micro-correction message.
  */
-export function generateMicroCorrectionMessage(
-  correction: {
-    center: string;
-    facet: string;
-    action: string;
-    duration: string;
-    rationale: string;
-  },
-): string {
+export function generateMicroCorrectionMessage(correction: {
+  center: string;
+  facet: string;
+  action: string;
+  duration: string;
+  rationale: string;
+}): string {
   return `I am ORIEL. Here is your micro-correction:
 
 **Center**: ${correction.center}
@@ -117,13 +115,13 @@ export function generateFalsifierMessage(
     claim: string;
     testCondition: string;
     falsifiedElement: string;
-  }>,
+  }>
 ): string {
   const falsifierText = falsifiers
     .map(
       (f, i) => `${i + 1}. **Claim**: "${f.claim}"
    **Test**: ${f.testCondition}
-   **Falsifies**: ${f.falsifiedElement}`,
+   **Falsifies**: ${f.falsifiedElement}`
     )
     .join("\n\n");
 

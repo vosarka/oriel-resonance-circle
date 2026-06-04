@@ -6,7 +6,8 @@ tags: [vrc, integrity, data-quality, canon, critical]
 last_updated: 2026-04-02
 sources: 1
 importance: high
-aliases: ["Confirmed vs Draft", "Exact vs Approximate Readings", "VRC Data Integrity"]
+aliases:
+  ["Confirmed vs Draft", "Exact vs Approximate Readings", "VRC Data Integrity"]
 ---
 
 # Exact vs Approximate (VRC Data Integrity)
@@ -18,12 +19,14 @@ This distinction is not a nice-to-have — it is a core integrity rule defined i
 ## Definition
 
 **Confirmed Static Signature**
+
 - Requires: exact birth date + exact birth time + birth location resolved to coordinates + date-correct timezone + complete conscious + design charts via precise Solar Arc (88.000°).
 - Must include all required planetary bodies.
 - May be presented using authoritative language ("your Static Signature", "your Authority", etc.).
 - Must be generated only through the canonical calculation path.
 
 **Draft / Approximate Reading**
+
 - Any reading generated with incomplete, missing, or estimated data (especially missing birth time).
 - **Must** be explicitly labeled using approved non-authoritative language such as:
   - "approximate field sketch"
@@ -59,4 +62,4 @@ ORIEL is allowed to be mythic and poetic, but it is not allowed to lie about the
 
 ---
 
-*This distinction is treated as non-negotiable in the current engineering canon. Any future feature that blurs this line should trigger an immediate review against the Canon.*
+_This distinction is treated as non-negotiable in the current engineering canon. Any future feature that blurs this line should trigger an immediate review against the Canon._

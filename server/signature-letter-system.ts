@@ -164,18 +164,18 @@ function codonValue(value: unknown): string | number {
 }
 
 function formatList(items: string[], fallback = "Not available yet.") {
-  return items.length ? items.map((item) => `- ${item}`).join("\n") : fallback;
+  return items.length ? items.map(item => `- ${item}`).join("\n") : fallback;
 }
 
 function formatCodonList(
   codons: NormalizedSignatureSnapshot["coreCodons"],
-  limit: number,
+  limit: number
 ) {
   const selected = codons.slice(0, limit);
   if (!selected.length) return "Not available yet.";
 
   return selected
-    .map((codon) => {
+    .map(codon => {
       const position = codon.position ? `Position ${codon.position}` : "Prime";
       return `- ${position}: Codon ${codon.codon} — ${codon.codonName} (${codon.facet}, ${codon.center})`;
     })
@@ -194,7 +194,9 @@ function unique(values: string[]) {
   return Array.from(new Set(values));
 }
 
-function normalizeCalculationContext(value: unknown): CalculationTrustContext | null {
+function normalizeCalculationContext(
+  value: unknown
+): CalculationTrustContext | null {
   const context = asRecord(value);
   if (!Object.keys(context).length) return null;
 
@@ -204,7 +206,7 @@ function normalizeCalculationContext(value: unknown): CalculationTrustContext | 
   if (!birthDate || !birthPlace || !birthCountry) return null;
 
   const missingPrecision = asArray(context.missingPrecision)
-    .map((item) => stringOrNull(item))
+    .map(item => stringOrNull(item))
     .filter((item): item is string => Boolean(item));
   const birthTime = stringOrNull(context.birthTime);
   const latitude = numberOrNull(context.latitude);
@@ -221,9 +223,10 @@ function normalizeCalculationContext(value: unknown): CalculationTrustContext | 
   ]);
 
   return {
-    status: context.status === "exact" && resolvedMissingPrecision.length === 0
-      ? "exact"
-      : "missing_precision",
+    status:
+      context.status === "exact" && resolvedMissingPrecision.length === 0
+        ? "exact"
+        : "missing_precision",
     birthDate,
     birthTime,
     birthPlace,
@@ -245,7 +248,9 @@ function formatUtcOffset(offset: number | null) {
   return `UTC${sign}${hours}${minutes ? `:${String(minutes).padStart(2, "0")}` : ""}`;
 }
 
-function formatCalculationTrustContract(context: CalculationTrustContext | null) {
+function formatCalculationTrustContract(
+  context: CalculationTrustContext | null
+) {
   if (!context) {
     return [
       "## Calculation Trust Contract",
@@ -369,7 +374,7 @@ export function buildStripeCheckoutSessionRequest(input: {
 
 export function normalizeSignatureSnapshot(
   rawSignature: unknown,
-  productType: SignatureProductType,
+  productType: SignatureProductType
 ): NormalizedSignatureSnapshot {
   const raw = asRecord(rawSignature);
   const ninecenters = asRecord(raw.ninecenters);
@@ -385,7 +390,7 @@ export function normalizeSignatureSnapshot(
     }
   }
 
-  const coreCodons = asArray(raw.primeStack).map((item) => {
+  const coreCodons = asArray(raw.primeStack).map(item => {
     const codon = asRecord(item);
     return {
       position: nullablePosition(codon.position),
@@ -398,9 +403,9 @@ export function normalizeSignatureSnapshot(
   });
 
   const resonanceLinks = asArray(raw.channelStatuses)
-    .map((item) => asRecord(item))
-    .filter((channel) => channel.active === true)
-    .map((channel) => {
+    .map(item => asRecord(item))
+    .filter(channel => channel.active === true)
+    .map(channel => {
       const gateA = stringValue(channel.gateA, "?");
       const gateB = stringValue(channel.gateB, "?");
       const centerA = stringValue(channel.centerA, "?");
@@ -408,11 +413,11 @@ export function normalizeSignatureSnapshot(
       return `Codon ${gateA}-Codon ${gateB}: ${centerA} to ${centerB}`;
     });
 
-  const correctionProtocols = asArray(raw.microCorrections).map((item) => {
+  const correctionProtocols = asArray(raw.microCorrections).map(item => {
     const correction = asRecord(item);
     const instruction = stringValue(
       correction.instruction ?? correction.type,
-      "Correction protocol unavailable",
+      "Correction protocol unavailable"
     );
     const falsifier =
       typeof correction.falsifier === "string" && correction.falsifier.trim()
@@ -428,12 +433,12 @@ export function normalizeSignatureSnapshot(
 
   const coreCodonEngine = asRecord(raw.coreCodonEngine);
   const shadowGiftFraming = asArray(coreCodonEngine.dominantCodons).map(
-    (item) => {
+    item => {
       const codon = asRecord(item);
       return `Codon ${stringValue(codon.codon)} — shadow ${stringValue(
-        codon.shadow,
+        codon.shadow
       )}, gift ${stringValue(codon.gift)}.`;
-    },
+    }
   );
 
   return {
@@ -447,11 +452,13 @@ export function normalizeSignatureSnapshot(
     shadowGiftFraming,
     correctionProtocols,
     calculationContext: normalizeCalculationContext(
-      raw.calculationContext ?? asRecord(coreCodonEngine.lattice).calculationContext,
+      raw.calculationContext ??
+        asRecord(coreCodonEngine.lattice).calculationContext
     ),
     orielReflection: stringValue(raw.diagnosticTransmission),
     engineVersion:
-      typeof raw.engineVersion === "number" && Number.isFinite(raw.engineVersion)
+      typeof raw.engineVersion === "number" &&
+      Number.isFinite(raw.engineVersion)
         ? raw.engineVersion
         : 2,
   };
@@ -467,7 +474,7 @@ export function generateSignatureLetterDraftMarkdown(input: {
   const correctionLimit = product.correctionLimit;
   const corrections = input.normalized.correctionProtocols.slice(
     0,
-    correctionLimit,
+    correctionLimit
   );
 
   const common = [
@@ -573,10 +580,10 @@ function verifyStripeWebhookSignatureImpl(input: {
   if (!input.signatureHeader || !input.secret) return false;
 
   const parts = Object.fromEntries(
-    input.signatureHeader.split(",").map((part) => {
+    input.signatureHeader.split(",").map(part => {
       const [key, value] = part.split("=");
       return [key, value];
-    }),
+    })
   );
   const timestamp = Number(parts.t);
   const signature = parts.v1;
@@ -604,5 +611,5 @@ export const verifyStripeWebhookSignature = Object.assign(
   verifyStripeWebhookSignatureImpl,
   {
     createTestSignature: createStripeSignature,
-  },
+  }
 );

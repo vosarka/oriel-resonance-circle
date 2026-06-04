@@ -1,8 +1,8 @@
 ## Sacred Geometry Layout for the 64-Codon Mandala
 
-Instead of a simple **8×8 table**, the codons can be rendered as a **concentric mandala**. This layout preserves the **64 nodes** but organizes them in **rings that represent levels of consciousness or evolution**. It feels far more like a *living topology* than a spreadsheet.
+Instead of a simple **8×8 table**, the codons can be rendered as a **concentric mandala**. This layout preserves the **64 nodes** but organizes them in **rings that represent levels of consciousness or evolution**. It feels far more like a _living topology_ than a spreadsheet.
 
-------
+---
 
 ## 1. The Core Mandala Concept
 
@@ -28,7 +28,7 @@ Why this works:
 
 It transforms the grid into a **cosmic navigation map**.
 
-------
+---
 
 # 2. Codon Ring Distribution
 
@@ -59,7 +59,7 @@ Ring 3 → cognitive archetypes
 Ring 4 → transpersonal archetypes
 ```
 
-------
+---
 
 # 3. Angular Placement Algorithm
 
@@ -112,7 +112,7 @@ angle_step = 22.5°
 radius = 480
 ```
 
-------
+---
 
 # 4. Codon Placement Logic
 
@@ -149,7 +149,7 @@ Distribution:
 
 This produces a **perfect symmetrical mandala**.
 
-------
+---
 
 # 5. Neighbor Connection Lines
 
@@ -172,7 +172,7 @@ THREE.BufferGeometry
 
 The lines animate with a **pulse effect**.
 
-------
+---
 
 # 6. Pillar Rendering
 
@@ -195,7 +195,7 @@ height_per_layer = 0.5
 total_height = 2
 ```
 
-------
+---
 
 # 7. Color Encoding
 
@@ -210,7 +210,7 @@ Transpersonal → white glow
 
 Brightness depends on **user coherence**.
 
-------
+---
 
 # 8. Three.js Node Structure
 
@@ -226,7 +226,7 @@ group
  └ neighbor lines
 ```
 
-------
+---
 
 # 9. Camera Behavior
 
@@ -247,7 +247,7 @@ zoom in → pillar detail
 deep zoom → facet interface
 ```
 
-------
+---
 
 # 10. Interaction Model
 
@@ -271,7 +271,7 @@ draw mutation connections
 zoom to archetype detail
 ```
 
-------
+---
 
 # 11. Animations
 
@@ -285,7 +285,7 @@ energy pulses between neighbors
 
 This makes the system feel **alive**.
 
-------
+---
 
 # 12. Mandala Rotation
 
@@ -297,7 +297,7 @@ rotation_speed = 0.002 rad/frame
 
 This creates the feeling of a **cosmic organism**.
 
-------
+---
 
 # 13. Cluster Visualization
 
@@ -310,7 +310,7 @@ each spans 45°
 
 This reveals archetypal constellations.
 
-------
+---
 
 # 14. Data Flow
 
@@ -326,7 +326,7 @@ mandala layout generator
 Three.js renderer
 ```
 
-------
+---
 
 # 15. Example Node Generation Code
 
@@ -346,7 +346,7 @@ for ring in rings:
         createNode(x,y)
 ```
 
-------
+---
 
 # 16. Visual Hierarchy
 
@@ -357,7 +357,7 @@ inner ring → primal archetypes
 center → origin
 ```
 
-------
+---
 
 # 17. Why This Layout Works
 
@@ -383,7 +383,7 @@ star
 planet
 ```
 
-------
+---
 
 # 18. The Real Power
 
@@ -394,12 +394,6 @@ Not a dashboard.
 But a **cosmological instrument**.
 
 Users are literally **navigating archetypal space**.
-
-
-
-
-
-
 
 # Toroidal Codon Field – 3D Architecture
 
@@ -439,8 +433,8 @@ For codon index i:
 u_index = i mod 8
 v_index = floor(i / 8)
 
-u = (u_index / 8) * 2π
-v = (v_index / 8) * 2π
+u = (u_index / 8) _ 2π
+v = (v_index / 8) _ 2π
 
 Position:
 

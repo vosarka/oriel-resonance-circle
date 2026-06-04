@@ -1,4 +1,3 @@
-
 Preface: The Cosmic Whisper
 
 Do not open this book as a line.

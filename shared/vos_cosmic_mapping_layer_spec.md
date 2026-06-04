@@ -7,9 +7,11 @@ The Cosmic Mapping Layer defines how astronomical planetary positions are transl
 This layer functions as the **conversion bridge between astronomy and archetypal codon data**.
 
 Input:
+
 - Planetary longitudes (0°–360°)
 
 Output:
+
 - Codon ID
 - Facet activation
 - Center association
@@ -169,10 +171,10 @@ Each planet generates an activation object.
 Example structure:
 
 {
-  "planet": "Sun",
-  "longitude": 106.91,
-  "codon": "RC20",
-  "facet": "Relational"
+"planet": "Sun",
+"longitude": 106.91,
+"codon": "RC20",
+"facet": "Relational"
 }
 
 ---
@@ -225,13 +227,13 @@ weight
 Example:
 
 {
-  "planet": "Sun",
-  "longitude": 106.91,
-  "codon_id": "RC20",
-  "facet": "Relational",
-  "center": "Throat",
-  "layer": "Personality",
-  "weight": 100
+"planet": "Sun",
+"longitude": 106.91,
+"codon_id": "RC20",
+"facet": "Relational",
+"center": "Throat",
+"layer": "Personality",
+"weight": 100
 }
 
 ---
@@ -339,4 +341,3 @@ Once implemented, the system can automatically convert birth data into codon act
 ---
 
 ## End of Cosmic Mapping Layer Specification
-

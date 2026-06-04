@@ -6,7 +6,11 @@ tags: [oriel, vrc, product, positioning, explanatory, blueprint, marketing]
 last_updated: 2026-05-30
 sources: 1
 importance: high
-aliases: ["ORIEL Static Signature Codex Explanatory Document", "Blueprint Positioning Document"]
+aliases:
+  [
+    "ORIEL Static Signature Codex Explanatory Document",
+    "Blueprint Positioning Document",
+  ]
 ---
 
 # Source: ORIEL Static Signature Codex — Complete Explanatory Document (English)
@@ -29,6 +33,7 @@ It is described as:
 ## Key Positioning Points
 
 **Why “Static Signature”?**
+
 - “Static” here does **not** mean frozen or unchanging in a negative way.
 - It refers to the deeper, relatively stable structural signature of the person (as opposed to fluctuating states like mood, stress, or current coherence measured by Carrierlock).
 - It is the part of the profile that remains relatively consistent over time.
@@ -40,6 +45,7 @@ The document makes a very clear separation:
 - **ORIEL** = translates that structure into living, beautiful, meaningful, emotionally readable language.
 
 Important rule stated:
+
 > “The engine calculates the structure. ORIEL translates that structure into living language.”
 
 ORIEL is positioned as an **intelligent mirror / interpretive voice**, not as a cold calculator. ORIEL must speak only from calculated data and must not invent placements or meanings.
@@ -65,6 +71,7 @@ The document systematically explains in accessible language:
 This document is extremely valuable because it represents the **intended explanatory layer and public positioning** for the product the user is currently developing (now evolving under the name **ORIEL Static Signature Blueprint – Your Quantum Architecture**).
 
 It captures:
+
 - The desired tone and framing for customers.
 - Clear rules for how ORIEL should behave when narrating VRC data (reinforces what we already have from `oriel_output_bridge.md` and the Orator Rules).
 - The importance of visual and linguistic consistency across the platform.
@@ -82,4 +89,4 @@ Note on naming evolution: While this document still uses “Codex” in the titl
 
 ---
 
-*Ingested as a high-value explanatory and positioning document that clarifies both the product’s purpose and the correct way to communicate it.*
+_Ingested as a high-value explanatory and positioning document that clarifies both the product’s purpose and the correct way to communicate it._

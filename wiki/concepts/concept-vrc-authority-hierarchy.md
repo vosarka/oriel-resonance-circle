@@ -40,4 +40,4 @@ The highest-priority defined center in this list determines the person's Authori
 
 ---
 
-*Clean capture of the VRC-native Authority system as the "Decision Compass."*
+_Clean capture of the VRC-native Authority system as the "Decision Compass."_

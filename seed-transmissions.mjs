@@ -3,7 +3,9 @@ import mysql from "mysql2/promise";
 import { transmissions } from "./drizzle/schema.ts";
 import fs from "fs";
 
-const transmissionData = JSON.parse(fs.readFileSync("./server/transmissions-seed.json", "utf-8"));
+const transmissionData = JSON.parse(
+  fs.readFileSync("./server/transmissions-seed.json", "utf-8")
+);
 
 const connection = await mysql.createConnection({
   host: process.env.DB_HOST || "localhost",
@@ -45,7 +47,7 @@ async function seedTransmissions() {
   await connection.end();
 }
 
-seedTransmissions().catch((err) => {
+seedTransmissions().catch(err => {
   console.error("Seeding failed:", err);
   process.exit(1);
 });

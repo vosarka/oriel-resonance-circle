@@ -12,7 +12,7 @@ describe("Conduit voice interaction guards", () => {
         chatPending: false,
         isSpeaking: true,
         transmissionInterfering: false,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -22,24 +22,24 @@ describe("Conduit voice interaction guards", () => {
         chatPending: true,
         isSpeaking: false,
         transmissionInterfering: false,
-      }),
+      })
     ).toBe(true);
     expect(
       getConduitInputDisabled({
         chatPending: false,
         isSpeaking: false,
         transmissionInterfering: true,
-      }),
+      })
     ).toBe(true);
   });
 
   it("caps browser speech fallback timeout so voice state cannot stay stuck forever", () => {
     expect(getSpeechFallbackTimeoutMs("short response")).toBeGreaterThanOrEqual(
-      4000,
+      4000
     );
-    expect(getSpeechFallbackTimeoutMs("word ".repeat(1000))).toBeLessThanOrEqual(
-      25000,
-    );
+    expect(
+      getSpeechFallbackTimeoutMs("word ".repeat(1000))
+    ).toBeLessThanOrEqual(25000);
   });
 
   it("extends the browser speech watchdog while speech is still actively playing", () => {
@@ -47,7 +47,7 @@ describe("Conduit voice interaction guards", () => {
       getSpeechFallbackWatchdogDecision({
         elapsedMs: 25_000,
         isSpeaking: true,
-      }),
+      })
     ).toBe("extend");
   });
 
@@ -56,13 +56,13 @@ describe("Conduit voice interaction guards", () => {
       getSpeechFallbackWatchdogDecision({
         elapsedMs: 121_000,
         isSpeaking: true,
-      }),
+      })
     ).toBe("clear");
     expect(
       getSpeechFallbackWatchdogDecision({
         elapsedMs: 25_000,
         isSpeaking: false,
-      }),
+      })
     ).toBe("clear");
   });
 });

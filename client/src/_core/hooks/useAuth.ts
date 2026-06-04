@@ -36,21 +36,14 @@ export function useAuth(options?: UseAuthOptions) {
   }, [utils]);
 
   const state = useMemo(() => {
-    localStorage.setItem(
-      "user-info",
-      JSON.stringify(meQuery.data)
-    );
+    localStorage.setItem("user-info", JSON.stringify(meQuery.data));
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading,
       error: meQuery.error ?? null,
       isAuthenticated: Boolean(meQuery.data),
     };
-  }, [
-    meQuery.data,
-    meQuery.error,
-    meQuery.isLoading,
-  ]);
+  }, [meQuery.data, meQuery.error, meQuery.isLoading]);
 
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
@@ -60,12 +53,7 @@ export function useAuth(options?: UseAuthOptions) {
     if (window.location.pathname === redirectPath) return;
 
     window.location.href = redirectPath;
-  }, [
-    redirectOnUnauthenticated,
-    redirectPath,
-    meQuery.isLoading,
-    state.user,
-  ]);
+  }, [redirectOnUnauthenticated, redirectPath, meQuery.isLoading, state.user]);
 
   // Refetch auth state when page becomes visible (e.g., after OAuth redirect)
   useEffect(() => {
@@ -76,7 +64,8 @@ export function useAuth(options?: UseAuthOptions) {
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [meQuery]);
 
   return {

@@ -50,6 +50,7 @@
 **Objective:** Public ORIEL-facing text must use Vossari vocabulary: Codon, Facet, Resonance Link, Center, Static Signature.
 
 **Files:**
+
 - Modify/Test: `server/oriel-output-safety.test.ts`
 - Modify: `server/oriel-rgp-bridge.ts`
 - Modify/Test: `server/static-profile-service.test.ts`
@@ -85,6 +86,7 @@
 **Evidence:** `2b64176 [verified] feat: add calculation trust contracts`
 
 **Files:**
+
 - Modified/Tested: `server/static-profile-service.test.ts`
 - Modified: `server/static-profile-service.ts`
 - Modified/Tested: `server/signature-letter-system.test.ts`
@@ -107,6 +109,7 @@
 **Evidence:** `server/ephemeris-service.test.ts` locks the validation vector and passed in the focused run.
 
 **Files:**
+
 - Modified/Tested: `server/ephemeris-service.test.ts`
 - Reference: `docs/VRC_ENGINE_CANON.md`
 - Reference: `docs/VRC_ENGINE_AUDIT.md`
@@ -128,6 +131,7 @@
 **Evidence:** Critical VRC tests now point to canon/audit docs without duplicating the full spec.
 
 **Files:**
+
 - Modified: `server/ephemeris-service.test.ts`
 - Modified: `server/rgp-static-signature-engine.test.ts`
 - Reference: `docs/VRC_ENGINE_CANON.md`

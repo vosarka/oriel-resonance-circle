@@ -17,7 +17,8 @@ function isSecureRequest(req: Request) {
     const protoList = Array.isArray(forwardedProto)
       ? forwardedProto
       : forwardedProto.split(",");
-    if (protoList.some(proto => proto.trim().toLowerCase() === "https")) return true;
+    if (protoList.some(proto => proto.trim().toLowerCase() === "https"))
+      return true;
   }
 
   // For localhost development, allow non-secure cookies

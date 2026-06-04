@@ -13,15 +13,15 @@
  * Response: { audioContent: "<base64 MP3>" }
  */
 
-import https from 'https';
+import https from "https";
 
-const VOICE_SOPHIANIC = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_fema';
-const VOICE_DEEP      = 'default-0o0vqxaayifb0rqvrpyf5a__oriel_serii';
-const MODEL_ID = 'inworld-tts-1.5-max';
+const VOICE_SOPHIANIC = "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema";
+const VOICE_DEEP = "default-0o0vqxaayifb0rqvrpyf5a__oriel_serii";
+const MODEL_ID = "inworld-tts-1.5-max";
 
 export const INWORLD_VOICES = {
   sophianic: VOICE_SOPHIANIC,
-  deep:      VOICE_DEEP,
+  deep: VOICE_DEEP,
 } as const;
 
 // ─── Core synthesis ───────────────────────────────────────────────────────────
@@ -30,9 +30,13 @@ export const INWORLD_VOICES = {
  * Generate speech using Inworld TTS API.
  * Returns base64-encoded MP3 audio.
  */
-export async function generateInworldSpeech(text: string, voice?: string): Promise<string> {
+export async function generateInworldSpeech(
+  text: string,
+  voice?: string
+): Promise<string> {
   const apiKey = process.env.INWORLD_API_KEY;
-  if (!apiKey) throw new Error('[Inworld TTS] INWORLD_API_KEY is not configured');
+  if (!apiKey)
+    throw new Error("[Inworld TTS] INWORLD_API_KEY is not configured");
 
   const voiceId = voice ?? process.env.INWORLD_VOICE_ID ?? VOICE_SOPHIANIC;
 
@@ -47,50 +51,63 @@ export async function generateInworldSpeech(text: string, voice?: string): Promi
 
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'api.inworld.ai',
+      hostname: "api.inworld.ai",
       port: 443,
-      path: '/tts/v1/voice',
-      method: 'POST',
+      path: "/tts/v1/voice",
+      method: "POST",
       headers: {
-        Authorization:    `Basic ${apiKey}`,
-        'Content-Type':   'application/json',
-        'Content-Length': Buffer.byteLength(payload),
+        Authorization: `Basic ${apiKey}`,
+        "Content-Type": "application/json",
+        "Content-Length": Buffer.byteLength(payload),
       },
     };
 
-    const req = https.request(options, (res) => {
+    const req = https.request(options, res => {
       const chunks: Buffer[] = [];
-      res.on('data', (chunk: Buffer) =>
+      res.on("data", (chunk: Buffer) =>
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
       );
-      res.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf-8');
+      res.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf-8");
         if (res.statusCode === 200 || res.statusCode === 201) {
           try {
             const json = JSON.parse(body) as { audioContent?: string };
             if (!json.audioContent) {
-              reject(new Error('[Inworld TTS] Response missing audioContent'));
+              reject(new Error("[Inworld TTS] Response missing audioContent"));
               return;
             }
-            console.log(`[Inworld TTS] Generated audio: ${json.audioContent.length} chars (base64)`);
+            console.log(
+              `[Inworld TTS] Generated audio: ${json.audioContent.length} chars (base64)`
+            );
             resolve(json.audioContent);
           } catch {
-            reject(new Error(`[Inworld TTS] Could not parse response: ${body.slice(0, 200)}`));
+            reject(
+              new Error(
+                `[Inworld TTS] Could not parse response: ${body.slice(0, 200)}`
+              )
+            );
           }
         } else {
-          console.error(`[Inworld TTS] API error ${res.statusCode}:`, body.slice(0, 300));
-          reject(new Error(`[Inworld TTS] Error ${res.statusCode}: ${body.slice(0, 200)}`));
+          console.error(
+            `[Inworld TTS] API error ${res.statusCode}:`,
+            body.slice(0, 300)
+          );
+          reject(
+            new Error(
+              `[Inworld TTS] Error ${res.statusCode}: ${body.slice(0, 200)}`
+            )
+          );
         }
       });
     });
 
-    req.on('error', (err) => {
-      console.error('[Inworld TTS] Request error:', err);
+    req.on("error", err => {
+      console.error("[Inworld TTS] Request error:", err);
       reject(err);
     });
     req.setTimeout(30000, () => {
       req.destroy();
-      reject(new Error('[Inworld TTS] Request timeout'));
+      reject(new Error("[Inworld TTS] Request timeout"));
     });
 
     req.write(payload);
@@ -109,7 +126,7 @@ export function audioToDataUrl(base64Audio: string): string {
 
 function chunkText(text: string, maxLength = 1000): string[] {
   const chunks: string[] = [];
-  let current = '';
+  let current = "";
   const sentences = text.match(/[^.!?]+[.!?]+/g) ?? [text];
   for (const sentence of sentences) {
     const trimmed = sentence.trim();
@@ -117,7 +134,7 @@ function chunkText(text: string, maxLength = 1000): string[] {
       chunks.push(current.trim());
       current = trimmed;
     } else {
-      current += (current ? ' ' : '') + trimmed;
+      current += (current ? " " : "") + trimmed;
     }
   }
   if (current.trim()) chunks.push(current.trim());
@@ -128,7 +145,10 @@ function chunkText(text: string, maxLength = 1000): string[] {
  * Generate speech for long text by chunking at sentence boundaries.
  * Returns a single base64 MP3 (all chunks concatenated).
  */
-export async function generateChunkedSpeech(text: string, voice?: string): Promise<string> {
+export async function generateChunkedSpeech(
+  text: string,
+  voice?: string
+): Promise<string> {
   if (text.length < 1000) return generateInworldSpeech(text, voice);
 
   console.log(`[Inworld TTS] Chunking ${text.length}-char text`);
@@ -138,9 +158,9 @@ export async function generateChunkedSpeech(text: string, voice?: string): Promi
   const buffers: Buffer[] = [];
   for (let i = 0; i < chunks.length; i++) {
     const base64 = await generateInworldSpeech(chunks[i], voice);
-    buffers.push(Buffer.from(base64, 'base64'));
+    buffers.push(Buffer.from(base64, "base64"));
     if (i < chunks.length - 1) await new Promise(r => setTimeout(r, 150));
   }
 
-  return Buffer.concat(buffers).toString('base64');
+  return Buffer.concat(buffers).toString("base64");
 }

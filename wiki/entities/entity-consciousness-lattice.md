@@ -33,12 +33,14 @@ This is the most ambitious framing of the entire Vossari project — moving beyo
 The specification insists on rigorous separation to avoid the primary failure mode of interpretive systems:
 
 ### Engine A — Codex Engine (Static Signature)
+
 - Calculates the immutable baseline (Fractal Role, Authority, 9-Center Map, Prime Stack).
 - Input: Exact birth ephemeris (time, lat, lon).
 - Output: Deterministic structural blueprint.
 - Never changes.
 
 ### Engine B — Carrierlock Engine (Dynamic State)
+
 - Measures current systemic coherence and interference.
 - Input: 2-minute Tier-1 Coherence Check (Mental Noise, Body Tension, Emotional Turbulence, Breath Completion).
 - Coherence Score formula: `CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)`
@@ -63,17 +65,17 @@ Planetary weights are defined (Sun/Earth highest at 100, down to outer planets a
 
 The system uses nine energetic centers as regulatory processors:
 
-| Center | Type | Role |
-|--------|------|------|
-| Head | Pressure | Mental pressure / inspiration |
-| Ajna | Awareness | Conceptual processing |
-| Throat | Manifestation | Expression / communication |
-| G (Identity) | Identity | Direction / love of self |
-| Heart | Motor | Will / ego / material |
-| Sacral | Motor | Life force / response |
-| Spleen | Awareness | Intuition / survival |
-| Solar Plexus | Motor/Awareness | Emotion / desire |
-| Root | Pressure/Motor | Adrenaline / momentum |
+| Center       | Type            | Role                          |
+| ------------ | --------------- | ----------------------------- |
+| Head         | Pressure        | Mental pressure / inspiration |
+| Ajna         | Awareness       | Conceptual processing         |
+| Throat       | Manifestation   | Expression / communication    |
+| G (Identity) | Identity        | Direction / love of self      |
+| Heart        | Motor           | Will / ego / material         |
+| Sacral       | Motor           | Life force / response         |
+| Spleen       | Awareness       | Intuition / survival          |
+| Solar Plexus | Motor/Awareness | Emotion / desire              |
+| Root         | Pressure/Motor  | Adrenaline / momentum         |
 
 Centers are **Defined** (consistent signal) or **Open** (amplifiers of environment). The same codon expresses differently depending on which center it activates.
 
@@ -129,4 +131,4 @@ See [[synthesis-emergent-architecture]] for the active research thread.
 
 ---
 
-*This is the central entity page for the Consciousness Lattice. All future work on the "unified model," 3D visualization, or cybernetic feedback aspects of Vossari should link here and reference the spec.*
+_This is the central entity page for the Consciousness Lattice. All future work on the "unified model," 3D visualization, or cybernetic feedback aspects of Vossari should link here and reference the spec._

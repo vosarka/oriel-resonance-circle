@@ -13,7 +13,10 @@ function getSecretKey() {
   return new TextEncoder().encode(ENV.cookieSecret || "fallback-dev-secret");
 }
 
-async function createSessionCookie(openId: string, name: string): Promise<string> {
+async function createSessionCookie(
+  openId: string,
+  name: string
+): Promise<string> {
   const expiresAt = Math.floor((Date.now() + ONE_YEAR_MS) / 1000);
   return new SignJWT({ openId, appId: "vossari", name })
     .setProtectedHeader({ alg: "HS256", typ: "JWT" })
@@ -40,12 +43,16 @@ async function handleRegister(req: Request, res: Response) {
   }
 
   if (password.length < 8) {
-    return res.status(400).json({ error: "Password must be at least 8 characters." });
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 8 characters." });
   }
 
   const existing = await db.getUserByEmail(email.toLowerCase().trim());
   if (existing) {
-    return res.status(409).json({ error: "An account with that email already exists." });
+    return res
+      .status(409)
+      .json({ error: "An account with that email already exists." });
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -61,11 +68,14 @@ async function handleRegister(req: Request, res: Response) {
   await db.setUserPasswordHash(openId, passwordHash);
 
   const user = await db.getUserByOpenId(openId);
-  if (!user) return res.status(500).json({ error: "Failed to create account." });
+  if (!user)
+    return res.status(500).json({ error: "Failed to create account." });
 
   const token = await createSessionCookie(openId, user.name || "Seeker");
   setAuthCookie(req, res, token);
-  return res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  return res.json({
+    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+  });
 }
 
 async function handleLogin(req: Request, res: Response) {
@@ -82,7 +92,11 @@ async function handleLogin(req: Request, res: Response) {
 
   const hash = (user as any).passwordHash as string | null;
   if (!hash) {
-    return res.status(401).json({ error: "This account uses Google sign-in. Please continue with Google." });
+    return res
+      .status(401)
+      .json({
+        error: "This account uses Google sign-in. Please continue with Google.",
+      });
   }
 
   const valid = await bcrypt.compare(password, hash);
@@ -94,7 +108,9 @@ async function handleLogin(req: Request, res: Response) {
 
   const token = await createSessionCookie(user.openId, user.name || "Seeker");
   setAuthCookie(req, res, token);
-  return res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } });
+  return res.json({
+    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+  });
 }
 
 // ─── Google OAuth ────────────────────────────────────────────────────────────
@@ -108,7 +124,8 @@ function getGoogleRedirectUri(req: Request) {
     return `${ENV.appBaseUrl}/api/auth/google/callback`;
   }
   const proto = req.headers["x-forwarded-proto"] || req.protocol || "http";
-  const host = req.headers["x-forwarded-host"] || req.headers.host || "localhost:3002";
+  const host =
+    req.headers["x-forwarded-host"] || req.headers.host || "localhost:3002";
   return `${proto}://${host}/api/auth/google/callback`;
 }
 
@@ -118,7 +135,9 @@ async function handleGoogleStart(req: Request, res: Response) {
   }
 
   const redirectUri = getGoogleRedirectUri(req);
-  const state = Buffer.from(JSON.stringify({ ts: Date.now() })).toString("base64url");
+  const state = Buffer.from(JSON.stringify({ ts: Date.now() })).toString(
+    "base64url"
+  );
 
   const params = new URLSearchParams({
     client_id: ENV.googleClientId,
@@ -157,11 +176,14 @@ async function handleGoogleCallback(req: Request, res: Response) {
     });
 
     if (!tokenRes.ok) {
-      console.error("[Google OAuth] Token exchange failed:", await tokenRes.text());
+      console.error(
+        "[Google OAuth] Token exchange failed:",
+        await tokenRes.text()
+      );
       return res.redirect("/auth?error=google_token_failed");
     }
 
-    const tokens = await tokenRes.json() as { access_token: string };
+    const tokens = (await tokenRes.json()) as { access_token: string };
 
     // Get user info
     const userInfoRes = await fetch(GOOGLE_USERINFO_URL, {
@@ -172,7 +194,7 @@ async function handleGoogleCallback(req: Request, res: Response) {
       return res.redirect("/auth?error=google_userinfo_failed");
     }
 
-    const info = await userInfoRes.json() as {
+    const info = (await userInfoRes.json()) as {
       sub: string;
       email: string;
       name?: string;
@@ -186,12 +208,16 @@ async function handleGoogleCallback(req: Request, res: Response) {
     // Find existing user by googleId, or by email (link accounts)
     let user = await db.getUserByGoogleId(googleId);
     if (!user && email) {
-      user = await db.getUserByEmail(email) ?? undefined;
+      user = (await db.getUserByEmail(email)) ?? undefined;
     }
 
     if (user) {
       // Update googleId if not yet linked
-      await db.upsertUser({ openId: user.openId, lastSignedIn: new Date(), loginMethod: "google" });
+      await db.upsertUser({
+        openId: user.openId,
+        lastSignedIn: new Date(),
+        loginMethod: "google",
+      });
       if (!(user as any).googleId) {
         await db.setUserGoogleId(user.openId, googleId);
       }
@@ -206,7 +232,7 @@ async function handleGoogleCallback(req: Request, res: Response) {
         lastSignedIn: new Date(),
       });
       await db.setUserGoogleId(openId, googleId);
-      user = await db.getUserByOpenId(openId) ?? undefined;
+      user = (await db.getUserByOpenId(openId)) ?? undefined;
     }
 
     if (!user) return res.redirect("/auth?error=user_creation_failed");

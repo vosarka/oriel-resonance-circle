@@ -40,16 +40,28 @@ function Router() {
   return (
     <Switch>
       <Route path={"/orb-preview"} component={OrbPreview} />
-      <Route path={"/admin/signature-letters"} component={AdminSignatureLetters} />
+      <Route
+        path={"/admin/signature-letters"}
+        component={AdminSignatureLetters}
+      />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/complete-profile"} component={NatalProfile} />
       <Route path={"/blueprint"} component={StaticReading} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
-      <Route path={"/founding-signature-letter"} component={FoundingSignatureLetter} />
-      <Route path={"/oriel-signature-glimpse"} component={SignatureGlimpseProductPage} />
-      <Route path={"/oriel-founding-signature-letter"} component={FoundingSignatureProductPage} />
+      <Route
+        path={"/founding-signature-letter"}
+        component={FoundingSignatureLetter}
+      />
+      <Route
+        path={"/oriel-signature-glimpse"}
+        component={SignatureGlimpseProductPage}
+      />
+      <Route
+        path={"/oriel-founding-signature-letter"}
+        component={FoundingSignatureProductPage}
+      />
       <Route path={"/signature-intake/:orderId"} component={SignatureIntake} />
       <Route path={"/"} component={Home} />
       <Route path={"/archive"} component={Archive} />

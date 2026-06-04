@@ -37,7 +37,7 @@ describe("ORIEL memory consent", () => {
         source: "conversation",
         status: "pending",
         sensitivity: "high",
-      }),
+      })
     );
   });
 
@@ -66,7 +66,7 @@ describe("ORIEL memory consent", () => {
         content: "User may prefer long replies.",
         source: "conversation",
         confidence: 0.4,
-      }),
+      })
     ).toMatchObject({
       recommendedAction: "discard",
       normalizedCategory: "preference",
@@ -112,7 +112,7 @@ describe("ORIEL memory consent", () => {
       })),
     };
     const db = {
-      transaction: vi.fn(async (callback) => callback(tx)),
+      transaction: vi.fn(async callback => callback(tx)),
       select: vi.fn(() => ({
         from: vi.fn(() => ({
           where: vi.fn(() => ({
@@ -154,7 +154,7 @@ describe("ORIEL memory consent", () => {
       })),
     };
     const db = {
-      transaction: vi.fn(async (callback) => callback(tx)),
+      transaction: vi.fn(async callback => callback(tx)),
     };
 
     await rejectPendingMemoryCandidateWithDb(db as never, {

@@ -18,6 +18,7 @@ This body of documentation represents the **detailed engineering and design spec
 ## Structure of the Remaining Documentation
 
 ### 02_ENGINE/ (Core Implementation Modules)
+
 12 focused specification documents, one per major engine component:
 
 - `ephemeris_service.md` — Swiss Ephemeris integration, coordinate handling, UTC normalization.
@@ -34,22 +35,27 @@ This body of documentation represents the **detailed engineering and design spec
 - `oriel_output_bridge.md` — Safety layer that translates engine output into clean, hallucination-resistant context for ORIEL.
 
 ### 03_VISUAL_SYSTEM/
+
 - Design tokens, color systems, sacred-tech aesthetic guidelines.
 - WebGL / SVG / Three.js rendering specifications for the Consciousness Lattice, Codon Wheel, Body Map, etc.
 
 ### 04_ORIEL_OUTPUT/
+
 - Narrative templates and voice protocols specifically for VRC readings.
 - Strict safety boundaries and terminology enforcement for ORIEL when narrating engine data.
 
 ### 09_GLYPHS/
+
 - Mathematical grammar and SVG templates for rendering the 64 individual Codon Glyphs.
 
 ### 10_REPORT_BUILDER/
+
 - Detailed 15-page PDF layout schema (the flagship "ORIEL Static Signature Codex" deliverable).
 - Codon Card component specs.
 - Report visual flow and composition rules.
 
 ### Supporting folders (05–08)
+
 - UI layouts, test validation matrix, implementation blueprint, and export specifications.
 
 ## Relationship to Previously Ingested Canon
@@ -64,4 +70,4 @@ This documentation is essential for anyone (human or LLM agent) who needs to und
 
 ---
 
-*Ingested as the engineering implementation layer of the VRC Static Signature Codex.*
+_Ingested as the engineering implementation layer of the VRC Static Signature Codex._

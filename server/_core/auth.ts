@@ -36,7 +36,11 @@ async function verifyCredentialPassword({
   hash: string;
 }) {
   // Legacy and reset passwords are stored as bcrypt hashes.
-  if (hash.startsWith("$2a$") || hash.startsWith("$2b$") || hash.startsWith("$2y$")) {
+  if (
+    hash.startsWith("$2a$") ||
+    hash.startsWith("$2b$") ||
+    hash.startsWith("$2y$")
+  ) {
     return bcrypt.compare(password, hash);
   }
 
@@ -57,12 +61,17 @@ export const auth = betterAuth({
   ],
   baseURL: ENV.appBaseUrl || `http://localhost:${process.env.PORT || 3000}`,
   basePath: "/api/auth",
-  secret: ENV.betterAuthSecret || ENV.cookieSecret || (() => {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("BETTER_AUTH_SECRET or COOKIE_SECRET must be set in production");
-    }
-    return "dev-only-insecure-fallback-" + Date.now();
-  })(),
+  secret:
+    ENV.betterAuthSecret ||
+    ENV.cookieSecret ||
+    (() => {
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(
+          "BETTER_AUTH_SECRET or COOKIE_SECRET must be set in production"
+        );
+      }
+      return "dev-only-insecure-fallback-" + Date.now();
+    })(),
 
   database: drizzleAdapter(createBetterAuthDb(), {
     provider: "mysql",

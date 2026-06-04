@@ -29,7 +29,7 @@ A complete Static Signature reading includes:
 
 ## Relationship to the Larger Lattice
 
-In the Consciousness Lattice model ([[entity-consciousness-lattice]]), the Static Signature populates the structural nodes of the 512-node field. It tells the individual *which* codons, facets, and centers are consistently "lit" in their architecture.
+In the Consciousness Lattice model ([[entity-consciousness-lattice]]), the Static Signature populates the structural nodes of the 512-node field. It tells the individual _which_ codons, facets, and centers are consistently "lit" in their architecture.
 
 It is deliberately separated from moment-to-moment coherence (the Carrierlock Dynamic State) so that the reading always points back to the person's unchanging design rather than their current noise floor.
 
@@ -40,6 +40,7 @@ The detailed working specification and engine modules live in:
 `codex/vrc_static_signature/`
 
 Key sub-areas:
+
 - `02_ENGINE/` — static_signature_orchestrator, prime stack calculation, center evaluator, type_authority_engine, etc.
 - `00_CANON/` and `01_DATA/` — the master codon, center, and mapping data
 - `04_ORIEL_OUTPUT/` — how the engine data becomes ORIEL narration
@@ -89,4 +90,4 @@ See the VRC Engine entity page for the broader pipeline context.
 
 ---
 
-*This page exists to give the Static Signature a clear home as a distinct, high-value output of the system. Expand with examples and visual descriptions as the report builder matures.*
+_This page exists to give the Static Signature a clear home as a distinct, high-value output of the system. Expand with examples and visual descriptions as the report builder matures._

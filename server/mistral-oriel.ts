@@ -41,7 +41,7 @@ export async function chatWithORIELMistral(
   });
 
   const inputs = [
-    ...conversationHistory.map((m) => ({
+    ...conversationHistory.map(m => ({
       role: m.role as "user" | "assistant",
       content: m.content,
     })),
@@ -57,5 +57,8 @@ export async function chatWithORIELMistral(
   });
 
   const raw = extractText(response.outputs ?? []);
-  return filterORIELResponse(raw) || "I am processing your transmission. Please try again.";
+  return (
+    filterORIELResponse(raw) ||
+    "I am processing your transmission. Please try again."
+  );
 }

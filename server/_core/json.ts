@@ -16,13 +16,13 @@ function extractFirstJsonValue(text: string): string | null {
         escaped = false;
       } else if (char === "\\") {
         escaped = true;
-      } else if (char === "\"") {
+      } else if (char === '"') {
         inString = false;
       }
       continue;
     }
 
-    if (char === "\"") {
+    if (char === '"') {
       inString = true;
       continue;
     }
@@ -47,7 +47,10 @@ export function parseModelJson<T>(content: string): T {
     // Continue with extraction below.
   }
 
-  const withoutFence = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+  const withoutFence = trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
   if (withoutFence !== trimmed) {
     try {
       return JSON.parse(withoutFence) as T;

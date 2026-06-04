@@ -112,7 +112,7 @@ describe("Profile Page Features", () => {
         "Conversation History",
         "Advanced Protocol",
       ];
-      
+
       const allAvailable = subscriptionStatus === "active";
       expect(allAvailable).toBe(true);
       expect(features.length).toBeGreaterThan(0);
@@ -138,7 +138,8 @@ describe("Profile Page Features", () => {
     });
 
     it("should use correct PayPal client ID", () => {
-      const clientId = "BAAc4RYATPcNXw5s6BKWABNgg5138NFy6Eyi7RJNC2ydWz2uDTWRjPT6KeI95NPVTn4OgzXIPaH8aMnCuk";
+      const clientId =
+        "BAAc4RYATPcNXw5s6BKWABNgg5138NFy6Eyi7RJNC2ydWz2uDTWRjPT6KeI95NPVTn4OgzXIPaH8aMnCuk";
       expect(clientId.length).toBeGreaterThan(50);
     });
   });

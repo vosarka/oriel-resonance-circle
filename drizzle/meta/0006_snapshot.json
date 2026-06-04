@@ -72,9 +72,7 @@
       "compositePrimaryKeys": {
         "artifacts_id": {
           "name": "artifacts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -125,9 +123,7 @@
       "compositePrimaryKeys": {
         "chatMessages_id": {
           "name": "chatMessages_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -227,9 +223,7 @@
       "compositePrimaryKeys": {
         "orielMemories_id": {
           "name": "orielMemories_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -326,17 +320,13 @@
       "compositePrimaryKeys": {
         "orielUserProfiles_id": {
           "name": "orielUserProfiles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "orielUserProfiles_userId_unique": {
           "name": "orielUserProfiles_userId_unique",
-          "columns": [
-            "userId"
-          ]
+          "columns": ["userId"]
         }
       },
       "checkConstraint": {}
@@ -386,17 +376,13 @@
       "compositePrimaryKeys": {
         "signals_id": {
           "name": "signals_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "signals_signalId_unique": {
           "name": "signals_signalId_unique",
-          "columns": [
-            "signalId"
-          ]
+          "columns": ["signalId"]
         }
       },
       "checkConstraint": {}
@@ -506,23 +492,17 @@
       "compositePrimaryKeys": {
         "transmissions_id": {
           "name": "transmissions_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "transmissions_txId_unique": {
           "name": "transmissions_txId_unique",
-          "columns": [
-            "txId"
-          ]
+          "columns": ["txId"]
         },
         "transmissions_txNumber_unique": {
           "name": "transmissions_txNumber_unique",
-          "columns": [
-            "txNumber"
-          ]
+          "columns": ["txNumber"]
         }
       },
       "checkConstraint": {}
@@ -640,23 +620,17 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         },
         "users_conduitId_unique": {
           "name": "users_conduitId_unique",
-          "columns": [
-            "conduitId"
-          ]
+          "columns": ["conduitId"]
         }
       },
       "checkConstraint": {}

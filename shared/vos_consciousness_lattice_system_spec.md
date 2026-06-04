@@ -429,8 +429,8 @@ binary_signature
 chemical_marker
 archetype
 shadow
- gift
- siddhi
+gift
+siddhi
 
 Facet table fields:
 
@@ -492,13 +492,13 @@ Facet mapping:
 Example JSON structure:
 
 {
-  "planet": "Sun",
-  "longitude": 12.43,
-  "codon": "RC01",
-  "facet": "Cognitive",
-  "center": "G",
-  "weight": 100,
-  "layer": "Personality"
+"planet": "Sun",
+"longitude": 12.43,
+"codon": "RC01",
+"facet": "Cognitive",
+"center": "G",
+"weight": 100,
+"layer": "Personality"
 }
 
 ---
@@ -587,12 +587,12 @@ GET /channels
 Example output for reading endpoint:
 
 {
-  "static_signature": {},
-  "core_codons": [],
-  "support_codons": [],
-  "shadow_loudness": [],
-  "somatic_signals": [],
-  "corrections": []
+"static_signature": {},
+"core_codons": [],
+"support_codons": [],
+"shadow_loudness": [],
+"somatic_signals": [],
+"corrections": []
 }
 
 ---
@@ -632,7 +632,6 @@ Information theory
 Cybernetic feedback loops
 
 The goal is to create an interactive consciousness mapping system capable of revealing behavioral structures and guiding users toward integrated expression.
-
 
 ---
 

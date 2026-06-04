@@ -3,127 +3,54 @@
     "id": "HEAD",
     "name": "Head Center",
     "type": "Pressure",
-    "associated_codons": [
-      61,
-      63,
-      64
-    ]
+    "associated_codons": [61, 63, 64]
   },
   {
     "id": "AJNA",
     "name": "Ajna Center",
     "type": "Awareness",
-    "associated_codons": [
-      4,
-      11,
-      17,
-      24,
-      43,
-      47
-    ]
+    "associated_codons": [4, 11, 17, 24, 43, 47]
   },
   {
     "id": "THROAT",
     "name": "Throat Center",
     "type": "Manifestation",
-    "associated_codons": [
-      8,
-      12,
-      16,
-      20,
-      23,
-      31,
-      33,
-      35,
-      45,
-      56,
-      62
-    ]
+    "associated_codons": [8, 12, 16, 20, 23, 31, 33, 35, 45, 56, 62]
   },
   {
     "id": "G",
     "name": "G Center (Identity)",
     "type": "Identity",
-    "associated_codons": [
-      1,
-      2,
-      7,
-      10,
-      13,
-      15,
-      25,
-      46
-    ]
+    "associated_codons": [1, 2, 7, 10, 13, 15, 25, 46]
   },
   {
     "id": "HEART",
     "name": "Heart Center",
     "type": "Motor",
-    "associated_codons": [
-      21,
-      26,
-      40,
-      51
-    ]
+    "associated_codons": [21, 26, 40, 51]
   },
   {
     "id": "SACRAL",
     "name": "Sacral Center",
     "type": "Motor",
-    "associated_codons": [
-      3,
-      5,
-      9,
-      14,
-      27,
-      29,
-      34,
-      42,
-      50,
-      59
-    ]
+    "associated_codons": [3, 5, 9, 14, 27, 29, 34, 42, 50, 59]
   },
   {
     "id": "SPLEEN",
     "name": "Spleen Center",
     "type": "Awareness",
-    "associated_codons": [
-      18,
-      28,
-      32,
-      44,
-      48,
-      57
-    ]
+    "associated_codons": [18, 28, 32, 44, 48, 57]
   },
   {
     "id": "SOLAR",
     "name": "Solar Plexus",
     "type": "Motor/Awareness",
-    "associated_codons": [
-      6,
-      22,
-      30,
-      36,
-      37,
-      49,
-      55
-    ]
+    "associated_codons": [6, 22, 30, 36, 37, 49, 55]
   },
   {
     "id": "ROOT",
     "name": "Root Center",
     "type": "Pressure/Motor",
-    "associated_codons": [
-      19,
-      38,
-      39,
-      41,
-      52,
-      53,
-      54,
-      58,
-      60
-    ]
+    "associated_codons": [19, 38, 39, 41, 52, 53, 54, 58, 60]
   }
 ]

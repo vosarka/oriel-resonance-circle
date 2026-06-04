@@ -13,9 +13,9 @@ import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 // ─── Birth data extraction ──────────────────────────────────────────────────
 
 interface ExtractedBirthData {
-  date: string;       // ISO date string
-  time?: string;      // HH:MM format
-  city?: string;      // raw city string
+  date: string; // ISO date string
+  time?: string; // HH:MM format
+  city?: string; // raw city string
 }
 
 /**
@@ -45,14 +45,14 @@ export function extractBirthData(
     /\brun.*rgp\b/,
   ];
 
-  const hasIntent = readingIntentPatterns.some((p) => p.test(msg));
+  const hasIntent = readingIntentPatterns.some(p => p.test(msg));
   if (!hasIntent) return null;
 
   // Combine message + recent history for context (user may have given date in a previous message)
   const recentUserMessages = history
-    .filter((m) => m.role === "user")
+    .filter(m => m.role === "user")
     .slice(-3)
-    .map((m) => m.content);
+    .map(m => m.content);
   const searchText = [...recentUserMessages, message].join(" ");
 
   // Date patterns
@@ -83,23 +83,36 @@ export function extractBirthData(
     } else {
       // Month name format — use capture groups from the original regex
       const monthNames: Record<string, string> = {
-        jan: "01", january: "01",
-        feb: "02", february: "02",
-        mar: "03", march: "03",
-        apr: "04", april: "04",
+        jan: "01",
+        january: "01",
+        feb: "02",
+        february: "02",
+        mar: "03",
+        march: "03",
+        apr: "04",
+        april: "04",
         may: "05",
-        jun: "06", june: "06",
-        jul: "07", july: "07",
-        aug: "08", august: "08",
-        sep: "09", september: "09",
-        oct: "10", october: "10",
-        nov: "11", november: "11",
-        dec: "12", december: "12",
+        jun: "06",
+        june: "06",
+        jul: "07",
+        july: "07",
+        aug: "08",
+        august: "08",
+        sep: "09",
+        september: "09",
+        oct: "10",
+        october: "10",
+        nov: "11",
+        november: "11",
+        dec: "12",
+        december: "12",
       };
 
       // Capture groups: pattern 3 = (day)(month)(year), pattern 4 = (month)(day)(year)
       const isMonthFirst = isNaN(parseInt(match[1]));
-      const monthRaw = isMonthFirst ? match[1].toLowerCase() : match[2].toLowerCase();
+      const monthRaw = isMonthFirst
+        ? match[1].toLowerCase()
+        : match[2].toLowerCase();
       const dayRaw = isMonthFirst ? match[2] : match[1];
       const yearRaw = match[3];
       const mm = monthNames[monthRaw] || monthNames[monthRaw.slice(0, 3)];
@@ -145,8 +158,20 @@ export function extractBirthData(
     if (cm && cm[1]) {
       const candidate = cm[1].trim();
       // Filter out false positives
-      const skipWords = ["oriel", "static", "reading", "chart", "me", "my", "the", "a"];
-      if (!skipWords.includes(candidate.toLowerCase()) && candidate.length > 1) {
+      const skipWords = [
+        "oriel",
+        "static",
+        "reading",
+        "chart",
+        "me",
+        "my",
+        "the",
+        "a",
+      ];
+      if (
+        !skipWords.includes(candidate.toLowerCase()) &&
+        candidate.length > 1
+      ) {
         city = candidate;
         break;
       }
@@ -160,8 +185,8 @@ export function extractBirthData(
 
 export interface RGPReadingResult {
   success: boolean;
-  summary: string;         // Human-readable summary for LLM injection
-  rawData?: any;           // Full reading data
+  summary: string; // Human-readable summary for LLM injection
+  rawData?: any; // Full reading data
 }
 
 const HUMAN_DESIGN_OUTPUT_REPLACEMENTS: Array<[RegExp, string]> = [
@@ -192,7 +217,7 @@ function sanitizeOrielOutputValue<T>(value: T): T {
   }
 
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeOrielOutputValue(item)) as T;
+    return value.map(item => sanitizeOrielOutputValue(item)) as T;
   }
 
   if (value && typeof value === "object") {
@@ -237,7 +262,8 @@ export async function runRGPForChat(
     if (!birthData.city) {
       return {
         success: false,
-        summary: "Exact Static Signature calculation requires a birth city so coordinates can be resolved.",
+        summary:
+          "Exact Static Signature calculation requires a birth city so coordinates can be resolved.",
       };
     }
 
@@ -290,40 +316,50 @@ export async function runRGPForChat(
     }
 
     // Run the full static signature engine
-    const reading = sanitizeOrielOutputValue(await generateStaticSignature(
-      "oriel-chat",
-      {
+    const reading = sanitizeOrielOutputValue(
+      await generateStaticSignature("oriel-chat", {
         birthDate,
         birthTime: birthData.time,
         conscious: consciousChartData,
         design: designChartData,
-      }
-    ));
+      })
+    );
 
     // Build a structured summary for the LLM
     const primePositions = reading.primeStack
       .slice(0, 6)
       .map(
-        (p) =>
+        p =>
           `  ${p.position}. ${p.name} (${p.source}) → Codon ${p.codon} "${p.codonName}" [${p.facetFull}] | ${p.center} | Weight: ${p.weight}`
       )
       .join("\n");
 
     const centers = reading.ninecenters
       ? Object.entries(reading.ninecenters)
-          .map(([name, data]: [string, any]) => `  ${name}: ${data.defined ? "DEFINED" : "open"}`)
+          .map(
+            ([name, data]: [string, any]) =>
+              `  ${name}: ${data.defined ? "DEFINED" : "open"}`
+          )
           .join("\n")
       : "N/A";
 
-    const corrections = reading.microCorrections
-      ?.slice(0, 3)
-      .map((mc: any) => `  - ${mc.description || mc.correction || JSON.stringify(mc)}`)
-      .join("\n") || "None";
+    const corrections =
+      reading.microCorrections
+        ?.slice(0, 3)
+        .map(
+          (mc: any) =>
+            `  - ${mc.description || mc.correction || JSON.stringify(mc)}`
+        )
+        .join("\n") || "None";
 
-    const activeResonanceLinks = reading.channelStatuses
-      ?.filter((channel) => channel.active)
-      .map((channel) => `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`)
-      .join("\n") || "None";
+    const activeResonanceLinks =
+      reading.channelStatuses
+        ?.filter(channel => channel.active)
+        .map(
+          channel =>
+            `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA} ↔ ${channel.centerB}`
+        )
+        .join("\n") || "None";
 
     const publicResolvedCity = sanitizeOrielOutputText(resolvedCity);
     const summary = [

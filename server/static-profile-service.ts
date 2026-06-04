@@ -27,20 +27,29 @@ export type CalculationTrustContext = {
 
 function assertExactCalculationInput(input: NatalProfileInput) {
   if (!input.birthTime.trim()) {
-    throw new Error("Birth time is required for exact static profile calculation.");
+    throw new Error(
+      "Birth time is required for exact static profile calculation."
+    );
   }
 
   if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude)) {
-    throw new Error("Resolved birth coordinates are required for exact static profile calculation.");
+    throw new Error(
+      "Resolved birth coordinates are required for exact static profile calculation."
+    );
   }
 
-  if (input.timezoneOffset === undefined || !Number.isFinite(input.timezoneOffset)) {
-    throw new Error("Resolved timezone offset is required for exact static profile calculation.");
+  if (
+    input.timezoneOffset === undefined ||
+    !Number.isFinite(input.timezoneOffset)
+  ) {
+    throw new Error(
+      "Resolved timezone offset is required for exact static profile calculation."
+    );
   }
 }
 
 function buildExactCalculationContext(
-  input: NatalProfileInput,
+  input: NatalProfileInput
 ): CalculationTrustContext {
   return {
     status: "exact",
@@ -72,7 +81,9 @@ function unique(values: string[]) {
   return Array.from(new Set(values));
 }
 
-function normalizeCalculationContext(value: unknown): CalculationTrustContext | null {
+function normalizeCalculationContext(
+  value: unknown
+): CalculationTrustContext | null {
   if (!isRecord(value)) return null;
 
   const birthDate = stringOrNull(value.birthDate);
@@ -86,7 +97,7 @@ function normalizeCalculationContext(value: unknown): CalculationTrustContext | 
   const timezoneOffsetHours = numberOrNull(value.timezoneOffsetHours);
   const explicitMissingPrecision = Array.isArray(value.missingPrecision)
     ? value.missingPrecision
-        .map((item) => stringOrNull(item))
+        .map(item => stringOrNull(item))
         .filter((item): item is string => Boolean(item))
     : [];
   const inferredMissingPrecision = [
@@ -100,9 +111,10 @@ function normalizeCalculationContext(value: unknown): CalculationTrustContext | 
   ]);
 
   return {
-    status: value.status === "exact" && missingPrecision.length === 0
-      ? "exact"
-      : "missing_precision",
+    status:
+      value.status === "exact" && missingPrecision.length === 0
+        ? "exact"
+        : "missing_precision",
     birthDate,
     birthTime,
     birthPlace,
@@ -127,20 +139,24 @@ function storedCalculationContext(profile: {
   calculationStatus?: string | null;
   calculationContext?: unknown;
 }): CalculationTrustContext {
-  const normalizedContext = normalizeCalculationContext(profile.calculationContext);
+  const normalizedContext = normalizeCalculationContext(
+    profile.calculationContext
+  );
   if (normalizedContext) return normalizedContext;
 
   const latitude = numberOrNull(profile.latitude);
   const longitude = numberOrNull(profile.longitude);
   const timezoneOffsetHours = numberOrNull(profile.timezoneOffset);
   const birthTime = profile.birthTime?.trim() ? profile.birthTime : null;
-  const missingPrecision = unique([
-    !birthTime ? "birth time" : null,
-    latitude === null || longitude === null ? "birth coordinates" : null,
-    timezoneOffsetHours === null ? "timezone offset" : null,
-    "calculation context",
-    profile.calculationStatus === "exact" ? null : "exact calculation status",
-  ].filter((item): item is string => Boolean(item)));
+  const missingPrecision = unique(
+    [
+      !birthTime ? "birth time" : null,
+      latitude === null || longitude === null ? "birth coordinates" : null,
+      timezoneOffsetHours === null ? "timezone offset" : null,
+      "calculation context",
+      profile.calculationStatus === "exact" ? null : "exact calculation status",
+    ].filter((item): item is string => Boolean(item))
+  );
 
   return {
     status: "missing_precision",
@@ -190,7 +206,7 @@ function formatCalculationTrustContract(context: CalculationTrustContext) {
 
 export async function buildUserStaticProfile(
   userId: string,
-  input: NatalProfileInput,
+  input: NatalProfileInput
 ) {
   const birthDateObj = new Date(input.birthDate);
   if (Number.isNaN(birthDateObj.getTime())) {
@@ -198,7 +214,10 @@ export async function buildUserStaticProfile(
   }
   assertExactCalculationInput(input);
   const birthTime = input.birthTime.trim();
-  const calculationContext = buildExactCalculationContext({ ...input, birthTime });
+  const calculationContext = buildExactCalculationContext({
+    ...input,
+    birthTime,
+  });
 
   let consciousChartData: Record<string, number> | undefined;
   let designChartData: Record<string, number> | undefined;
@@ -209,7 +228,7 @@ export async function buildUserStaticProfile(
     birthTime,
     input.latitude,
     input.longitude,
-    input.timezoneOffset ?? 0,
+    input.timezoneOffset ?? 0
   );
 
   consciousChartData = {};
@@ -225,7 +244,7 @@ export async function buildUserStaticProfile(
   ephemerisData = {
     conscious: {
       jd: conscious.jd,
-      planets: Object.values(conscious.planets).map((p) => ({
+      planets: Object.values(conscious.planets).map(p => ({
         name: p.planet,
         longitude: p.longitude,
         zodiacSign: p.zodiacSign,
@@ -234,7 +253,7 @@ export async function buildUserStaticProfile(
     },
     design: {
       jd: design.jd,
-      planets: Object.values(design.planets).map((p) => ({
+      planets: Object.values(design.planets).map(p => ({
         name: p.planet,
         longitude: p.longitude,
         zodiacSign: p.zodiacSign,
@@ -332,27 +351,35 @@ export function summarizeStoredStaticProfile(profile: {
 }) {
   const primePositions = (profile.primeStack ?? [])
     .slice(0, 6)
-    .map((p) =>
-      `  ${p.position}. ${p.name ?? "Position"} (${p.source ?? "Unknown"}) → Codon ${p.codon ?? "?"} "${p.codonName ?? "Unknown"}" [${p.facetFull ?? "Unknown"}] | ${p.center ?? "Unknown"} | Weight: ${p.weight ?? "?"}`,
+    .map(
+      p =>
+        `  ${p.position}. ${p.name ?? "Position"} (${p.source ?? "Unknown"}) → Codon ${p.codon ?? "?"} "${p.codonName ?? "Unknown"}" [${p.facetFull ?? "Unknown"}] | ${p.center ?? "Unknown"} | Weight: ${p.weight ?? "?"}`
     )
     .join("\n");
 
   const centers = profile.ninecenters
     ? Object.entries(profile.ninecenters)
-        .map(([name, data]) => `  ${name}: ${data?.defined ? "DEFINED" : "open"}`)
+        .map(
+          ([name, data]) => `  ${name}: ${data?.defined ? "DEFINED" : "open"}`
+        )
         .join("\n")
     : "N/A";
 
-  const activeResonanceLinks = (profile.channelStatuses ?? [])
-    .filter((channel) => channel?.active && channel.gateA && channel.gateB)
-    .map((channel) => `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA ?? "?"} ↔ ${channel.centerB ?? "?"}`)
-    .join("\n") || "None";
+  const activeResonanceLinks =
+    (profile.channelStatuses ?? [])
+      .filter(channel => channel?.active && channel.gateA && channel.gateB)
+      .map(
+        channel =>
+          `  - Codon ${channel.gateA}-Codon ${channel.gateB}: ${channel.centerA ?? "?"} ↔ ${channel.centerB ?? "?"}`
+      )
+      .join("\n") || "None";
   const legacyLinks = profile.legacyCircuitLinks ?? profile.circuitLinks;
 
-  const corrections = (profile.microCorrections ?? [])
-    .slice(0, 3)
-    .map((mc) => `  - ${mc.instruction ?? mc.type ?? JSON.stringify(mc)}`)
-    .join("\n") || "None";
+  const corrections =
+    (profile.microCorrections ?? [])
+      .slice(0, 3)
+      .map(mc => `  - ${mc.instruction ?? mc.type ?? JSON.stringify(mc)}`)
+      .join("\n") || "None";
 
   return [
     `=== STORED STATIC PROFILE (CANONICAL NATAL BLUEPRINT — USE THIS DATA, DO NOT INVENT) ===`,

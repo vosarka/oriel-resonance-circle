@@ -22,22 +22,22 @@ export function ResonateButton({
 
   const { data: countData } = trpc.archive.resonances.getCount.useQuery(
     { oracleId },
-    { enabled: !!oracleId },
+    { enabled: !!oracleId }
   );
 
   const { data: isResonatedData } =
     trpc.archive.resonances.isResonated.useQuery(
       { oracleId },
-      { enabled: !!oracleId && !!user },
+      { enabled: !!oracleId && !!user }
     );
 
   const addMutation = trpc.archive.resonances.add.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       setIsResonated(true);
       setCount(
         typeof result?.count === "number"
           ? result.count
-          : countData ?? count + 1,
+          : (countData ?? count + 1)
       );
       utils.archive.resonances.isResonated.invalidate({ oracleId });
       utils.archive.resonances.getCount.invalidate({ oracleId });
@@ -45,12 +45,12 @@ export function ResonateButton({
   });
 
   const removeMutation = trpc.archive.resonances.remove.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       setIsResonated(false);
       setCount(
         typeof result?.count === "number"
           ? result.count
-          : Math.max(0, count - 1),
+          : Math.max(0, count - 1)
       );
       utils.archive.resonances.isResonated.invalidate({ oracleId });
       utils.archive.resonances.getCount.invalidate({ oracleId });
@@ -66,7 +66,7 @@ export function ResonateButton({
   useEffect(() => {
     if (isResonatedData !== undefined) {
       setIsResonated(
-        typeof isResonatedData === "boolean" ? isResonatedData : false,
+        typeof isResonatedData === "boolean" ? isResonatedData : false
       );
     }
   }, [isResonatedData]);
@@ -112,9 +112,7 @@ export function ResonateButton({
           border: isResonated
             ? `1px solid ${temporalColor}`
             : `1px solid ${temporalColor}44`,
-          background: isResonated
-            ? `${temporalColor}22`
-            : `${temporalColor}08`,
+          background: isResonated ? `${temporalColor}22` : `${temporalColor}08`,
         }}
         animate={
           isResonated

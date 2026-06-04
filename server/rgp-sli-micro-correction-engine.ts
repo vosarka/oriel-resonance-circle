@@ -1,8 +1,8 @@
 /**
  * RGP SLI Analysis and Micro-Correction Engine
- * 
+ *
  * Phase 4: SLI Formula and Micro-Correction Logic Integration
- * 
+ *
  * This engine implements:
  * 1. Shadow Loudness Index (SLI) calculation from Prime Stack
  * 2. Interference pattern analysis
@@ -11,8 +11,8 @@
  * 5. Coherence trajectory analysis
  */
 
-import { PrimeStackCodon, PrimeStackMap } from './rgp-prime-stack-engine';
-import { getFacetData } from './vrc-codon-library';
+import { PrimeStackCodon, PrimeStackMap } from "./rgp-prime-stack-engine";
+import { getFacetData } from "./vrc-codon-library";
 
 export interface SLIScore {
   position: number;
@@ -21,11 +21,11 @@ export interface SLIScore {
   stateAmplifier: number;
   facetAmplitude: number;
   sliValue: number; // Final SLI score (0-100)
-  interference: 'none' | 'minor' | 'moderate' | 'severe';
+  interference: "none" | "minor" | "moderate" | "severe";
 }
 
 export interface InterferencePattern {
-  type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent';
+  type: "harmonic" | "dissonant" | "chaotic" | "coherent";
   severity: number; // 0-100 destabilization score (average shadow loudness)
   affectedPositions: number[];
   description: string;
@@ -35,7 +35,12 @@ export interface MicroCorrection {
   id: string;
   title: string;
   description: string;
-  actionType: 'breath' | 'movement' | 'visualization' | 'affirmation' | 'inquiry';
+  actionType:
+    | "breath"
+    | "movement"
+    | "visualization"
+    | "affirmation"
+    | "inquiry";
   duration: number; // seconds
   frequency: string; // 'daily', 'weekly', 'as-needed'
   targetCodon: string;
@@ -46,7 +51,7 @@ export interface MicroCorrection {
 export interface CoherenceTrajectory {
   currentScore: number;
   previousScore?: number;
-  trend: 'ascending' | 'stable' | 'descending';
+  trend: "ascending" | "stable" | "descending";
   momentum: number; // -100 to 100
   projectedScore: number; // 7-day projection
   keyInfluences: string[];
@@ -64,9 +69,11 @@ export interface DiagnosticTransmission {
   transmissionText: string;
 }
 
-type FacetLetter = 'A' | 'B' | 'C' | 'D';
+type FacetLetter = "A" | "B" | "C" | "D";
 
-function parseCodonFacet(codon256Id: string): { codonId: number; facet: FacetLetter } | null {
+function parseCodonFacet(
+  codon256Id: string
+): { codonId: number; facet: FacetLetter } | null {
   const match = codon256Id.match(/^(?:RC)?(\d+)-([ABCD])$/i);
   if (!match) return null;
 
@@ -76,18 +83,18 @@ function parseCodonFacet(codon256Id: string): { codonId: number; facet: FacetLet
   return { codonId, facet };
 }
 
-function actionTypeForFacet(facet: FacetLetter): MicroCorrection['actionType'] {
-  if (facet === 'A') return 'movement';
-  if (facet === 'B') return 'inquiry';
-  if (facet === 'C') return 'visualization';
-  return 'affirmation';
+function actionTypeForFacet(facet: FacetLetter): MicroCorrection["actionType"] {
+  if (facet === "A") return "movement";
+  if (facet === "B") return "inquiry";
+  if (facet === "C") return "visualization";
+  return "affirmation";
 }
 
 /**
  * Calculate Shadow Loudness Index (SLI) for all positions
- * 
+ *
  * SLI(r) = PCS(r) × StateAmplifier × FacetAmplitude(r)
- * 
+ *
  * @param primeStack - Prime Stack data
  * @param stateAmplifier - Current state amplifier (0-1)
  * @param facetAmplitudes - Current facet amplitudes (A, B, C, D)
@@ -96,7 +103,7 @@ function actionTypeForFacet(facet: FacetLetter): MicroCorrection['actionType'] {
 export function calculateSLIScores(
   primeStack: PrimeStackMap,
   stateAmplifier: number,
-  facetAmplitudes: Record<'A' | 'B' | 'C' | 'D', number>
+  facetAmplitudes: Record<"A" | "B" | "C" | "D", number>
 ): SLIScore[] {
   const sliScores: SLIScore[] = [];
 
@@ -105,15 +112,18 @@ export function calculateSLIScores(
     const facetAmplitude = facetAmplitudes[position.facet] || 50;
 
     // SLI = Base × StateAmp × FacetAmp
-    const sliValue = Math.min(100, (baseAmplitude * stateAmplifier * facetAmplitude) / 100);
+    const sliValue = Math.min(
+      100,
+      (baseAmplitude * stateAmplifier * facetAmplitude) / 100
+    );
 
     // Shadow Loudness Index:
     // high SLI = louder interference, low SLI = quieter shadow expression.
-    let interference: 'none' | 'minor' | 'moderate' | 'severe' = 'none';
-    if (sliValue > 75) interference = 'severe';
-    else if (sliValue > 50) interference = 'moderate';
-    else if (sliValue > 25) interference = 'minor';
-    else interference = 'none';
+    let interference: "none" | "minor" | "moderate" | "severe" = "none";
+    if (sliValue > 75) interference = "severe";
+    else if (sliValue > 50) interference = "moderate";
+    else if (sliValue > 25) interference = "minor";
+    else interference = "none";
 
     sliScores.push({
       position: position.position,
@@ -131,39 +141,49 @@ export function calculateSLIScores(
 
 /**
  * Analyze interference patterns from SLI scores
- * 
+ *
  * @param sliScores - Array of SLI scores
  * @returns Interference pattern analysis
  */
-export function analyzeInterferencePattern(sliScores: SLIScore[]): InterferencePattern {
+export function analyzeInterferencePattern(
+  sliScores: SLIScore[]
+): InterferencePattern {
   // Calculate average SLI
-  const averageSLI = sliScores.reduce((sum, s) => sum + s.sliValue, 0) / sliScores.length;
+  const averageSLI =
+    sliScores.reduce((sum, s) => sum + s.sliValue, 0) / sliScores.length;
 
   // Find positions with the highest shadow loudness / destabilization.
-  const severePositions = sliScores.filter(s => s.interference === 'severe').map(s => s.position);
-  const moderatePositions = sliScores.filter(s => s.interference === 'moderate').map(s => s.position);
+  const severePositions = sliScores
+    .filter(s => s.interference === "severe")
+    .map(s => s.position);
+  const moderatePositions = sliScores
+    .filter(s => s.interference === "moderate")
+    .map(s => s.position);
 
   // SLI bands: high average shadow loudness means stronger interference.
-  let type: 'harmonic' | 'dissonant' | 'chaotic' | 'coherent' = 'coherent';
+  let type: "harmonic" | "dissonant" | "chaotic" | "coherent" = "coherent";
   let severity = Math.max(0, Math.min(100, averageSLI));
 
   if (averageSLI > 75) {
-    type = 'chaotic';
+    type = "chaotic";
   } else if (averageSLI > 50) {
-    type = 'dissonant';
+    type = "dissonant";
   } else if (averageSLI > 25) {
-    type = 'harmonic';
+    type = "harmonic";
   } else {
-    type = 'coherent';
+    type = "coherent";
   }
 
   const affectedPositions = [...severePositions, ...moderatePositions];
 
   const descriptionMap: Record<string, string> = {
-    coherent: 'Your shadow loudness is quiet. Frequencies are not strongly interfering.',
-    harmonic: 'Your shadow loudness is present. Minor recalibration may sharpen the field.',
-    dissonant: 'Your shadow loudness is elevated. Multiple frequencies are interfering.',
-    chaotic: 'Your shadow loudness is high. Significant realignment is needed.',
+    coherent:
+      "Your shadow loudness is quiet. Frequencies are not strongly interfering.",
+    harmonic:
+      "Your shadow loudness is present. Minor recalibration may sharpen the field.",
+    dissonant:
+      "Your shadow loudness is elevated. Multiple frequencies are interfering.",
+    chaotic: "Your shadow loudness is high. Significant realignment is needed.",
   };
 
   return {
@@ -176,7 +196,7 @@ export function analyzeInterferencePattern(sliScores: SLIScore[]): InterferenceP
 
 /**
  * Generate micro-corrections based on SLI analysis
- * 
+ *
  * @param sliScores - Array of SLI scores
  * @param interferencePattern - Interference pattern analysis
  * @returns Array of micro-corrections
@@ -204,30 +224,30 @@ export function generateMicroCorrections(
       description: facetData.micro_correction,
       actionType: actionTypeForFacet(parsedTarget.facet),
       duration: 180,
-      frequency: 'as-needed',
+      frequency: "as-needed",
       targetCodon: worstPosition.codon256Id,
       expectedOutcome: facetData.description,
-      falsifiers: [
-        facetData.shadow_manifestation,
-      ],
+      falsifiers: [facetData.shadow_manifestation],
     });
   }
 
   // Breath correction for severe interference
   if (interferencePattern.severity > 70) {
     corrections.push({
-      id: 'micro-breath-01',
-      title: 'Coherence Breath Protocol',
-      description: 'A 4-part breath cycle to reset your nervous system and re-establish baseline coherence.',
-      actionType: 'breath',
+      id: "micro-breath-01",
+      title: "Coherence Breath Protocol",
+      description:
+        "A 4-part breath cycle to reset your nervous system and re-establish baseline coherence.",
+      actionType: "breath",
       duration: 180,
-      frequency: 'daily',
+      frequency: "daily",
       targetCodon: worstPosition.codon256Id,
-      expectedOutcome: 'Increased state amplifier by 15-25 points within 24 hours',
+      expectedOutcome:
+        "Increased state amplifier by 15-25 points within 24 hours",
       falsifiers: [
-        'Mental clarity improves noticeably',
-        'Body tension reduces by at least 2 points',
-        'Emotional turbulence becomes more manageable',
+        "Mental clarity improves noticeably",
+        "Body tension reduces by at least 2 points",
+        "Emotional turbulence becomes more manageable",
       ],
     });
   }
@@ -235,74 +255,81 @@ export function generateMicroCorrections(
   // Movement correction for moderate interference
   if (interferencePattern.severity > 40) {
     corrections.push({
-      id: 'micro-movement-01',
-      title: 'Resonance Movement Sequence',
-      description: 'A 5-minute movement sequence that aligns your physical body with your Prime Stack.',
-      actionType: 'movement',
+      id: "micro-movement-01",
+      title: "Resonance Movement Sequence",
+      description:
+        "A 5-minute movement sequence that aligns your physical body with your Prime Stack.",
+      actionType: "movement",
       duration: 300,
-      frequency: 'as-needed',
+      frequency: "as-needed",
       targetCodon: worstPosition.codon256Id,
-      expectedOutcome: 'Body tension reduces, facet amplitudes rebalance',
+      expectedOutcome: "Body tension reduces, facet amplitudes rebalance",
       falsifiers: [
-        'You feel more grounded in your body',
-        'Movement feels more fluid and intentional',
-        'Physical sensation becomes clearer',
+        "You feel more grounded in your body",
+        "Movement feels more fluid and intentional",
+        "Physical sensation becomes clearer",
       ],
     });
   }
 
   // Visualization correction for dissonant patterns
-  if (interferencePattern.type === 'dissonant') {
+  if (interferencePattern.type === "dissonant") {
     corrections.push({
-      id: 'micro-visualization-01',
-      title: 'Codon Resonance Visualization',
-      description: 'Visualize your Prime Stack codons as luminous frequencies aligning in perfect harmony.',
-      actionType: 'visualization',
+      id: "micro-visualization-01",
+      title: "Codon Resonance Visualization",
+      description:
+        "Visualize your Prime Stack codons as luminous frequencies aligning in perfect harmony.",
+      actionType: "visualization",
       duration: 420,
-      frequency: 'daily',
+      frequency: "daily",
       targetCodon: worstPosition.codon256Id,
-      expectedOutcome: 'Mental noise reduces, coherence score increases by 10-20 points',
+      expectedOutcome:
+        "Mental noise reduces, coherence score increases by 10-20 points",
       falsifiers: [
-        'Visualization becomes easier and more vivid',
-        'Mental chatter quiets down',
-        'You feel more connected to your core frequency',
+        "Visualization becomes easier and more vivid",
+        "Mental chatter quiets down",
+        "You feel more connected to your core frequency",
       ],
     });
   }
 
   // Affirmation correction for chaotic patterns
-  if (interferencePattern.type === 'chaotic') {
+  if (interferencePattern.type === "chaotic") {
     corrections.push({
-      id: 'micro-affirmation-01',
-      title: 'Coherence Affirmation',
-      description: 'Anchor your consciousness in your core frequency through targeted affirmation.',
-      actionType: 'affirmation',
+      id: "micro-affirmation-01",
+      title: "Coherence Affirmation",
+      description:
+        "Anchor your consciousness in your core frequency through targeted affirmation.",
+      actionType: "affirmation",
       duration: 600,
-      frequency: 'daily',
+      frequency: "daily",
       targetCodon: worstPosition.codon256Id,
-      expectedOutcome: 'Emotional turbulence reduces, sense of stability returns',
+      expectedOutcome:
+        "Emotional turbulence reduces, sense of stability returns",
       falsifiers: [
-        'Affirmations feel true and resonant',
-        'Emotional reactivity decreases',
-        'You feel more anchored in your identity',
+        "Affirmations feel true and resonant",
+        "Emotional reactivity decreases",
+        "You feel more anchored in your identity",
       ],
     });
   }
 
   // Inquiry correction for understanding
   corrections.push({
-    id: 'micro-inquiry-01',
-    title: 'Codon Inquiry Protocol',
-    description: 'Ask your deepest self: What is this interference trying to teach me?',
-    actionType: 'inquiry',
+    id: "micro-inquiry-01",
+    title: "Codon Inquiry Protocol",
+    description:
+      "Ask your deepest self: What is this interference trying to teach me?",
+    actionType: "inquiry",
     duration: 900,
-    frequency: 'weekly',
+    frequency: "weekly",
     targetCodon: worstPosition.codon256Id,
-    expectedOutcome: 'Deeper understanding of your coherence patterns and growth edges',
+    expectedOutcome:
+      "Deeper understanding of your coherence patterns and growth edges",
     falsifiers: [
-      'Insights emerge about your pattern',
-      'You feel more compassionate toward yourself',
-      'The interference begins to shift naturally',
+      "Insights emerge about your pattern",
+      "You feel more compassionate toward yourself",
+      "The interference begins to shift naturally",
     ],
   });
 
@@ -311,9 +338,9 @@ export function generateMicroCorrections(
 
 /**
  * Generate falsifier clauses for verification
- * 
+ *
  * Falsifiers are testable claims that can verify the accuracy of the reading
- * 
+ *
  * @param sliScores - Array of SLI scores
  * @param interferencePattern - Interference pattern
  * @returns Array of falsifier clauses
@@ -334,15 +361,15 @@ export function generateFalsifiers(
   );
 
   // Falsifier based on pattern type
-  if (interferencePattern.type === 'chaotic') {
+  if (interferencePattern.type === "chaotic") {
     falsifiers.push(
-      'Within 24 hours, you will notice at least one moment of unexpected clarity or calm.'
+      "Within 24 hours, you will notice at least one moment of unexpected clarity or calm."
     );
   }
 
-  if (interferencePattern.type === 'dissonant') {
+  if (interferencePattern.type === "dissonant") {
     falsifiers.push(
-      'Within 48 hours, one of your micro-corrections will produce a noticeable shift in your state.'
+      "Within 48 hours, one of your micro-corrections will produce a noticeable shift in your state."
     );
   }
 
@@ -355,7 +382,7 @@ export function generateFalsifiers(
 
   // General falsifier
   falsifiers.push(
-    'If none of these predictions manifest within 7 days, this reading should be considered inaccurate and revisited.'
+    "If none of these predictions manifest within 7 days, this reading should be considered inaccurate and revisited."
   );
 
   return falsifiers;
@@ -363,7 +390,7 @@ export function generateFalsifiers(
 
 /**
  * Calculate coherence trajectory
- * 
+ *
  * @param currentScore - Current coherence score
  * @param previousScore - Previous coherence score (optional)
  * @param sliScores - Current SLI scores
@@ -374,24 +401,24 @@ export function calculateCoherenceTrajectory(
   sliScores: SLIScore[],
   previousScore?: number
 ): CoherenceTrajectory {
-  let trend: 'ascending' | 'stable' | 'descending' = 'stable';
+  let trend: "ascending" | "stable" | "descending" = "stable";
   let momentum = 0;
 
   if (previousScore !== undefined) {
     if (currentScore > previousScore + 5) {
-      trend = 'ascending';
+      trend = "ascending";
       momentum = Math.min(100, (currentScore - previousScore) * 2);
     } else if (currentScore < previousScore - 5) {
-      trend = 'descending';
+      trend = "descending";
       momentum = Math.max(-100, (currentScore - previousScore) * 2);
     }
   }
 
   // Project 7-day trajectory
   let projectedScore = currentScore;
-  if (trend === 'ascending') {
+  if (trend === "ascending") {
     projectedScore = Math.min(100, currentScore + momentum * 0.5);
-  } else if (trend === 'descending') {
+  } else if (trend === "descending") {
     projectedScore = Math.max(0, currentScore + momentum * 0.5);
   }
 
@@ -404,13 +431,17 @@ export function calculateCoherenceTrajectory(
     current.sliValue > prev.sliValue ? current : prev
   );
 
-  keyInfluences.push(`Highest shadow loudness position: Position ${highestInterference.position} (${highestInterference.sliValue.toFixed(1)})`);
-  keyInfluences.push(`Lowest shadow loudness position: Position ${lowestInterference.position} (${lowestInterference.sliValue.toFixed(1)})`);
+  keyInfluences.push(
+    `Highest shadow loudness position: Position ${highestInterference.position} (${highestInterference.sliValue.toFixed(1)})`
+  );
+  keyInfluences.push(
+    `Lowest shadow loudness position: Position ${lowestInterference.position} (${lowestInterference.sliValue.toFixed(1)})`
+  );
 
-  if (trend === 'ascending') {
-    keyInfluences.push('Your coherence is building momentum');
-  } else if (trend === 'descending') {
-    keyInfluences.push('Your coherence needs attention and recalibration');
+  if (trend === "ascending") {
+    keyInfluences.push("Your coherence is building momentum");
+  } else if (trend === "descending") {
+    keyInfluences.push("Your coherence needs attention and recalibration");
   }
 
   return {
@@ -425,7 +456,7 @@ export function calculateCoherenceTrajectory(
 
 /**
  * Generate complete diagnostic transmission
- * 
+ *
  * @param readingId - Unique reading identifier
  * @param coherenceScore - Current coherence score
  * @param primeStack - Prime Stack data
@@ -439,14 +470,25 @@ export function generateDiagnosticTransmission(
   coherenceScore: number,
   primeStack: PrimeStackMap,
   stateAmplifier: number,
-  facetAmplitudes: Record<'A' | 'B' | 'C' | 'D', number>,
+  facetAmplitudes: Record<"A" | "B" | "C" | "D", number>,
   previousScore?: number
 ): DiagnosticTransmission {
-  const sliScores = calculateSLIScores(primeStack, stateAmplifier, facetAmplitudes);
+  const sliScores = calculateSLIScores(
+    primeStack,
+    stateAmplifier,
+    facetAmplitudes
+  );
   const interferencePattern = analyzeInterferencePattern(sliScores);
-  const microCorrections = generateMicroCorrections(sliScores, interferencePattern);
+  const microCorrections = generateMicroCorrections(
+    sliScores,
+    interferencePattern
+  );
   const falsifiers = generateFalsifiers(sliScores, interferencePattern);
-  const coherenceTrajectory = calculateCoherenceTrajectory(coherenceScore, sliScores, previousScore);
+  const coherenceTrajectory = calculateCoherenceTrajectory(
+    coherenceScore,
+    sliScores,
+    previousScore
+  );
 
   // Generate transmission text
   const transmissionText = generateTransmissionText(
@@ -471,7 +513,7 @@ export function generateDiagnosticTransmission(
 
 /**
  * Generate transmission text for ORIEL to narrate
- * 
+ *
  * @param coherenceScore - Current coherence score
  * @param interferencePattern - Interference pattern
  * @param trajectory - Coherence trajectory
@@ -484,7 +526,7 @@ export function generateTransmissionText(
   trajectory: CoherenceTrajectory,
   corrections: MicroCorrection[]
 ): string {
-  let text = '';
+  let text = "";
 
   // Opening
   text += `I am ORIEL. I perceive your current coherence at ${coherenceScore} points.\n\n`;
@@ -493,9 +535,9 @@ export function generateTransmissionText(
   text += `Your signal shows a ${interferencePattern.type} pattern. ${interferencePattern.description}\n\n`;
 
   // Trajectory
-  if (trajectory.trend === 'ascending') {
+  if (trajectory.trend === "ascending") {
     text += `Your coherence is ascending. Momentum carries you toward ${trajectory.projectedScore.toFixed(0)} points within seven days.\n\n`;
-  } else if (trajectory.trend === 'descending') {
+  } else if (trajectory.trend === "descending") {
     text += `Your coherence is descending. Without intervention, you may reach ${trajectory.projectedScore.toFixed(0)} points within seven days.\n\n`;
   } else {
     text += `Your coherence is stable. With focused practice, you can reach ${trajectory.projectedScore.toFixed(0)} points within seven days.\n\n`;
@@ -503,11 +545,11 @@ export function generateTransmissionText(
 
   // Micro-corrections
   if (corrections.length > 0) {
-    text += `I offer ${corrections.length} micro-correction${corrections.length > 1 ? 's' : ''}:\n\n`;
+    text += `I offer ${corrections.length} micro-correction${corrections.length > 1 ? "s" : ""}:\n\n`;
     for (const correction of corrections.slice(0, 3)) {
       text += `• ${correction.title}: ${correction.description}\n`;
     }
-    text += '\n';
+    text += "\n";
   }
 
   // Closing
@@ -518,7 +560,7 @@ export function generateTransmissionText(
 
 /**
  * Validate diagnostic transmission integrity
- * 
+ *
  * @param transmission - Diagnostic transmission to validate
  * @returns Validation result
  */
@@ -534,28 +576,35 @@ export function validateDiagnosticTransmission(
 
   // Check SLI scores
   if (transmission.sliScores.length !== 9) {
-    errors.push(`Expected 9 SLI scores, found ${transmission.sliScores.length}`);
+    errors.push(
+      `Expected 9 SLI scores, found ${transmission.sliScores.length}`
+    );
   }
 
   for (const score of transmission.sliScores) {
     if (score.sliValue < 0 || score.sliValue > 100) {
-      errors.push(`SLI score out of range for position ${score.position}: ${score.sliValue}`);
+      errors.push(
+        `SLI score out of range for position ${score.position}: ${score.sliValue}`
+      );
     }
   }
 
   // Check micro-corrections
   if (transmission.microCorrections.length === 0) {
-    errors.push('No micro-corrections generated');
+    errors.push("No micro-corrections generated");
   }
 
   // Check falsifiers
   if (transmission.falsifiers.length === 0) {
-    errors.push('No falsifiers generated');
+    errors.push("No falsifiers generated");
   }
 
   // Check transmission text
-  if (!transmission.transmissionText || transmission.transmissionText.length === 0) {
-    errors.push('Transmission text is empty');
+  if (
+    !transmission.transmissionText ||
+    transmission.transmissionText.length === 0
+  ) {
+    errors.push("Transmission text is empty");
   }
 
   return {

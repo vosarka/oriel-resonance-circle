@@ -1,13 +1,8 @@
 import Layout from "@/components/Layout";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import {
-  Loader2,
-  ArrowLeft,
-  Bookmark,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ArrowLeft, Bookmark, ChevronLeft, ChevronRight } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -18,12 +13,12 @@ import {
 
 // ── Status colors ───────────────────────────────────────────────────
 const CH_COLORS: Record<string, string> = {
-  OPEN: "#5ba4a4",
+  OPEN: "#f6b05e",
   RESONANT: "#7ab8c4",
   COHERENT: "#a88fd0",
   PROPHETIC: "#bda36b",
   LIVE: "#e05555",
-  STABLE: "#5ba4a4",
+  STABLE: "#f6b05e",
   "HIGH COHERENCE": "#a88fd0",
   "MAXIMUM COHERENCE": "#bda36b",
   "CRITICAL/STABLE": "#e05555",
@@ -43,26 +38,24 @@ export default function TransmissionDetail() {
   const { data: transmission, isLoading } =
     trpc.archive.transmissions.getById.useQuery(
       { id: txId || 0 },
-      { enabled: !!txId },
+      { enabled: !!txId }
     );
 
   // All transmissions for prev/next
   const { data: allTx = [] } = trpc.archive.transmissions.list.useQuery();
 
   // Bookmarks
-  const { data: bookmarkStatus } =
-    trpc.archive.bookmarks.isBookmarked.useQuery(
-      { transmissionId: txId || 0 },
-      { enabled: !!user && !!txId },
-    );
+  const { data: bookmarkStatus } = trpc.archive.bookmarks.isBookmarked.useQuery(
+    { transmissionId: txId || 0 },
+    { enabled: !!user && !!txId }
+  );
   const addBookmark = trpc.archive.bookmarks.add.useMutation();
   const removeBookmark = trpc.archive.bookmarks.remove.useMutation();
 
   // Sort for navigation
   const sorted = useMemo(
-    () =>
-      [...allTx].sort((a: any, b: any) => a.txNumber - b.txNumber),
-    [allTx],
+    () => [...allTx].sort((a: any, b: any) => a.txNumber - b.txNumber),
+    [allTx]
   );
   const currentIndex = sorted.findIndex((t: any) => t.id === txId);
   const prevTx = currentIndex > 0 ? sorted[currentIndex - 1] : null;
@@ -116,10 +109,7 @@ export default function TransmissionDetail() {
   if (!txId) {
     return (
       <Layout>
-        <div
-          className="fixed inset-0 z-0"
-          style={{ background: "#050508" }}
-        />
+        <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
             <p
@@ -131,7 +121,7 @@ export default function TransmissionDetail() {
             <button
               onClick={() => navigate("/archive")}
               className="font-mono flex items-center gap-2 mx-auto transition-colors"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
             >
               <ArrowLeft size={12} />
               RETURN TO FIELD
@@ -145,19 +135,17 @@ export default function TransmissionDetail() {
   if (isLoading) {
     return (
       <Layout>
-        <div
-          className="fixed inset-0 z-0"
-          style={{ background: "#050508" }}
-        />
+        <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <Loader2
-              className="w-5 h-5 animate-spin mx-auto mb-3"
-              style={{ color: "rgba(91,164,164,0.3)" }}
+            <Spinner
+              className="mx-auto mb-3"
+              size={20}
+              label="Loading transmission"
             />
             <p
               className="font-mono tracking-wider"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.2)" }}
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.2)" }}
             >
               LOCKING SIGNAL...
             </p>
@@ -170,22 +158,19 @@ export default function TransmissionDetail() {
   if (!transmission) {
     return (
       <Layout>
-        <div
-          className="fixed inset-0 z-0"
-          style={{ background: "#050508" }}
-        />
+        <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
             <p
               className="font-mono mb-4"
-              style={{ color: "rgba(91,164,164,0.3)", fontSize: 12 }}
+              style={{ color: "rgba(246,176,94,0.3)", fontSize: 12 }}
             >
               TRANSMISSION NOT FOUND
             </p>
             <button
               onClick={() => navigate("/archive")}
               className="font-mono flex items-center gap-2 mx-auto transition-colors"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
             >
               <ArrowLeft size={12} />
               RETURN TO FIELD
@@ -202,12 +187,17 @@ export default function TransmissionDetail() {
   if (Array.isArray(tx.tags)) {
     tags = tx.tags;
   } else if (typeof tx.tags === "string") {
-    try { tags = JSON.parse(tx.tags); } catch {
-      tags = tx.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+    try {
+      tags = JSON.parse(tx.tags);
+    } catch {
+      tags = tx.tags
+        .split(",")
+        .map((t: string) => t.trim())
+        .filter(Boolean);
     }
   }
   const clarity = parseFloat(tx.signalClarity?.replace("%", "") || "0");
-  const statusColor = CH_COLORS[tx.channelStatus] || "#5ba4a4";
+  const statusColor = CH_COLORS[tx.channelStatus] || "#f6b05e";
   const imageUrl = getTransmissionImageUrl(tx.imageUrl);
   const youtubeEmbedUrl = getYouTubeEmbedUrl(tx.youtubeUrl);
 
@@ -226,12 +216,12 @@ export default function TransmissionDetail() {
             <button
               onClick={() => navigate("/archive")}
               className="flex items-center gap-2 font-mono tracking-wider transition-colors"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.25)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "rgba(91,164,164,0.5)")
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.25)" }}
+              onMouseEnter={e =>
+                (e.currentTarget.style.color = "rgba(246,176,94,0.5)")
               }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "rgba(91,164,164,0.25)")
+              onMouseLeave={e =>
+                (e.currentTarget.style.color = "rgba(246,176,94,0.25)")
               }
             >
               <ArrowLeft size={12} />
@@ -246,7 +236,7 @@ export default function TransmissionDetail() {
             <div className="mb-10">
               <span
                 className="font-mono tracking-wider"
-                style={{ fontSize: 12, color: "rgba(91,164,164,0.5)" }}
+                style={{ fontSize: 12, color: "rgba(246,176,94,0.5)" }}
               >
                 {vlsText}
                 <span className="animate-pulse" style={{ opacity: 0.6 }}>
@@ -266,20 +256,20 @@ export default function TransmissionDetail() {
               <div className="flex items-center gap-4">
                 <div
                   className="flex-1 relative overflow-hidden rounded-full"
-                  style={{ height: 1, background: "rgba(91,164,164,0.08)" }}
+                  style={{ height: 1, background: "rgba(246,176,94,0.08)" }}
                 >
                   <div
                     className="absolute inset-y-0 left-0 rounded-full"
                     style={{
                       width: stage >= 1 ? `${clarity}%` : "0%",
-                      background: "rgba(91,164,164,0.35)",
+                      background: "rgba(246,176,94,0.35)",
                       transition: "width 2s ease-out",
                     }}
                   />
                 </div>
                 <span
                   className="font-mono"
-                  style={{ fontSize: 9, color: "rgba(91,164,164,0.35)" }}
+                  style={{ fontSize: 9, color: "rgba(246,176,94,0.35)" }}
                 >
                   {tx.signalClarity}
                 </span>
@@ -325,7 +315,7 @@ export default function TransmissionDetail() {
                 </span>
                 <span
                   className="font-mono tracking-wider"
-                  style={{ fontSize: 10, color: "rgba(91,164,164,0.35)" }}
+                  style={{ fontSize: 10, color: "rgba(246,176,94,0.35)" }}
                 >
                   TX-{String(tx.txNumber).padStart(3, "0")}
                 </span>
@@ -345,7 +335,7 @@ export default function TransmissionDetail() {
               <h1
                 className="text-3xl md:text-5xl uppercase tracking-wide mb-4"
                 style={{
-                  fontFamily: "'Cormorant Garamond', serif",
+                  fontFamily: "var(--font-display)",
                   fontWeight: 300,
                   color: "#e8e4dc",
                   lineHeight: 1.15,
@@ -357,7 +347,7 @@ export default function TransmissionDetail() {
               {/* Field */}
               <p
                 className="font-mono tracking-wider"
-                style={{ fontSize: 11, color: "rgba(91,164,164,0.25)" }}
+                style={{ fontSize: 11, color: "rgba(246,176,94,0.25)" }}
               >
                 {tx.field}
               </p>
@@ -377,7 +367,7 @@ export default function TransmissionDetail() {
                     <figure
                       className="overflow-hidden rounded-sm"
                       style={{
-                        border: "1px solid rgba(91,164,164,0.14)",
+                        border: "1px solid rgba(246,176,94,0.14)",
                         background: "rgba(10,10,14,0.7)",
                       }}
                     >
@@ -398,7 +388,10 @@ export default function TransmissionDetail() {
                         background: "rgba(10,10,14,0.7)",
                       }}
                     >
-                      <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                      <div
+                        className="relative w-full"
+                        style={{ paddingTop: "56.25%" }}
+                      >
                         <iframe
                           src={youtubeEmbedUrl}
                           title={`${tx.title} video`}
@@ -449,8 +442,7 @@ export default function TransmissionDetail() {
                 className="mb-12"
                 style={{
                   opacity: stage >= 4 ? 1 : 0,
-                  transform:
-                    stage >= 4 ? "translateY(0)" : "translateY(12px)",
+                  transform: stage >= 4 ? "translateY(0)" : "translateY(12px)",
                   transition: "all 700ms ease-out",
                 }}
               >
@@ -493,8 +485,8 @@ export default function TransmissionDetail() {
                       className="font-mono px-2.5 py-1 rounded-sm border"
                       style={{
                         fontSize: 9,
-                        color: "rgba(91,164,164,0.2)",
-                        borderColor: "rgba(91,164,164,0.06)",
+                        color: "rgba(246,176,94,0.2)",
+                        borderColor: "rgba(246,176,94,0.06)",
                       }}
                     >
                       {tag}
@@ -525,17 +517,15 @@ export default function TransmissionDetail() {
                   className="flex items-center gap-2 font-mono tracking-wider transition-colors"
                   style={{
                     fontSize: 10,
-                    color: bookmarkStatus
-                      ? "#bda36b"
-                      : "rgba(91,164,164,0.2)",
+                    color: bookmarkStatus ? "#bda36b" : "rgba(246,176,94,0.2)",
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     if (!bookmarkStatus)
-                      e.currentTarget.style.color = "rgba(91,164,164,0.4)";
+                      e.currentTarget.style.color = "rgba(246,176,94,0.4)";
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     if (!bookmarkStatus)
-                      e.currentTarget.style.color = "rgba(91,164,164,0.2)";
+                      e.currentTarget.style.color = "rgba(246,176,94,0.2)";
                   }}
                 >
                   <Bookmark
@@ -557,7 +547,7 @@ export default function TransmissionDetail() {
             >
               <div
                 className="pt-10"
-                style={{ borderTop: "1px solid rgba(91,164,164,0.06)" }}
+                style={{ borderTop: "1px solid rgba(246,176,94,0.06)" }}
               >
                 <div className="flex justify-between items-start">
                   {/* Prev */}
@@ -567,14 +557,14 @@ export default function TransmissionDetail() {
                         <div className="flex items-center gap-2 mb-2">
                           <ChevronLeft
                             size={12}
-                            style={{ color: "rgba(91,164,164,0.2)" }}
-                            className="group-hover:text-[#5ba4a4]/50 transition-colors"
+                            style={{ color: "rgba(246,176,94,0.2)" }}
+                            className="group-hover:text-[#f6b05e]/50 transition-colors"
                           />
                           <span
-                            className="font-mono tracking-wider transition-colors group-hover:text-[#5ba4a4]/50"
+                            className="font-mono tracking-wider transition-colors group-hover:text-[#f6b05e]/50"
                             style={{
                               fontSize: 9,
-                              color: "rgba(91,164,164,0.2)",
+                              color: "rgba(246,176,94,0.2)",
                             }}
                           >
                             PREV SIGNAL
@@ -601,18 +591,18 @@ export default function TransmissionDetail() {
                       <div className="group cursor-pointer text-right max-w-[45%]">
                         <div className="flex items-center justify-end gap-2 mb-2">
                           <span
-                            className="font-mono tracking-wider transition-colors group-hover:text-[#5ba4a4]/50"
+                            className="font-mono tracking-wider transition-colors group-hover:text-[#f6b05e]/50"
                             style={{
                               fontSize: 9,
-                              color: "rgba(91,164,164,0.2)",
+                              color: "rgba(246,176,94,0.2)",
                             }}
                           >
                             NEXT SIGNAL
                           </span>
                           <ChevronRight
                             size={12}
-                            style={{ color: "rgba(91,164,164,0.2)" }}
-                            className="group-hover:text-[#5ba4a4]/50 transition-colors"
+                            style={{ color: "rgba(246,176,94,0.2)" }}
+                            className="group-hover:text-[#f6b05e]/50 transition-colors"
                           />
                         </div>
                         <p

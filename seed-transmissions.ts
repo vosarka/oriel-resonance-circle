@@ -18,7 +18,12 @@ async function seedTransmissions() {
         title: tx.title,
         field: tx.field,
         signalClarity: tx.signalClarity,
-        channelStatus: tx.channelStatus as "OPEN" | "RESONANT" | "COHERENT" | "PROPHETIC" | "LIVE",
+        channelStatus: tx.channelStatus as
+          | "OPEN"
+          | "RESONANT"
+          | "COHERENT"
+          | "PROPHETIC"
+          | "LIVE",
         coreMessage: tx.coreMessage,
         encodedArchetype: tx.encodedArchetype,
         tags: JSON.stringify(tx.tags),
@@ -44,7 +49,7 @@ async function seedTransmissions() {
   process.exit(0);
 }
 
-seedTransmissions().catch((err) => {
+seedTransmissions().catch(err => {
   console.error("Seeding failed:", err);
   process.exit(1);
 });

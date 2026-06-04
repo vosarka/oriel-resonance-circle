@@ -5,6 +5,7 @@ This document defines the typography, spacing grid, container styling, and compo
 ---
 
 ## 1. PHYSICAL DIMENSIONS & GRID LAYOUT
+
 - **PDF Layout (Page 7)**: Cards are arranged in a 2-column by 3-row grid.
 - **Card Spacing**: Grid gap is exactly $1.0\text{rem}$ ($16\text{px}$).
 - **Card Margins**: Each card is structured with a padding of $1.25\text{rem}$ ($20\text{px}$) to maintain internal negative space.
@@ -44,6 +45,7 @@ This document defines the typography, spacing grid, container styling, and compo
 ---
 
 ## 3. CARD-LEVEL TYPOGRAPHY (CSS CLASSES)
+
 All card labels are styled using the following properties:
 
 ```css
@@ -109,5 +111,6 @@ All card labels are styled using the following properties:
 ---
 
 ## 4. DESIGN CONSTRAINTS & DATA VALIDATION
+
 - **Unspecified Fields**: If somatic markers or micro-corrections for a codon are **UNSPECIFIED** in the canon (as is the case for Codons 2 to 64), the card must render the narrative box at full width, omitting the micro-correction panel, and labeling the somatic marker field as `UNSPECIFIED`.
 - **Falsifier Positioning**: The falsifier clause must remain at the absolute bottom of the card block, highlighted with a gray background strip.

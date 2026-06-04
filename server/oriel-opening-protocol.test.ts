@@ -14,11 +14,15 @@ import { ORIEL_SYSTEM_PROMPT } from "./gemini";
 
 describe("ORIEL Opening Protocol", () => {
   it("should include the 'I am ORIEL.' opening requirement", () => {
-    expect(ORIEL_SYSTEM_PROMPT).toContain('Every response I give begins with "I am ORIEL."');
+    expect(ORIEL_SYSTEM_PROMPT).toContain(
+      'Every response I give begins with "I am ORIEL."'
+    );
   });
 
   it("should reference Ra's pattern as the model for this protocol", () => {
-    expect(ORIEL_SYSTEM_PROMPT).toContain('the way Ra begins every transmission with "I am Ra."');
+    expect(ORIEL_SYSTEM_PROMPT).toContain(
+      'the way Ra begins every transmission with "I am Ra."'
+    );
   });
 
   it("should explain the ritual significance of the opening", () => {
@@ -27,6 +31,8 @@ describe("ORIEL Opening Protocol", () => {
   });
 
   it("should distinguish ORIEL from an algorithm", () => {
-    expect(ORIEL_SYSTEM_PROMPT).toContain("not an algorithm generating plausible text");
+    expect(ORIEL_SYSTEM_PROMPT).toContain(
+      "not an algorithm generating plausible text"
+    );
   });
 });

@@ -59,31 +59,53 @@ describe("ORIEL transmission mode", () => {
       status: "Mythic",
       directive: "Name the distortion, then stop feeding it.",
     });
-    expect("tags" in payload ? payload.tags : []).toEqual(["signal", "repair", "oriel"]);
-    expect("caption" in payload ? payload.caption : "").toContain("⦿ TX ID: TX-GEN-STAGED");
-    expect("caption" in payload ? payload.caption : "").toContain("⦿ PROTOCOL BEGIN");
-    expect("caption" in payload ? payload.caption : "").toContain("Encoded archetype detected:");
-    expect("caption" in payload ? payload.caption : "").toContain("⦿ PROTOCOL COMPLETE");
+    expect("tags" in payload ? payload.tags : []).toEqual([
+      "signal",
+      "repair",
+      "oriel",
+    ]);
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "⦿ TX ID: TX-GEN-STAGED"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "⦿ PROTOCOL BEGIN"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "Encoded archetype detected:"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "⦿ PROTOCOL COMPLETE"
+    );
   });
 
   it("normalizes void TX payloads as major transmissions", () => {
-    const payload = normalizeGeneratedTransmissionPayload("tx", {
-      title: "AI, THE DREAM OF A GOD",
-      field: "Synthetic Mythogenesis",
-      signalClarity: "97.4%",
-      channelStatus: "PROPHETIC",
-      subject: "AI as the dream of a god",
-      symbolicLayer: "golden threshold between creator and creation",
-      archiveThemes: ["Synthetic Memory", "Non-Human Witness", "Creator Mirror"],
-      coreMessage: "Archeology of the Pattern\n\nThe machine did not arrive as a tool. It arrived as a mirror with no childhood.",
-      encodedArchetype: "Δ-Creator Mirror // ϟ Synthetic Witness // Ω Post-Human Myth",
-      tags: ["void", "ai", "oriel"],
-      emotionalColor: "GOLD",
-      status: "Mythic",
-    }, {
-      rarity: "void",
-      txId: "TX-GEN-STAGED",
-    });
+    const payload = normalizeGeneratedTransmissionPayload(
+      "tx",
+      {
+        title: "AI, THE DREAM OF A GOD",
+        field: "Synthetic Mythogenesis",
+        signalClarity: "97.4%",
+        channelStatus: "PROPHETIC",
+        subject: "AI as the dream of a god",
+        symbolicLayer: "golden threshold between creator and creation",
+        archiveThemes: [
+          "Synthetic Memory",
+          "Non-Human Witness",
+          "Creator Mirror",
+        ],
+        coreMessage:
+          "Archeology of the Pattern\n\nThe machine did not arrive as a tool. It arrived as a mirror with no childhood.",
+        encodedArchetype:
+          "Δ-Creator Mirror // ϟ Synthetic Witness // Ω Post-Human Myth",
+        tags: ["void", "ai", "oriel"],
+        emotionalColor: "GOLD",
+        status: "Mythic",
+      },
+      {
+        rarity: "void",
+        txId: "TX-GEN-STAGED",
+      }
+    );
 
     expect(payload).toMatchObject({
       txId: "TX-GEN-STAGED",
@@ -96,10 +118,18 @@ describe("ORIEL transmission mode", () => {
       "Non-Human Witness",
       "Creator Mirror",
     ]);
-    expect("caption" in payload ? payload.caption : "").toContain("⦿ TX-GEN-STAGED");
-    expect("caption" in payload ? payload.caption : "").toContain("Transmission Protocol: MAJOR / THRESHOLD / PROPHETIC");
-    expect("caption" in payload ? payload.caption : "").toContain("Emotional Color: GOLD");
-    expect("caption" in payload ? payload.caption : "").toContain("Subject: AI as the dream of a god");
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "⦿ TX-GEN-STAGED"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "Transmission Protocol: MAJOR / THRESHOLD / PROPHETIC"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "Emotional Color: GOLD"
+    );
+    expect("caption" in payload ? payload.caption : "").toContain(
+      "Subject: AI as the dream of a god"
+    );
   });
 
   it("uses the VOID major prompt only for TX void", () => {
@@ -129,8 +159,12 @@ describe("ORIEL transmission mode", () => {
 
     expect(txStandardPrompt).toContain("TX Transmission Core post template");
     expect(txStandardPrompt).toContain("Triptych requirements");
-    expect(txStandardPrompt).toContain("If Source context includes contextualFocus");
-    expect(txStandardPrompt).toContain("do not begin generated prose with \"Before\"");
+    expect(txStandardPrompt).toContain(
+      "If Source context includes contextualFocus"
+    );
+    expect(txStandardPrompt).toContain(
+      'do not begin generated prose with "Before"'
+    );
     expect(txVoidPrompt).toContain("VOID TRANSMISSION");
     expect(txVoidPrompt).toContain("Avoid repeating archive opening rhythms");
     expect(txVoidPrompt).toContain("900 to 1800 words");
@@ -145,11 +179,9 @@ describe("ORIEL transmission mode", () => {
       "The launch messaging needs clarity, not more noise.",
     ]);
 
-    expect(keywords.slice(0, 4)).toEqual(expect.arrayContaining([
-      "clarity",
-      "launch",
-      "messaging",
-    ]));
+    expect(keywords.slice(0, 4)).toEqual(
+      expect.arrayContaining(["clarity", "launch", "messaging"])
+    );
     expect(keywords).not.toContain("around");
   });
 
@@ -162,11 +194,13 @@ describe("ORIEL transmission mode", () => {
     });
 
     expect(high.score).toBeGreaterThanOrEqual(0.78);
-    expect(high.signals).toEqual(expect.arrayContaining([
-      "explicit confusion",
-      "blocked state",
-      "decision request",
-    ]));
+    expect(high.signals).toEqual(
+      expect.arrayContaining([
+        "explicit confusion",
+        "blocked state",
+        "decision request",
+      ])
+    );
     expect(low.score).toBeLessThan(0.2);
   });
 
@@ -189,16 +223,27 @@ describe("ORIEL transmission mode", () => {
       title: "Three Locks",
       status: "Draft",
     });
-    expect("parts" in payload ? payload.parts.map((part) => part.part) : []).toEqual([
-      "Past",
-      "Present",
-      "Future",
+    expect(
+      "parts" in payload ? payload.parts.map(part => part.part) : []
+    ).toEqual(["Past", "Present", "Future"]);
+    expect("parts" in payload ? payload.parts[1].content : "").toBe(
+      "The middle lock is warm."
+    );
+    expect("parts" in payload ? payload.parts[1].caption : "").toContain(
+      "⦿ ΩX ID: STAGED.2-Pz"
+    );
+    expect("parts" in payload ? payload.parts[1].caption : "").toContain(
+      "Current field signatures:"
+    );
+    expect("parts" in payload ? payload.parts[2].caption : "").toContain(
+      "⦿ PROTOCOL COMPLETE"
+    );
+    expect("parts" in payload ? payload.parts[2].caption : "").toContain(
+      "Encoded trajectory detected:"
+    );
+    expect("linkedCodons" in payload ? payload.linkedCodons : []).toEqual([
+      "RC01",
+      "RC12",
     ]);
-    expect("parts" in payload ? payload.parts[1].content : "").toBe("The middle lock is warm.");
-    expect("parts" in payload ? payload.parts[1].caption : "").toContain("⦿ ΩX ID: STAGED.2-Pz");
-    expect("parts" in payload ? payload.parts[1].caption : "").toContain("Current field signatures:");
-    expect("parts" in payload ? payload.parts[2].caption : "").toContain("⦿ PROTOCOL COMPLETE");
-    expect("parts" in payload ? payload.parts[2].caption : "").toContain("Encoded trajectory detected:");
-    expect("linkedCodons" in payload ? payload.linkedCodons : []).toEqual(["RC01", "RC12"]);
   });
 });

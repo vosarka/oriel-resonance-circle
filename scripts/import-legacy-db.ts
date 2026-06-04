@@ -13,18 +13,18 @@
  *   (plus carrierlockStates, codonReadings, bookmarks which depend on users)
  */
 
-import 'dotenv/config';
-import mysql from 'mysql2/promise';
-import fs from 'fs';
-import readline from 'readline';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import "dotenv/config";
+import mysql from "mysql2/promise";
+import fs from "fs";
+import readline from "readline";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const DB_FILES_DIR = path.resolve(
   __dirname,
-  '../../../../Vossari_Conduit-Hub/db-files'
+  "../../../../Vossari_Conduit-Hub/db-files"
 );
 
 // ─── CSV Parser ──────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const DB_FILES_DIR = path.resolve(
 function parseCSVLine(line: string): string[] {
   const values: string[] = [];
   let inQuotes = false;
-  let current = '';
+  let current = "";
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
@@ -43,9 +43,9 @@ function parseCSVLine(line: string): string[] {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       values.push(current);
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -68,7 +68,9 @@ async function readCSV(filePath: string): Promise<Record<string, string>[]> {
       isFirst = false;
     } else {
       const row: Record<string, string> = {};
-      headers.forEach((h, i) => { row[h] = values[i] ?? ''; });
+      headers.forEach((h, i) => {
+        row[h] = values[i] ?? "";
+      });
       rows.push(row);
     }
   }
@@ -80,8 +82,10 @@ async function readCSV(filePath: string): Promise<Record<string, string>[]> {
  * Read a CSV file that may contain multi-line quoted fields (e.g. ORIEL responses).
  * Reads the entire file into memory and does a single-pass parse.
  */
-async function readCSVFull(filePath: string): Promise<Record<string, string>[]> {
-  const text = await fs.promises.readFile(filePath, 'utf-8');
+async function readCSVFull(
+  filePath: string
+): Promise<Record<string, string>[]> {
+  const text = await fs.promises.readFile(filePath, "utf-8");
   const rows: Record<string, string>[] = [];
   let headers: string[] = [];
   let pos = 0;
@@ -90,14 +94,16 @@ async function readCSVFull(filePath: string): Promise<Record<string, string>[]> 
   while (pos < text.length) {
     const { row, nextPos } = parseCSVRecord(text, pos);
     pos = nextPos;
-    if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+    if (row.length === 0 || (row.length === 1 && row[0] === "")) continue;
 
     if (isFirst) {
       headers = row;
       isFirst = false;
     } else {
       const record: Record<string, string> = {};
-      headers.forEach((h, i) => { record[h] = row[i] ?? ''; });
+      headers.forEach((h, i) => {
+        record[h] = row[i] ?? "";
+      });
       rows.push(record);
     }
   }
@@ -105,21 +111,28 @@ async function readCSVFull(filePath: string): Promise<Record<string, string>[]> 
   return rows;
 }
 
-function parseCSVRecord(text: string, start: number): { row: string[]; nextPos: number } {
+function parseCSVRecord(
+  text: string,
+  start: number
+): { row: string[]; nextPos: number } {
   const fields: string[] = [];
   let pos = start;
 
   while (pos <= text.length) {
-    if (pos === text.length || text[pos] === '\n' || (text[pos] === '\r' && text[pos + 1] === '\n')) {
+    if (
+      pos === text.length ||
+      text[pos] === "\n" ||
+      (text[pos] === "\r" && text[pos + 1] === "\n")
+    ) {
       // Empty field at end of line
-      fields.push('');
-      pos += (text[pos] === '\r') ? 2 : (pos < text.length ? 1 : 0);
+      fields.push("");
+      pos += text[pos] === "\r" ? 2 : pos < text.length ? 1 : 0;
       break;
     }
 
     if (text[pos] === '"') {
       // Quoted field
-      let field = '';
+      let field = "";
       pos++; // skip opening quote
       while (pos < text.length) {
         if (text[pos] === '"') {
@@ -137,29 +150,34 @@ function parseCSVRecord(text: string, start: number): { row: string[]; nextPos: 
       }
       fields.push(field);
       // skip comma or newline after field
-      if (text[pos] === ',') {
+      if (text[pos] === ",") {
         pos++;
-      } else if (text[pos] === '\r' && text[pos + 1] === '\n') {
+      } else if (text[pos] === "\r" && text[pos + 1] === "\n") {
         pos += 2;
         break;
-      } else if (text[pos] === '\n' || pos === text.length) {
+      } else if (text[pos] === "\n" || pos === text.length) {
         pos++;
         break;
       }
     } else {
       // Unquoted field
-      let field = '';
-      while (pos < text.length && text[pos] !== ',' && text[pos] !== '\n' && text[pos] !== '\r') {
+      let field = "";
+      while (
+        pos < text.length &&
+        text[pos] !== "," &&
+        text[pos] !== "\n" &&
+        text[pos] !== "\r"
+      ) {
         field += text[pos];
         pos++;
       }
       fields.push(field);
-      if (text[pos] === ',') {
+      if (text[pos] === ",") {
         pos++;
-      } else if (text[pos] === '\r' && text[pos + 1] === '\n') {
+      } else if (text[pos] === "\r" && text[pos + 1] === "\n") {
         pos += 2;
         break;
-      } else if (text[pos] === '\n' || pos === text.length) {
+      } else if (text[pos] === "\n" || pos === text.length) {
         if (pos < text.length) pos++;
         break;
       }
@@ -172,7 +190,7 @@ function parseCSVRecord(text: string, start: number): { row: string[]; nextPos: 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function nv(val: string): string | null {
-  return val === '' || val === 'null' || val === 'NULL' ? null : val;
+  return val === "" || val === "null" || val === "NULL" ? null : val;
 }
 
 function ni(val: string, fallback = 0): number {
@@ -184,18 +202,18 @@ function ni(val: string, fallback = 0): number {
 
 function buildConnection() {
   const raw = process.env.DATABASE_URL;
-  if (!raw) throw new Error('DATABASE_URL is not set');
+  if (!raw) throw new Error("DATABASE_URL is not set");
 
   // Strip SSL query param for URL parsing
-  const stripped = raw.replace(/\?ssl=.*$/, '');
+  const stripped = raw.replace(/\?ssl=.*$/, "");
   const u = new URL(stripped);
 
   return mysql.createConnection({
     host: u.hostname,
-    port: parseInt(u.port || '4000'),
+    port: parseInt(u.port || "4000"),
     user: u.username,
     password: decodeURIComponent(u.password),
-    database: u.pathname.replace('/', ''),
+    database: u.pathname.replace("/", ""),
     ssl: { rejectUnauthorized: false },
     multipleStatements: false,
   });
@@ -204,7 +222,7 @@ function buildConnection() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('=== Oriel Legacy DB Import ===\n');
+  console.log("=== Oriel Legacy DB Import ===\n");
   console.log(`DB files directory: ${DB_FILES_DIR}\n`);
 
   if (!fs.existsSync(DB_FILES_DIR)) {
@@ -212,20 +230,20 @@ async function main() {
   }
 
   const conn = await buildConnection();
-  console.log('Connected to database.\n');
+  console.log("Connected to database.\n");
 
   try {
     // ── Clear dependent tables first ──────────────────────────────────────────
-    console.log('Clearing existing data (dependency order)...');
+    console.log("Clearing existing data (dependency order)...");
     for (const table of [
-      'codonReadings',
-      'carrierlockStates',
-      'bookmarks',
-      'orielMemories',
-      'orielUserProfiles',
-      'orielOversoulPatterns',
-      'chatMessages',
-      'users',
+      "codonReadings",
+      "carrierlockStates",
+      "bookmarks",
+      "orielMemories",
+      "orielUserProfiles",
+      "orielOversoulPatterns",
+      "chatMessages",
+      "users",
     ]) {
       await conn.execute(`DELETE FROM \`${table}\``);
       process.stdout.write(`  Cleared ${table}\n`);
@@ -233,8 +251,8 @@ async function main() {
     console.log();
 
     // ── 1. Users ─────────────────────────────────────────────────────────────
-    console.log('Importing users...');
-    const usersFile = path.join(DB_FILES_DIR, 'users_20260228_133000.csv');
+    console.log("Importing users...");
+    const usersFile = path.join(DB_FILES_DIR, "users_20260228_133000.csv");
     const usersRows = await readCSV(usersFile);
 
     for (const r of usersRows) {
@@ -251,12 +269,12 @@ async function main() {
           nv(r.name),
           nv(r.email),
           nv(r.loginMethod),
-          r.role || 'user',
+          r.role || "user",
           r.createdAt,
           r.updatedAt,
           r.lastSignedIn,
           nv(r.conduitId),
-          r.subscriptionStatus || 'free',
+          r.subscriptionStatus || "free",
           nv(r.paypalSubscriptionId),
           nv(r.subscriptionStartDate),
           nv(r.subscriptionRenewalDate),
@@ -268,8 +286,11 @@ async function main() {
     // ── 2. chatMessages (large — read all, batch insert) ─────────────────────
     // Note: content fields may contain newlines (ORIEL multi-line responses).
     // We read the whole file and do a quote-aware full parse.
-    console.log('Importing chatMessages (reading full file)...');
-    const chatFile = path.join(DB_FILES_DIR, 'chatMessages_20260228_132902.csv');
+    console.log("Importing chatMessages (reading full file)...");
+    const chatFile = path.join(
+      DB_FILES_DIR,
+      "chatMessages_20260228_132902.csv"
+    );
     const chatRows = await readCSVFull(chatFile);
 
     let chatCount = 0;
@@ -278,7 +299,7 @@ async function main() {
 
     const flushBatch = async () => {
       if (batch.length === 0) return;
-      const placeholders = batch.map(() => '(?, ?, ?, ?, ?)').join(', ');
+      const placeholders = batch.map(() => "(?, ?, ?, ?, ?)").join(", ");
       await conn.execute(
         `INSERT INTO chatMessages (id, userId, role, content, timestamp) VALUES ${placeholders}`,
         batch.flat()
@@ -289,7 +310,9 @@ async function main() {
     };
 
     for (const r of chatRows) {
-      const ts = nv(r.timestamp) ?? new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const ts =
+        nv(r.timestamp) ??
+        new Date().toISOString().replace("T", " ").substring(0, 19);
       batch.push([ni(r.id), ni(r.userId), r.role, r.content, ts]);
       if (batch.length >= BATCH) await flushBatch();
     }
@@ -297,8 +320,11 @@ async function main() {
     console.log(`\n  Imported ${chatCount} chat messages.\n`);
 
     // ── 3. orielMemories ──────────────────────────────────────────────────────
-    console.log('Importing orielMemories...');
-    const memFile = path.join(DB_FILES_DIR, 'orielMemories_20260228_133017.csv');
+    console.log("Importing orielMemories...");
+    const memFile = path.join(
+      DB_FILES_DIR,
+      "orielMemories_20260228_133017.csv"
+    );
     const memRows = await readCSV(memFile);
 
     for (const r of memRows) {
@@ -315,8 +341,8 @@ async function main() {
           ni(r.importance, 5),
           ni(r.accessCount, 0),
           r.lastAccessed,
-          r.source || 'conversation',
-          r.isActive === '1' ? 1 : 0,
+          r.source || "conversation",
+          r.isActive === "1" ? 1 : 0,
           r.createdAt,
           r.updatedAt,
         ]
@@ -325,8 +351,11 @@ async function main() {
     console.log(`  Imported ${memRows.length} memories.\n`);
 
     // ── 4. orielUserProfiles ─────────────────────────────────────────────────
-    console.log('Importing orielUserProfiles...');
-    const profileFile = path.join(DB_FILES_DIR, 'orielUserProfiles_20260228_133049.csv');
+    console.log("Importing orielUserProfiles...");
+    const profileFile = path.join(
+      DB_FILES_DIR,
+      "orielUserProfiles_20260228_133049.csv"
+    );
     const profileRows = await readCSV(profileFile);
 
     for (const r of profileRows) {
@@ -354,8 +383,11 @@ async function main() {
     console.log(`  Imported ${profileRows.length} user profiles.\n`);
 
     // ── 5. orielOversoulPatterns ─────────────────────────────────────────────
-    console.log('Importing orielOversoulPatterns...');
-    const patternFile = path.join(DB_FILES_DIR, 'orielOversoulPatterns_20260228_133025.csv');
+    console.log("Importing orielOversoulPatterns...");
+    const patternFile = path.join(
+      DB_FILES_DIR,
+      "orielOversoulPatterns_20260228_133025.csv"
+    );
     const patternRows = await readCSV(patternFile);
 
     for (const r of patternRows) {
@@ -379,16 +411,15 @@ async function main() {
     }
     console.log(`  Imported ${patternRows.length} oversoul patterns.\n`);
 
-    console.log('=== Import complete! ===');
-    console.log('Note: signals, artifacts, transmissions, oracles, bookmarks');
-    console.log('      were not in the export and remain as-is.\n');
-
+    console.log("=== Import complete! ===");
+    console.log("Note: signals, artifacts, transmissions, oracles, bookmarks");
+    console.log("      were not in the export and remain as-is.\n");
   } finally {
     await conn.end();
   }
 }
 
 main().catch(err => {
-  console.error('\nImport failed:', err.message || err);
+  console.error("\nImport failed:", err.message || err);
   process.exit(1);
 });

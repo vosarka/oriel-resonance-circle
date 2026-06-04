@@ -31,7 +31,7 @@ function trimInline(text: string, maxChars: number): string {
 export function compactConversationHistory(
   conversationHistory: Array<{ role: string; content: string }> = [],
   maxMessages: number = 4,
-  maxCharsPerMessage: number = 220,
+  maxCharsPerMessage: number = 220
 ): string {
   const recent = conversationHistory.slice(-maxMessages);
   if (recent.length === 0) return "";
@@ -65,11 +65,16 @@ export async function buildRetrievalLayer({
 
   if (includeRuntimeProfile) {
     try {
-      const { buildActiveRuntimeProfileContext } = await import("./oriel-autonomy");
+      const { buildActiveRuntimeProfileContext } = await import(
+        "./oriel-autonomy"
+      );
       const runtimeProfileContext = await buildActiveRuntimeProfileContext();
       if (runtimeProfileContext) parts.push(runtimeProfileContext);
     } catch (error) {
-      console.warn("[buildRetrievalLayer] Failed to load runtime profile context:", error);
+      console.warn(
+        "[buildRetrievalLayer] Failed to load runtime profile context:",
+        error
+      );
     }
   }
 
@@ -132,11 +137,20 @@ export async function buildWorkingSessionLayer({
 
   if (includeFieldState && userMessage?.trim()) {
     try {
-      const { buildFieldStateContext } = await import("./oriel-interaction-protocol");
-      const fieldState = await buildFieldStateContext(userId, userMessage, conversationHistory);
+      const { buildFieldStateContext } = await import(
+        "./oriel-interaction-protocol"
+      );
+      const fieldState = await buildFieldStateContext(
+        userId,
+        userMessage,
+        conversationHistory
+      );
       if (fieldState) parts.push(fieldState);
     } catch (error) {
-      console.warn("[buildWorkingSessionLayer] Failed to build field state:", error);
+      console.warn(
+        "[buildWorkingSessionLayer] Failed to build field state:",
+        error
+      );
     }
   }
 
@@ -151,15 +165,13 @@ export async function buildWorkingSessionLayer({
 }
 
 export async function buildLayeredOrielPromptContext(
-  options: BuildOrielLayeredContextOptions = {},
+  options: BuildOrielLayeredContextOptions = {}
 ): Promise<string> {
   const stableCore = buildStableCoreContext();
   const retrievalLayer = await buildRetrievalLayer(options);
   const workingSessionLayer = await buildWorkingSessionLayer(options);
 
-  return [
-    stableCore,
-    retrievalLayer,
-    workingSessionLayer,
-  ].filter(Boolean).join("\n\n");
+  return [stableCore, retrievalLayer, workingSessionLayer]
+    .filter(Boolean)
+    .join("\n\n");
 }

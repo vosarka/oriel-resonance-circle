@@ -13,9 +13,9 @@
  * All data is read-only at runtime. The JSON is never mutated.
  */
 
-import rawCodons from './data/vrc-codons.json';
+import rawCodons from "./data/vrc-codons.json";
 
-type FacetLetter = 'A' | 'B' | 'C' | 'D';
+type FacetLetter = "A" | "B" | "C" | "D";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -40,8 +40,8 @@ export interface CodonFrequency {
 export interface CodonEntry {
   id: number;
   code: string;
-  name: string;               // Vossari name (e.g. "AURORA")
-  traditional_name: string;   // HD gate name (e.g. "The Creative")
+  name: string; // Vossari name (e.g. "AURORA")
+  traditional_name: string; // HD gate name (e.g. "The Creative")
   binary: string;
   chemical_marker: string;
   archetype_role: string;
@@ -87,7 +87,10 @@ export function getFrequencyData(codonId: number): CodonFrequency | undefined {
 }
 
 /** Full data for a specific facet (A/B/C/D). */
-export function getFacetData(codonId: number, facet: FacetLetter): CodonFacetData | undefined {
+export function getFacetData(
+  codonId: number,
+  facet: FacetLetter
+): CodonFacetData | undefined {
   return loadLibrary().get(codonId)?.facets[facet];
 }
 
@@ -95,6 +98,9 @@ export function getFacetData(codonId: number, facet: FacetLetter): CodonFacetDat
  * Micro-correction text for a codon+facet combination.
  * This is the actual spec content, not an algorithmic placeholder.
  */
-export function getMicroCorrection(codonId: number, facet: FacetLetter): string | undefined {
+export function getMicroCorrection(
+  codonId: number,
+  facet: FacetLetter
+): string | undefined {
   return loadLibrary().get(codonId)?.facets[facet]?.micro_correction;
 }

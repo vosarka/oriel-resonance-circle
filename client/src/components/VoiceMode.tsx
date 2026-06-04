@@ -33,17 +33,28 @@ type ConnectionStatus = "connecting" | "connected" | "error" | "closed";
 // Map our internal orb states to ElevenLabs AgentState
 function toAgentState(orbState: OrbState): AgentState {
   switch (orbState) {
-    case "booting": return "thinking";
-    case "idle": return "listening";
-    case "processing": return "listening";
-    case "speaking": return "talking";
+    case "booting":
+      return "thinking";
+    case "idle":
+      return "listening";
+    case "processing":
+      return "listening";
+    case "speaking":
+      return "talking";
   }
 }
 
-export default function VoiceMode({ onClose, conversationId, onConversationCreated, audioContext }: VoiceModeProps) {
+export default function VoiceMode({
+  onClose,
+  conversationId,
+  onConversationCreated,
+  audioContext,
+}: VoiceModeProps) {
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
-  const [transcript, setTranscript] = useState<Array<{ role: "user" | "assistant"; text: string }>>([]);
+  const [transcript, setTranscript] = useState<
+    Array<{ role: "user" | "assistant"; text: string }>
+  >([]);
   const [currentUserText, setCurrentUserText] = useState("");
   const [currentAssistantText, setCurrentAssistantText] = useState("");
   const [isWaitMode, setIsWaitMode] = useState(false);
@@ -81,16 +92,16 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const outputAnalyserRef = useRef<AnalyserNode | null>(null);
 
   // Dynamic color shifting based on output volume intensity:
-  //   idle/silent  → #002633 (dark teal, near black)
-  //   speaking     → #1935a3 (deep blue)
-  //   peak moment  → #818fc5 (bright lavender, rare)
-  const COLORS_IDLE: [string, string] = ["#ffedbd", "#002633"];
+  //   idle/silent  → #120e0a (dark amber, near black)
+  //   speaking     → #b96f32 (deep amber)
+  //   peak moment  → #e1c68b (bright gold, rare)
+  const COLORS_IDLE: [string, string] = ["#ffedbd", "#120e0a"];
   const orbColorsRef = useRef<[string, string]>(COLORS_IDLE);
   const colorRafRef = useRef<number>(0);
 
   useEffect(() => {
     if (orbState !== "speaking") {
-      orbColorsRef.current = ["#ffedbd", "#002633"];
+      orbColorsRef.current = ["#ffedbd", "#120e0a"];
       if (colorRafRef.current) cancelAnimationFrame(colorRafRef.current);
       return;
     }
@@ -99,7 +110,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     const pump = () => {
       const analyser = outputAnalyserRef.current;
       if (!analyser) {
-        orbColorsRef.current = ["#ffedbd", "#1935a3"];
+        orbColorsRef.current = ["#ffedbd", "#b96f32"];
         colorRafRef.current = requestAnimationFrame(pump);
         return;
       }
@@ -113,17 +124,17 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       }
       const rms = Math.sqrt(sum / data.length);
 
-      // 3-tier color: black(#002633) → blue(#1935a3) → lavender(#818fc5)
+      // 3-tier color: black(#120e0a) → amber(#b96f32) → gold(#e1c68b)
       let color2: string;
       if (rms > 0.15) {
-        // Intensity peak — rare bright lavender flash
-        color2 = "#818fc5";
+        // Intensity peak — rare bright gold flash
+        color2 = "#e1c68b";
       } else if (rms > 0.02) {
-        // Normal speaking — deep blue
-        color2 = "#1935a3";
+        // Normal speaking — deep amber
+        color2 = "#b96f32";
       } else {
-        // Quiet/pause — dark teal
-        color2 = "#002633";
+        // Quiet/pause — dark amber
+        color2 = "#120e0a";
       }
 
       orbColorsRef.current = ["#ffedbd", color2];
@@ -139,10 +150,18 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   const transcriptEndRef = useRef<HTMLDivElement>(null);
 
   // Keep ref in sync with state for use in stale closures
-  useEffect(() => { currentUserTextRef.current = currentUserText; }, [currentUserText]);
-  useEffect(() => { currentAssistantTextRef.current = currentAssistantText; }, [currentAssistantText]);
-  useEffect(() => { isWaitModeRef.current = isWaitMode; }, [isWaitMode]);
-  useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+  useEffect(() => {
+    currentUserTextRef.current = currentUserText;
+  }, [currentUserText]);
+  useEffect(() => {
+    currentAssistantTextRef.current = currentAssistantText;
+  }, [currentAssistantText]);
+  useEffect(() => {
+    isWaitModeRef.current = isWaitMode;
+  }, [isWaitMode]);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // Auto-scroll transcript
   useEffect(() => {
@@ -176,14 +195,15 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     // Gentle output: cap at 0.02 for subtle motion
     const rms = Math.sqrt(sum / data.length);
-    return Math.min(0.10, rms * 0.5);
+    return Math.min(0.1, rms * 0.5);
   }, []);
 
   // ── Audio playback ──────────────────────────────────────────────────────────
 
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
-      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
+      audioCtxRef.current = new (window.AudioContext ||
+        (window as any).webkitAudioContext)({
         sampleRate: 24000,
       });
     }
@@ -204,26 +224,29 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     return samples;
   }, []);
 
-  const playAudioChunk = useCallback((pcm16Base64: string) => {
-    const ctx = getAudioContext();
-    const binaryStr = atob(pcm16Base64);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
+  const playAudioChunk = useCallback(
+    (pcm16Base64: string) => {
+      const ctx = getAudioContext();
+      const binaryStr = atob(pcm16Base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
 
-    // Convert PCM16 LE to Float32
-    const int16 = new Int16Array(bytes.buffer);
-    const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) {
-      float32[i] = int16[i] / 32768;
-    }
+      // Convert PCM16 LE to Float32
+      const int16 = new Int16Array(bytes.buffer);
+      const float32 = new Float32Array(int16.length);
+      for (let i = 0; i < int16.length; i++) {
+        float32[i] = int16[i] / 32768;
+      }
 
-    audioQueueRef.current.push(applyClickFade(float32));
-    if (!isPlayingRef.current) {
-      drainAudioQueue(ctx);
-    }
-  }, [applyClickFade, getAudioContext]);
+      audioQueueRef.current.push(applyClickFade(float32));
+      if (!isPlayingRef.current) {
+        drainAudioQueue(ctx);
+      }
+    },
+    [applyClickFade, getAudioContext]
+  );
 
   const drainAudioQueue = useCallback((ctx: AudioContext) => {
     if (audioQueueRef.current.length === 0) {
@@ -267,7 +290,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     audioQueueRef.current = [];
     // Stop currently playing source
     if (playbackSourceRef.current) {
-      try { playbackSourceRef.current.stop(); } catch {}
+      try {
+        playbackSourceRef.current.stop();
+      } catch {}
       playbackSourceRef.current = null;
     }
     if (window.speechSynthesis) {
@@ -299,15 +324,20 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
     const sendResponseCreate = () => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
-      wsRef.current.send(JSON.stringify({
-        type: "response.create",
-        voiceIntroAlreadySpoken: voiceIntroAlreadySpokenRef.current,
-      }));
+      wsRef.current.send(
+        JSON.stringify({
+          type: "response.create",
+          voiceIntroAlreadySpoken: voiceIntroAlreadySpokenRef.current,
+        })
+      );
       hasSpeechSinceLastResponseRef.current = false;
       hasAssistantResponseStartedRef.current = false;
     };
 
-    if (hasSpeechSinceLastResponseRef.current && !hasInputCommittedRef.current) {
+    if (
+      hasSpeechSinceLastResponseRef.current &&
+      !hasInputCommittedRef.current
+    ) {
       ws.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
       hasInputCommittedRef.current = true;
       window.setTimeout(sendResponseCreate, COMMIT_TO_RESPONSE_DELAY_MS);
@@ -317,350 +347,416 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     sendResponseCreate();
   }, [clearPendingResponseTimer]);
 
-  const scheduleAssistantResponse = useCallback((source: "server" | "local" = "server") => {
-    const shouldRequestManualResponse = shouldVoiceModeRequestManualResponse({
-      realtimeAutoResponds: REALTIME_AUTO_RESPONSE_ENABLED,
-      hasSpeechSinceLastResponse: hasSpeechSinceLastResponseRef.current,
-      isWaitMode: isWaitModeRef.current,
-    });
-    if (!shouldRequestManualResponse) {
-      hasPendingResponseRef.current = false;
+  const scheduleAssistantResponse = useCallback(
+    (source: "server" | "local" = "server") => {
+      const shouldRequestManualResponse = shouldVoiceModeRequestManualResponse({
+        realtimeAutoResponds: REALTIME_AUTO_RESPONSE_ENABLED,
+        hasSpeechSinceLastResponse: hasSpeechSinceLastResponseRef.current,
+        isWaitMode: isWaitModeRef.current,
+      });
+      if (!shouldRequestManualResponse) {
+        hasPendingResponseRef.current = false;
+        setOrbState("idle");
+        return;
+      }
+
+      clearPendingResponseTimer();
+      hasPendingResponseRef.current = true;
+      console.log(
+        `[VoiceMode] Scheduling ORIEL response from ${source} turn end`
+      );
+
+      if (isWaitModeRef.current) {
+        setOrbState("idle");
+        return;
+      }
+
+      pendingResponseTimerRef.current = window.setTimeout(() => {
+        requestAssistantResponse();
+      }, RESPONSE_DELAY_MS);
+    },
+    [clearPendingResponseTimer, requestAssistantResponse]
+  );
+
+  const beginUserSpeech = useCallback(
+    (source: "server" | "local") => {
+      if (isUserSpeakingRef.current) return;
+      console.log(`[VoiceMode] Speech started (${source})`);
+      isUserSpeakingRef.current = true;
+      hasSpeechSinceLastResponseRef.current = true;
+      hasInputCommittedRef.current = false;
+      clearPendingResponseTimer();
+      stopPlayback();
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
+      }
+      setOrbState("processing");
+    },
+    [clearPendingResponseTimer, stopPlayback]
+  );
+
+  const endUserSpeech = useCallback(
+    (source: "server" | "local") => {
+      if (!isUserSpeakingRef.current && source === "local") return;
+      console.log(`[VoiceMode] Speech stopped (${source})`);
+      isUserSpeakingRef.current = false;
+      scheduleAssistantResponse(source);
       setOrbState("idle");
-      return;
-    }
-
-    clearPendingResponseTimer();
-    hasPendingResponseRef.current = true;
-    console.log(`[VoiceMode] Scheduling ORIEL response from ${source} turn end`);
-
-    if (isWaitModeRef.current) {
-      setOrbState("idle");
-      return;
-    }
-
-    pendingResponseTimerRef.current = window.setTimeout(() => {
-      requestAssistantResponse();
-    }, RESPONSE_DELAY_MS);
-  }, [clearPendingResponseTimer, requestAssistantResponse]);
-
-  const beginUserSpeech = useCallback((source: "server" | "local") => {
-    if (isUserSpeakingRef.current) return;
-    console.log(`[VoiceMode] Speech started (${source})`);
-    isUserSpeakingRef.current = true;
-    hasSpeechSinceLastResponseRef.current = true;
-    hasInputCommittedRef.current = false;
-    clearPendingResponseTimer();
-    stopPlayback();
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: "response.cancel" }));
-    }
-    setOrbState("processing");
-  }, [clearPendingResponseTimer, stopPlayback]);
-
-  const endUserSpeech = useCallback((source: "server" | "local") => {
-    if (!isUserSpeakingRef.current && source === "local") return;
-    console.log(`[VoiceMode] Speech stopped (${source})`);
-    isUserSpeakingRef.current = false;
-    scheduleAssistantResponse(source);
-    setOrbState("idle");
-  }, [scheduleAssistantResponse]);
+    },
+    [scheduleAssistantResponse]
+  );
 
   // ── Mic capture ─────────────────────────────────────────────────────────────
 
-  const startMicCapture = useCallback((ws: WebSocket) => {
-    navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true } })
-      .then(async (stream) => {
-        streamRef.current = stream;
-        const ctx = getAudioContext();
-        if (ctx.state === "suspended") {
-          try {
-            await ctx.resume();
-          } catch (err) {
-            console.warn("[VoiceMode] AudioContext resume failed:", err);
-          }
-        }
-        console.log(`[VoiceMode] Mic capture active (${ctx.sampleRate}Hz, ${ctx.state})`);
-
-        const source = ctx.createMediaStreamSource(stream);
-
-        // AnalyserNode for mic input volume → audio-reactive Orb
-        const inputAnalyser = ctx.createAnalyser();
-        inputAnalyser.fftSize = 256;
-        inputAnalyserRef.current = inputAnalyser;
-        source.connect(inputAnalyser);
-
-        // ScriptProcessorNode for PCM capture (4096 samples per buffer)
-        const processor = ctx.createScriptProcessor(4096, 1, 1);
-        processorRef.current = processor;
-
-        processor.onaudioprocess = (e) => {
-          if (
-            !shouldVoiceModeStreamMicAudio({
-              websocketOpen: ws.readyState === WebSocket.OPEN,
-              isMuted: isMutedRef.current,
-              isWaitMode: isWaitModeRef.current,
-            })
-          ) {
-            resetLocalSpeechDetection();
-            return;
-          }
-
-          const inputData = e.inputBuffer.getChannelData(0);
-
-          // Resample to 24kHz if needed
-          const targetSampleRate = 24000;
-          let pcmData: Float32Array;
-          if (ctx.sampleRate !== targetSampleRate) {
-            const ratio = ctx.sampleRate / targetSampleRate;
-            const newLength = Math.round(inputData.length / ratio);
-            pcmData = new Float32Array(newLength);
-            for (let i = 0; i < newLength; i++) {
-              const srcIndex = Math.min(Math.round(i * ratio), inputData.length - 1);
-              pcmData[i] = inputData[srcIndex];
+  const startMicCapture = useCallback(
+    (ws: WebSocket) => {
+      navigator.mediaDevices
+        .getUserMedia({
+          audio: {
+            sampleRate: 24000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+          },
+        })
+        .then(async stream => {
+          streamRef.current = stream;
+          const ctx = getAudioContext();
+          if (ctx.state === "suspended") {
+            try {
+              await ctx.resume();
+            } catch (err) {
+              console.warn("[VoiceMode] AudioContext resume failed:", err);
             }
-          } else {
-            pcmData = inputData;
           }
+          console.log(
+            `[VoiceMode] Mic capture active (${ctx.sampleRate}Hz, ${ctx.state})`
+          );
 
-          let sum = 0;
-          for (let i = 0; i < pcmData.length; i++) {
-            sum += pcmData[i] * pcmData[i];
+          const source = ctx.createMediaStreamSource(stream);
+
+          // AnalyserNode for mic input volume → audio-reactive Orb
+          const inputAnalyser = ctx.createAnalyser();
+          inputAnalyser.fftSize = 256;
+          inputAnalyserRef.current = inputAnalyser;
+          source.connect(inputAnalyser);
+
+          // ScriptProcessorNode for PCM capture (4096 samples per buffer)
+          const processor = ctx.createScriptProcessor(4096, 1, 1);
+          processorRef.current = processor;
+
+          processor.onaudioprocess = e => {
+            if (
+              !shouldVoiceModeStreamMicAudio({
+                websocketOpen: ws.readyState === WebSocket.OPEN,
+                isMuted: isMutedRef.current,
+                isWaitMode: isWaitModeRef.current,
+              })
+            ) {
+              resetLocalSpeechDetection();
+              return;
+            }
+
+            const inputData = e.inputBuffer.getChannelData(0);
+
+            // Resample to 24kHz if needed
+            const targetSampleRate = 24000;
+            let pcmData: Float32Array;
+            if (ctx.sampleRate !== targetSampleRate) {
+              const ratio = ctx.sampleRate / targetSampleRate;
+              const newLength = Math.round(inputData.length / ratio);
+              pcmData = new Float32Array(newLength);
+              for (let i = 0; i < newLength; i++) {
+                const srcIndex = Math.min(
+                  Math.round(i * ratio),
+                  inputData.length - 1
+                );
+                pcmData[i] = inputData[srcIndex];
+              }
+            } else {
+              pcmData = inputData;
+            }
+
+            let sum = 0;
+            for (let i = 0; i < pcmData.length; i++) {
+              sum += pcmData[i] * pcmData[i];
+            }
+            const rms = Math.sqrt(sum / Math.max(1, pcmData.length));
+            const now = performance.now();
+            if (
+              !shouldVoiceModeInterruptPlayback({
+                speechSource: "local",
+                assistantResponseActive: assistantResponseActiveRef.current,
+                isPlaying: isPlayingRef.current,
+              })
+            ) {
+              resetLocalSpeechDetection();
+              return;
+            }
+
+            if (rms >= LOCAL_SPEECH_RMS_THRESHOLD) {
+              localSilenceStartedAtRef.current = null;
+              if (!localSpeechActiveRef.current) {
+                if (localSpeechStartedAtRef.current === null) {
+                  localSpeechStartedAtRef.current = now;
+                }
+                if (
+                  now - localSpeechStartedAtRef.current >=
+                  LOCAL_MIN_SPEECH_MS
+                ) {
+                  localSpeechActiveRef.current = true;
+                  beginUserSpeech("local");
+                }
+              }
+            } else {
+              localSpeechStartedAtRef.current = null;
+              if (localSpeechActiveRef.current) {
+                if (localSilenceStartedAtRef.current === null) {
+                  localSilenceStartedAtRef.current = now;
+                }
+                if (
+                  now - localSilenceStartedAtRef.current >=
+                  LOCAL_SILENCE_TO_END_MS
+                ) {
+                  localSpeechActiveRef.current = false;
+                  localSilenceStartedAtRef.current = null;
+                  endUserSpeech("local");
+                }
+              }
+            }
+
+            // Convert Float32 to PCM16
+            const int16 = new Int16Array(pcmData.length);
+            for (let i = 0; i < pcmData.length; i++) {
+              const s = Math.max(-1, Math.min(1, pcmData[i]));
+              int16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+            }
+
+            // Encode as base64
+            const bytes = new Uint8Array(int16.buffer);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const base64 = btoa(binary);
+            if (!hasLoggedAudioChunkRef.current) {
+              hasLoggedAudioChunkRef.current = true;
+              console.log(
+                `[VoiceMode] Sending mic audio to Inworld (${pcmData.length} PCM16 samples/chunk)`
+              );
+            }
+
+            ws.send(
+              JSON.stringify({
+                type: "input_audio_buffer.append",
+                audio: base64,
+              })
+            );
+          };
+
+          source.connect(processor);
+          // Connect through a zero-gain node so ScriptProcessorNode fires without routing mic audio to speakers
+          const silentSink = ctx.createGain();
+          silentSink.gain.value = 0;
+          processor.connect(silentSink);
+          silentSink.connect(ctx.destination);
+        })
+        .catch(err => {
+          console.error("[VoiceMode] Mic access denied:", err);
+          setStatus("error");
+        });
+    },
+    [beginUserSpeech, endUserSpeech, getAudioContext, resetLocalSpeechDetection]
+  );
+
+  // ── Server event handler ────────────────────────────────────────────────────
+
+  const handleServerEvent = useCallback(
+    (msg: any) => {
+      const type = msg?.type;
+      if (!type) return;
+
+      switch (type) {
+        case "session.ready":
+          console.log("[VoiceMode] Session ready");
+          setStatus("connected");
+          setOrbState("idle");
+          // Start mic capture now that session is ready
+          if (wsRef.current) {
+            startMicCapture(wsRef.current);
           }
-          const rms = Math.sqrt(sum / Math.max(1, pcmData.length));
-          const now = performance.now();
+          break;
+
+        case "session.created":
+        case "session.updated":
+          // Config confirmed
+          break;
+
+        case "conversation.created":
+          // Server created a conversation — notify parent
+          if (msg.conversationId) {
+            onConversationCreated(msg.conversationId);
+          }
+          break;
+
+        case "input_audio_buffer.speech_started":
           if (
             !shouldVoiceModeInterruptPlayback({
-              speechSource: "local",
+              speechSource: "server",
               assistantResponseActive: assistantResponseActiveRef.current,
               isPlaying: isPlayingRef.current,
             })
           ) {
-            resetLocalSpeechDetection();
-            return;
+            console.log(
+              "[VoiceMode] Ignoring likely echo while ORIEL is speaking"
+            );
+            break;
           }
-
-          if (rms >= LOCAL_SPEECH_RMS_THRESHOLD) {
-            localSilenceStartedAtRef.current = null;
-            if (!localSpeechActiveRef.current) {
-              if (localSpeechStartedAtRef.current === null) {
-                localSpeechStartedAtRef.current = now;
-              }
-              if (now - localSpeechStartedAtRef.current >= LOCAL_MIN_SPEECH_MS) {
-                localSpeechActiveRef.current = true;
-                beginUserSpeech("local");
-              }
-            }
-          } else {
-            localSpeechStartedAtRef.current = null;
-            if (localSpeechActiveRef.current) {
-              if (localSilenceStartedAtRef.current === null) {
-                localSilenceStartedAtRef.current = now;
-              }
-              if (now - localSilenceStartedAtRef.current >= LOCAL_SILENCE_TO_END_MS) {
-                localSpeechActiveRef.current = false;
-                localSilenceStartedAtRef.current = null;
-                endUserSpeech("local");
-              }
-            }
-          }
-
-          // Convert Float32 to PCM16
-          const int16 = new Int16Array(pcmData.length);
-          for (let i = 0; i < pcmData.length; i++) {
-            const s = Math.max(-1, Math.min(1, pcmData[i]));
-            int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-          }
-
-          // Encode as base64
-          const bytes = new Uint8Array(int16.buffer);
-          let binary = "";
-          for (let i = 0; i < bytes.length; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          const base64 = btoa(binary);
-          if (!hasLoggedAudioChunkRef.current) {
-            hasLoggedAudioChunkRef.current = true;
-            console.log(`[VoiceMode] Sending mic audio to Inworld (${pcmData.length} PCM16 samples/chunk)`);
-          }
-
-          ws.send(JSON.stringify({
-            type: "input_audio_buffer.append",
-            audio: base64,
-          }));
-        };
-
-        source.connect(processor);
-        // Connect through a zero-gain node so ScriptProcessorNode fires without routing mic audio to speakers
-        const silentSink = ctx.createGain();
-        silentSink.gain.value = 0;
-        processor.connect(silentSink);
-        silentSink.connect(ctx.destination);
-      })
-      .catch((err) => {
-        console.error("[VoiceMode] Mic access denied:", err);
-        setStatus("error");
-      });
-  }, [beginUserSpeech, endUserSpeech, getAudioContext, resetLocalSpeechDetection]);
-
-  // ── Server event handler ────────────────────────────────────────────────────
-
-  const handleServerEvent = useCallback((msg: any) => {
-    const type = msg?.type;
-    if (!type) return;
-
-    switch (type) {
-      case "session.ready":
-        console.log("[VoiceMode] Session ready");
-        setStatus("connected");
-        setOrbState("idle");
-        // Start mic capture now that session is ready
-        if (wsRef.current) {
-          startMicCapture(wsRef.current);
-        }
-        break;
-
-      case "session.created":
-      case "session.updated":
-        // Config confirmed
-        break;
-
-      case "conversation.created":
-        // Server created a conversation — notify parent
-        if (msg.conversationId) {
-          onConversationCreated(msg.conversationId);
-        }
-        break;
-
-      case "input_audio_buffer.speech_started":
-        if (
-          !shouldVoiceModeInterruptPlayback({
-            speechSource: "server",
-            assistantResponseActive: assistantResponseActiveRef.current,
-            isPlaying: isPlayingRef.current,
-          })
-        ) {
-          console.log("[VoiceMode] Ignoring likely echo while ORIEL is speaking");
+          beginUserSpeech("server");
           break;
-        }
-        beginUserSpeech("server");
-        break;
 
-      case "input_audio_buffer.speech_stopped":
-        resetLocalSpeechDetection();
-        endUserSpeech("server");
-        break;
+        case "input_audio_buffer.speech_stopped":
+          resetLocalSpeechDetection();
+          endUserSpeech("server");
+          break;
 
-      case "input_audio_buffer.committed":
-        hasInputCommittedRef.current = true;
-        break;
+        case "input_audio_buffer.committed":
+          hasInputCommittedRef.current = true;
+          break;
 
-      case "conversation.item.input_audio_transcription.delta":
-        if (msg.delta) {
-          const nextText = `${currentUserTextRef.current}${msg.delta}`;
-          setCurrentUserText(nextText);
-          currentUserTextRef.current = nextText;
-        }
-        break;
+        case "conversation.item.input_audio_transcription.delta":
+          if (msg.delta) {
+            const nextText = `${currentUserTextRef.current}${msg.delta}`;
+            setCurrentUserText(nextText);
+            currentUserTextRef.current = nextText;
+          }
+          break;
 
-      case "conversation.item.input_audio_transcription.completed":
-        if (msg.transcript) {
-          console.log("[VoiceMode] User transcript:", msg.transcript);
-          setTranscript((prev) => [...prev, { role: "user", text: msg.transcript }]);
-          setCurrentUserText("");
-          currentUserTextRef.current = "";
-        }
-        break;
+        case "conversation.item.input_audio_transcription.completed":
+          if (msg.transcript) {
+            console.log("[VoiceMode] User transcript:", msg.transcript);
+            setTranscript(prev => [
+              ...prev,
+              { role: "user", text: msg.transcript },
+            ]);
+            setCurrentUserText("");
+            currentUserTextRef.current = "";
+          }
+          break;
 
-      case "conversation.item.done":
-        if (currentUserTextRef.current.trim()) {
-          const finalizedUserText = currentUserTextRef.current.trim();
-          console.log("[VoiceMode] User transcript:", finalizedUserText);
-          setTranscript((prev) => [...prev, { role: "user", text: finalizedUserText }]);
-          setCurrentUserText("");
-          currentUserTextRef.current = "";
-        }
-        break;
+        case "conversation.item.done":
+          if (currentUserTextRef.current.trim()) {
+            const finalizedUserText = currentUserTextRef.current.trim();
+            console.log("[VoiceMode] User transcript:", finalizedUserText);
+            setTranscript(prev => [
+              ...prev,
+              { role: "user", text: finalizedUserText },
+            ]);
+            setCurrentUserText("");
+            currentUserTextRef.current = "";
+          }
+          break;
 
-      case "response.created":
-        assistantResponseActiveRef.current = true;
-        hasAssistantResponseStartedRef.current = true;
-        break;
+        case "response.created":
+          assistantResponseActiveRef.current = true;
+          hasAssistantResponseStartedRef.current = true;
+          break;
 
-      case "response.audio.delta":
-      case "response.output_audio.delta":
-        hasPendingResponseRef.current = false;
-        hasAssistantResponseStartedRef.current = true;
-        assistantResponseActiveRef.current = true;
-        if (msg.delta) {
-          playAudioChunk(msg.delta);
-        }
-        break;
-
-      case "response.audio_transcript.delta":
-      case "response.output_audio_transcript.delta":
-      case "response.output_text.delta":
-        if (msg.delta) {
+        case "response.audio.delta":
+        case "response.output_audio.delta":
+          hasPendingResponseRef.current = false;
           hasAssistantResponseStartedRef.current = true;
           assistantResponseActiveRef.current = true;
-          const nextText = currentAssistantTextRef.current + msg.delta;
-          setCurrentAssistantText(nextText);
-          currentAssistantTextRef.current = nextText;
-          if (containsOrielVoiceOpening(nextText)) {
+          if (msg.delta) {
+            playAudioChunk(msg.delta);
+          }
+          break;
+
+        case "response.audio_transcript.delta":
+        case "response.output_audio_transcript.delta":
+        case "response.output_text.delta":
+          if (msg.delta) {
+            hasAssistantResponseStartedRef.current = true;
+            assistantResponseActiveRef.current = true;
+            const nextText = currentAssistantTextRef.current + msg.delta;
+            setCurrentAssistantText(nextText);
+            currentAssistantTextRef.current = nextText;
+            if (containsOrielVoiceOpening(nextText)) {
+              voiceIntroAlreadySpokenRef.current = true;
+            }
+          }
+          break;
+
+        case "response.audio_transcript.done":
+        case "response.output_audio_transcript.done":
+        case "response.output_text.done":
+          hasPendingResponseRef.current = false;
+          const finalizedAssistantText =
+            msg.transcript || currentAssistantTextRef.current;
+          // Finalize the assistant transcript — use ref for latest value
+          setTranscript(prev => [
+            ...prev,
+            { role: "assistant", text: finalizedAssistantText },
+          ]);
+          if (finalizedAssistantText.trim()) {
             voiceIntroAlreadySpokenRef.current = true;
           }
-        }
-        break;
-
-      case "response.audio_transcript.done":
-      case "response.output_audio_transcript.done":
-      case "response.output_text.done":
-        hasPendingResponseRef.current = false;
-        const finalizedAssistantText = msg.transcript || currentAssistantTextRef.current;
-        // Finalize the assistant transcript — use ref for latest value
-        setTranscript((prev) => [
-          ...prev,
-          { role: "assistant", text: finalizedAssistantText },
-        ]);
-        if (finalizedAssistantText.trim()) {
-          voiceIntroAlreadySpokenRef.current = true;
-        }
-        setCurrentAssistantText("");
-        currentAssistantTextRef.current = "";
-        break;
-
-      case "response.done":
-        hasPendingResponseRef.current = false;
-        assistantResponseActiveRef.current = false;
-        if (hasAssistantResponseStartedRef.current) {
-          voiceIntroAlreadySpokenRef.current = true;
-        }
-        // response.audio_transcript.done should have already finalized;
-        // only add if there's unflushed streaming text (edge case)
-        if (currentAssistantTextRef.current.trim()) {
-          setTranscript((prev) => {
-            const last = prev[prev.length - 1];
-            // Avoid duplicate if the same text was just added
-            if (last?.role === "assistant" && last.text === currentAssistantTextRef.current.trim()) {
-              return prev;
-            }
-            return [...prev, { role: "assistant", text: currentAssistantTextRef.current }];
-          });
-          voiceIntroAlreadySpokenRef.current = true;
           setCurrentAssistantText("");
           currentAssistantTextRef.current = "";
-        }
-        break;
+          break;
 
-      case "error":
-        console.error("[VoiceMode] Server error:", msg.error);
-        setStatus("error");
-        break;
-    }
-  }, [beginUserSpeech, clearPendingResponseTimer, containsOrielVoiceOpening, endUserSpeech, playAudioChunk, resetLocalSpeechDetection, startMicCapture, onConversationCreated]);
+        case "response.done":
+          hasPendingResponseRef.current = false;
+          assistantResponseActiveRef.current = false;
+          if (hasAssistantResponseStartedRef.current) {
+            voiceIntroAlreadySpokenRef.current = true;
+          }
+          // response.audio_transcript.done should have already finalized;
+          // only add if there's unflushed streaming text (edge case)
+          if (currentAssistantTextRef.current.trim()) {
+            setTranscript(prev => {
+              const last = prev[prev.length - 1];
+              // Avoid duplicate if the same text was just added
+              if (
+                last?.role === "assistant" &&
+                last.text === currentAssistantTextRef.current.trim()
+              ) {
+                return prev;
+              }
+              return [
+                ...prev,
+                { role: "assistant", text: currentAssistantTextRef.current },
+              ];
+            });
+            voiceIntroAlreadySpokenRef.current = true;
+            setCurrentAssistantText("");
+            currentAssistantTextRef.current = "";
+          }
+          break;
+
+        case "error":
+          console.error("[VoiceMode] Server error:", msg.error);
+          setStatus("error");
+          break;
+      }
+    },
+    [
+      beginUserSpeech,
+      clearPendingResponseTimer,
+      containsOrielVoiceOpening,
+      endUserSpeech,
+      playAudioChunk,
+      resetLocalSpeechDetection,
+      startMicCapture,
+      onConversationCreated,
+    ]
+  );
 
   // Keep a ref to the latest handler so the WebSocket always calls the current version
   const handleServerEventRef = useRef<(msg: any) => void>(() => {});
-  useEffect(() => { handleServerEventRef.current = handleServerEvent; }, [handleServerEvent]);
+  useEffect(() => {
+    handleServerEventRef.current = handleServerEvent;
+  }, [handleServerEvent]);
 
   // ── WebSocket connection ────────────────────────────────────────────────────
 
@@ -679,7 +775,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       console.log("[VoiceMode] WebSocket connected");
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = event => {
       try {
         const msg = JSON.parse(event.data);
         handleServerEventRef.current(msg);
@@ -688,7 +784,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
       }
     };
 
-    ws.onerror = (err) => {
+    ws.onerror = err => {
       console.error("[VoiceMode] WebSocket error:", err);
       setStatus("error");
     };
@@ -709,7 +805,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     clearPendingResponseTimer();
     // Stop mic
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach(t => t.stop());
       streamRef.current = null;
     }
     if (processorRef.current) {
@@ -718,7 +814,9 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
     }
     // Stop playback
     if (playbackSourceRef.current) {
-      try { playbackSourceRef.current.stop(); } catch {}
+      try {
+        playbackSourceRef.current.stop();
+      } catch {}
       playbackSourceRef.current = null;
     }
     audioQueueRef.current = [];
@@ -748,7 +846,7 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
   }, [cleanup, onClose]);
 
   const toggleWaitMode = useCallback(() => {
-    setIsWaitMode((prev) => {
+    setIsWaitMode(prev => {
       const next = !prev;
       isWaitModeRef.current = next;
 
@@ -762,10 +860,14 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
 
       return next;
     });
-  }, [clearPendingResponseTimer, requestAssistantResponse, resetLocalSpeechDetection]);
+  }, [
+    clearPendingResponseTimer,
+    requestAssistantResponse,
+    resetLocalSpeechDetection,
+  ]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted((prev) => {
+    setIsMuted(prev => {
       const next = !prev;
       isMutedRef.current = next;
 
@@ -814,7 +916,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           style={{
             background: statusColor,
             boxShadow: `0 0 8px ${statusColor}`,
-            animation: status === "connecting" ? "pulse 1.5s ease-in-out infinite" : undefined,
+            animation:
+              status === "connecting"
+                ? "pulse 1.5s ease-in-out infinite"
+                : undefined,
           }}
         />
         <span
@@ -856,12 +961,12 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           {isWaitMode
             ? "Wait Mode Active"
             : isMuted
-            ? "Microphone Muted"
-            : orbState === "speaking"
-            ? "ORIEL is speaking"
-            : orbState === "processing"
-            ? "Listening..."
-            : "Voice Channel Active"}
+              ? "Microphone Muted"
+              : orbState === "speaking"
+                ? "ORIEL is speaking"
+                : orbState === "processing"
+                  ? "Listening..."
+                  : "Voice Channel Active"}
         </p>
       </div>
 
@@ -879,7 +984,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             <span
               className="font-mono text-[8px] tracking-[0.3em] uppercase block mb-1"
               style={{
-                color: item.role === "user" ? "rgba(0,188,212,0.5)" : "rgba(189,163,107,0.5)",
+                color:
+                  item.role === "user"
+                    ? "rgba(0,188,212,0.5)"
+                    : "rgba(189,163,107,0.5)",
               }}
             >
               {item.role === "user" ? "You" : "ORIEL"}
@@ -887,7 +995,10 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             <p
               className="text-sm leading-relaxed"
               style={{
-                color: item.role === "user" ? "rgba(0,229,255,0.7)" : "rgba(220,240,255,0.8)",
+                color:
+                  item.role === "user"
+                    ? "rgba(0,229,255,0.7)"
+                    : "rgba(220,240,255,0.8)",
                 fontStyle: item.role === "assistant" ? "italic" : "normal",
               }}
             >
@@ -943,13 +1054,19 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
               onClick={toggleWaitMode}
               className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
               style={{
-                background: isWaitMode ? "rgba(189,163,107,0.18)" : "rgba(0,188,212,0.08)",
+                background: isWaitMode
+                  ? "rgba(189,163,107,0.18)"
+                  : "rgba(0,188,212,0.08)",
                 border: isWaitMode
                   ? "1px solid rgba(189,163,107,0.45)"
                   : "1px solid rgba(0,188,212,0.25)",
-                color: isWaitMode ? "rgba(255,237,189,0.92)" : "rgba(0,229,255,0.75)",
+                color: isWaitMode
+                  ? "rgba(255,237,189,0.92)"
+                  : "rgba(0,229,255,0.75)",
               }}
-              title={isWaitMode ? "Resume ORIEL response" : "Pause microphone input"}
+              title={
+                isWaitMode ? "Resume ORIEL response" : "Pause microphone input"
+              }
             >
               {isWaitMode ? <Play size={16} /> : <Pause size={16} />}
               {isWaitMode ? "Resume" : "Wait"}
@@ -960,13 +1077,19 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
             onClick={toggleMute}
             className="flex items-center gap-2 px-4 py-3 rounded-full transition-all font-mono text-[10px] tracking-[0.2em] uppercase"
             style={{
-              background: isMuted ? "rgba(255,80,80,0.14)" : "rgba(0,188,212,0.08)",
+              background: isMuted
+                ? "rgba(255,80,80,0.14)"
+                : "rgba(0,188,212,0.08)",
               border: isMuted
                 ? "1px solid rgba(255,80,80,0.42)"
                 : "1px solid rgba(0,188,212,0.25)",
               color: isMuted ? "rgba(255,180,180,0.9)" : "rgba(0,229,255,0.75)",
             }}
-            title={isMuted ? "Unmute microphone" : "Mute microphone so ORIEL is not interrupted"}
+            title={
+              isMuted
+                ? "Unmute microphone"
+                : "Mute microphone so ORIEL is not interrupted"
+            }
           >
             {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
             {isMuted ? "Muted" : "Mute"}
@@ -980,11 +1103,11 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
               border: "1px solid rgba(255,80,80,0.3)",
               color: "rgba(255,80,80,0.7)",
             }}
-            onMouseEnter={(e) => {
+            onMouseEnter={e => {
               e.currentTarget.style.background = "rgba(255,80,80,0.2)";
               e.currentTarget.style.borderColor = "rgba(255,80,80,0.5)";
             }}
-            onMouseLeave={(e) => {
+            onMouseLeave={e => {
               e.currentTarget.style.background = "rgba(255,80,80,0.1)";
               e.currentTarget.style.borderColor = "rgba(255,80,80,0.3)";
             }}
@@ -1000,12 +1123,12 @@ export default function VoiceMode({ onClose, conversationId, onConversationCreat
           {status === "connected" && isWaitMode
             ? "Wait mode pauses microphone input until Resume"
             : status === "connected" && isMuted
-            ? "Muted: ORIEL can finish without microphone interruptions"
-            : status === "connected"
-            ? "ORIEL responds when you stop speaking"
-            : status === "error"
-            ? "Tap to end session"
-            : ""}
+              ? "Muted: ORIEL can finish without microphone interruptions"
+              : status === "connected"
+                ? "ORIEL responds when you stop speaking"
+                : status === "error"
+                  ? "Tap to end session"
+                  : ""}
         </p>
       </div>
     </div>

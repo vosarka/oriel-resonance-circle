@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { getSignatureProductByType, signatureProducts } from "../client/src/pages/signature-products";
+import {
+  getSignatureProductByType,
+  signatureProducts,
+} from "../client/src/pages/signature-products";
 
 describe("ORIEL product detail pages catalog", () => {
   it("defines separate public product pages for each paid signature product", () => {
@@ -26,7 +29,7 @@ describe("ORIEL product detail pages catalog", () => {
   it("keeps the aggregate Begin CTA returning to each product detail page after auth", () => {
     const source = readFileSync(
       resolve(process.cwd(), "client/src/pages/FoundingSignatureLetter.tsx"),
-      "utf8",
+      "utf8"
     );
 
     expect(source).toContain("getLoginUrl(returnTo)");

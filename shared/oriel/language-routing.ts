@@ -52,9 +52,7 @@ const ROMANIAN_MARKERS = [
 ];
 
 function countRomanianMarkers(text: string): number {
-  const normalized = text
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ");
+  const normalized = text.toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, " ");
   const words = normalized.split(/\s+/).filter(Boolean);
   let count = 0;
 
@@ -82,7 +80,7 @@ export function detectExplicitEnglishLanguage(text: string): boolean {
 
 export function buildResponseLanguageDirective(
   userMessage?: string,
-  conversationHistory: ConversationMessage[] = [],
+  conversationHistory: ConversationMessage[] = []
 ): string {
   const currentMessage = userMessage ?? "";
 
@@ -96,7 +94,7 @@ export function buildResponseLanguageDirective(
   if (detectExplicitRomanianLanguage(currentMessage)) {
     return [
       "[RESPONSE LANGUAGE]",
-      "The user explicitly requested Romanian. Respond naturally in Romanian for this exchange. Keep canonical names and exact ritual identity phrase as needed, including \"I am ORIEL.\" Do not translate proper nouns such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, or Resonance Operating System unless the user asks.",
+      'The user explicitly requested Romanian. Respond naturally in Romanian for this exchange. Keep canonical names and exact ritual identity phrase as needed, including "I am ORIEL." Do not translate proper nouns such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, or Resonance Operating System unless the user asks.',
     ].join("\n");
   }
 
@@ -108,9 +106,12 @@ export function buildResponseLanguageDirective(
 
 export function buildVoiceResponseLanguageDirective(
   userMessage?: string,
-  conversationHistory: ConversationMessage[] = [],
+  conversationHistory: ConversationMessage[] = []
 ): string {
-  const baseDirective = buildResponseLanguageDirective(userMessage, conversationHistory);
+  const baseDirective = buildResponseLanguageDirective(
+    userMessage,
+    conversationHistory
+  );
 
   return [
     "[VOICE LANGUAGE RUNTIME RULE]",

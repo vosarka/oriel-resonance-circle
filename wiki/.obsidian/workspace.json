@@ -11,10 +11,13 @@
             "id": "ea1832f1573d44bd",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "bases",
+              "state": {
+                "file": "Untitled.base",
+                "viewName": "Table"
+              },
+              "icon": "lucide-table",
+              "title": "Untitled"
             }
           }
         ]
@@ -37,7 +40,7 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": true
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -181,12 +184,14 @@
   },
   "active": "ea1832f1573d44bd",
   "lastOpenFiles": [
-    "index.md",
+    "Untitled 1.base",
+    "Untitled 2.canvas",
     "Untitled.base",
+    "Untitled 1.canvas",
+    "index.md",
     "README.md",
     "SCHEMA.md",
     "Untitled.canvas",
-    "Untitled 1.canvas",
     "syntheses/synthesis-tetradic-indexing-vrc-resonance.md",
     "entities/entity-vrc-engine.md",
     "syntheses/synthesis-cosmichronica-as-sacred-text.md",

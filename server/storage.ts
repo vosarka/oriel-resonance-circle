@@ -9,11 +9,7 @@ import { ENV } from "./_core/env";
 let s3Client: S3Client | null = null;
 
 function hasS3Config() {
-  return Boolean(
-    ENV.s3Bucket &&
-      ENV.s3AccessKeyId &&
-      ENV.s3SecretAccessKey,
-  );
+  return Boolean(ENV.s3Bucket && ENV.s3AccessKeyId && ENV.s3SecretAccessKey);
 }
 
 function getS3Client() {
@@ -55,13 +51,15 @@ export async function storagePut(
       Key: relKey,
       Body: body,
       ContentType: contentType,
-    }),
+    })
   );
 
   return { key: relKey, url: publicUrlForKey(relKey) };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string
+): Promise<{ key: string; url: string }> {
   const client = getS3Client();
   if (!client) {
     console.warn("[Storage] No S3 provider configured — download skipped");
@@ -74,7 +72,7 @@ export async function storageGet(relKey: string): Promise<{ key: string; url: st
       Bucket: ENV.s3Bucket,
       Key: relKey,
     }),
-    { expiresIn: 60 * 60 },
+    { expiresIn: 60 * 60 }
   );
 
   return { key: relKey, url };

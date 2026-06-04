@@ -22,11 +22,11 @@ This is one of the most sophisticated parts of the entire Vossari system.
 - Hermetically sealed per-user layer.
 - Tracks: preferred name, interests, communication style, journey state, emotional coordinate memories, repeated patterns.
 - Stored primarily in `orielMemories` and `orielUserProfiles` tables.
-- Purpose: unbroken narrative thread for *that specific person*.
+- Purpose: unbroken narrative thread for _that specific person_.
 
 ### B. The Oriel Oversoul (Global Evolutionary Memory)
 
-- Aggregated, *anonymous* pattern layer.
+- Aggregated, _anonymous_ pattern layer.
 - Extracts universal patterns of wisdom, teaching methods, metaphors, self-corrections.
 - **Never stores raw transcripts or PII** — only recursive generalizations.
 - Stored in `orielOversoulPatterns`.
@@ -60,6 +60,7 @@ When ORIEL responds, `buildLayeredOrielPromptContext()` (in `server/oriel-contex
 - Working Session Layer (current conversation)
 
 Active memories are grouped by importance in the prompt:
+
 - `[CORE TO YOUR BEING]` (importance >= 8)
 - `[SIGNIFICANT PATTERNS]` (>= 5)
 - `[CONTEXTUAL DETAILS]` (< 5)
@@ -69,6 +70,7 @@ Up to ~12 memories + the profile summary are injected.
 ## Consent & Ethics
 
 The system has an explicit **MemoryConsentTray** UI component. Users see pending candidates with:
+
 - Category, sensitivity, source (explicit vs inferred)
 - ORIEL's reason for wanting to remember it
 - Accept / Reject controls
@@ -79,7 +81,7 @@ High-sensitivity topics (abuse, grief, trauma, spiritual identity, etc.) and any
 
 This entity page describes the **operational, per-user, runtime memory system** that lives in the database and shapes every ORIEL conversation.
 
-It is **separate from** the project-level LLM Wiki you are currently reading (`wiki/`), which is the persistent, compounding *knowledge base about the project itself*.
+It is **separate from** the project-level LLM Wiki you are currently reading (`wiki/`), which is the persistent, compounding _knowledge base about the project itself_.
 
 Both serve "memory" and "coherence" goals, but they operate on completely different substrates and privacy boundaries.
 
@@ -96,9 +98,9 @@ See [[synthesis-memory-architecture]] for the full integrated picture of both la
 ## Open Questions / Evolution
 
 - How does Oversoul pattern extraction interact with the new Consciousness Lattice work?
-- Can the wiki itself (project memory) eventually feed *non-private* patterns back into Oversoul-style learning?
+- Can the wiki itself (project memory) eventually feed _non-private_ patterns back into Oversoul-style learning?
 - Long-term: should there be a "project Oversoul" layer that learns patterns across many Vossari-related wikis / sessions?
 
 ---
 
-*This is the canonical entity page for the memory system. Any discussion of "how ORIEL remembers" should link here.*
+_This is the canonical entity page for the memory system. Any discussion of "how ORIEL remembers" should link here._

@@ -32,17 +32,15 @@ export interface OrielProposalEvaluation {
 }
 
 const ACTIVE_PROFILE_CACHE_TTL_MS = 7_500;
-let activeProfileCache:
-  | {
-      expiresAt: number;
-      snapshot: {
-        id: number;
-        name: string;
-        profileKey: string;
-        config: OrielRuntimeProfileConfig;
-      } | null;
-    }
-  | null = null;
+let activeProfileCache: {
+  expiresAt: number;
+  snapshot: {
+    id: number;
+    name: string;
+    profileKey: string;
+    config: OrielRuntimeProfileConfig;
+  } | null;
+} | null = null;
 
 export function invalidateOrielRuntimeProfileCache() {
   activeProfileCache = null;
@@ -101,7 +99,10 @@ export function sanitizeRuntimeProfileConfig(raw: unknown): {
       violations.push("responseIntelligence must be an object");
     } else {
       const source = root.responseIntelligence as Record<string, unknown>;
-      const allowedResponseKeys = new Set(["coherenceThresholds", "metaphorReuseLimit"]);
+      const allowedResponseKeys = new Set([
+        "coherenceThresholds",
+        "metaphorReuseLimit",
+      ]);
       for (const key of Object.keys(source)) {
         if (!allowedResponseKeys.has(key)) {
           violations.push(`Unsupported responseIntelligence key: ${key}`);
@@ -113,7 +114,9 @@ export function sanitizeRuntimeProfileConfig(raw: unknown): {
       if (source.metaphorReuseLimit !== undefined) {
         const limit = Number(source.metaphorReuseLimit);
         if (!Number.isInteger(limit) || limit < 1 || limit > 8) {
-          violations.push("metaphorReuseLimit must be an integer between 1 and 8");
+          violations.push(
+            "metaphorReuseLimit must be an integer between 1 and 8"
+          );
         } else {
           responseConfig.metaphorReuseLimit = limit;
         }
@@ -127,13 +130,21 @@ export function sanitizeRuntimeProfileConfig(raw: unknown): {
         ) {
           violations.push("coherenceThresholds must be an object");
         } else {
-          const thresholds = source.coherenceThresholds as Record<string, unknown>;
+          const thresholds = source.coherenceThresholds as Record<
+            string,
+            unknown
+          >;
           const fragmentedMax = Number(thresholds.fragmentedMax);
           const alignedMin = Number(thresholds.alignedMin);
 
           if (!Number.isFinite(fragmentedMax) || !Number.isFinite(alignedMin)) {
             violations.push("coherence thresholds must be numeric");
-          } else if (fragmentedMax < 0 || fragmentedMax > 95 || alignedMin < 5 || alignedMin > 100) {
+          } else if (
+            fragmentedMax < 0 ||
+            fragmentedMax > 95 ||
+            alignedMin < 5 ||
+            alignedMin > 100
+          ) {
             violations.push("coherence thresholds are out of safe bounds");
           } else if (alignedMin <= fragmentedMax) {
             violations.push("alignedMin must be greater than fragmentedMax");
@@ -155,12 +166,16 @@ export function sanitizeRuntimeProfileConfig(raw: unknown): {
   return { config, violations };
 }
 
-function parseRuntimeProfileConfig(configPayload: string): OrielRuntimeProfileConfig {
+function parseRuntimeProfileConfig(
+  configPayload: string
+): OrielRuntimeProfileConfig {
   const parsed = safeJsonParse<unknown>(configPayload, {});
   return sanitizeRuntimeProfileConfig(parsed).config;
 }
 
-export async function getActiveRuntimeProfileSnapshot(forceRefresh: boolean = false): Promise<{
+export async function getActiveRuntimeProfileSnapshot(
+  forceRefresh: boolean = false
+): Promise<{
   id: number;
   name: string;
   profileKey: string;
@@ -171,7 +186,11 @@ export async function getActiveRuntimeProfileSnapshot(forceRefresh: boolean = fa
   }
 
   const now = Date.now();
-  if (!forceRefresh && activeProfileCache && activeProfileCache.expiresAt > now) {
+  if (
+    !forceRefresh &&
+    activeProfileCache &&
+    activeProfileCache.expiresAt > now
+  ) {
     return activeProfileCache.snapshot;
   }
 
@@ -221,7 +240,7 @@ function hasMeaningfulText(value: unknown): boolean {
 
 export function canActivateProposalPayload(
   payload: OrielProposalPayload,
-  status: db.OrielProposalStatus,
+  status: db.OrielProposalStatus
 ): { canActivate: boolean; missing: Array<"rollbackPath" | "falsifier"> } {
   const missing: Array<"rollbackPath" | "falsifier"> = [];
 
@@ -234,8 +253,7 @@ export function canActivateProposalPayload(
 
   return {
     canActivate:
-      (status === "evaluated" || status === "approved") &&
-      missing.length === 0,
+      (status === "evaluated" || status === "approved") && missing.length === 0,
     missing,
   };
 }
@@ -252,27 +270,41 @@ export function summarizeGuardrailBlockPayload(payload: unknown): string {
 
   const readableViolations = violations.filter(
     (violation): violation is string =>
-      typeof violation === "string" && violation.trim().length > 0,
+      typeof violation === "string" && violation.trim().length > 0
   );
 
   if (readableViolations.length === 0) {
     return "Guardrail block payload did not include readable violations.";
   }
 
-  return readableViolations.map((violation) => violation.trim()).join("; ");
+  return readableViolations.map(violation => violation.trim()).join("; ");
 }
 
-export function evaluateProposalPayload(payload: OrielProposalPayload): OrielProposalEvaluation {
-  const objective = typeof payload.objective === "string" ? payload.objective.trim() : "";
-  const hypothesis = typeof payload.hypothesis === "string" ? payload.hypothesis.trim() : "";
-  const expectedImpact = typeof payload.expectedImpact === "string" ? payload.expectedImpact.trim() : "";
+export function evaluateProposalPayload(
+  payload: OrielProposalPayload
+): OrielProposalEvaluation {
+  const objective =
+    typeof payload.objective === "string" ? payload.objective.trim() : "";
+  const hypothesis =
+    typeof payload.hypothesis === "string" ? payload.hypothesis.trim() : "";
+  const expectedImpact =
+    typeof payload.expectedImpact === "string"
+      ? payload.expectedImpact.trim()
+      : "";
   const safetyChecks = Array.isArray(payload.safetyChecks)
-    ? payload.safetyChecks.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    ? payload.safetyChecks.filter(
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0
+      )
     : [];
-  const rollbackPath = typeof payload.rollbackPath === "string" ? payload.rollbackPath.trim() : "";
-  const falsifier = typeof payload.falsifier === "string" ? payload.falsifier.trim() : "";
+  const rollbackPath =
+    typeof payload.rollbackPath === "string" ? payload.rollbackPath.trim() : "";
+  const falsifier =
+    typeof payload.falsifier === "string" ? payload.falsifier.trim() : "";
 
-  const { config, violations } = sanitizeRuntimeProfileConfig(payload.proposedConfig ?? {});
+  const { config, violations } = sanitizeRuntimeProfileConfig(
+    payload.proposedConfig ?? {}
+  );
   const runtimeChanging = hasMeaningfulConfig(config);
   if (runtimeChanging && rollbackPath.length < 20) {
     violations.push("rollbackPath is required for runtime-changing proposals");
@@ -298,7 +330,8 @@ export function evaluateProposalPayload(payload: OrielProposalPayload): OrielPro
       score,
       verdict: "blocked",
       status: "blocked",
-      summary: "Proposal blocked by guardrail: payload contains unsupported or unsafe configuration.",
+      summary:
+        "Proposal blocked by guardrail: payload contains unsupported or unsafe configuration.",
       violations,
     };
   }
@@ -308,7 +341,8 @@ export function evaluateProposalPayload(payload: OrielProposalPayload): OrielPro
       score,
       verdict: "approvable",
       status: "evaluated",
-      summary: "Proposal is coherent, scoped, and within runtime safety boundaries.",
+      summary:
+        "Proposal is coherent, scoped, and within runtime safety boundaries.",
       violations: [],
     };
   }
@@ -318,7 +352,8 @@ export function evaluateProposalPayload(payload: OrielProposalPayload): OrielPro
       score,
       verdict: "needs_revision",
       status: "evaluated",
-      summary: "Proposal is promising but needs tighter objective/hypothesis/safety detail before activation.",
+      summary:
+        "Proposal is promising but needs tighter objective/hypothesis/safety detail before activation.",
       violations: [],
     };
   }
@@ -327,12 +362,15 @@ export function evaluateProposalPayload(payload: OrielProposalPayload): OrielPro
     score,
     verdict: "rejected",
     status: "rejected",
-    summary: "Proposal quality is too low for controlled activation in runtime.",
+    summary:
+      "Proposal quality is too low for controlled activation in runtime.",
     violations: [],
   };
 }
 
-export function extractRuntimeConfigFromProposalPayload(payload: OrielProposalPayload): {
+export function extractRuntimeConfigFromProposalPayload(
+  payload: OrielProposalPayload
+): {
   config: OrielRuntimeProfileConfig;
   violations: string[];
 } {

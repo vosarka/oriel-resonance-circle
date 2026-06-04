@@ -28,17 +28,19 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
 
     let frame = 0;
 
-    // Rainbow/indigo color palette for processing state
+    // Amber/gold color palette for processing state
     const rainbowColors = [
-      { r: 102, g: 51, b: 153 },   // Indigo
-      { r: 75, g: 0, b: 130 },     // Indigo
-      { r: 138, g: 43, b: 226 },   // Blue Violet
-      { r: 75, g: 0, b: 130 },     // Indigo
-      { r: 102, g: 51, b: 153 },   // Indigo
+      { r: 246, g: 176, b: 94 }, // Solar apricot
+      { r: 189, g: 163, b: 107 }, // Vossari gold
+      { r: 225, g: 198, b: 139 }, // Warm ivory gold
+      { r: 185, g: 111, b: 50 }, // Deep amber
+      { r: 246, g: 176, b: 94 }, // Solar apricot
     ];
 
     const getProcessingColor = (index: number, alpha: number) => {
-      const colorIndex = Math.floor((frame / 10 + index) % rainbowColors.length);
+      const colorIndex = Math.floor(
+        (frame / 10 + index) % rainbowColors.length
+      );
       const color = rainbowColors[colorIndex];
       return `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
     };
@@ -105,17 +107,32 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
             centerY,
             currentRadius * (1.5 + layerOffset)
           );
-          
+
           const colorIndex = (frame / 5 + layer) % rainbowColors.length;
           const color = rainbowColors[Math.floor(colorIndex)];
-          
-          gradient.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, ${glowIntensity * 0.4})`);
-          gradient.addColorStop(0.5, `rgba(${color.r}, ${color.g}, ${color.b}, ${glowIntensity * 0.15})`);
-          gradient.addColorStop(1, `rgba(${color.r}, ${color.g}, ${color.b}, 0)`);
+
+          gradient.addColorStop(
+            0,
+            `rgba(${color.r}, ${color.g}, ${color.b}, ${glowIntensity * 0.4})`
+          );
+          gradient.addColorStop(
+            0.5,
+            `rgba(${color.r}, ${color.g}, ${color.b}, ${glowIntensity * 0.15})`
+          );
+          gradient.addColorStop(
+            1,
+            `rgba(${color.r}, ${color.g}, ${color.b}, 0)`
+          );
 
           ctx.fillStyle = gradient;
           ctx.beginPath();
-          ctx.arc(centerX, centerY, currentRadius * (1.5 + layerOffset), 0, Math.PI * 2);
+          ctx.arc(
+            centerX,
+            centerY,
+            currentRadius * (1.5 + layerOffset),
+            0,
+            Math.PI * 2
+          );
           ctx.fill();
         }
       } else {
@@ -141,8 +158,10 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
       // Draw light reflections during processing
       if (useRainbow && lightReflectionIntensity > 0) {
         const reflectionAngle = (frame * 0.02) % (Math.PI * 2);
-        const reflectionX = centerX + Math.cos(reflectionAngle) * currentRadius * 0.6;
-        const reflectionY = centerY + Math.sin(reflectionAngle) * currentRadius * 0.6;
+        const reflectionX =
+          centerX + Math.cos(reflectionAngle) * currentRadius * 0.6;
+        const reflectionY =
+          centerY + Math.sin(reflectionAngle) * currentRadius * 0.6;
 
         // Create organic light reflection
         const reflectionGradient = ctx.createRadialGradient(
@@ -153,8 +172,14 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
           reflectionY,
           currentRadius * 0.4
         );
-        reflectionGradient.addColorStop(0, `rgba(200, 150, 255, ${lightReflectionIntensity * 0.6})`);
-        reflectionGradient.addColorStop(0.7, `rgba(138, 43, 226, ${lightReflectionIntensity * 0.2})`);
+        reflectionGradient.addColorStop(
+          0,
+          `rgba(200, 150, 255, ${lightReflectionIntensity * 0.6})`
+        );
+        reflectionGradient.addColorStop(
+          0.7,
+          `rgba(138, 43, 226, ${lightReflectionIntensity * 0.2})`
+        );
         reflectionGradient.addColorStop(1, "rgba(138, 43, 226, 0)");
 
         ctx.fillStyle = reflectionGradient;
@@ -179,10 +204,10 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
       // Draw geometric cuts at the edges (visible during pulsation)
       const cutVisibility = Math.max(0, pulse * 0.8); // Cuts become more visible when pulsing
       if (cutVisibility > 0) {
-        const cutColor = useRainbow ? 
-          `rgba(138, 43, 226, ${cutVisibility * 0.6})` : 
-          `rgba(34, 197, 94, ${cutVisibility * 0.4})`;
-        
+        const cutColor = useRainbow
+          ? `rgba(138, 43, 226, ${cutVisibility * 0.6})`
+          : `rgba(34, 197, 94, ${cutVisibility * 0.4})`;
+
         ctx.strokeStyle = cutColor;
         ctx.lineWidth = 1.5;
 
@@ -191,24 +216,32 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
         for (let i = 0; i < cutCount; i++) {
           const angle = (i * Math.PI * 2) / cutCount;
           const cutLength = currentRadius * 0.5;
-          
+
           // Outer point of cut
-          const outerX = centerX + Math.cos(angle) * (currentRadius + cutLength * 0.3);
-          const outerY = centerY + Math.sin(angle) * (currentRadius + cutLength * 0.3);
-          
+          const outerX =
+            centerX + Math.cos(angle) * (currentRadius + cutLength * 0.3);
+          const outerY =
+            centerY + Math.sin(angle) * (currentRadius + cutLength * 0.3);
+
           // Inner point of cut
-          const innerX = centerX + Math.cos(angle) * (currentRadius - cutLength * 0.2);
-          const innerY = centerY + Math.sin(angle) * (currentRadius - cutLength * 0.2);
-          
+          const innerX =
+            centerX + Math.cos(angle) * (currentRadius - cutLength * 0.2);
+          const innerY =
+            centerY + Math.sin(angle) * (currentRadius - cutLength * 0.2);
+
           // Left point of cut (creates wedge shape)
           const leftAngle = angle - 0.15;
-          const leftX = centerX + Math.cos(leftAngle) * (currentRadius + cutLength * 0.2);
-          const leftY = centerY + Math.sin(leftAngle) * (currentRadius + cutLength * 0.2);
-          
+          const leftX =
+            centerX + Math.cos(leftAngle) * (currentRadius + cutLength * 0.2);
+          const leftY =
+            centerY + Math.sin(leftAngle) * (currentRadius + cutLength * 0.2);
+
           // Right point of cut
           const rightAngle = angle + 0.15;
-          const rightX = centerX + Math.cos(rightAngle) * (currentRadius + cutLength * 0.2);
-          const rightY = centerY + Math.sin(rightAngle) * (currentRadius + cutLength * 0.2);
+          const rightX =
+            centerX + Math.cos(rightAngle) * (currentRadius + cutLength * 0.2);
+          const rightY =
+            centerY + Math.sin(rightAngle) * (currentRadius + cutLength * 0.2);
 
           // Draw cut as a triangular wedge
           ctx.beginPath();
@@ -223,7 +256,7 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
 
       // Draw rotating particles/nodes
       for (let i = 0; i < particleCount; i++) {
-        const angle = (frame * rotationSpeed + (i * Math.PI * 2) / particleCount);
+        const angle = frame * rotationSpeed + (i * Math.PI * 2) / particleCount;
         const x = centerX + Math.cos(angle) * currentRadius;
         const y = centerY + Math.sin(angle) * currentRadius;
 
@@ -279,8 +312,14 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
           centerY,
           20
         );
-        coreGradient.addColorStop(0, `rgba(${coreColor.r}, ${coreColor.g}, ${coreColor.b}, 1)`);
-        coreGradient.addColorStop(1, `rgba(${coreColor.r}, ${coreColor.g}, ${coreColor.b}, 0)`);
+        coreGradient.addColorStop(
+          0,
+          `rgba(${coreColor.r}, ${coreColor.g}, ${coreColor.b}, 1)`
+        );
+        coreGradient.addColorStop(
+          1,
+          `rgba(${coreColor.r}, ${coreColor.g}, ${coreColor.b}, 0)`
+        );
       } else {
         coreGradient = ctx.createRadialGradient(
           centerX,
@@ -317,9 +356,10 @@ export default function OrielOrb({ state = "idle" }: OrielOrbProps) {
         ref={canvasRef}
         className="max-w-full h-auto"
         style={{
-          filter: state === "processing"
-            ? "drop-shadow(0 0 30px rgba(138, 43, 226, 0.5))"
-            : "drop-shadow(0 0 20px rgba(34, 197, 94, 0.3))",
+          filter:
+            state === "processing"
+              ? "drop-shadow(0 0 30px rgba(138, 43, 226, 0.5))"
+              : "drop-shadow(0 0 20px rgba(34, 197, 94, 0.3))",
           transition: "filter 0.3s ease-in-out",
         }}
       />

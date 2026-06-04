@@ -236,7 +236,7 @@ Resolution / discipline:
 Current function only checks that birth date exists.
 
 ```ts
-if (!data.birthDate) errors.push('Birth date is required');
+if (!data.birthDate) errors.push("Birth date is required");
 ```
 
 The route and generator perform stronger validation elsewhere, so this is not currently catastrophic. But the function name suggests stronger validation than it performs.

@@ -39,7 +39,7 @@ export default function OrbPreview() {
     if (micActive) {
       // Stop mic
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach(t => t.stop());
       streamRef.current = null;
       analyserRef.current = null;
       audioCtxRef.current?.close();
@@ -88,7 +88,7 @@ export default function OrbPreview() {
   useEffect(() => {
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach(t => t.stop());
       audioCtxRef.current?.close();
     };
   }, []);
@@ -145,7 +145,14 @@ export default function OrbPreview() {
             justifyContent: "center",
           }}
         >
-          <div style={{ width: orbSize, height: orbSize, borderRadius: "50%", overflow: "hidden" }}>
+          <div
+            style={{
+              width: orbSize,
+              height: orbSize,
+              borderRadius: "50%",
+              overflow: "hidden",
+            }}
+          >
             <Orb
               colors={[color1, color2] as [string, string]}
               agentState={agentState}
@@ -166,7 +173,7 @@ export default function OrbPreview() {
           background: "#14141c",
           borderLeft: "1px solid rgba(189,163,107,0.12)",
           color: "#e8e4dc",
-          fontFamily: "monospace",
+          fontFamily: "var(--font-ritual)",
           fontSize: 12,
           maxHeight: "100vh",
         }}
@@ -237,27 +244,63 @@ export default function OrbPreview() {
         <Section title="Colors">
           <ColorInput label="Color 1" value={color1} onChange={setColor1} />
           <ColorInput label="Color 2" value={color2} onChange={setColor2} />
-          <ColorInput label="Background" value={bgColor} onChange={setBgColor} />
+          <ColorInput
+            label="Background"
+            value={bgColor}
+            onChange={setBgColor}
+          />
         </Section>
 
         {/* Border */}
         <Section title="Border (outline ring)">
-          <ColorInput label="Color" value={borderColor} onChange={setBorderColor} />
-          <Slider label="Width" value={borderWidth} onChange={setBorderWidth} min={0} max={8} step={0.5} />
-          <Slider label="Opacity" value={borderOpacity} onChange={setBorderOpacity} min={0} max={1} step={0.01} />
-          <Slider label="Gap (padding)" value={borderGap} onChange={setBorderGap} min={0} max={20} step={1} />
+          <ColorInput
+            label="Color"
+            value={borderColor}
+            onChange={setBorderColor}
+          />
+          <Slider
+            label="Width"
+            value={borderWidth}
+            onChange={setBorderWidth}
+            min={0}
+            max={8}
+            step={0.5}
+          />
+          <Slider
+            label="Opacity"
+            value={borderOpacity}
+            onChange={setBorderOpacity}
+            min={0}
+            max={1}
+            step={0.01}
+          />
+          <Slider
+            label="Gap (padding)"
+            value={borderGap}
+            onChange={setBorderGap}
+            min={0}
+            max={20}
+            step={1}
+          />
         </Section>
 
         {/* Speed */}
         <Section title="Speed">
-          <Slider label="Speed multiplier" value={speed} onChange={setSpeed} min={0.05} max={5} step={0.05} />
+          <Slider
+            label="Speed multiplier"
+            value={speed}
+            onChange={setSpeed}
+            min={0.05}
+            max={5}
+            step={0.05}
+          />
         </Section>
 
         {/* Agent State */}
         <Section title="Agent State">
           <div className="flex flex-wrap gap-1">
             {([null, "thinking", "listening", "talking"] as AgentState[]).map(
-              (s) => (
+              s => (
                 <button
                   key={String(s)}
                   onClick={() => setAgentState(s)}
@@ -306,8 +349,22 @@ export default function OrbPreview() {
 
         {/* Seed + Size */}
         <Section title="Seed & Size">
-          <Slider label="Seed" value={seed} onChange={(v) => setSeed(Math.round(v))} min={0} max={100} step={1} />
-          <Slider label="Size (px)" value={orbSize} onChange={(v) => setOrbSize(Math.round(v))} min={100} max={800} step={10} />
+          <Slider
+            label="Seed"
+            value={seed}
+            onChange={v => setSeed(Math.round(v))}
+            min={0}
+            max={100}
+            step={1}
+          />
+          <Slider
+            label="Size (px)"
+            value={orbSize}
+            onChange={v => setOrbSize(Math.round(v))}
+            min={100}
+            max={800}
+            step={10}
+          />
         </Section>
 
         {/* Presets */}
@@ -316,32 +373,45 @@ export default function OrbPreview() {
             <PresetButton
               label="ORIEL Default"
               onClick={() => {
-                setColor1("#affff1"); setColor2("#9696ff"); setBgColor("#05050a");
-                setBorderColor("#2a2a35"); setBorderWidth(2); setBorderOpacity(0.6); setBorderGap(4);
+                setColor1("#affff1");
+                setColor2("#9696ff");
+                setBgColor("#05050a");
+                setBorderColor("#2a2a35");
+                setBorderWidth(2);
+                setBorderOpacity(0.6);
+                setBorderGap(4);
               }}
             />
             <PresetButton
-              label="Teal + Gold"
+              label="Amber + Gold"
               onClick={() => {
-                setColor1("#3CD2DC"); setColor2("#BDA36B"); setBgColor("#05050a");
+                setColor1("#3CD2DC");
+                setColor2("#BDA36B");
+                setBgColor("#05050a");
               }}
             />
             <PresetButton
-              label="Cyan + Indigo"
+              label="Amber + Indigo"
               onClick={() => {
-                setColor1("#00E5FF"); setColor2("#1A0A3A"); setBgColor("#05050a");
+                setColor1("#00E5FF");
+                setColor2("#1A0A3A");
+                setBgColor("#05050a");
               }}
             />
             <PresetButton
               label="No Border"
               onClick={() => {
-                setBorderWidth(0); setBorderGap(0);
+                setBorderWidth(0);
+                setBorderGap(0);
               }}
             />
             <PresetButton
               label="Thick Border"
               onClick={() => {
-                setBorderWidth(4); setBorderColor("#3a3a4a"); setBorderOpacity(0.8); setBorderGap(6);
+                setBorderWidth(4);
+                setBorderColor("#3a3a4a");
+                setBorderOpacity(0.8);
+                setBorderGap(6);
               }}
             />
           </div>
@@ -354,7 +424,9 @@ export default function OrbPreview() {
             padding: "10px",
             borderRadius: 6,
             border: "1px solid rgba(0,229,255,0.3)",
-            background: copied ? "rgba(0,229,255,0.15)" : "rgba(0,229,255,0.05)",
+            background: copied
+              ? "rgba(0,229,255,0.15)"
+              : "rgba(0,229,255,0.05)",
             color: "#00e5ff",
             cursor: "pointer",
             fontSize: 11,
@@ -384,7 +456,13 @@ export default function OrbPreview() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <div
@@ -403,19 +481,33 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function ColorInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function ColorInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
   return (
     <div className="flex items-center gap-2">
       <input
         type="color"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ width: 28, height: 28, border: "none", cursor: "pointer", background: "transparent" }}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          width: 28,
+          height: 28,
+          border: "none",
+          cursor: "pointer",
+          background: "transparent",
+        }}
       />
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         style={{
           flex: 1,
           padding: "4px 8px",
@@ -424,22 +516,42 @@ function ColorInput({ label, value, onChange }: { label: string; value: string; 
           background: "rgba(0,0,0,0.3)",
           color: "#e8e4dc",
           fontSize: 11,
-          fontFamily: "monospace",
+          fontFamily: "var(--font-ritual)",
         }}
       />
-      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", minWidth: 60 }}>{label}</span>
+      <span
+        style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", minWidth: 60 }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
 
-function Slider({ label, value, onChange, min, max, step }: {
-  label: string; value: number; onChange: (v: number) => void; min: number; max: number; step: number;
+function Slider({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
 }) {
   return (
     <div>
       <div className="flex justify-between" style={{ marginBottom: 2 }}>
-        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>{label}</span>
-        <span style={{ fontSize: 10, color: "#00e5ff" }}>{step < 1 ? value.toFixed(2) : value}</span>
+        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)" }}>
+          {label}
+        </span>
+        <span style={{ fontSize: 10, color: "#00e5ff" }}>
+          {step < 1 ? value.toFixed(2) : value}
+        </span>
       </div>
       <input
         type="range"
@@ -447,14 +559,20 @@ function Slider({ label, value, onChange, min, max, step }: {
         max={max}
         step={step}
         value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
+        onChange={e => onChange(parseFloat(e.target.value))}
         style={{ width: "100%", accentColor: "#00e5ff" }}
       />
     </div>
   );
 }
 
-function PresetButton({ label, onClick }: { label: string; onClick: () => void }) {
+function PresetButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <button
       onClick={onClick}

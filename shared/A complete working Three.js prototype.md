@@ -16,27 +16,27 @@ const camera = new THREE.PerspectiveCamera(
 
 camera.position.set(0, 15, 25);
 
-const renderer = new THREE.WebGLRenderer({ antialias:true });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 
-const light = new THREE.PointLight(0xffffff,1.5);
-light.position.set(20,20,20);
+const light = new THREE.PointLight(0xffffff, 1.5);
+light.position.set(20, 20, 20);
 scene.add(light);
 
 scene.add(new THREE.AmbientLight(0x444444));
 
 /* Torus Reference Geometry */
 
-const torusGeometry = new THREE.TorusGeometry(10,4,32,100);
+const torusGeometry = new THREE.TorusGeometry(10, 4, 32, 100);
 const torusMaterial = new THREE.MeshBasicMaterial({
-  wireframe:true,
-  color:0x222244
+  wireframe: true,
+  color: 0x222244,
 });
 
-const torus = new THREE.Mesh(torusGeometry,torusMaterial);
+const torus = new THREE.Mesh(torusGeometry, torusMaterial);
 scene.add(torus);
 
 /* Codon Node Generator */
@@ -45,30 +45,29 @@ const R = 10;
 const r = 4;
 
 const nodeMaterial = new THREE.MeshStandardMaterial({
-  color:0x66ccff,
-  emissive:0x113355,
-  emissiveIntensity:2
+  color: 0x66ccff,
+  emissive: 0x113355,
+  emissiveIntensity: 2,
 });
 
-const nodeGeometry = new THREE.SphereGeometry(0.3,16,16);
+const nodeGeometry = new THREE.SphereGeometry(0.3, 16, 16);
 
 const nodes = [];
 
-for(let i=0;i<64;i++){
-
+for (let i = 0; i < 64; i++) {
   const uIndex = i % 8;
   const vIndex = Math.floor(i / 8);
 
-  const u = (uIndex/8) * Math.PI*2;
-  const v = (vIndex/8) * Math.PI*2;
+  const u = (uIndex / 8) * Math.PI * 2;
+  const v = (vIndex / 8) * Math.PI * 2;
 
-  const x = (R + r*Math.cos(v)) * Math.cos(u);
-  const y = (R + r*Math.cos(v)) * Math.sin(u);
-  const z = r*Math.sin(v);
+  const x = (R + r * Math.cos(v)) * Math.cos(u);
+  const y = (R + r * Math.cos(v)) * Math.sin(u);
+  const z = r * Math.sin(v);
 
-  const node = new THREE.Mesh(nodeGeometry,nodeMaterial);
+  const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
 
-  node.position.set(x,y,z);
+  node.position.set(x, y, z);
 
   scene.add(node);
 
@@ -77,34 +76,29 @@ for(let i=0;i<64;i++){
 
 /* Animation */
 
-function animate(){
-
+function animate() {
   requestAnimationFrame(animate);
 
   torus.rotation.y += 0.002;
 
-  nodes.forEach(n=>{
+  nodes.forEach(n => {
     n.rotation.y += 0.01;
   });
 
-  renderer.render(scene,camera);
+  renderer.render(scene, camera);
 }
 
 animate();
 
 /* Resize */
 
-window.addEventListener("resize",()=>{
-
-  camera.aspect = window.innerWidth/window.innerHeight;
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
 
-  renderer.setSize(window.innerWidth,window.innerHeight);
-
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 ```
-
-
 
 # What This Prototype Does
 
@@ -131,7 +125,7 @@ u = around torus
 v = around tube
 ```
 
-------
+---
 
 # What We'll Add Next
 
@@ -154,7 +148,7 @@ transpersonal
 
 stacked vertically.
 
-------
+---
 
 ### Step 3
 
@@ -168,7 +162,7 @@ Hamming distance = 1
 
 Energy lines will appear between them.
 
-------
+---
 
 ### Step 4
 
@@ -177,10 +171,10 @@ Energy lines will appear between them.
 When you click a node:
 
 • highlight mutation neighbors
- • expand pillar layers
- • show archetype info panel
+• expand pillar layers
+• show archetype info panel
 
-------
+---
 
 # What You'll Eventually Have
 
@@ -195,18 +189,14 @@ living energy connections
 
 Users will literally **navigate consciousness topology**.
 
-------
+---
 
 If you'd like, I can also show you something extremely useful next:
 
 **A complete interactive mockup of the final interface layout**
- (the Conduit Hub, panels, controls, torus view).
+(the Conduit Hub, panels, controls, torus view).
 
 That makes it **much easier for developers to build the full system.**
-
-
-
-
 
 # Conduit Hub — Interface Architecture
 
@@ -230,7 +220,7 @@ The interface is organized around a **central visualization with contextual pane
  └───────────────────────────────┴──────────────┘
 ```
 
-------
+---
 
 # 1. Center — Toroidal Codon Field
 
@@ -239,10 +229,10 @@ This is the **main interactive visualization**.
 What users can do:
 
 • rotate the torus
- • zoom inside the torus
- • click codon nodes
- • view mutation neighbors
- • watch energy flows
+• zoom inside the torus
+• click codon nodes
+• view mutation neighbors
+• watch energy flows
 
 Each codon displays as:
 
@@ -256,7 +246,7 @@ Each codon displays as:
  └ transpersonal
 ```
 
-------
+---
 
 # 2. Top Bar
 
@@ -281,7 +271,7 @@ Modes:
 Mandala | Torus | Grid
 ```
 
-------
+---
 
 # 3. Left Panel — Archetype Navigator
 
@@ -305,9 +295,9 @@ Clusters
 Clicking a cluster:
 
 • highlights its codons
- • rotates torus toward them
+• rotates torus toward them
 
-------
+---
 
 # 4. Node Details Panel (Bottom)
 
@@ -340,10 +330,10 @@ Somatic | Relational | Cognitive | Transpersonal
 Each tab shows:
 
 • practices
- • reflections
- • insights
+• reflections
+• insights
 
-------
+---
 
 # 5. Right Panel — Signal State
 
@@ -366,7 +356,7 @@ Recent Reflections
 • Insight Event
 ```
 
-------
+---
 
 # 6. Mutation Explorer
 
@@ -389,7 +379,7 @@ Neighbors
 
 Energy lines connect them visually.
 
-------
+---
 
 # 7. Zoom Levels
 
@@ -419,7 +409,7 @@ single pillar expanded
 deep psychological interface
 ```
 
-------
+---
 
 # 8. Interaction Flow
 
@@ -445,7 +435,7 @@ visual torus responds
 
 The visualization becomes a **mirror of inner state**.
 
-------
+---
 
 # 9. Animation Language
 
@@ -461,7 +451,7 @@ particle flows
 
 This makes the experience **meditative rather than mechanical**.
 
-------
+---
 
 # 10. Visual Style Guide
 
@@ -482,7 +472,7 @@ subtle starfield
 soft volumetric light
 ```
 
-------
+---
 
 # 11. Technology Stack for the UI
 
@@ -497,7 +487,7 @@ TailwindCSS
 
 This stack lets the **3D field and interface panels work together smoothly**.
 
-------
+---
 
 # What This System Ultimately Becomes
 

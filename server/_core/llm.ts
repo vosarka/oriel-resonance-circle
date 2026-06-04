@@ -19,7 +19,12 @@ export type FileContent = {
   type: "file_url";
   file_url: {
     url: string;
-    mime_type?: "audio/mpeg" | "audio/wav" | "application/pdf" | "audio/mp4" | "video/mp4" ;
+    mime_type?:
+      | "audio/mpeg"
+      | "audio/wav"
+      | "application/pdf"
+      | "audio/mp4"
+      | "video/mp4";
   };
 };
 
@@ -180,7 +185,10 @@ const buildProviderMessages = (messages: Message[]) => {
   };
 
   const firstMessage = normalizedMessages[0];
-  if (firstMessage?.role === "system" && typeof firstMessage.content === "string") {
+  if (
+    firstMessage?.role === "system" &&
+    typeof firstMessage.content === "string"
+  ) {
     return [
       {
         ...firstMessage,
@@ -237,34 +245,39 @@ const resolveGeminiUrl = () =>
 
 const resolveGeminiKey = () => ENV.geminiApiKey;
 
-const resolveGeminiModel = () => ENV.llmModel || ENV.geminiModel || "gemini-2.5-flash";
+const resolveGeminiModel = () =>
+  ENV.llmModel || ENV.geminiModel || "gemini-2.5-flash";
 
 const resolveGemmaUrl = () =>
-  ENV.gemmaApiUrl || "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+  ENV.gemmaApiUrl ||
+  "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 const resolveGemmaKey = () => ENV.gemmaApiKey || ENV.geminiApiKey;
 
-const resolveGemmaModel = () => ENV.llmModel || ENV.gemmaModel || "gemma-4-31b-it";
+const resolveGemmaModel = () =>
+  ENV.llmModel || ENV.gemmaModel || "gemma-4-31b-it";
 
 const resolveForgeUrl = () => ENV.forgeApiUrl;
 
 const resolveForgeKey = () => ENV.forgeApiKey;
 
-const resolveForgeModel = () => ENV.llmModel || ENV.forgeModel || "gemini-2.5-flash";
+const resolveForgeModel = () =>
+  ENV.llmModel || ENV.forgeModel || "gemini-2.5-flash";
 
-const isLocalUrl = (url: string) => url.includes("localhost") || url.includes("127.0.0.1");
+const isLocalUrl = (url: string) =>
+  url.includes("localhost") || url.includes("127.0.0.1");
 
 function elapsedMs(startedAt: number) {
   return Date.now() - startedAt;
 }
 
 function redactSecrets(text: string) {
-  return [
-    ENV.geminiApiKey,
-    ENV.gemmaApiKey,
-    ENV.forgeApiKey,
-  ].filter((secret) => secret.length >= 6)
-    .reduce((current, secret) => current.split(secret).join("[redacted]"), text);
+  return [ENV.geminiApiKey, ENV.gemmaApiKey, ENV.forgeApiKey]
+    .filter(secret => secret.length >= 6)
+    .reduce(
+      (current, secret) => current.split(secret).join("[redacted]"),
+      text
+    );
 }
 
 function formatProviderError(error: unknown) {
@@ -278,7 +291,9 @@ const assertApiKey = () => {
   const gemmaUrl = resolveGemmaUrl();
   const forgeKey = resolveForgeKey();
   if (!gemmaKey && !geminiKey && !forgeKey && !isLocalUrl(gemmaUrl)) {
-    throw new Error("No LLM API key configured. Set GEMMA_API_KEY, GEMINI_API_KEY, BUILT_IN_FORGE_API_KEY, or point GEMMA_API_URL at a local OpenAI-compatible server.");
+    throw new Error(
+      "No LLM API key configured. Set GEMMA_API_KEY, GEMINI_API_KEY, BUILT_IN_FORGE_API_KEY, or point GEMMA_API_URL at a local OpenAI-compatible server."
+    );
   }
 };
 
@@ -385,7 +400,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const startedAt = Date.now();
     console.log(
       `[LLM] Attempting ${provider.name} API call with model ${provider.model} ` +
-      `(attempt ${provider.attempt})...`,
+        `(attempt ${provider.attempt})...`
     );
     const headers: Record<string, string> = {
       "content-type": "application/json",
@@ -399,7 +414,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     const timeoutPromise = new Promise<Response>((_, reject) => {
       timeout = setTimeout(() => {
         controller.abort();
-        reject(new Error(`${provider.name} timed out after ${ENV.llmRequestTimeoutMs}ms`));
+        reject(
+          new Error(
+            `${provider.name} timed out after ${ENV.llmRequestTimeoutMs}ms`
+          )
+        );
       }, ENV.llmRequestTimeoutMs);
     });
 
@@ -413,12 +432,17 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       }),
     });
 
-    const response = await Promise.race([requestPromise, timeoutPromise]).finally(() => {
+    const response = await Promise.race([
+      requestPromise,
+      timeoutPromise,
+    ]).finally(() => {
       if (timeout) clearTimeout(timeout);
     });
 
     if (response.ok) {
-      console.log(`[LLM] ${provider.name} API succeeded in ${elapsedMs(startedAt)}ms`);
+      console.log(
+        `[LLM] ${provider.name} API succeeded in ${elapsedMs(startedAt)}ms`
+      );
       return (await response.json()) as InvokeResult;
     }
 
@@ -426,8 +450,8 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     throw new Error(
       redactSecrets(
         `${provider.name} failed after ${elapsedMs(startedAt)}ms: ` +
-        `${response.status} ${response.statusText} – ${errorText}`,
-      ),
+          `${response.status} ${response.statusText} – ${errorText}`
+      )
     );
   };
 
@@ -451,13 +475,14 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   };
 
   const selectedProvider = ENV.llmProvider;
-  const providers = selectedProvider === "gemma"
-    ? [gemmaProvider, geminiProvider, forgeProvider]
-    : selectedProvider === "forge"
-      ? [forgeProvider, gemmaProvider, geminiProvider]
-      : selectedProvider === "gemini"
-        ? [geminiProvider, gemmaProvider, forgeProvider]
-        : [gemmaProvider, geminiProvider, forgeProvider];
+  const providers =
+    selectedProvider === "gemma"
+      ? [gemmaProvider, geminiProvider, forgeProvider]
+      : selectedProvider === "forge"
+        ? [forgeProvider, gemmaProvider, geminiProvider]
+        : selectedProvider === "gemini"
+          ? [geminiProvider, gemmaProvider, forgeProvider]
+          : [gemmaProvider, geminiProvider, forgeProvider];
 
   let lastError: unknown = null;
   let attempt = 0;
@@ -472,12 +497,14 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
     } catch (error) {
       lastError = error;
       console.warn(
-        `[LLM] ${provider.name} API error on attempt ${attempt}: ${formatProviderError(error)}`,
+        `[LLM] ${provider.name} API error on attempt ${attempt}: ${formatProviderError(error)}`
       );
     }
   }
 
   throw lastError instanceof Error
     ? lastError
-    : new Error("No LLM API available: all configured providers failed or are unavailable");
+    : new Error(
+        "No LLM API available: all configured providers failed or are unavailable"
+      );
 }

@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Loader2, Send, Trash2 } from 'lucide-react';
-import { Streamdown } from 'streamdown';
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Send, Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Streamdown } from "streamdown";
 
 interface StreamChunk {
-  type: 'chunk' | 'complete' | 'error';
+  type: "chunk" | "complete" | "error";
   content: string;
   chunkIndex: number;
   totalChunks?: number;
@@ -14,7 +15,7 @@ interface StreamChunk {
 }
 
 interface ChatMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   timestamp: number;
   isStreaming?: boolean;
@@ -23,29 +24,29 @@ interface ChatMessage {
 
 export default function StreamingChatComplete() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentStreamingContent, setCurrentStreamingContent] = useState('');
+  const [currentStreamingContent, setCurrentStreamingContent] = useState("");
   const [streamingError, setStreamingError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
   // Auto-scroll to latest message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, currentStreamingContent]);
 
   const handleStreamingChat = async () => {
     if (!input.trim()) return;
 
     const userMessage = input;
-    setInput('');
+    setInput("");
     setStreamingError(null);
-    setCurrentStreamingContent('');
+    setCurrentStreamingContent("");
 
     // Add user message
     const newUserMessage: ChatMessage = {
-      role: 'user',
+      role: "user",
       content: userMessage,
       timestamp: Date.now(),
     };
@@ -53,8 +54,8 @@ export default function StreamingChatComplete() {
 
     // Add placeholder for assistant response
     const assistantPlaceholder: ChatMessage = {
-      role: 'assistant',
-      content: '',
+      role: "assistant",
+      content: "",
       timestamp: Date.now(),
       isStreaming: true,
       isComplete: false,
@@ -84,19 +85,22 @@ export default function StreamingChatComplete() {
       const eventSource = new EventSource(`/api/chat/stream?${params}`);
       eventSourceRef.current = eventSource;
 
-      let fullContent = '';
+      let fullContent = "";
       let lastChunkIndex = -1;
 
-      eventSource.addEventListener('message', (event: MessageEvent) => {
-        if (event.data === '[DONE]') {
+      eventSource.addEventListener("message", (event: MessageEvent) => {
+        if (event.data === "[DONE]") {
           // Streaming complete
-          console.log('[Chat] Streaming complete. Total content length:', fullContent.length);
+          console.log(
+            "[Chat] Streaming complete. Total content length:",
+            fullContent.length
+          );
 
           // Update message as complete
           setMessages(prev => {
             const updated = [...prev];
             const lastMsg = updated[updated.length - 1];
-            if (lastMsg && lastMsg.role === 'assistant') {
+            if (lastMsg && lastMsg.role === "assistant") {
               lastMsg.content = fullContent;
               lastMsg.isStreaming = false;
               lastMsg.isComplete = true;
@@ -104,7 +108,7 @@ export default function StreamingChatComplete() {
             return updated;
           });
 
-          setCurrentStreamingContent('');
+          setCurrentStreamingContent("");
           setIsStreaming(false);
           eventSource.close();
           return;
@@ -113,40 +117,45 @@ export default function StreamingChatComplete() {
         try {
           const chunk: StreamChunk = JSON.parse(event.data);
 
-          if (chunk.type === 'error') {
+          if (chunk.type === "error") {
             setStreamingError(chunk.content);
-            console.error('[Chat] Stream error:', chunk.content);
+            console.error("[Chat] Stream error:", chunk.content);
             return;
           }
 
-          if (chunk.type === 'chunk') {
+          if (chunk.type === "chunk") {
             fullContent += chunk.content;
             setCurrentStreamingContent(fullContent);
             lastChunkIndex = chunk.chunkIndex;
-            console.log(`[Chat] Chunk ${chunk.chunkIndex}/${chunk.totalChunks}: ${chunk.content.length} chars`);
+            console.log(
+              `[Chat] Chunk ${chunk.chunkIndex}/${chunk.totalChunks}: ${chunk.content.length} chars`
+            );
           }
 
-          if (chunk.type === 'complete') {
+          if (chunk.type === "complete") {
             // Verify completeness
-            console.log('[Chat] Completion signal received');
-            console.log('[Chat] Reconstructed length:', fullContent.length);
-            console.log('[Chat] Completion signal length:', chunk.content.length);
+            console.log("[Chat] Completion signal received");
+            console.log("[Chat] Reconstructed length:", fullContent.length);
+            console.log(
+              "[Chat] Completion signal length:",
+              chunk.content.length
+            );
 
             if (fullContent !== chunk.content) {
-              console.warn('[Chat] Content mismatch detected!');
+              console.warn("[Chat] Content mismatch detected!");
               // Use completion signal content as source of truth
               fullContent = chunk.content;
               setCurrentStreamingContent(fullContent);
             }
           }
         } catch (error) {
-          console.error('[Chat] Failed to parse chunk:', error);
+          console.error("[Chat] Failed to parse chunk:", error);
         }
       });
 
-      eventSource.addEventListener('error', (error: Event) => {
-        console.error('[Chat] EventSource error:', error);
-        setStreamingError('Connection lost during streaming');
+      eventSource.addEventListener("error", (error: Event) => {
+        console.error("[Chat] EventSource error:", error);
+        setStreamingError("Connection lost during streaming");
         setIsStreaming(false);
         eventSource.close();
 
@@ -154,7 +163,7 @@ export default function StreamingChatComplete() {
         setMessages(prev => {
           const updated = [...prev];
           const lastMsg = updated[updated.length - 1];
-          if (lastMsg && lastMsg.role === 'assistant') {
+          if (lastMsg && lastMsg.role === "assistant") {
             lastMsg.isStreaming = false;
             lastMsg.isComplete = false;
           }
@@ -162,16 +171,18 @@ export default function StreamingChatComplete() {
         });
       });
     } catch (error) {
-      console.error('[Chat] Error:', error);
-      setStreamingError(error instanceof Error ? error.message : 'Unknown error');
+      console.error("[Chat] Error:", error);
+      setStreamingError(
+        error instanceof Error ? error.message : "Unknown error"
+      );
       setIsStreaming(false);
 
       // Update message as failed
       setMessages(prev => {
         const updated = [...prev];
         const lastMsg = updated[updated.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-          lastMsg.content = 'Failed to get response. Please try again.';
+        if (lastMsg && lastMsg.role === "assistant") {
+          lastMsg.content = "Failed to get response. Please try again.";
           lastMsg.isStreaming = false;
           lastMsg.isComplete = false;
         }
@@ -182,7 +193,7 @@ export default function StreamingChatComplete() {
 
   const handleClearHistory = () => {
     setMessages([]);
-    setCurrentStreamingContent('');
+    setCurrentStreamingContent("");
     setStreamingError(null);
   };
 
@@ -196,28 +207,33 @@ export default function StreamingChatComplete() {
           </div>
         ) : (
           messages.map((msg, idx) => (
-            <div key={idx} className={`space-y-1 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+            <div
+              key={idx}
+              className={`space-y-1 ${msg.role === "user" ? "text-right" : "text-left"}`}
+            >
               <div
                 className={`inline-block max-w-xs px-4 py-2 rounded-lg ${
-                  msg.role === 'user'
-                    ? 'bg-primary/10 text-primary/80 border border-primary/30'
-                    : 'bg-blue-400/20 text-blue-300 border border-blue-400/50'
+                  msg.role === "user"
+                    ? "bg-primary/10 text-primary/80 border border-primary/30"
+                    : "bg-primary/10 text-primary/80 border border-primary/40"
                 }`}
               >
                 <div className="text-sm">
-                  {msg.role === 'assistant' && msg.isStreaming ? (
+                  {msg.role === "assistant" && msg.isStreaming ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="animate-spin" size={14} />
+                      <Spinner size={14} label="Streaming response" />
                       <span>Streaming...</span>
                     </div>
-                  ) : msg.role === 'assistant' && !msg.isComplete ? (
-                    <div className="text-xs text-yellow-400">Incomplete message</div>
+                  ) : msg.role === "assistant" && !msg.isComplete ? (
+                    <div className="text-xs text-yellow-400">
+                      Incomplete message
+                    </div>
                   ) : (
                     <Streamdown>{msg.content}</Streamdown>
                   )}
                 </div>
               </div>
-              {msg.role === 'assistant' && msg.isStreaming && (
+              {msg.role === "assistant" && msg.isStreaming && (
                 <div className="text-xs text-gray-500 ml-2">
                   {currentStreamingContent.length} characters received...
                 </div>
@@ -242,7 +258,7 @@ export default function StreamingChatComplete() {
           placeholder="Ask ORIEL..."
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyPress={e => e.key === 'Enter' && handleStreamingChat()}
+          onKeyPress={e => e.key === "Enter" && handleStreamingChat()}
           disabled={isStreaming}
           className="flex-1 bg-black/50 border-primary/20 text-white placeholder-gray-500"
         />
@@ -251,7 +267,11 @@ export default function StreamingChatComplete() {
           disabled={!input.trim() || isStreaming}
           className="bg-primary/10 hover:bg-primary/15 border border-primary/30 text-primary"
         >
-          {isStreaming ? <Loader2 className="animate-spin" size={18} /> : <Send size={18} />}
+          {isStreaming ? (
+            <Spinner size={18} label="Sending stream" />
+          ) : (
+            <Send size={18} />
+          )}
         </Button>
         <Button
           onClick={handleClearHistory}

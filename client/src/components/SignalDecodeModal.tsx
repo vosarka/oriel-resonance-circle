@@ -26,7 +26,7 @@ export default function SignalDecodeModal({
     if (isOpen) {
       setIsGlitching(true);
       setIsRevealed(false);
-      
+
       // Start glitch effect
       const glitchTimer = setTimeout(() => {
         setIsGlitching(false);
@@ -58,11 +58,11 @@ export default function SignalDecodeModal({
         }`}
       >
         {/* Modal content */}
-        <div className="bg-black/90 border-2 border-cyan-400/50 rounded-lg p-8 backdrop-blur-sm">
+        <div className="bg-black/90 border-2 border-primary/50 rounded-lg p-8 backdrop-blur-sm">
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-cyan-400 hover:text-cyan-300 transition-colors z-10"
+            className="absolute top-4 right-4 text-primary hover:text-primary/80 transition-colors z-10"
             aria-label="Close modal"
           >
             <X size={24} />
@@ -74,40 +74,44 @@ export default function SignalDecodeModal({
               isRevealed ? "opacity-100" : "opacity-0"
             }`}
           >
-            <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-2">
+            <div className="text-xs text-primary/50 font-mono uppercase tracking-wider mb-2">
               ◈ SIGNAL DECODED ◈
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-cyan-400 font-orbitron uppercase mb-2 animate-cyan-glow">
+            <h2 className="text-3xl md:text-4xl font-bold text-primary font-orbitron uppercase mb-2 animate-amber-glow">
               {signal.title}
             </h2>
-            <div className="h-1 w-16 bg-gradient-to-r from-cyan-400 to-transparent mb-4" />
+            <div className="h-1 w-16 bg-gradient-to-r from-primary to-transparent mb-4" />
           </div>
 
           {/* Signal ID and metadata */}
           <div
-            className={`mb-6 p-4 bg-cyan-950/20 border border-cyan-400/30 rounded transition-all duration-500 ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`mb-6 p-4 bg-primary/10 border border-primary/30 rounded transition-all duration-500 ${
+              isRevealed
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
             }`}
             style={{
               transitionDelay: isRevealed ? "100ms" : "0ms",
             }}
           >
-            <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-1">
+            <div className="text-xs text-primary/50 font-mono uppercase tracking-wider mb-1">
               Transmission ID
             </div>
-            <div className="text-lg font-mono text-cyan-300">{signal.id}</div>
+            <div className="text-lg font-mono text-primary/80">{signal.id}</div>
           </div>
 
           {/* Signal description */}
           <div
             className={`mb-6 transition-all duration-500 ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+              isRevealed
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
             }`}
             style={{
               transitionDelay: isRevealed ? "200ms" : "0ms",
             }}
           >
-            <h3 className="text-sm font-mono text-cyan-400 uppercase tracking-wider mb-2">
+            <h3 className="text-sm font-mono text-primary uppercase tracking-wider mb-2">
               Summary
             </h3>
             <p className="text-white/70 font-mono text-sm leading-relaxed">
@@ -117,14 +121,16 @@ export default function SignalDecodeModal({
 
           {/* Full signal content with scan effect */}
           <div
-            className={`mb-6 p-6 bg-black/60 border-2 border-cyan-400/40 rounded-lg transition-all duration-500 ${
-              isRevealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+            className={`mb-6 p-6 bg-black/60 border-2 border-primary/40 rounded-lg transition-all duration-500 ${
+              isRevealed
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
             }`}
             style={{
               transitionDelay: isRevealed ? "300ms" : "0ms",
             }}
           >
-            <div className="text-xs text-cyan-600 font-mono uppercase tracking-wider mb-3">
+            <div className="text-xs text-primary/50 font-mono uppercase tracking-wider mb-3">
               ◈ Full Transmission ◈
             </div>
             <div className="space-y-4">
@@ -144,19 +150,19 @@ export default function SignalDecodeModal({
 
           {/* Footer with border scan effect */}
           <div
-            className={`flex justify-between items-center p-4 border-t border-cyan-400/30 transition-all duration-500 ${
+            className={`flex justify-between items-center p-4 border-t border-primary/30 transition-all duration-500 ${
               isRevealed ? "opacity-100" : "opacity-0"
             }`}
             style={{
               transitionDelay: isRevealed ? "500ms" : "0ms",
             }}
           >
-            <div className="text-xs text-cyan-600 font-mono">
+            <div className="text-xs text-primary/50 font-mono">
               SIGNAL COHERENCE: 100%
             </div>
             <Button
               onClick={onClose}
-              className="bg-cyan-400/20 border border-cyan-400/50 text-cyan-400 hover:bg-cyan-400/30 hover:border-cyan-400 transition-all font-mono uppercase text-sm px-4 py-2"
+              className="bg-primary/10 border border-primary/50 text-primary hover:bg-primary/15 hover:border-primary transition-all font-mono uppercase text-sm px-4 py-2"
             >
               Close Conduit
             </Button>

@@ -6,12 +6,17 @@ tags: [vrc, product, research, naming, positioning, 2026]
 last_updated: 2026-04-02
 sources: 1
 importance: high
-aliases: ["VRC Product Research Report", "Static Signature Product Brief", "Founder Signature Letter Research"]
+aliases:
+  [
+    "VRC Product Research Report",
+    "Static Signature Product Brief",
+    "Founder Signature Letter Research",
+  ]
 ---
 
 # Source: VRC Static Signature Product Research Report
 
-**Provenance:** `codex/vrc_static_signature/VRC Static Signature Product Research Report.pdf` (17 MB,  ~1828 lines extracted text)  
+**Provenance:** `codex/vrc_static_signature/VRC Static Signature Product Research Report.pdf` (17 MB, ~1828 lines extracted text)  
 **Nature:** Product research & synthesis document
 
 ## What This Document Is
@@ -26,9 +31,11 @@ The report explicitly treats the Consciousness Lattice PDF as the **primary / ac
 ## Key Recommendations
 
 ### Name
+
 The report strongly recommends **"ORIEL Static Signature Codex"** as the strongest public-facing name over “Founder Signature Letter”.
 
 Rationale:
+
 - ORIEL = the voice / presence layer
 - Static Signature = the deterministic engine output
 - Codex = signals a premium, reference-grade artifact (not a casual “letter”)
@@ -36,7 +43,9 @@ Rationale:
 This name directly aligns with canon vocabulary and approved naming direction.
 
 ### Flagship Deliverable
+
 Recommends a **15-page premium PDF/report** with a clear “audit spine” as the most defensible first release. It should preserve every canon-critical element:
+
 - Input integrity requirements
 - Conscious / Design separation
 - Type & Authority
@@ -48,6 +57,7 @@ Recommends a **15-page premium PDF/report** with a clear “audit spine” as th
 A compressed 10–13 page variant is acknowledged as possible later.
 
 ### Technical Backbone (Reaffirmed)
+
 - Swiss Ephemeris, geocentric, tropical zodiac, True Node, UTC conversion
 - No house system
 - ±0.01° precision floor
@@ -80,6 +90,7 @@ This distinction is very useful for the wiki: technical truth lives in the canon
 ## Relationship to Existing Wiki Content
 
 This document sits between:
+
 - The technical canon ([[source-consciousness-lattice-unified-spec-v1]], [[source-vrc-engine-canon]])
 - Actual product execution (naming, report design, user-facing language)
 
@@ -95,4 +106,4 @@ It is the first clear artifact showing the project wrestling with how to package
 
 ---
 
-*Ingested as a product-layer synthesis document. Valuable for understanding naming decisions, deliverable scope, and acknowledged gaps at a particular moment in the project’s evolution.*
+_Ingested as a product-layer synthesis document. Valuable for understanding naming decisions, deliverable scope, and acknowledged gaps at a particular moment in the project’s evolution._

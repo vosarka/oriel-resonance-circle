@@ -6,7 +6,12 @@ tags: [consciousness-lattice, specification, vrc, rgp, architecture, 2026]
 last_updated: 2026-04-02
 sources: 1
 importance: critical
-aliases: ["Consciousness Lattice Unified Spec v1", "Unified System Specification", "CL Spec"]
+aliases:
+  [
+    "Consciousness Lattice Unified Spec v1",
+    "Unified System Specification",
+    "CL Spec",
+  ]
 ---
 
 # Source: Consciousness Lattice — Unified System Specification v1
@@ -31,7 +36,7 @@ This is the **unifying master specification** for the entire Vossari diagnostic 
 - The 512-node Consciousness Lattice model
 - Visualization & Interface Architecture (including 3D Lattice)
 
-It is the most comprehensive single document describing *how the whole system fits together*.
+It is the most comprehensive single document describing _how the whole system fits together_.
 
 ## Core Premise (Direct Quote)
 
@@ -40,26 +45,32 @@ It is the most comprehensive single document describing *how the whole system fi
 ## Key Architectural Contributions
 
 ### 1. The 512-Node Consciousness Lattice
+
 - 64 Codons × 4 Facets (Somatic / Relational / Cognitive / Transpersonal) × 2 Layers (Personality/Conscious + Design/Body) = **512 expression nodes**.
 - 512 = 2⁹, mapping to the nine regulatory centers.
 - This is the mathematical heart of the "Consciousness Lattice" concept.
 
 ### 2. Mandatory Dual-Engine Architecture
+
 - **Engine A — Codex Engine (Static Signature)**: Immutable birth imprint (Fractal Role, Authority, 9-Center Map). Deterministic.
 - **Engine B — Carrierlock Engine (Dynamic State)**: Real-time coherence measurement (Mental Noise, Body Tension, Emotional Turbulence, Breath Completion). Fluctuating.
 - Explicit warning against conflating transient state with structural blueprint.
 
 ### 3. Cosmic Mapping Layer
+
 - Tropical Zodiac, 5.625° per codon.
 - **Mandala Sequence** (non-sequential): The 64 codons are arranged in four specific quadrants around the wheel, not 1–64 in order. This sequence is mandatory for correct mapping.
 - Detailed planetary weight table (Sun 100, Earth 100, Moon 70...).
 - Precise conversion algorithm for longitude → codon + facet.
 
 ### 4. Nine Centers of Photonic Resonance
+
 Complete table with Center ID, Name, Type (Pressure/Awareness/Motor), and associated codons. Centers can be Defined (colored) or Open (white/amplifying).
 
 ### 5. Visualization Vision
+
 Explicitly calls for:
+
 - 3D Consciousness Lattice (Three.js / WebGL)
 - Codon Zodiac Wheel
 - Center Body Map (human silhouette)
@@ -70,6 +81,7 @@ Explicitly calls for:
 Design philosophy: "The user should feel like they are exploring a map of consciousness rather than reading a report."
 
 ### 6. Future Roadmap (explicitly includes)
+
 - AI-assisted interpretation via **ORIEL narration**
 - Coherence trajectory prediction
 - Group resonance mapping
@@ -110,4 +122,4 @@ It is **not** the runtime code (that lives in `server/RGP Engines/` and the code
 
 ---
 
-*Ingested as a foundational source. Future revisions or implementation deviations from this spec should be explicitly noted and cross-referenced here.*
+_Ingested as a foundational source. Future revisions or implementation deviations from this spec should be explicitly noted and cross-referenced here._

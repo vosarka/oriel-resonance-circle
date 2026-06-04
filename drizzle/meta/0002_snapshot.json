@@ -72,9 +72,7 @@
       "compositePrimaryKeys": {
         "artifacts_id": {
           "name": "artifacts_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -125,9 +123,7 @@
       "compositePrimaryKeys": {
         "chatMessages_id": {
           "name": "chatMessages_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -178,17 +174,13 @@
       "compositePrimaryKeys": {
         "signals_id": {
           "name": "signals_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "signals_signalId_unique": {
           "name": "signals_signalId_unique",
-          "columns": [
-            "signalId"
-          ]
+          "columns": ["signalId"]
         }
       },
       "checkConstraint": {}
@@ -306,23 +298,17 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_openId_unique": {
           "name": "users_openId_unique",
-          "columns": [
-            "openId"
-          ]
+          "columns": ["openId"]
         },
         "users_conduitId_unique": {
           "name": "users_conduitId_unique",
-          "columns": [
-            "conduitId"
-          ]
+          "columns": ["conduitId"]
         }
       },
       "checkConstraint": {}

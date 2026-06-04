@@ -5,7 +5,8 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 1. AESTHETICS & BRANDING TOKENS
-- **Design Philosophy**: *Sacred Technology* (Vossari civilization style: high-precision instrumentation meets ancient geometry).
+
+- **Design Philosophy**: _Sacred Technology_ (Vossari civilization style: high-precision instrumentation meets ancient geometry).
 - **Backgrounds**: Obsidian Black `#000000` / Deep Space `#0D0E10` / Dark Slate `#15171C`.
 - **Accents**:
   - Gold (Coherence, Defined Structures, Authority): `#D4AF37` / `#FFD700`.
@@ -18,6 +19,7 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 2. CODON ZODIAC WHEEL
+
 - **Geometry**: Concentric circles.
   - Outer Ring: Degree tick marks ($360^\circ$, steps of $1^\circ$ and $5^\circ$).
   - Middle Ring: 64 segments mapping the **Resonance Mandala Sequence** (non-sequential).
@@ -33,6 +35,7 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 3. 3D CONSCIOUSNESS LATTICE (WEBGL / THREE.JS)
+
 - **Geometry**: A 3D geodesic sphere or double-toroid structure containing:
   - 64 Codon cluster nodes.
   - 4 Facet sub-nodes per cluster node.
@@ -47,6 +50,7 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 4. NINE CENTERS BODY MAP
+
 - **Geometry**: Stylized, minimalist human silhouette centered in a $600 \times 800$ viewport.
 - **Node Placements**:
   1. `HEAD`: Centered at coordinates $(300, 100)$, inverted triangle.
@@ -65,6 +69,7 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 5. RESONANCE RADAR (FACET MAP)
+
 - **Geometry**: 4-axis polar radar chart.
   - Axis 1 ($90^\circ$ North): `Transpersonal`
   - Axis 2 ($0^\circ$ East): `Cognitive`
@@ -77,7 +82,9 @@ This document defines the rendering parameters, SVG layout matrices, WebGL geome
 ---
 
 ## 6. CODON GLYPH SYSTEM
+
 Every codon must have a systematic glyph structure that can be dynamically generated:
+
 - **Scaffold**: A thin circular ring enclosing a hexagonal grid coordinate space.
 - **Core Elements**:
   - **NOTCH**: A dark notch on the perimeter representing the codon index on the Mandala.

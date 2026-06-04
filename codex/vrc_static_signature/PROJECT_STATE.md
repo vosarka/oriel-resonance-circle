@@ -1,11 +1,13 @@
 # VRC Static Signature Codex Project State
 
 ## Project Metadata
+
 - **Status**: Phase 2 - Visual Identity & Product Experience
 - **Last Updated**: 2026-05-26
 - **Lead Architect**: senior systems architect, symbolic systems engineer
 
 ## Progress Checklist
+
 - [x] Folder Architecture (All 11 subdirectories initialized via file placement)
 - [x] Single Source of Truth (`00_CANON/CANON_MASTER.md` created)
 - [x] Structured Data Extraction (9 normalized JSON databases compiled in `01_DATA/`)
@@ -22,6 +24,7 @@
 - [x] Cinematic Mockup Template (Interactive HTML mockup created in `10_REPORT_BUILDER/mockup.html`)
 
 ## Operational Rules
+
 1. **The engine is the spine; ORIEL is the voice.** The voice must never lie about the spine.
 2. **Preserve deterministic calculation integrity.** No noon fallbacks or estimated calculations labeled as "exact".
 3. **No hallucinated details.** Mark undefined elements (e.g. specific codon binary mappings, incomplete facet cards) as `UNSPECIFIED`.

@@ -20,6 +20,7 @@ It is calculated from the four Carrierlock signals (Mental Noise, Body Tension, 
 `CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)`
 
 Where:
+
 - MN = Mental Noise
 - BT = Body Tension
 - ET = Emotional Turbulence
@@ -39,4 +40,4 @@ See [[entity-vrc-engine]] and the Static Signature engine documentation for how 
 
 ---
 
-*Stub created during initial wiki bootstrap. Needs expansion with real engine details and examples.*
+_Stub created during initial wiki bootstrap. Needs expansion with real engine details and examples._

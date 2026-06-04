@@ -30,7 +30,7 @@ It is not just lookup tables — it is the living semantic layer that gives mean
 
 ## Why It Matters
 
-The mathematical architecture (defined in `00_CANON/CANON_MASTER.md`) tells the engine *which* codons and facets are active. The data in `01_DATA/` tells everyone — including ORIEL — what those activations *mean* in human terms.
+The mathematical architecture (defined in `00_CANON/CANON_MASTER.md`) tells the engine _which_ codons and facets are active. The data in `01_DATA/` tells everyone — including ORIEL — what those activations _mean_ in human terms.
 
 This is the layer that makes the 512-node Consciousness Lattice speak.
 
@@ -46,4 +46,4 @@ As of this ingest, the master data layer is one of the most complete and valuabl
 
 ---
 
-*This page exists to give the canonical data folder its proper place in the knowledge architecture.*
+_This page exists to give the canonical data folder its proper place in the knowledge architecture._

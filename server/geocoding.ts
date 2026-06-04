@@ -1,4 +1,4 @@
-import { find as tzFind } from 'geo-tz';
+import { find as tzFind } from "geo-tz";
 
 export interface GeocodeResult {
   displayName: string;
@@ -16,15 +16,15 @@ export interface TimezoneResult {
  * No API key required. Rate limit: 1 req/sec — fine for human-driven form submissions.
  */
 export async function geocodeCity(city: string): Promise<GeocodeResult> {
-  const url = new URL('https://nominatim.openstreetmap.org/search');
-  url.searchParams.set('q', city);
-  url.searchParams.set('format', 'json');
-  url.searchParams.set('limit', '1');
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", city);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "1");
 
   const response = await fetch(url.toString(), {
     headers: {
-      'User-Agent': 'OrielResonanceCircle/1.0',
-      'Accept': 'application/json',
+      "User-Agent": "OrielResonanceCircle/1.0",
+      Accept: "application/json",
     },
   });
 
@@ -32,7 +32,7 @@ export async function geocodeCity(city: string): Promise<GeocodeResult> {
     throw new Error(`Geocoding request failed: ${response.status}`);
   }
 
-  const results = await response.json() as Array<{
+  const results = (await response.json()) as Array<{
     display_name: string;
     lat: string;
     lon: string;
@@ -60,7 +60,7 @@ export function getTimezoneForCoords(
   referenceDate: Date = new Date()
 ): TimezoneResult {
   const tzIds = tzFind(lat, lon);
-  const tzId = tzIds[0] ?? 'UTC';
+  const tzId = tzIds[0] ?? "UTC";
   const offsetHours = getUtcOffsetHours(tzId, referenceDate);
   return { tzId, offsetHours };
 }
@@ -75,20 +75,20 @@ export function getTimezoneForCoords(
  */
 function getUtcOffsetHours(tzId: string, date: Date): number {
   try {
-    const parts = new Intl.DateTimeFormat('en-US', {
+    const parts = new Intl.DateTimeFormat("en-US", {
       timeZone: tzId,
-      timeZoneName: 'longOffset',
-      hour: 'numeric',
+      timeZoneName: "longOffset",
+      hour: "numeric",
     }).formatToParts(date);
 
-    const tzName = parts.find(p => p.type === 'timeZoneName')?.value ?? 'GMT+0';
+    const tzName = parts.find(p => p.type === "timeZoneName")?.value ?? "GMT+0";
     // tzName is like "GMT+5:30", "GMT-8", "GMT+0"
     const match = tzName.match(/GMT([+-])(\d+)(?::(\d+))?/);
     if (!match) return 0;
 
-    const sign = match[1] === '+' ? 1 : -1;
+    const sign = match[1] === "+" ? 1 : -1;
     const hours = parseInt(match[2], 10);
-    const minutes = parseInt(match[3] ?? '0', 10);
+    const minutes = parseInt(match[3] ?? "0", 10);
     return sign * (hours + minutes / 60);
   } catch {
     return 0;

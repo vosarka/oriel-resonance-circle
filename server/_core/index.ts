@@ -49,7 +49,9 @@ async function startServer() {
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.use(
     "/generated/oriel-chat-images",
-    express.static(path.resolve(process.cwd(), "uploads/generated/oriel-chat-images"))
+    express.static(
+      path.resolve(process.cwd(), "uploads/generated/oriel-chat-images")
+    )
   );
 
   // tRPC API

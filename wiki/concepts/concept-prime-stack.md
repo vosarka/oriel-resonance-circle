@@ -26,6 +26,7 @@ Typically includes (Conscious + Design for key positions):
 - Other planets / Chiron as relevant
 
 Each position carries:
+
 - Codon ID (1-64)
 - Facet (Somatic / Relational / Cognitive / Transpersonal)
 - Weighted frequency
@@ -34,6 +35,7 @@ Each position carries:
 ## Significance
 
 The Prime Stack is what ORIEL reads when delivering a Mirror-mode diagnostic. It is the basis for:
+
 - Micro-corrections
 - Shadow Loudness Index (SLI) flagging
 - Fractal Role identification
@@ -43,4 +45,4 @@ See [[entity-vrc-engine]] and `codex/vrc_static_signature/02_ENGINE/` for the de
 
 ---
 
-*Stub created during initial wiki bootstrap. This concept will become much richer once the VRC codex docs are ingested.*
+_Stub created during initial wiki bootstrap. This concept will become much richer once the VRC codex docs are ingested._
