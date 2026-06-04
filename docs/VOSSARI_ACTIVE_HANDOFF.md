@@ -143,6 +143,10 @@ Items:
 
 Verify in repo before relying on any item:
 
+- ORIEL voice returned to Inworld on 2026-06-04:
+  - VoxCPM2 provider/runtime integration was reverted for launch because observed audio latency was too high for the live experience.
+  - Current launch direction: use Inworld for voice, finish design, then deploy live.
+  - Verification passed after revert: `pnpm vitest run server/voice-mode.test.ts server/inworld-realtime-config.test.ts server/conduit-voice.test.ts server/rate-limit-router.test.ts --reporter=verbose`; `pnpm check`; `pnpm build`.
 - Stripe webhook integration hardening completed 2026-05-19:
   - `/api/stripe/webhook` route registration extracted to `server/signature-letter-webhook-route.ts`
   - route uses `express.raw({ type: "application/json" })` before global JSON parsing
@@ -190,7 +194,13 @@ If subagents are used for coding, prefer isolated worktrees or one task at a tim
 The next actual coding step should be:
 
 ```bash
-git status --short
+git status --short --branch
 ```
 
-Then begin P0 rate limiting/auth quotas: inspect the ORIEL chat, TTS, image/lore generation, and public RGP/static endpoints; add focused tests before implementing shared rate-limit/auth quota middleware.
+Then follow Vos's current launch priority:
+
+1. Finish/review the committed design/UI/media slice from `07073b9`.
+2. Run local visual QA on the key pages and fix only launch-blocking design issues.
+3. Run final `pnpm check` + `pnpm build`, then prepare deploy live.
+
+Voice note: do not reopen VoxCPM2 for launch. Use Inworld unless Vos explicitly restarts the private TTS track after deploy.
