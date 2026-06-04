@@ -1,6 +1,6 @@
 # Vossari Active Handoff
 
-Last updated: 2026-06-04T05:52:04+03:00
+Last updated: 2026-06-04T06:43:36+03:00
 
 Purpose: this file is the persistent working contract for Hermes/Vossari. Do not rely on chat memory alone. Every new session must read this file first, then verify current repo state with git before doing work.
 
@@ -149,6 +149,13 @@ Items:
 
 Verify in repo before relying on any item:
 
+- ORIEL VoiceMode VoxCPM2 runtime playback fix completed 2026-06-04:
+  - Fixed the orb-stuck-speaking/no-audio bug by making `/api/realtime` text-only when backend VoxCPM2 TTS is configured (`VOXCPM_TTS_URL` + `VOXCPM_TTS_API_KEY`).
+  - Server now sends `session.ready.backendTtsEnabled`; `VoiceMode` uses that flag to ignore realtime audio chunks and generate/play the finalized ORIEL text through `trpc.oriel.generateSpeech` / VoxCPM2.
+  - Added frontend/backend policy guards so backend TTS is requested once per finalized assistant response, handles `response.output_text.done` and `response.done` fallback text, resets the orb to idle on no text/error/end, and stops backend `HTMLAudioElement` playback on close/interruption.
+  - Verified: `pnpm vitest run server/voice-mode.test.ts server/inworld-realtime-config.test.ts server/oriel-tts.test.ts server/conduit-voice.test.ts server/rate-limit-router.test.ts --reporter=verbose`; `pnpm check`; `pnpm build`.
+  - Real smoke through Vossari env passed: `generateVoxCpmSpeechDataUrl(...)` returned provider `voxcpm2`, mime `audio/wav`, cached `false`, `476204` bytes, WAV header `RIFF`.
+  - `appRouter.createCaller(...)` smoke via `tsx -e` was not usable because importing the full router in that mode hit a `swisseph-wasm` package-exports error before TTS; Vitest router import/build still passed.
 - ORIEL VoxCPM2 private cloned-voice TTS integration completed 2026-06-04:
   - Added `server/oriel-tts.ts` provider bridge: when `VOXCPM_TTS_URL` + `VOXCPM_TTS_API_KEY` are set, `oriel.generateSpeech` calls private VoxCPM2 Modal `/tts`; otherwise it falls back to Inworld.
   - `.env.example` documents `VOXCPM_TTS_URL`, `VOXCPM_TTS_API_KEY`, and `VOXCPM_TTS_TIMEOUT_MS`; local `.env` was updated with the private URL/key and is gitignored.
@@ -212,6 +219,6 @@ Then continue the launch queue from the top unfinished item unless Vos explicitl
 
 1. Resolve/review the remaining dirty UI/media slice already staged in the index.
 2. Continue P0 rate limiting/auth quotas.
-3. Do not re-open VoxCPM2 unless a real UI/runtime TTS bug appears.
+3. Do not re-open VoxCPM2 unless another real UI/runtime TTS bug appears.
 
-VoxCPM2 note: the provider slice is already committed and verified. `.env` and `tmp/voxcpm-smoke/` remain gitignored and must not be staged.
+VoxCPM2 note: the provider slice is already committed and verified; the VoiceMode runtime playback fix is the current uncommitted voice slice. `.env` and `tmp/voxcpm-smoke/` remain gitignored and must not be staged. Current unrelated untracked image observed: `uploads/generated/oriel-chat-images/7d6388b3-7d97-492d-8184-280b78f6d85e.png`.
