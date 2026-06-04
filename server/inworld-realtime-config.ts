@@ -28,7 +28,6 @@ export interface BuildRealtimeSessionUpdateInput {
   sophianicVoiceId?: string;
   deepVoiceId?: string;
   vadEagerness?: string;
-  backendTtsEnabled?: boolean;
 }
 
 export function getInworldAuthorizationValue(rawValue: string): string {
@@ -92,43 +91,37 @@ export function buildRealtimeSessionUpdate({
   sophianicVoiceId = DEFAULT_ORIEL_SOPHIANIC_VOICE_ID,
   deepVoiceId = DEFAULT_ORIEL_DEEP_VOICE_ID,
   vadEagerness = DEFAULT_ORIEL_REALTIME_VAD_EAGERNESS,
-  backendTtsEnabled = false,
 }: BuildRealtimeSessionUpdateInput): object {
-  const audio: Record<string, unknown> = {
-    input: {
-      transcription: {
-        model: sttModel,
-        prompt:
-          "The speaker uses English and may use Romanian. Transcribe only what is actually spoken. Do not invent Japanese, Russian, subtitles, outro phrases, or background-video text. Preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
-      },
-      turn_detection: {
-        type: "semantic_vad",
-        eagerness: normalizeVadEagerness(vadEagerness),
-        create_response: false,
-        interrupt_response: true,
-      },
-    },
-  };
-
-  if (!backendTtsEnabled) {
-    audio.output = {
-      model: ttsModel,
-      voice: resolveRealtimeVoiceId({
-        voicePreference,
-        sophianicVoiceId,
-        deepVoiceId,
-      }),
-    };
-  }
-
   return {
     type: "session.update",
     session: {
       type: "realtime",
       model,
       instructions,
-      output_modalities: backendTtsEnabled ? ["text"] : ["audio", "text"],
-      audio,
+      output_modalities: ["audio", "text"],
+      audio: {
+        input: {
+          transcription: {
+            model: sttModel,
+            prompt:
+              "The speaker uses English and may use Romanian. Transcribe only what is actually spoken. Do not invent Japanese, Russian, subtitles, outro phrases, or background-video text. Preserve canonical terms such as ORIEL, Vos Arkana, Vossari, Carrierlock, Codex, and Resonance Operating System.",
+          },
+          turn_detection: {
+            type: "semantic_vad",
+            eagerness: normalizeVadEagerness(vadEagerness),
+            create_response: false,
+            interrupt_response: true,
+          },
+        },
+        output: {
+          model: ttsModel,
+          voice: resolveRealtimeVoiceId({
+            voicePreference,
+            sophianicVoiceId,
+            deepVoiceId,
+          }),
+        },
+      },
       providerData: {
         stt: {
           voice_profile: false,

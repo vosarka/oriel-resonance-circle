@@ -16,7 +16,7 @@ import {
   performDiagnosticReading,
   performEvolutionaryAssistance,
 } from "./oriel-diagnostic-engine";
-import { generateOrielSpeechDataUrl } from "./oriel-tts";
+import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
 import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import {
@@ -1250,21 +1250,25 @@ export const appRouter = router({
             `(${input.text.length} chars) with voiceId: ${input.voiceId}`
           );
 
-          const speech = await generateOrielSpeechDataUrl(
-            input.text,
-            input.voiceId
-          );
+          let audioBase64: string;
+          let audioUrl: string;
+
+          // Both voices use Inworld TTS with different voice IDs
+          const { INWORLD_VOICES } = await import("./inworld-tts");
+          const inworldVoice =
+            input.voiceId === "deep"
+              ? INWORLD_VOICES.deep
+              : INWORLD_VOICES.sophianic;
+          audioBase64 = await generateChunkedSpeech(input.text, inworldVoice);
+          audioUrl = audioToDataUrl(audioBase64);
 
           console.log(
-            "[generateSpeech] Audio generated successfully via provider:",
-            speech.provider
+            "[generateSpeech] Audio generated successfully, size:",
+            audioBase64.length
           );
           return {
             success: true,
-            audioUrl: speech.audioUrl,
-            provider: speech.provider,
-            mimeType: speech.mimeType,
-            cached: speech.cached,
+            audioUrl,
           };
         } catch (error) {
           const internalMsg =

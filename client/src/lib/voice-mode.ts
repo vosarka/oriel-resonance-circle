@@ -37,13 +37,3 @@ export function shouldVoiceModeStreamMicAudio(input: {
 export function shouldVoiceModeShowWaitButton(): boolean {
   return false;
 }
-
-export function shouldVoiceModeRequestBackendTts(input: {
-  backendTtsEnabled: boolean;
-  alreadyRequestedForResponse: boolean;
-  finalizedAssistantText: string;
-}): boolean {
-  if (!input.backendTtsEnabled) return false;
-  if (input.alreadyRequestedForResponse) return false;
-  return input.finalizedAssistantText.trim().length > 0;
-}

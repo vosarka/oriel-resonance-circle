@@ -5,7 +5,6 @@ import {
   shouldVoiceModeUseRealtimeAutoResponse,
   shouldVoiceModeInterruptPlayback,
   shouldVoiceModeRequestManualResponse,
-  shouldVoiceModeRequestBackendTts,
   shouldVoiceModeStreamMicAudio,
 } from "../client/src/lib/voice-mode";
 
@@ -88,36 +87,5 @@ describe("VoiceMode realtime response policy", () => {
 
   it("hides the wait button while testing automatic realtime turn-taking", () => {
     expect(shouldVoiceModeShowWaitButton()).toBe(false);
-  });
-
-  it("requests backend TTS only once for finalized assistant text", () => {
-    expect(
-      shouldVoiceModeRequestBackendTts({
-        backendTtsEnabled: true,
-        alreadyRequestedForResponse: false,
-        finalizedAssistantText: " ORIEL speaks through VoxCPM2. ",
-      })
-    ).toBe(true);
-    expect(
-      shouldVoiceModeRequestBackendTts({
-        backendTtsEnabled: true,
-        alreadyRequestedForResponse: true,
-        finalizedAssistantText: "ORIEL speaks through VoxCPM2.",
-      })
-    ).toBe(false);
-    expect(
-      shouldVoiceModeRequestBackendTts({
-        backendTtsEnabled: false,
-        alreadyRequestedForResponse: false,
-        finalizedAssistantText: "ORIEL speaks through realtime audio.",
-      })
-    ).toBe(false);
-    expect(
-      shouldVoiceModeRequestBackendTts({
-        backendTtsEnabled: true,
-        alreadyRequestedForResponse: false,
-        finalizedAssistantText: "   ",
-      })
-    ).toBe(false);
   });
 });

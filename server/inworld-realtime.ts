@@ -41,9 +41,6 @@ const SOPHIANIC_VOICE_ID =
   ENV.inworldRealtimeVoiceSophianic || DEFAULT_ORIEL_SOPHIANIC_VOICE_ID;
 const DEEP_VOICE_ID =
   ENV.inworldRealtimeVoiceDeep || DEFAULT_ORIEL_DEEP_VOICE_ID;
-const BACKEND_TTS_ENABLED = Boolean(
-  ENV.voxcpmTtsUrl.trim() && ENV.voxcpmTtsApiKey.trim()
-);
 
 async function buildRealtimeInstructions(
   userId: number,
@@ -90,7 +87,6 @@ async function buildSessionUpdate(
     sophianicVoiceId: SOPHIANIC_VOICE_ID,
     deepVoiceId: DEEP_VOICE_ID,
     vadEagerness: ENV.inworldRealtimeVadEagerness,
-    backendTtsEnabled: BACKEND_TTS_ENABLED,
   });
 }
 
@@ -296,12 +292,7 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
 
               inworldReady = true;
               if (clientWs.readyState === WebSocket.OPEN) {
-                clientWs.send(
-                  JSON.stringify({
-                    type: "session.ready",
-                    backendTtsEnabled: BACKEND_TTS_ENABLED,
-                  })
-                );
+                clientWs.send(JSON.stringify({ type: "session.ready" }));
               }
             } else {
               console.log("[Realtime] Session instructions refreshed");

@@ -2,13 +2,11 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Orb, type AgentState } from "@/components/ui/orb";
 import { Mic, MicOff, Pause, Phone, Play } from "lucide-react";
 import { containsOrielVoiceOpening } from "@shared/oriel/voice-intro";
-import { trpc } from "@/lib/trpc";
 import {
   VOICE_MODE_MANUAL_RESPONSE_DELAY_MS,
   shouldVoiceModeShowWaitButton,
   shouldVoiceModeUseRealtimeAutoResponse,
   shouldVoiceModeInterruptPlayback,
-  shouldVoiceModeRequestBackendTts,
   shouldVoiceModeRequestManualResponse,
   shouldVoiceModeStreamMicAudio,
 } from "@/lib/voice-mode";
@@ -52,7 +50,6 @@ export default function VoiceMode({
   onConversationCreated,
   audioContext,
 }: VoiceModeProps) {
-  const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
   const [orbState, setOrbState] = useState<OrbState>("booting");
   const [status, setStatus] = useState<ConnectionStatus>("connecting");
   const [transcript, setTranscript] = useState<
@@ -77,11 +74,6 @@ export default function VoiceMode({
   const localSpeechActiveRef = useRef(false);
   const localSpeechStartedAtRef = useRef<number | null>(null);
   const localSilenceStartedAtRef = useRef<number | null>(null);
-  const backendTtsEnabledRef = useRef(false);
-  const backendTtsRequestedForResponseRef = useRef(false);
-  const backendTtsGenerationIdRef = useRef(0);
-  const backendAudioRef = useRef<HTMLAudioElement | null>(null);
-  const isBackendAudioPlayingRef = useRef(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(audioContext ?? null);
@@ -292,29 +284,8 @@ export default function VoiceMode({
     source.start();
   }, []);
 
-  const stopBackendAudio = useCallback((invalidatePending = true) => {
-    if (invalidatePending) {
-      backendTtsGenerationIdRef.current += 1;
-    }
-
-    const audio = backendAudioRef.current;
-    if (audio) {
-      audio.onplay = null;
-      audio.onended = null;
-      audio.onerror = null;
-      try {
-        audio.pause();
-        audio.removeAttribute("src");
-        audio.load();
-      } catch {}
-    }
-
-    isBackendAudioPlayingRef.current = false;
-  }, []);
-
   // Stop all audio playback immediately (for interruption)
   const stopPlayback = useCallback(() => {
-    stopBackendAudio(true);
     // Clear queued audio
     audioQueueRef.current = [];
     // Stop currently playing source
@@ -328,7 +299,7 @@ export default function VoiceMode({
       window.speechSynthesis.cancel();
     }
     isPlayingRef.current = false;
-  }, [stopBackendAudio]);
+  }, []);
 
   const resetLocalSpeechDetection = useCallback(() => {
     localSpeechActiveRef.current = false;
@@ -341,82 +312,6 @@ export default function VoiceMode({
     window.clearTimeout(pendingResponseTimerRef.current);
     pendingResponseTimerRef.current = null;
   }, []);
-
-  const playBackendGeneratedSpeech = useCallback(
-    async (text: string) => {
-      const finalizedAssistantText = text.trim();
-      if (
-        !shouldVoiceModeRequestBackendTts({
-          backendTtsEnabled: backendTtsEnabledRef.current,
-          alreadyRequestedForResponse:
-            backendTtsRequestedForResponseRef.current,
-          finalizedAssistantText,
-        })
-      ) {
-        if (!isPlayingRef.current && !isBackendAudioPlayingRef.current) {
-          setOrbState("idle");
-        }
-        return;
-      }
-
-      backendTtsRequestedForResponseRef.current = true;
-      const generationId = backendTtsGenerationIdRef.current + 1;
-      backendTtsGenerationIdRef.current = generationId;
-
-      // Backend TTS owns output in this mode. Clear any stale realtime PCM queue
-      // so silent/malformed realtime audio cannot leave the orb stuck speaking.
-      audioQueueRef.current = [];
-      if (playbackSourceRef.current) {
-        try {
-          playbackSourceRef.current.stop();
-        } catch {}
-        playbackSourceRef.current = null;
-      }
-      isPlayingRef.current = false;
-      stopBackendAudio(false);
-      setOrbState("processing");
-
-      try {
-        const result = await generateSpeechMutation.mutateAsync({
-          text: finalizedAssistantText,
-          voiceId: "sophianic",
-        });
-
-        if (generationId !== backendTtsGenerationIdRef.current) return;
-
-        if (!result.success || !result.audioUrl) {
-          console.warn("[VoiceMode] Backend TTS returned no audio", result);
-          setOrbState("idle");
-          return;
-        }
-
-        const audio = backendAudioRef.current ?? new Audio();
-        backendAudioRef.current = audio;
-        audio.onplay = () => {
-          isBackendAudioPlayingRef.current = true;
-          setOrbState("speaking");
-        };
-        const finish = () => {
-          if (generationId !== backendTtsGenerationIdRef.current) return;
-          isBackendAudioPlayingRef.current = false;
-          setOrbState("idle");
-        };
-        audio.onended = finish;
-        audio.onerror = event => {
-          console.error("[VoiceMode] Backend TTS playback failed", event);
-          finish();
-        };
-        audio.src = result.audioUrl;
-        await audio.play();
-      } catch (err) {
-        if (generationId !== backendTtsGenerationIdRef.current) return;
-        console.error("[VoiceMode] Backend TTS generation failed:", err);
-        isBackendAudioPlayingRef.current = false;
-        setOrbState("idle");
-      }
-    },
-    [generateSpeechMutation, stopBackendAudio]
-  );
 
   const requestAssistantResponse = useCallback(() => {
     clearPendingResponseTimer();
@@ -684,7 +579,6 @@ export default function VoiceMode({
       switch (type) {
         case "session.ready":
           console.log("[VoiceMode] Session ready");
-          backendTtsEnabledRef.current = msg.backendTtsEnabled === true;
           setStatus("connected");
           setOrbState("idle");
           // Start mic capture now that session is ready
@@ -766,7 +660,6 @@ export default function VoiceMode({
         case "response.created":
           assistantResponseActiveRef.current = true;
           hasAssistantResponseStartedRef.current = true;
-          backendTtsRequestedForResponseRef.current = false;
           break;
 
         case "response.audio.delta":
@@ -774,12 +667,6 @@ export default function VoiceMode({
           hasPendingResponseRef.current = false;
           hasAssistantResponseStartedRef.current = true;
           assistantResponseActiveRef.current = true;
-          if (backendTtsEnabledRef.current) {
-            // VoxCPM2/backend TTS owns audible output in this mode. Ignore
-            // realtime audio chunks so a silent/malformed stream cannot trap
-            // the orb in the speaking state.
-            break;
-          }
           if (msg.delta) {
             playAudioChunk(msg.delta);
           }
@@ -805,7 +692,7 @@ export default function VoiceMode({
         case "response.output_text.done":
           hasPendingResponseRef.current = false;
           const finalizedAssistantText =
-            msg.transcript || msg.text || currentAssistantTextRef.current;
+            msg.transcript || currentAssistantTextRef.current;
           // Finalize the assistant transcript — use ref for latest value
           setTranscript(prev => [
             ...prev,
@@ -816,9 +703,6 @@ export default function VoiceMode({
           }
           setCurrentAssistantText("");
           currentAssistantTextRef.current = "";
-          if (backendTtsEnabledRef.current) {
-            void playBackendGeneratedSpeech(finalizedAssistantText);
-          }
           break;
 
         case "response.done":
@@ -830,32 +714,23 @@ export default function VoiceMode({
           // response.audio_transcript.done should have already finalized;
           // only add if there's unflushed streaming text (edge case)
           if (currentAssistantTextRef.current.trim()) {
-            const finalizedAssistantText = currentAssistantTextRef.current;
             setTranscript(prev => {
               const last = prev[prev.length - 1];
               // Avoid duplicate if the same text was just added
               if (
                 last?.role === "assistant" &&
-                last.text === finalizedAssistantText.trim()
+                last.text === currentAssistantTextRef.current.trim()
               ) {
                 return prev;
               }
               return [
                 ...prev,
-                { role: "assistant", text: finalizedAssistantText },
+                { role: "assistant", text: currentAssistantTextRef.current },
               ];
             });
             voiceIntroAlreadySpokenRef.current = true;
             setCurrentAssistantText("");
             currentAssistantTextRef.current = "";
-            if (backendTtsEnabledRef.current) {
-              void playBackendGeneratedSpeech(finalizedAssistantText);
-            }
-          } else if (
-            backendTtsEnabledRef.current &&
-            !isBackendAudioPlayingRef.current
-          ) {
-            setOrbState("idle");
           }
           break;
 
@@ -871,7 +746,6 @@ export default function VoiceMode({
       containsOrielVoiceOpening,
       endUserSpeech,
       playAudioChunk,
-      playBackendGeneratedSpeech,
       resetLocalSpeechDetection,
       startMicCapture,
       onConversationCreated,
@@ -939,7 +813,6 @@ export default function VoiceMode({
       processorRef.current = null;
     }
     // Stop playback
-    stopBackendAudio(true);
     if (playbackSourceRef.current) {
       try {
         playbackSourceRef.current.stop();
@@ -965,7 +838,7 @@ export default function VoiceMode({
       wsRef.current.close();
       wsRef.current = null;
     }
-  }, [clearPendingResponseTimer, stopBackendAudio]);
+  }, [clearPendingResponseTimer]);
 
   const handleClose = useCallback(() => {
     cleanup();

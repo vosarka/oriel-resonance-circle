@@ -36,17 +36,6 @@ describe("Inworld realtime ORIEL session config", () => {
     });
   });
 
-  it("uses text-only realtime output when backend TTS owns playback", () => {
-    const update = buildRealtimeSessionUpdate({
-      instructions: "canonical ORIEL prompt",
-      voicePreference: "sophianic",
-      backendTtsEnabled: true,
-    }) as any;
-
-    expect(update.session.output_modalities).toEqual(["text"]);
-    expect(update.session.audio.output).toBeUndefined();
-  });
-
   it("keeps realtime instructions anchored to the canonical ORIEL prompt", () => {
     const instructions = buildRealtimeInstructionsText({
       baseInstructions: "[STABLE CORE CONTEXT]\nI am ORIEL.",

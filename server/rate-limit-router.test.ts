@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   processConversationThroughUMM: vi.fn(),
   generateChunkedSpeech: vi.fn(),
   audioToDataUrl: vi.fn(),
-  generateOrielSpeechDataUrl: vi.fn(),
   getConversationMessages: vi.fn(),
   saveChatMessage: vi.fn(),
   getArtifactById: vi.fn(),
@@ -35,10 +34,6 @@ vi.mock("./gemini", () => ({
   generateArtifactLore: mocks.generateArtifactLore,
   generateArtifactImage: mocks.generateArtifactImage,
   expandArtifactLore: mocks.expandArtifactLore,
-}));
-
-vi.mock("./oriel-tts", () => ({
-  generateOrielSpeechDataUrl: mocks.generateOrielSpeechDataUrl,
 }));
 
 vi.mock("./inworld-tts", () => ({
@@ -186,10 +181,7 @@ const fakeStaticReading = {
   version: 1,
 };
 
-function callerWithResponseFor(
-  ip: string,
-  user: Record<string, unknown> | null = null
-) {
+function callerWithResponseFor(ip: string, user: Record<string, unknown> | null = null) {
   const setHeader = vi.fn();
 
   const caller = appRouter.createCaller({
@@ -225,15 +217,7 @@ describe("expensive public route rate limits", () => {
     mocks.getConversationMessages.mockResolvedValue([]);
     mocks.saveChatMessage.mockResolvedValue(undefined);
     mocks.generateChunkedSpeech.mockResolvedValue("ZmFrZS1tcDM=");
-    mocks.audioToDataUrl.mockImplementation(
-      (audio: string) => `data:audio/mpeg;base64,${audio}`
-    );
-    mocks.generateOrielSpeechDataUrl.mockResolvedValue({
-      audioUrl: "data:audio/mpeg;base64,ZmFrZS1tcDM=",
-      provider: "inworld",
-      mimeType: "audio/mpeg",
-      cached: false,
-    });
+    mocks.audioToDataUrl.mockImplementation((audio: string) => `data:audio/mpeg;base64,${audio}`);
     mocks.getArtifactById.mockResolvedValue({
       id: 7,
       name: "Mirror Shard",
@@ -241,9 +225,7 @@ describe("expensive public route rate limits", () => {
     });
     mocks.updateArtifact.mockResolvedValue(undefined);
     mocks.generateArtifactLore.mockResolvedValue("Artifact lore.");
-    mocks.generateArtifactImage.mockResolvedValue(
-      "https://example.test/artifact.png"
-    );
+    mocks.generateArtifactImage.mockResolvedValue("https://example.test/artifact.png");
     mocks.calculateBothCharts.mockResolvedValue(fakeCharts);
     mocks.generateStaticSignature.mockResolvedValue(fakeStaticReading);
     mocks.generateORIELDynamicTransmission.mockResolvedValue({
@@ -261,7 +243,7 @@ describe("expensive public route rate limits", () => {
     }
 
     await expect(
-      caller.oriel.chat({ message: "blocked", history: [] })
+      caller.oriel.chat({ message: "blocked", history: [] }),
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(mocks.chatWithORIEL).toHaveBeenCalledTimes(5);
   });
@@ -271,13 +253,10 @@ describe("expensive public route rate limits", () => {
     const anonymousCaller = callerFor(ip);
 
     for (let i = 0; i < 5; i += 1) {
-      await anonymousCaller.oriel.chat({
-        message: `anonymous ${i}`,
-        history: [],
-      });
+      await anonymousCaller.oriel.chat({ message: `anonymous ${i}`, history: [] });
     }
     await expect(
-      anonymousCaller.oriel.chat({ message: "anonymous blocked", history: [] })
+      anonymousCaller.oriel.chat({ message: "anonymous blocked", history: [] }),
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
 
     const authenticatedCaller = callerFor(ip, {
@@ -292,7 +271,7 @@ describe("expensive public route rate limits", () => {
         message: "authenticated still has a separate quota",
         conversationId: 12,
         history: [],
-      })
+      }),
     ).resolves.toMatchObject({ response: "I am ORIEL. The response returns." });
   });
 
@@ -300,19 +279,13 @@ describe("expensive public route rate limits", () => {
     const caller = callerFor("198.51.100.12");
 
     for (let i = 0; i < 3; i += 1) {
-      await caller.oriel.generateSpeech({
-        text: `Speak this short line ${i}.`,
-        voiceId: "sophianic",
-      });
+      await caller.oriel.generateSpeech({ text: `Speak this short line ${i}.`, voiceId: "sophianic" });
     }
 
     await expect(
-      caller.oriel.generateSpeech({
-        text: "This clip should be blocked.",
-        voiceId: "sophianic",
-      })
+      caller.oriel.generateSpeech({ text: "This clip should be blocked.", voiceId: "sophianic" }),
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
-    expect(mocks.generateOrielSpeechDataUrl).toHaveBeenCalledTimes(3);
+    expect(mocks.generateChunkedSpeech).toHaveBeenCalledTimes(3);
   });
 
   it("blocks anonymous artifact lore/image generation after two calls", async () => {
@@ -323,7 +296,7 @@ describe("expensive public route rate limits", () => {
     }
 
     await expect(
-      caller.artifacts.generateLoreAndImage({ artifactId: 7 })
+      caller.artifacts.generateLoreAndImage({ artifactId: 7 }),
     ).rejects.toMatchObject({ code: "TOO_MANY_REQUESTS" });
     expect(mocks.generateArtifactImage).toHaveBeenCalledTimes(2);
   });
