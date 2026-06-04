@@ -1,6 +1,6 @@
 # Vossari Active Handoff
 
-Last updated: 2026-06-04T05:01:07+03:00
+Last updated: 2026-06-04T05:52:04+03:00
 
 Purpose: this file is the persistent working contract for Hermes/Vossari. Do not rely on chat memory alone. Every new session must read this file first, then verify current repo state with git before doing work.
 
@@ -205,19 +205,13 @@ If subagents are used for coding, prefer isolated worktrees or one task at a tim
 The next actual coding step should be:
 
 ```bash
-git status --short
+git status --short --branch
 ```
 
-Then either:
+Then continue the launch queue from the top unfinished item unless Vos explicitly reprioritizes:
 
-1. Commit the VoxCPM2 slice using partial staging only (`git add -p`) because the repo was already dirty; include only:
-   - `.env.example` VoxCPM2 docs
-   - `server/oriel-tts.ts`
-   - `server/oriel-tts.test.ts`
-   - `server/_core/env.ts` VoxCPM2 env keys
-   - `server/rate-limit-router.test.ts` mock update
-   - only the VoxCPM2 import + `oriel.generateSpeech` provider hunk in `server/routers.ts`
-   - this handoff update
-   - never stage `.env` or `tmp/voxcpm-smoke/`
+1. Resolve/review the remaining dirty UI/media slice already staged in the index.
+2. Continue P0 rate limiting/auth quotas.
+3. Do not re-open VoxCPM2 unless a real UI/runtime TTS bug appears.
 
-2. Or continue the previous launch queue after verifying the working tree: P0 rate limiting/auth quotas or the active UI/media slice if Vos explicitly reprioritizes.
+VoxCPM2 note: the provider slice is already committed and verified. `.env` and `tmp/voxcpm-smoke/` remain gitignored and must not be staged.
