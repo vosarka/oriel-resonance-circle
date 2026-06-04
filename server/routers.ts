@@ -7,7 +7,7 @@ import * as db from "./db";
 import * as gemini from "./gemini";
 import { handlePayPalWebhook, PayPalWebhookPayload } from "./paypal-webhook";
 import { performDiagnosticReading, performEvolutionaryAssistance } from "./oriel-diagnostic-engine";
-import { generateChunkedSpeech, audioToDataUrl } from "./inworld-tts";
+import { generateOrielSpeechDataUrl } from "./oriel-tts";
 import { rgpRouter } from "./rgp-router";
 import { geocodeCity, getTimezoneForCoords } from "./geocoding";
 import { formatOrielResponse, generateOrielGreeting, generateMicroCorrectionMessage, generateFalsifierMessage } from "./oriel-system-prompt";
@@ -989,21 +989,15 @@ export const appRouter = router({
 
           console.log("[generateSpeech] Starting TTS generation for text:", input.text.substring(0, 100), `(${input.text.length} chars) with voiceId: ${input.voiceId}`);
 
-          let audioBase64: string;
-          let audioUrl: string;
+          const speech = await generateOrielSpeechDataUrl(input.text, input.voiceId);
 
-          // Both voices use Inworld TTS with different voice IDs
-          const { INWORLD_VOICES } = await import("./inworld-tts");
-          const inworldVoice = input.voiceId === "deep"
-            ? INWORLD_VOICES.deep
-            : INWORLD_VOICES.sophianic;
-          audioBase64 = await generateChunkedSpeech(input.text, inworldVoice);
-          audioUrl = audioToDataUrl(audioBase64);
-
-          console.log("[generateSpeech] Audio generated successfully, size:", audioBase64.length);
+          console.log("[generateSpeech] Audio generated successfully via provider:", speech.provider);
           return {
             success: true,
-            audioUrl,
+            audioUrl: speech.audioUrl,
+            provider: speech.provider,
+            mimeType: speech.mimeType,
+            cached: speech.cached,
           };
         } catch (error) {
           const internalMsg = error instanceof Error ? error.message : String(error);

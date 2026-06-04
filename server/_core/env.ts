@@ -12,7 +12,9 @@ const resolveRunMigrations = () => {
 
 const resolveAutonomyRuntimeEnabled = () => autonomyRuntimeEnv === "true";
 const resolveLlmProvider = () =>
-  llmProviderEnv === "gemma" || llmProviderEnv === "gemini" || llmProviderEnv === "forge"
+  llmProviderEnv === "gemma" ||
+  llmProviderEnv === "gemini" ||
+  llmProviderEnv === "forge"
     ? llmProviderEnv
     : "gemma";
 const resolveLlmRequestTimeoutMs = () =>
@@ -64,7 +66,12 @@ export const ENV = {
   twilioAuthToken: process.env.TWILIO_AUTH_TOKEN ?? "",
   twilioPhoneNumber: process.env.TWILIO_PHONE_NUMBER ?? "",
 
-  // ─── Inworld (TTS & Realtime) ─────────────────────────────────────────
+  // ─── Voice / TTS ──────────────────────────────────────────────────────
+  voxcpmTtsUrl: process.env.VOXCPM_TTS_URL ?? "",
+  voxcpmTtsApiKey: process.env.VOXCPM_TTS_API_KEY ?? "",
+  voxcpmTtsTimeoutMs: process.env.VOXCPM_TTS_TIMEOUT_MS ?? "",
+
+  // ─── Inworld (Fallback TTS & Realtime) ────────────────────────────────
   inworldApiKey: process.env.INWORLD_API_KEY ?? "",
   inworldRealtimeModel: process.env.INWORLD_REALTIME_MODEL ?? "",
   inworldRealtimeSttModel: process.env.INWORLD_REALTIME_STT_MODEL ?? "",
@@ -72,8 +79,7 @@ export const ENV = {
   inworldRealtimeVoiceSophianic:
     process.env.INWORLD_REALTIME_VOICE_SOPHIANIC ?? "",
   inworldRealtimeVoiceDeep: process.env.INWORLD_REALTIME_VOICE_DEEP ?? "",
-  inworldRealtimeVadEagerness:
-    process.env.INWORLD_REALTIME_VAD_EAGERNESS ?? "",
+  inworldRealtimeVadEagerness: process.env.INWORLD_REALTIME_VAD_EAGERNESS ?? "",
 
   // ─── Stripe (Signature Letters) ─────────────────────────────────────────
   stripeSecretKey: process.env.STRIPE_SECRET_KEY ?? "",

@@ -1,6 +1,6 @@
 # Vossari Active Handoff
 
-Last updated: 2026-05-19T21:12:24+03:00
+Last updated: 2026-06-04T05:01:07+03:00
 
 Purpose: this file is the persistent working contract for Hermes/Vossari. Do not rely on chat memory alone. Every new session must read this file first, then verify current repo state with git before doing work.
 
@@ -74,6 +74,7 @@ Goal: inspect current diff, split only coherent Signature Products/Auth Return c
 Current dirty tree observed 2026-05-18:
 
 Modified:
+
 - `client/public/favicon.png`
 - `client/public/logotab.png`
 - `client/src/App.tsx`
@@ -91,6 +92,7 @@ Modified:
 - `server/signature-letter-system.ts`
 
 Untracked:
+
 - `client/public/Untitled design (7).png`
 - `client/public/oriel-founding-signature-letter.png`
 - `client/public/oriel-signature-glimpse.png`
@@ -103,12 +105,14 @@ Untracked:
 Do not claim these are new changes without inspecting them. They pre-exist this handoff file.
 
 Verification target for this slice:
+
 - focused tests around Signature Product pages and Auth return URL
 - any adjacent tests touched by changed server signature-letter code
 
 ### P0. Rate limiting and auth quotas
 
 Protect:
+
 - ORIEL chat
 - TTS
 - image/lore generation
@@ -119,6 +123,7 @@ Goal: prevent launch abuse and runaway API cost.
 ### P1. UX / trust cleanup
 
 Items:
+
 - Codons footer/PayPal overlay issue
 - remove `.env` from accepted Conduit upload types
 - replace most important `alert`/`confirm` flows with proper toast/modal UX
@@ -126,6 +131,7 @@ Items:
 ### P1. Route semantics and docs canon cleanup
 
 Items:
+
 - clarify StaticReading route semantics:
   - `/blueprint` = canonical static profile
   - `/reading/static/:readingId` = historical reading or explicit redirect
@@ -143,6 +149,13 @@ Items:
 
 Verify in repo before relying on any item:
 
+- ORIEL VoxCPM2 private cloned-voice TTS integration completed 2026-06-04:
+  - Added `server/oriel-tts.ts` provider bridge: when `VOXCPM_TTS_URL` + `VOXCPM_TTS_API_KEY` are set, `oriel.generateSpeech` calls private VoxCPM2 Modal `/tts`; otherwise it falls back to Inworld.
+  - `.env.example` documents `VOXCPM_TTS_URL`, `VOXCPM_TTS_API_KEY`, and `VOXCPM_TTS_TIMEOUT_MS`; local `.env` was updated with the private URL/key and is gitignored.
+  - The frontend contract remains unchanged: clients still receive `audioUrl`; VoxCPM2 returns `data:audio/wav;base64,...`.
+  - Verified: `pnpm vitest run server/oriel-tts.test.ts server/rate-limit-router.test.ts --reporter=verbose`; `pnpm check`; `pnpm build`.
+  - Real smoke through Vossari env passed: `generateOrielSpeechDataUrl(...)` returned provider `voxcpm2`, mime `audio/wav`, cached `true`, output `tmp/voxcpm-smoke/vossari-oriel-tts-smoke-from-vossari-env.wav` (`522284` bytes, mono 48kHz, 5.44s).
+  - Important git note: repo was already very dirty. Do not bulk-stage `server/routers.ts`; isolate only the VoxCPM2 import + `generateSpeech` provider hunk if committing this slice.
 - Stripe webhook integration hardening completed 2026-05-19:
   - `/api/stripe/webhook` route registration extracted to `server/signature-letter-webhook-route.ts`
   - route uses `express.raw({ type: "application/json" })` before global JSON parsing
@@ -173,12 +186,14 @@ Verify in repo before relying on any item:
 Use subagents only for contained tasks with clear boundaries.
 
 Safe uses:
+
 - code review of a specific diff
 - focused test-writing task
 - repo inspection/report
 - documentation audit
 
 Avoid subagents when:
+
 - current working tree is dirty and files overlap
 - task touches the same files as the main agent
 - the implementation needs repeated user judgment
@@ -193,4 +208,16 @@ The next actual coding step should be:
 git status --short
 ```
 
-Then begin P0 rate limiting/auth quotas: inspect the ORIEL chat, TTS, image/lore generation, and public RGP/static endpoints; add focused tests before implementing shared rate-limit/auth quota middleware.
+Then either:
+
+1. Commit the VoxCPM2 slice using partial staging only (`git add -p`) because the repo was already dirty; include only:
+   - `.env.example` VoxCPM2 docs
+   - `server/oriel-tts.ts`
+   - `server/oriel-tts.test.ts`
+   - `server/_core/env.ts` VoxCPM2 env keys
+   - `server/rate-limit-router.test.ts` mock update
+   - only the VoxCPM2 import + `oriel.generateSpeech` provider hunk in `server/routers.ts`
+   - this handoff update
+   - never stage `.env` or `tmp/voxcpm-smoke/`
+
+2. Or continue the previous launch queue after verifying the working tree: P0 rate limiting/auth quotas or the active UI/media slice if Vos explicitly reprioritizes.
