@@ -72,7 +72,7 @@ export default function TransmissionDetail() {
     setStage(0);
     setVlsText("");
 
-    const vls = `VLS// RECEIVE.node TX-${String((transmission as any).txNumber).padStart(3, "0")}`;
+    const vls = `VLS// OPEN.fragment TX-${String((transmission as any).txNumber).padStart(3, "0")}`;
     let charIndex = 0;
 
     const typeInterval = setInterval(() => {
@@ -124,7 +124,7 @@ export default function TransmissionDetail() {
               style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
             >
               <ArrowLeft size={12} />
-              RETURN TO FIELD
+              RETURN TO ARCHIVE
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ export default function TransmissionDetail() {
               className="font-mono tracking-wider"
               style={{ fontSize: 10, color: "rgba(246,176,94,0.2)" }}
             >
-              LOCKING SIGNAL...
+              LOCKING TRANSMISSION...
             </p>
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function TransmissionDetail() {
               style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
             >
               <ArrowLeft size={12} />
-              RETURN TO FIELD
+              RETURN TO ARCHIVE
             </button>
           </div>
         </div>
@@ -204,8 +204,23 @@ export default function TransmissionDetail() {
   return (
     <Layout>
       {/* ── Background ──────────────────────────────────── */}
-      <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
-      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.02]">
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% -10%, rgba(216,181,109,0.09), transparent 30rem), radial-gradient(circle at 10% 22%, rgba(132,96,54,0.12), transparent 24rem), linear-gradient(180deg, #050505 0%, #0a0907 52%, #030303 100%)",
+        }}
+      />
+      <div
+        className="fixed inset-0 z-0 pointer-events-none opacity-[0.12]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(216,181,109,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(216,181,109,0.06) 1px, transparent 1px), linear-gradient(rgba(216,181,109,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(216,181,109,0.028) 1px, transparent 1px)",
+          backgroundSize: "96px 96px, 96px 96px, 12px 12px, 12px 12px",
+          maskImage: "radial-gradient(circle at center, black 0 48%, transparent 82%)",
+        }}
+      />
+      <div className="fixed inset-0 z-0 pointer-events-none opacity-[0.018]">
         <div className="absolute inset-0 animate-scan-lines" />
       </div>
 
@@ -225,7 +240,7 @@ export default function TransmissionDetail() {
               }
             >
               <ArrowLeft size={12} />
-              RETURN TO FIELD
+              RETURN TO ARCHIVE
             </button>
           </div>
         </div>
@@ -255,11 +270,11 @@ export default function TransmissionDetail() {
             >
               <div className="flex items-center gap-4">
                 <div
-                  className="flex-1 relative overflow-hidden rounded-full"
+                  className="flex-1 relative overflow-hidden rounded-sm"
                   style={{ height: 1, background: "rgba(246,176,94,0.08)" }}
                 >
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full"
+                    className="absolute inset-y-0 left-0 rounded-sm"
                     style={{
                       width: stage >= 1 ? `${clarity}%` : "0%",
                       background: "rgba(246,176,94,0.35)",
@@ -532,7 +547,7 @@ export default function TransmissionDetail() {
                     size={12}
                     fill={bookmarkStatus ? "currentColor" : "none"}
                   />
-                  {bookmarkStatus ? "SIGNAL LOCKED" : "LOCK SIGNAL"}
+                  {bookmarkStatus ? "FRAGMENT SEALED" : "SEAL FRAGMENT"}
                 </button>
               </div>
             </div>
@@ -567,7 +582,7 @@ export default function TransmissionDetail() {
                               color: "rgba(246,176,94,0.2)",
                             }}
                           >
-                            PREV SIGNAL
+                            PREVIOUS FRAGMENT
                           </span>
                         </div>
                         <p
@@ -597,7 +612,7 @@ export default function TransmissionDetail() {
                               color: "rgba(246,176,94,0.2)",
                             }}
                           >
-                            NEXT SIGNAL
+                            NEXT FRAGMENT
                           </span>
                           <ChevronRight
                             size={12}
@@ -628,7 +643,7 @@ export default function TransmissionDetail() {
                   className="font-mono tracking-widest"
                   style={{ fontSize: 8, color: "rgba(189,163,107,0.12)" }}
                 >
-                  THE FIELD REMEMBERS
+                  FIELD LOG CLOSED
                 </span>
               </div>
             </div>

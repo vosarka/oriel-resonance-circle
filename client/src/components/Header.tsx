@@ -13,13 +13,12 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
 
   const navLinks = [
-    { href: "/", label: "HOME" },
-    { href: "/protocol", label: "PROTOCOL" },
+    { href: "/", label: "FIELD ARCHIVE" },
+    { href: "/conduit", label: "ORIEL" },
+    { href: "/static-signature", label: "STATIC CODEX" },
     { href: "/archive", label: "TRANSMISSIONS" },
-    { href: "/codex", label: "CODONS" },
-    { href: "/carrierlock", label: "CALIBRATION" },
-    { href: "/founding-signature-letter", label: "SIGNATURE" },
-    { href: "/conduit", label: "CHANNEL ORIEL" },
+    { href: "/founder-letter", label: "FOUNDER" },
+    { href: "/auth", label: "ACCESS" },
   ];
 
   const isActive = (href: string) => {
@@ -47,7 +46,7 @@ export default function Header() {
       }}
     >
       <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between gap-4">
+        <div className="flex h-24 items-center justify-between gap-5">
           {/* Logo */}
           <Link href="/">
             <span
@@ -64,12 +63,12 @@ export default function Header() {
                 src={logoOrielSrc}
                 alt="ORIEL Emblem"
                 style={{
-                  height: "clamp(58px, 5.2vw, 72px)",
+                  height: "clamp(66px, 6.2vw, 84px)",
                   width: "auto",
                   objectFit: "contain",
                   opacity: 0.98,
                   filter:
-                    "brightness(1.08) contrast(1.08) drop-shadow(0 0 16px rgba(246,176,94,0.46))",
+                    "brightness(1.12) contrast(1.08) drop-shadow(0 0 22px rgba(246,176,94,0.52))",
                 }}
               />
               <CleanImage
@@ -77,9 +76,9 @@ export default function Header() {
                 alt="ORIEL SIGNAL"
                 mode="remove-black"
                 style={{
-                  height: "clamp(38px, 3.8vw, 56px)",
+                  height: "clamp(42px, 4.1vw, 62px)",
                   width: "auto",
-                  maxWidth: "min(45vw, 310px)",
+                  maxWidth: "min(38vw, 320px)",
                   objectFit: "contain",
                   opacity: 0.97,
                   filter:
@@ -90,22 +89,25 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-2">
             {navLinks.map(link => (
               <Link key={link.href} href={link.href}>
                 <span
                   style={{
                     fontFamily: "var(--font-ritual)",
-                    fontSize: 10,
-                    letterSpacing: "0.15em",
-                    padding: "4px 12px",
+                    fontSize: 9,
+                    letterSpacing: "0.18em",
+                    padding: "7px 10px",
                     cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    color: isActive(link.href) ? "#f6b05e" : "#9a968e",
+                    transition: "all 0.28s ease",
+                    color: isActive(link.href) ? "#f6b05e" : "rgba(232,228,220,0.62)",
                     borderBottom: isActive(link.href)
                       ? "1px solid rgba(246,176,94,0.5)"
                       : "none",
                     display: "inline-block",
+                    textShadow: isActive(link.href)
+                      ? "0 0 18px rgba(246,176,94,0.42)"
+                      : "none",
                   }}
                 >
                   {link.label}
@@ -203,12 +205,12 @@ export default function Header() {
                   <span
                     style={{
                       fontFamily: "var(--font-ritual)",
-                      fontSize: 11,
-                      letterSpacing: "0.15em",
+                      fontSize: 10,
+                      letterSpacing: "0.17em",
                       display: "block",
                       padding: "8px 12px",
                       cursor: "pointer",
-                      color: isActive(link.href) ? "#f6b05e" : "#9a968e",
+                      color: isActive(link.href) ? "#f6b05e" : "rgba(232,228,220,0.62)",
                       borderLeft: isActive(link.href)
                         ? "2px solid #f6b05e"
                         : "2px solid transparent",

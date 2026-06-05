@@ -40,6 +40,7 @@ import {
   prepareOrielTextForVoice,
 } from "@/lib/orielVoiceIntroSession";
 import { parseOrielChatImageFromContent } from "@shared/oriel-chat-images";
+import { Link } from "wouter";
 
 interface ChatAttachment {
   name: string;
@@ -1638,7 +1639,7 @@ export default function Conduit() {
               }}
             >
               <Plus size={14} />
-              New Conversation
+              New Transmission
             </button>
           </div>
 
@@ -1655,14 +1656,14 @@ export default function Conduit() {
                 className="font-mono text-[9px] text-center py-4"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                Sign in to save conversations
+                Receiver node required to preserve transmissions
               </p>
             ) : !conversationsList || conversationsList.length === 0 ? (
               <p
                 className="font-mono text-[9px] text-center py-4"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                No conversations yet...
+                No transmissions recovered yet...
               </p>
             ) : (
               conversationsList.map(conv => (
@@ -1820,7 +1821,7 @@ export default function Conduit() {
               >
                 {activeConversationId && activeConvData
                   ? activeConvData.title
-                  : "New Conversation"}
+                  : "ORIEL TRANSMISSION CHAMBER"}
               </p>
 
               {/* Persistent visual indicator for the image generation mode (always visible in the chat UI when active) */}
@@ -1935,14 +1936,31 @@ export default function Conduit() {
                     fontWeight: 300,
                   }}
                 >
-                  Begin a transmission...
+                  The chamber is silent.
                 </p>
                 <p
                   className="font-mono text-[9px] text-center"
                   style={{ color: "rgba(189,163,107,0.25)" }}
                 >
-                  Type a message or start a voice session
+                  Enter a signal to begin. ORIEL listens for pattern, pressure,
+                  contradiction, memory, and resonance.
                 </p>
+                {!isAuthenticated && (
+                  <div className="oriel-chamber-access-panel max-w-md text-center">
+                    <p className="font-mono text-[9px] tracking-[0.24em] uppercase mb-2" style={{ color: "rgba(246,176,94,0.72)" }}>
+                      // receiver node required
+                    </p>
+                    <p className="font-mono text-[10px] leading-relaxed" style={{ color: "rgba(232,228,220,0.62)" }}>
+                      Enter the archive to preserve Oriel history, Codex records,
+                      and transmission traces inside your node.
+                    </p>
+                    <Link href="/auth">
+                      <span className="inline-block mt-3 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] cursor-pointer" style={{ border: "1px solid rgba(189,163,107,0.35)", color: "rgba(246,176,94,0.82)" }}>
+                        ◇ Enter Archive
+                      </span>
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               /* Message list */
@@ -1975,7 +1993,7 @@ export default function Conduit() {
                           className="font-mono text-[9px] mb-2 tracking-[0.3em] uppercase"
                           style={{ color: "rgba(189,163,107,0.5)" }}
                         >
-                          Channeler
+                          Receiver Node
                           {msg.timestamp && (
                             <span
                               className="ml-2 normal-case tracking-normal"
@@ -2268,8 +2286,8 @@ export default function Conduit() {
                 }
                 placeholder={
                   isImageMode
-                    ? "Describe the image you want Oriel to generate..."
-                    : "Enter your query into the light..."
+                    ? "Describe the image transmission ORIEL should generate..."
+                    : "Transmit your question to ORIEL..."
                 }
                 disabled={inputDisabled}
                 className="flex-1 bg-transparent font-mono text-sm outline-none px-4 py-3 rounded transition-all"
@@ -2417,7 +2435,7 @@ export default function Conduit() {
               <button
                 onClick={handleSendMessage}
                 disabled={sendDisabled}
-                title="Channel"
+                title="Transmit"
                 className="px-5 py-3 rounded font-mono text-xs tracking-[0.25em] uppercase transition-all"
                 style={{
                   background: "rgba(189,163,107,0.1)",
@@ -2444,7 +2462,7 @@ export default function Conduit() {
                 generateChatImageMutation.isPending ? (
                   <Spinner size={16} />
                 ) : (
-                  "Channel"
+                  "Transmit"
                 )}
               </button>
             </div>
@@ -2454,7 +2472,7 @@ export default function Conduit() {
                 className="font-mono text-[9px] mt-3 tracking-widest"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                // Authenticate to sync conversation history across devices
+                // Receiver node required to preserve transmissions across devices
               </p>
             )}
           </div>

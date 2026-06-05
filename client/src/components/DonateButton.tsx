@@ -7,15 +7,9 @@ export default function DonateButton() {
       className="inline-block"
     >
       <input type="hidden" name="hosted_button_id" value="QLVQDRKWM4A7N" />
-      <input
-        type="image"
-        src="https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif"
-        name="submit"
-        title="PayPal - The safer, easier way to pay online!"
-        alt="Donate with PayPal button"
-        className="hover:opacity-80 transition-opacity cursor-pointer"
-        style={{ border: "none" }}
-      />
+      <button type="submit" className="oriel-donate-button">
+        Support the Archive
+      </button>
       <img
         alt="PayPal tracking pixel"
         src="https://www.paypal.com/en_US/i/scr/pixel.gif"

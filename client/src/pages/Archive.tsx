@@ -144,16 +144,21 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
             transition-all duration-500
           "
           style={{
-            background: "rgba(10,10,14,0.8)",
-            borderColor: "rgba(246,176,94,0.06)",
+            background:
+              "linear-gradient(180deg, rgba(255,248,232,0.035), rgba(255,248,232,0.012)), radial-gradient(circle at 88% 10%, rgba(216,181,109,0.08), transparent 14rem), rgba(7,7,6,0.78)",
+            borderColor: "rgba(216,181,109,0.18)",
+            boxShadow:
+              "inset 0 0 0 1px rgba(255,248,232,0.018), 0 18px 56px rgba(0,0,0,0.24)",
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.borderColor = "rgba(246,176,94,0.2)";
-            e.currentTarget.style.boxShadow = "0 0 40px rgba(246,176,94,0.04)";
+            e.currentTarget.style.borderColor = "rgba(228,200,140,0.44)";
+            e.currentTarget.style.boxShadow =
+              "inset 0 0 0 1px rgba(255,248,232,0.035), 0 22px 64px rgba(0,0,0,0.32), 0 0 30px rgba(216,181,109,0.08), 4px 0 0 rgba(111,214,226,0.035), -4px 0 0 rgba(188,132,255,0.028)";
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.borderColor = "rgba(246,176,94,0.06)";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = "rgba(216,181,109,0.18)";
+            e.currentTarget.style.boxShadow =
+              "inset 0 0 0 1px rgba(255,248,232,0.018), 0 18px 56px rgba(0,0,0,0.24)";
           }}
         >
           {posterUrl && (
@@ -274,11 +279,11 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
           {/* Signal clarity bar */}
           <div className="flex items-center gap-3">
             <div
-              className="flex-1 relative overflow-hidden rounded-full"
+              className="flex-1 relative overflow-hidden rounded-sm"
               style={{ height: 1, background: "rgba(246,176,94,0.08)" }}
             >
               <div
-                className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+                className="absolute inset-y-0 left-0 rounded-sm transition-all duration-700"
                 style={{
                   width: `${clarity}%`,
                   background: "rgba(246,176,94,0.25)",
@@ -314,7 +319,7 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
               className="font-mono tracking-wider transition-all duration-300 group-hover:translate-x-0.5"
               style={{ fontSize: 9, color: "rgba(189,163,107,0.25)" }}
             >
-              RECEIVE →
+              OPEN FRAGMENT →
             </span>
           </div>
         </div>
@@ -464,9 +469,9 @@ export default function Archive() {
   const activeFazaInfo = FAZA_REGISTERS.find(f => f.id === activeFaza);
   const headerLabel =
     activeFaza === "all"
-      ? "TRANSMISSION FIELD"
-      : `FAZA ${activeFazaInfo?.vtip} · ${activeFazaInfo?.name}`;
-  const scrambledHeader = useScramble(headerLabel, activeFaza);
+      ? "RECOVERED TRANSMISSIONS"
+      : `REGISTER ${activeFazaInfo?.vtip} · ${activeFazaInfo?.name}`;
+  const scrambledHeader = useScramble(headerLabel, activeFaza, 260);
 
   // Ambient cycling quotes
   const [ambientIndex, setAmbientIndex] = useState(0);
@@ -484,7 +489,7 @@ export default function Archive() {
       <style>{`
         .archive-page {
           min-height: 100vh;
-          padding: 88px 30px 86px;
+          padding: 148px 30px 86px;
         }
 
         .archive-page-inner {
@@ -496,10 +501,14 @@ export default function Archive() {
           margin-bottom: 28px;
           padding: clamp(28px, 4vw, 46px);
           border: 1px solid var(--voss-border);
+          border-radius: 0.18rem;
           background:
-            radial-gradient(circle at 84% 18%, rgba(246, 176, 94, 0.085), transparent 32%),
-            linear-gradient(135deg, rgba(15, 15, 21, 0.9), rgba(8, 8, 12, 0.64));
-          box-shadow: 0 26px 90px rgba(0, 0, 0, 0.3);
+            linear-gradient(180deg, rgba(255, 248, 232, 0.04), rgba(255, 248, 232, 0.012)),
+            radial-gradient(circle at 84% 18%, rgba(216, 181, 109, 0.105), transparent 32%),
+            linear-gradient(135deg, rgba(7, 7, 6, 0.9), rgba(5, 5, 5, 0.64));
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 248, 232, 0.025),
+            0 26px 90px rgba(0, 0, 0, 0.34);
           backdrop-filter: blur(18px);
         }
 
@@ -514,7 +523,7 @@ export default function Archive() {
           margin-bottom: 12px;
           font-family: var(--font-ritual);
           font-size: 10px;
-          letter-spacing: 0.2em;
+          letter-spacing: 0.28em;
           text-transform: uppercase;
           color: var(--voss-amber);
         }
@@ -525,8 +534,24 @@ export default function Archive() {
           font-size: clamp(42px, 6vw, 82px);
           font-weight: 300;
           line-height: 0.94;
-          letter-spacing: -0.03em;
+          letter-spacing: 0.08em;
           color: var(--voss-ivory);
+          text-transform: uppercase;
+          text-shadow:
+            0 0 44px rgba(216, 181, 109, 0.18),
+            0 0 10px rgba(255, 248, 232, 0.06);
+        }
+
+        .archive-signal-readout {
+          margin: 10px 0 0;
+          max-width: min(100%, 680px);
+          color: rgba(216, 181, 109, 0.62);
+          font-family: var(--font-ritual);
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          line-height: 1.8;
+          text-transform: uppercase;
+          overflow-wrap: anywhere;
         }
 
         .archive-page .archive-rule {
@@ -582,7 +607,10 @@ export default function Archive() {
           margin-bottom: 24px;
           padding: 16px;
           border: 1px solid var(--voss-border-soft);
-          background: rgba(10, 10, 14, 0.58);
+          border-radius: 0.18rem;
+          background:
+            linear-gradient(180deg, rgba(255, 248, 232, 0.026), rgba(255, 248, 232, 0.008)),
+            rgba(7, 7, 6, 0.62);
           backdrop-filter: blur(14px);
         }
 
@@ -606,7 +634,7 @@ export default function Archive() {
 
         @media (max-width: 760px) {
           .archive-page {
-            padding: 74px 16px 72px;
+            padding: 118px 16px 72px;
           }
 
           .archive-hero-row {
@@ -627,14 +655,20 @@ export default function Archive() {
               <div className="archive-hero-row">
                 <div>
                   <div className="archive-kicker animate-fade-in-up">
-                    VOSS ARKIVA · TRANSMISSION ARCHIVE
+                    VOS ARKANA · RECOVERED FIELD ARCHIVE
                   </div>
                   <h1
                     className="archive-title animate-fade-in-up"
                     style={{ animationDelay: "0.1s" }}
                   >
-                    {scrambledHeader}
+                    TRANSMISSIONS
                   </h1>
+                  <p
+                    className="archive-signal-readout animate-fade-in-up"
+                    style={{ animationDelay: "0.16s" }}
+                  >
+                    // {scrambledHeader}
+                  </p>
                   <div
                     className="archive-rule animate-fade-in-up"
                     style={{ animationDelay: "0.2s" }}
@@ -667,7 +701,7 @@ export default function Archive() {
                     type="text"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    placeholder="SCAN FREQUENCY..."
+                    placeholder="SCAN ARCHIVE NODE..."
                     autoFocus
                     className="archive-search-input"
                   />
@@ -739,7 +773,7 @@ export default function Archive() {
                       {/* Active dot */}
                       {isActive && (
                         <div
-                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full"
+                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-sm"
                           style={{
                             width: 3,
                             height: 3,
@@ -773,7 +807,7 @@ export default function Archive() {
                       : "2px solid transparent",
                 }}
               >
-                TX TRANSMISSIONS ({filtered.length})
+                FIELD TRANSMISSIONS ({filtered.length})
               </button>
               <button
                 onClick={() => setActiveSection("ox")}
@@ -790,7 +824,7 @@ export default function Archive() {
                       : "2px solid transparent",
                 }}
               >
-                ΩX ORACLE STREAMS ({filteredOracles.length})
+                ΩX ORACLE FRAGMENTS ({filteredOracles.length})
               </button>
             </div>
           </div>
@@ -869,13 +903,13 @@ export default function Archive() {
                       className="font-mono"
                       style={{ fontSize: 13, color: "rgba(246,176,94,0.25)" }}
                     >
-                      NO SIGNAL DETECTED
+                      NO TRANSMISSION FRAGMENT DETECTED
                     </p>
                     <p
                       className="font-mono mt-2"
                       style={{ fontSize: 10, color: "rgba(246,176,94,0.12)" }}
                     >
-                      Adjust frequency parameters or scan all registers.
+                      Adjust archive parameters or scan all registers.
                     </p>
                   </div>
                 ) : (
@@ -907,7 +941,7 @@ export default function Archive() {
                         className="font-mono uppercase tracking-widest mb-4"
                         style={{ fontSize: 10, color: "#bda36b" }}
                       >
-                        RISING SIGNALS
+                        SELECTED ARCHIVE MARKERS
                       </div>
                       <div
                         className="flex gap-4 overflow-x-auto pb-2"
@@ -994,7 +1028,7 @@ export default function Archive() {
                     className="font-mono uppercase tracking-widest mb-2"
                     style={{ fontSize: 9, color: "rgba(246,176,94,0.12)" }}
                   >
-                    AMBIENT SIGNAL · TX-
+                    FIELD LOG · TX-
                     {String(ambientTx.txNumber).padStart(3, "0")}
                   </div>
                   <p

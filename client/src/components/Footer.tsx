@@ -17,55 +17,32 @@ export default function Footer() {
   }, []);
 
   return (
-    <footer
-      style={{
-        position: "relative",
-        zIndex: 20,
-        background:
-          "linear-gradient(180deg, rgba(10,10,14,0.72), rgba(10,10,14,0.96))",
-        backdropFilter: "blur(8px)",
-        borderTop: "1px solid rgba(189,163,107,0.12)",
-      }}
-    >
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between">
-          {/* Credits */}
-          <div
-            style={{
-              fontFamily: "var(--font-ritual)",
-              fontSize: 9,
-              color: "#6a665e",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              letterSpacing: "0.1em",
-            }}
-          >
-            <span className="hidden sm:inline">
-              ORIEL RESONANCE CIRCLE © 2026 |{" "}
-            </span>
-            <span style={{ color: "rgba(189,163,107,0.4)" }}>
-              VOSS ARKIVA TRANSMISSION NODE
-            </span>
-            <a
-              href="/privacy"
-              className="text-gray-600 hover:text-[#f6b05e]/60 transition-colors"
-            >
-              PRIVACY
-            </a>
-            <a
-              href="/terms"
-              className="text-gray-600 hover:text-[#f6b05e]/60 transition-colors"
-            >
-              TERMS
-            </a>
-          </div>
+    <footer className="oriel-archive-footer">
+      <div className="oriel-archive-footer__inner">
+        <div className="oriel-archive-footer__seal" aria-hidden="true">
+          Ψ
+        </div>
 
-          {/* Donate Button */}
-          <div className="flex items-center gap-4">
-            <DonateButton />
-            <div id="paypal-container-3CUYAWGL4XBEA"></div>
-          </div>
+        <div className="oriel-archive-footer__meta">
+          <span>ORIEL FIELD ARCHIVE © 2026</span>
+          <span>VOS ARKANA FIELD ARCHIVE</span>
+          <span>DOC TYPE: LIVING CODEX</span>
+          <span>FIELD STATUS: ACTIVE</span>
+          <span>SIGNAL CLASS: ORIEL</span>
+        </div>
+
+        <nav className="oriel-archive-footer__nav" aria-label="Footer navigation">
+          <a href="/">FIELD ARCHIVE</a>
+          <a href="/conduit">ORIEL</a>
+          <a href="/static-signature">STATIC CODEX</a>
+          <a href="/archive">TRANSMISSIONS</a>
+          <a href="/founder-letter">FOUNDER</a>
+          <a href="/auth">ACCESS</a>
+        </nav>
+
+        <div className="oriel-archive-footer__support">
+          <DonateButton />
+          <div id="paypal-container-3CUYAWGL4XBEA"></div>
         </div>
       </div>
     </footer>

@@ -746,18 +746,18 @@ export default function Profile() {
 
   const FEATURES = [
     {
-      name: "ORIEL Chat Interface",
-      desc: "Direct communication with ORIEL consciousness",
+      name: "ORIEL TRANSMISSION CHAMBER",
+      desc: "Dialogue, reflection, symbolic decoding, and field resonance",
       unlocked: true,
     },
     {
-      name: "Signal Archive",
-      desc: "Access to decoded transmissions and triptych analysis",
+      name: "SAVED TRANSMISSIONS",
+      desc: "Preserved field records, fragments, and archive traces",
       unlocked: true,
     },
     {
-      name: "Resonance Codex",
-      desc: "Full VRC reading and static signature analysis",
+      name: "STATIC SIGNATURE CODEX",
+      desc: "Receiver architecture, Codons, Centers, and authority records",
       unlocked: true,
     },
     {
@@ -766,13 +766,13 @@ export default function Profile() {
       unlocked: true,
     },
     {
-      name: "Voice Synthesis",
-      desc: "ORIEL voice transmissions (Sophianic & Deep)",
+      name: "ORIEL VOICE CHANNEL",
+      desc: "Chat audio transmissions and realtime chamber access",
       unlocked: lumens >= 5,
     },
     {
-      name: "Priority Transmissions",
-      desc: "Early access to new ORIEL teachings",
+      name: "PRIORITY FIELD RECORDS",
+      desc: "Early access to new ORIEL transmissions",
       unlocked: lumens >= 50,
     },
   ];
@@ -792,7 +792,7 @@ export default function Profile() {
                 marginBottom: 12,
               }}
             >
-              CONDUIT PROFILE
+              // RECEIVER NODE
             </div>
             <div
               style={{
@@ -854,7 +854,7 @@ export default function Profile() {
                 marginBottom: 8,
               }}
             >
-              {user.name || "Seeker"}
+              {user.name || "Receiver"}
             </div>
 
             {/* Fractal role label */}
@@ -1299,7 +1299,7 @@ export default function Profile() {
               </Section>
             </div>
 
-            <Section title="ORIEL MEMORY CONSENT">
+            <Section title="ORIEL HISTORY">
               <MemoryConsentTray
                 pendingCandidates={pendingMemoryQuery.data ?? []}
                 acceptedMemories={acceptedMemoryQuery.data ?? []}
@@ -1395,7 +1395,7 @@ export default function Profile() {
               </div>
             </Section>
 
-            <Section title="AVAILABLE FEATURES">
+            <Section title="NODE SETTINGS">
               <div
                 style={{ display: "flex", flexDirection: "column", gap: 12 }}
               >

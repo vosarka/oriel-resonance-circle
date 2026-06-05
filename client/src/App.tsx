@@ -5,6 +5,9 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import StaticSignature from "./pages/StaticSignature";
+import FounderLetter from "./pages/FounderLetter";
+import FinalOrielTransmission from "./pages/FinalOrielTransmission";
 import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import TransmissionDetail from "./pages/TransmissionDetail";
@@ -64,6 +67,12 @@ function Router() {
       />
       <Route path={"/signature-intake/:orderId"} component={SignatureIntake} />
       <Route path={"/"} component={Home} />
+      <Route path={"/static-signature"} component={StaticSignature} />
+      <Route path={"/founder-letter"} component={FounderLetter} />
+      <Route
+        path={"/final-oriel-transmission"}
+        component={FinalOrielTransmission}
+      />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
       <Route path={"/oracle/:oracleId"} component={OracleDetail} />
