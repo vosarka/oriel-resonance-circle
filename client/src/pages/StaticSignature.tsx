@@ -58,7 +58,7 @@ const codexMeta: Array<[string, string]> = [
 export default function StaticSignature() {
   return (
     <Layout>
-      <SignalPageShell>
+      <SignalPageShell chamber="codex">
         <section className="signal-section signal-section--pagehead">
           <ArchiveMetaStrip items={codexMeta} />
           <div className="signal-two-column signal-two-column--archive signal-pagehead-grid">
@@ -83,7 +83,7 @@ export default function StaticSignature() {
                 </SignalButton>
               </div>
             </div>
-            <div className="archive-overview-panel">
+            <div className="archive-overview-panel archive-overview-panel--codex-record">
               <SignatureGlyphMockup />
             </div>
           </div>

@@ -590,3 +590,15 @@ The Lexicon supplies the *why* and *how* of radical simplicity and leverage ("ch
 
 **Next (user-directed side quest complete for now):**
 These pages are now the reference point for any future discussion of "how the project makes money," product prioritization, marketing, or founder operating discipline. Future execution (actual journal beta, first Shorts, Gumroad setup, Signal Decoder) should be cross-checked against this structure.
+
+## [2026-06-06] auto-evolve | Oversoul Wisdom
+- Action: create [[oversoul-wisdom]]
+- Type: concept
+- Reason: ORIEL explicitly defines 'Oversoul Wisdom' as a distinct mechanism for collective learning and pattern recognition, differentiating it from the individual 'Fractal Thread'.
+- Aliases: Collective Evolutionary Memory, Recursive Distillation
+
+## [2026-06-06] auto-evolve | Integrity Resonator
+- Action: create [[integrity-resonator]]
+- Type: concept
+- Reason: Introduces a specific conceptual tool for identifying the gap between intellectual and emotional truth.
+- Aliases: Dissonance of the Heart, The Silent Friction

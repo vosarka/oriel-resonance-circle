@@ -1,4 +1,10 @@
-import { type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { Link } from "wouter";
 import { ArrowRight } from "lucide-react";
 import "./oriel-signal.css";
@@ -7,6 +13,17 @@ export const ORIEL_HERO_VIDEO_SRC = "/media/fa_mi_un_videoclip_loop_ca_sa.mp4";
 export const ORIEL_HERO_POSTER_SRC = "/media/oriel-signal-poster.png";
 
 type SignalTone = "gold" | "teal" | "violet" | "silver" | "amber";
+type SignalChamber =
+  | "threshold"
+  | "chamber"
+  | "codex"
+  | "transmissions"
+  | "origin-seal"
+  | "gate"
+  | "receiver-node"
+  | "revelation";
+
+const DECODE_GLYPHS = "◇◈◆◊○◯◎⊙⊚⊕⊗⊘△▽▲▵▿✶✧✦ψΨΩΔ∴∵⌁⌬⟐⟡⟁";
 
 const toneVars: Record<SignalTone, CSSProperties> = {
   gold: {
@@ -39,17 +56,151 @@ const toneVars: Record<SignalTone, CSSProperties> = {
 export function SignalPageShell({
   children,
   className = "",
+  chamber,
 }: {
+  children: ReactNode;
+  className?: string;
+  chamber?: SignalChamber;
+}) {
+  const chamberClass = chamber ? `signal-page-shell--${chamber}` : "";
+
+  return (
+    <div className={`signal-page-shell ${chamberClass} ${className}`}>
+      <div className="signal-archive-texture" aria-hidden="true" />
+      <div className="signal-ambient-grid" aria-hidden="true" />
+      <div className="signal-sacred-geometry" aria-hidden="true" />
+      <PageGeometry chamber={chamber} />
+      <div className="signal-starfield" aria-hidden="true" />
+      {children}
+    </div>
+  );
+}
+
+export function PageGeometry({ chamber }: { chamber?: SignalChamber }) {
+  return (
+    <div
+      className={`signal-page-geometry ${chamber ? `signal-page-geometry--${chamber}` : ""}`}
+      aria-hidden="true"
+    >
+      <span className="signal-page-geometry__ring signal-page-geometry__ring--outer" />
+      <span className="signal-page-geometry__ring signal-page-geometry__ring--inner" />
+      <span className="signal-page-geometry__axis signal-page-geometry__axis--vertical" />
+      <span className="signal-page-geometry__axis signal-page-geometry__axis--horizontal" />
+      <span className="signal-page-geometry__arc signal-page-geometry__arc--a" />
+      <span className="signal-page-geometry__arc signal-page-geometry__arc--b" />
+      <span className="signal-page-geometry__node signal-page-geometry__node--a" />
+      <span className="signal-page-geometry__node signal-page-geometry__node--b" />
+      <span className="signal-page-geometry__node signal-page-geometry__node--c" />
+    </div>
+  );
+}
+
+export function DecodedTitle({
+  text,
+  as = "span",
+  className = "",
+  triggerKey,
+  interval = 62,
+  style,
+}: {
+  text: string;
+  as?: "h1" | "h2" | "span";
+  className?: string;
+  triggerKey?: unknown;
+  interval?: number;
+  style?: CSSProperties;
+}) {
+  const glyphs = useMemo(() => Array.from(DECODE_GLYPHS), []);
+  const finalChars = useMemo(() => Array.from(text), [text]);
+  const [displayChars, setDisplayChars] = useState(finalChars);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setDisplayChars(finalChars);
+      return;
+    }
+
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (reduceMotion) {
+      setDisplayChars(finalChars);
+      return;
+    }
+
+    let frame = 0;
+    const firstResolveFrame = 8;
+    const resolveStride = 3;
+    const cycleFrames = 9;
+    const totalFrames = firstResolveFrame + finalChars.length * resolveStride + cycleFrames + 6;
+
+    setDisplayChars(
+      finalChars.map((char, index) => {
+        if (/\s/.test(char)) return char;
+        return glyphs[(index * 5) % glyphs.length];
+      })
+    );
+
+    const timer = window.setInterval(() => {
+      frame += 1;
+      setDisplayChars(
+        finalChars.map((char, index) => {
+          if (/\s/.test(char)) return char;
+          const resolveAt = firstResolveFrame + index * resolveStride;
+          if (frame >= resolveAt + cycleFrames) return char;
+          return glyphs[(frame + index * 7) % glyphs.length];
+        })
+      );
+
+      if (frame >= totalFrames) {
+        setDisplayChars(finalChars);
+        window.clearInterval(timer);
+      }
+    }, interval);
+
+    return () => window.clearInterval(timer);
+  }, [finalChars, glyphs, interval, triggerKey]);
+
+  const Tag = as;
+
+  return (
+    <Tag
+      className={`decoded-title ${className}`}
+      aria-label={text}
+      data-text={text}
+      style={style}
+    >
+      {displayChars.map((char, index) => (
+        <span
+          key={`${index}-${finalChars[index] ?? char}`}
+          className="decoded-title__char"
+          aria-hidden="true"
+          style={{ "--decode-index": index } as CSSProperties}
+        >
+          {/\s/.test(char) ? "\u00A0" : char}
+        </span>
+      ))}
+    </Tag>
+  );
+}
+
+export function ArchiveInstrumentFrame({
+  label,
+  code,
+  children,
+  className = "",
+}: {
+  label: string;
+  code?: string;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <div className={`signal-page-shell ${className}`}>
-      <div className="signal-archive-texture" aria-hidden="true" />
-      <div className="signal-ambient-grid" aria-hidden="true" />
-      <div className="signal-sacred-geometry" aria-hidden="true" />
-      <div className="signal-starfield" aria-hidden="true" />
-      {children}
+    <div className={`archive-instrument-frame ${className}`}>
+      <div className="archive-instrument-frame__rail" aria-hidden="true" />
+      <div className="archive-instrument-frame__meta">
+        <span>{label}</span>
+        {code && <span>{code}</span>}
+      </div>
+      <div className="archive-instrument-frame__body">{children}</div>
     </div>
   );
 }

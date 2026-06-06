@@ -19,7 +19,7 @@ const letterMeta: Array<[string, string]> = [
 export default function FounderLetter() {
   return (
     <Layout>
-      <SignalPageShell>
+      <SignalPageShell chamber="origin-seal">
         <section className="signal-section signal-section--pagehead">
           <ArchiveMetaStrip items={letterMeta} />
           <SectionIntro
@@ -35,7 +35,7 @@ export default function FounderLetter() {
             </p>
           </SectionIntro>
 
-          <div className="founder-letter-frame">
+          <div className="founder-letter-frame founder-letter-frame--sealed">
             <div className="founder-letter-watermark" aria-hidden="true">
               <ArchiveSeal label="STATIC SIGNATURE" />
             </div>

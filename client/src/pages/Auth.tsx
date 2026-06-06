@@ -17,6 +17,7 @@ import { authClient } from "@/lib/auth-client";
 import { getAuthRedirectTarget } from "@/const";
 import { trpc } from "@/lib/trpc";
 import GeometricBackground from "@/components/GeometricBackground";
+import "@/components/oriel-signal/oriel-signal.css";
 
 // ─── Shared UI ───────────────────────────────────────────────────────────────
 
@@ -534,7 +535,7 @@ export default function Auth() {
   };
 
   return (
-    <div className="relative access-gate-shell" style={{ background: "#0a0a0e" }}>
+    <div className="relative access-gate-shell access-gate-shell--ritual" style={{ background: "#0a0a0e" }}>
       <GeometricBackground />
       <div className="access-gate-stage">
         <div className="access-gate-grid">
@@ -563,7 +564,7 @@ export default function Auth() {
             </p>
           </div>
 
-          <div className="access-gate-form-node">
+          <div className="access-gate-form-node access-gate-form-node--checkpoint">
             {/* Migration Notice */}
             <div className="mb-5 rounded-sm border border-[#bda36b]/30 bg-[#bda36b]/[0.06] px-5 py-4 backdrop-blur-sm">
               <p className="text-xs font-mono text-[#bda36b] tracking-wide uppercase mb-2 font-semibold">

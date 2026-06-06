@@ -41,6 +41,7 @@ import {
 } from "@/lib/orielVoiceIntroSession";
 import { parseOrielChatImageFromContent } from "@shared/oriel-chat-images";
 import { Link } from "wouter";
+import "@/components/oriel-signal/oriel-signal.css";
 
 interface ChatAttachment {
   name: string;
@@ -1595,7 +1596,7 @@ export default function Conduit() {
       )}
 
       <div
-        className="relative z-10 flex"
+        className="oriel-chamber-shell oriel-chamber-stage relative z-10 flex"
         style={{ height: "calc(100vh - 64px)" }}
       >
         {/* ===== LEFT SIDEBAR ===== */}

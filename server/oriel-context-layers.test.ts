@@ -133,6 +133,7 @@ describe("ORIEL context layers", () => {
       includeRuntimeProfile: false,
       includeUMM: false,
       includeFieldState: false,
+      includeWiki: false,
     });
 
     const stableIndex = prompt.indexOf("[STABLE CORE CONTEXT]");

@@ -541,6 +541,18 @@ export async function processConversationThroughUMM(
       if (pattern) await storeOversoulPattern(pattern);
     }
 
+    // Process Wiki Evolution (self-updating wiki) in the background
+    (async () => {
+      try {
+        const { evolveWikiFromConversation } = await import(
+          "./oriel-wiki-evolution"
+        );
+        await evolveWikiFromConversation(userId, userMessage, assistantResponse);
+      } catch (err) {
+        console.error("[UMM] Wiki evolution background task failed:", err);
+      }
+    })();
+
     console.log(
       `[UMM] Processed conversation for user ${userId} through complete matrix`
     );

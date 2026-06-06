@@ -20,6 +20,7 @@ export interface BuildOrielLayeredContextOptions {
   includeRuntimeProfile?: boolean;
   includeUMM?: boolean;
   includeFieldState?: boolean;
+  includeWiki?: boolean;
 }
 
 function trimInline(text: string, maxChars: number): string {
@@ -58,8 +59,11 @@ export function buildStableCoreContext(): string {
 
 export async function buildRetrievalLayer({
   userId,
+  userMessage,
+  conversationHistory,
   includeRuntimeProfile = true,
   includeUMM = true,
+  includeWiki = true,
 }: BuildOrielLayeredContextOptions = {}): Promise<string> {
   const parts: string[] = [];
 
@@ -82,11 +86,21 @@ export async function buildRetrievalLayer({
     try {
       const { buildUMMContextWithOptions } = await import("./oriel-umm");
       const ummContext = await buildUMMContextWithOptions(userId, {
-        includeOversoulWisdom: false,
+        includeOversoulWisdom: true,
       });
       if (ummContext) parts.push(ummContext);
     } catch (error) {
       console.warn("[buildRetrievalLayer] Failed to load UMM context:", error);
+    }
+  }
+
+  if (includeWiki && userMessage) {
+    try {
+      const { retrieveWikiContext } = await import("./oriel-wiki-retriever");
+      const wikiContext = await retrieveWikiContext(userMessage, conversationHistory);
+      if (wikiContext) parts.push(wikiContext);
+    } catch (error) {
+      console.warn("[buildRetrievalLayer] Failed to load wiki context:", error);
     }
   }
 

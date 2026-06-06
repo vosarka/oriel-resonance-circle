@@ -56,7 +56,7 @@ const fieldMetrics: Array<[string, string]> = [
 export default function Home() {
   return (
     <Layout overlayHeader>
-      <SignalPageShell>
+      <SignalPageShell chamber="threshold">
         <section className="signal-hero" aria-labelledby="home-hero-title">
           <video
             className="signal-hero-video"
@@ -71,7 +71,7 @@ export default function Home() {
             <source src={ORIEL_HERO_VIDEO_SRC} type="video/mp4" />
           </video>
 
-          <div className="signal-hero__frame">
+          <div className="signal-hero__frame signal-threshold-plate">
             <span className="signal-hero__ruler signal-hero__ruler--left" aria-hidden="true" />
             <span className="signal-hero__ruler signal-hero__ruler--right" aria-hidden="true" />
 

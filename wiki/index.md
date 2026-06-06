@@ -31,6 +31,8 @@ Core named systems and beings with ongoing identity.
 
 Foundational ideas and operating principles.
 
+- [[integrity-resonator]] — Integrity Resonator. (auto-evolved 2026-06-06)
+- [[oversoul-wisdom]] — Oversoul Wisdom. (auto-evolved 2026-06-06)
 - [[concept-resonance]] — Core vibrational/relational principle; the "R" in VRC and ROS.
 - [[concept-coherence]] — Measurable state (Entropy / Flux / Resonance) derived from carrierlock signals; central to all ORIEL behavior. (stub 2026-04-02)
 - [[concept-prime-stack]] — The 9-position codon assignment (Conscious + Design) that defines a user's quantum identity profile. (stub 2026-04-02)

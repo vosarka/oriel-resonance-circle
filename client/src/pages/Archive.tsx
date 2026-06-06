@@ -11,6 +11,7 @@ import {
   getTransmissionPosterUrl,
   getYouTubeVideoId,
 } from "@/lib/transmission-media";
+import { DecodedTitle } from "@/components/oriel-signal/OrielSignalDesign";
 
 // ── FAZA Register Map (VTIP Numbering) ──────────────────────────────
 const FAZA_REGISTERS = [
@@ -488,31 +489,78 @@ export default function Archive() {
     <VossArchiveShell>
       <style>{`
         .archive-page {
+          position: relative;
           min-height: 100vh;
           padding: 148px 30px 86px;
+          isolation: isolate;
+        }
+
+        .archive-page::before,
+        .archive-page::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        .archive-page::before {
+          background:
+            radial-gradient(circle at 50% 18%, transparent 0 24%, rgba(216, 181, 109, 0.07) 24.08% 24.22%, transparent 24.36% 40%, rgba(216, 181, 109, 0.045) 40.08% 40.2%, transparent 40.34%),
+            linear-gradient(90deg, transparent 0 13%, rgba(216, 181, 109, 0.06) 13.06%, transparent 13.14% 86.8%, rgba(216, 181, 109, 0.05) 86.9%, transparent 87%),
+            repeating-linear-gradient(180deg, transparent 0 63px, rgba(216, 181, 109, 0.032) 64px, transparent 65px);
+          opacity: 0.72;
+        }
+
+        .archive-page::after {
+          background:
+            conic-gradient(from 12deg at 50% 20%, transparent 0 8%, rgba(216, 181, 109, 0.055) 8.08% 8.16%, transparent 8.26% 22%, rgba(216, 181, 109, 0.04) 22.1% 22.18%, transparent 22.28% 100%),
+            radial-gradient(circle at 14% 36%, rgba(111, 214, 226, 0.035), transparent 22rem);
+          opacity: 0.48;
         }
 
         .archive-page-inner {
+          position: relative;
+          z-index: 1;
           width: min(1440px, 100%);
           margin: 0 auto;
         }
 
         .archive-hero {
+          position: relative;
+          overflow: hidden;
           margin-bottom: 28px;
           padding: clamp(28px, 4vw, 46px);
           border: 1px solid var(--voss-border);
           border-radius: 0.18rem;
           background:
-            linear-gradient(180deg, rgba(255, 248, 232, 0.04), rgba(255, 248, 232, 0.012)),
-            radial-gradient(circle at 84% 18%, rgba(216, 181, 109, 0.105), transparent 32%),
-            linear-gradient(135deg, rgba(7, 7, 6, 0.9), rgba(5, 5, 5, 0.64));
+            linear-gradient(90deg, rgba(216, 181, 109, 0.04), transparent 18%, transparent 82%, rgba(216, 181, 109, 0.03)),
+            linear-gradient(180deg, rgba(255, 248, 232, 0.045), rgba(255, 248, 232, 0.012)),
+            radial-gradient(circle at 84% 18%, rgba(216, 181, 109, 0.13), transparent 34%),
+            radial-gradient(circle at 10% 92%, rgba(111, 214, 226, 0.035), transparent 26%),
+            linear-gradient(135deg, rgba(7, 7, 6, 0.92), rgba(5, 5, 5, 0.66));
           box-shadow:
             inset 0 0 0 1px rgba(255, 248, 232, 0.025),
             0 26px 90px rgba(0, 0, 0, 0.34);
           backdrop-filter: blur(18px);
         }
 
+        .archive-hero::before {
+          content: "";
+          position: absolute;
+          inset: 14px;
+          pointer-events: none;
+          border: 1px solid rgba(216, 181, 109, 0.11);
+          background:
+            radial-gradient(circle at 72% 42%, transparent 0 22%, rgba(216, 181, 109, 0.11) 22.1% 22.3%, transparent 22.45% 38%, rgba(216, 181, 109, 0.07) 38.1% 38.24%, transparent 38.4%),
+            linear-gradient(90deg, transparent 0 49.9%, rgba(216, 181, 109, 0.13) 50%, transparent 50.1%),
+            linear-gradient(180deg, transparent 0 49.9%, rgba(216, 181, 109, 0.09) 50%, transparent 50.1%);
+          opacity: 0.72;
+        }
+
         .archive-hero-row {
+          position: relative;
+          z-index: 1;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
@@ -657,12 +705,14 @@ export default function Archive() {
                   <div className="archive-kicker animate-fade-in-up">
                     VOS ARKANA · RECOVERED FIELD ARCHIVE
                   </div>
-                  <h1
-                    className="archive-title animate-fade-in-up"
+                  <DecodedTitle
+                    as="h1"
+                    text="TRANSMISSIONS"
+                    className="archive-title decoded-title--transmissions animate-fade-in-up"
+                    triggerKey={activeFaza}
+                    interval={68}
                     style={{ animationDelay: "0.1s" }}
-                  >
-                    TRANSMISSIONS
-                  </h1>
+                  />
                   <p
                     className="archive-signal-readout animate-fade-in-up"
                     style={{ animationDelay: "0.16s" }}

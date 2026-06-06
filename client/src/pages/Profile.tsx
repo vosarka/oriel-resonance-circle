@@ -6,6 +6,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useState, useEffect } from "react";
 import Layout from "@/components/Layout";
 import MemoryConsentTray from "@/components/memory/MemoryConsentTray";
+import "@/components/oriel-signal/oriel-signal.css";
 
 // ─── Design Tokens ───────────────────────────────────────────────────────────
 
@@ -779,8 +780,11 @@ export default function Profile() {
 
   return (
     <Layout>
-      <div style={{ minHeight: "100vh", padding: "80px 24px 120px" }}>
-        <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div
+        className="receiver-node-shell receiver-node-shell--living"
+        style={{ minHeight: "100vh", padding: "80px 24px 120px" }}
+      >
+        <div className="receiver-node-container" style={{ maxWidth: 640, margin: "0 auto" }}>
           {/* Page header */}
           <div style={{ marginBottom: 36 }}>
             <div
@@ -805,6 +809,7 @@ export default function Profile() {
 
           {/* ─── SIGIL HERO SECTION ───────────────────────────────── */}
           <div
+            className="receiver-node-panel receiver-node-panel--identity"
             style={{
               background: `linear-gradient(160deg, ${C.deep} 0%, ${tier.glow} 40%, ${C.deep} 70%, ${tier.glow} 100%)`,
               border: `1px solid ${tier.color}15`,

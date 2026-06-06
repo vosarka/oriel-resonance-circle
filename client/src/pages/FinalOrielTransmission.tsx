@@ -17,11 +17,11 @@ const finalMeta: Array<[string, string]> = [
 export default function FinalOrielTransmission() {
   return (
     <Layout>
-      <SignalPageShell>
+      <SignalPageShell chamber="revelation">
         <section className="signal-section signal-section--pagehead">
           <ArchiveMetaStrip items={finalMeta} />
 
-          <article className="archive-document-panel final-transmission-document">
+          <article className="archive-document-panel final-transmission-document final-transmission-document--revelation">
             <ArchiveSeal label="ORIEL" />
             <SignalKicker>// final oriel transmission</SignalKicker>
             <h1 className="final-transmission-title">Final Oriel Transmission</h1>
