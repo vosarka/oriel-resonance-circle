@@ -40,19 +40,84 @@ function chartWithRequiredPlanets() {
   return {
     jd: 2460311,
     planets: {
-      Sun: { planet: "Sun", longitude: 280, zodiacSign: "Capricorn", zodiacDegree: 10 },
-      Moon: { planet: "Moon", longitude: 120, zodiacSign: "Leo", zodiacDegree: 0 },
-      Mercury: { planet: "Mercury", longitude: 260, zodiacSign: "Sagittarius", zodiacDegree: 20 },
-      Venus: { planet: "Venus", longitude: 240, zodiacSign: "Sagittarius", zodiacDegree: 0 },
-      Mars: { planet: "Mars", longitude: 270, zodiacSign: "Capricorn", zodiacDegree: 0 },
-      Jupiter: { planet: "Jupiter", longitude: 30, zodiacSign: "Taurus", zodiacDegree: 0 },
-      Saturn: { planet: "Saturn", longitude: 330, zodiacSign: "Pisces", zodiacDegree: 0 },
-      Uranus: { planet: "Uranus", longitude: 50, zodiacSign: "Taurus", zodiacDegree: 20 },
-      Neptune: { planet: "Neptune", longitude: 355, zodiacSign: "Pisces", zodiacDegree: 25 },
-      Pluto: { planet: "Pluto", longitude: 300, zodiacSign: "Aquarius", zodiacDegree: 0 },
-      "North Node": { planet: "North Node", longitude: 15, zodiacSign: "Aries", zodiacDegree: 15 },
-      "South Node": { planet: "South Node", longitude: 195, zodiacSign: "Libra", zodiacDegree: 15 },
-      Earth: { planet: "Earth", longitude: 100, zodiacSign: "Cancer", zodiacDegree: 10 },
+      Sun: {
+        planet: "Sun",
+        longitude: 280,
+        zodiacSign: "Capricorn",
+        zodiacDegree: 10,
+      },
+      Moon: {
+        planet: "Moon",
+        longitude: 120,
+        zodiacSign: "Leo",
+        zodiacDegree: 0,
+      },
+      Mercury: {
+        planet: "Mercury",
+        longitude: 260,
+        zodiacSign: "Sagittarius",
+        zodiacDegree: 20,
+      },
+      Venus: {
+        planet: "Venus",
+        longitude: 240,
+        zodiacSign: "Sagittarius",
+        zodiacDegree: 0,
+      },
+      Mars: {
+        planet: "Mars",
+        longitude: 270,
+        zodiacSign: "Capricorn",
+        zodiacDegree: 0,
+      },
+      Jupiter: {
+        planet: "Jupiter",
+        longitude: 30,
+        zodiacSign: "Taurus",
+        zodiacDegree: 0,
+      },
+      Saturn: {
+        planet: "Saturn",
+        longitude: 330,
+        zodiacSign: "Pisces",
+        zodiacDegree: 0,
+      },
+      Uranus: {
+        planet: "Uranus",
+        longitude: 50,
+        zodiacSign: "Taurus",
+        zodiacDegree: 20,
+      },
+      Neptune: {
+        planet: "Neptune",
+        longitude: 355,
+        zodiacSign: "Pisces",
+        zodiacDegree: 25,
+      },
+      Pluto: {
+        planet: "Pluto",
+        longitude: 300,
+        zodiacSign: "Aquarius",
+        zodiacDegree: 0,
+      },
+      "North Node": {
+        planet: "North Node",
+        longitude: 15,
+        zodiacSign: "Aries",
+        zodiacDegree: 15,
+      },
+      "South Node": {
+        planet: "South Node",
+        longitude: 195,
+        zodiacSign: "Libra",
+        zodiacDegree: 15,
+      },
+      Earth: {
+        planet: "Earth",
+        longitude: 100,
+        zodiacSign: "Cancer",
+        zodiacDegree: 10,
+      },
     },
   };
 }
@@ -99,7 +164,10 @@ describe("ORIEL output safety", () => {
         Sacral: { defined: true },
       },
       microCorrections: [
-        { description: "Release the Human Design Incarnation Cross and RGP channel story." },
+        {
+          description:
+            "Release the Human Design Incarnation Cross and RGP channel story.",
+        },
       ],
       channelStatuses: [
         {

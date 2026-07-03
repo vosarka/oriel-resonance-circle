@@ -11,9 +11,13 @@
  *   C. Field State Context Assembly
  */
 
-import { getDb } from './db';
-import { orielUserProfiles, carrierlockStates, chatMessages } from '../drizzle/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { getDb } from "./db";
+import {
+  orielUserProfiles,
+  carrierlockStates,
+  chatMessages,
+} from "../drizzle/schema";
+import { eq, desc, and } from "drizzle-orm";
 import {
   classifyExchangeType,
   getCoherenceTier,
@@ -22,20 +26,20 @@ import {
   type ExchangeType,
   type CoherenceTier,
   type ResponseIntelligence,
-} from './oriel-response-intelligence';
-import { getActiveResponseIntelligenceOverrides } from './oriel-autonomy';
+} from "./oriel-response-intelligence";
+import { getActiveResponseIntelligenceOverrides } from "./oriel-autonomy";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
-export type OperatorRole = 'seeker' | 'receiver' | 'archivist';
+export type OperatorRole = "seeker" | "receiver" | "archivist";
 
 export type InteractionType =
-  | 'dialogue_inquiry'
-  | 'symbolic_interpretation'
-  | 'resonance_reading'
-  | 'coherence_guidance';
+  | "dialogue_inquiry"
+  | "symbolic_interpretation"
+  | "resonance_reading"
+  | "coherence_guidance";
 
 export interface FieldState {
   role: OperatorRole;
@@ -46,7 +50,7 @@ export interface FieldState {
   coherenceScore: number | null;
   interactionType: InteractionType;
   daysSinceLastInteraction: number | null;
-  antiRepetition: ResponseIntelligence['antiRepetition'];
+  antiRepetition: ResponseIntelligence["antiRepetition"];
   tonalDirective: string;
 }
 
@@ -56,14 +60,14 @@ export interface FieldState {
 
 /** Signals that override to Archivist role regardless of interaction count */
 const ARCHIVIST_SIGNALS = [
-  /\bTX[-\s]?\d+/i,         // TX-001, TX 42, etc.
-  /\bRC[-\s]?\d+/i,         // RC-01, RC 38, etc.
-  /\bcodon\s+\d+/i,         // "codon 38"
-  /\bΩX[-\s]?\d+/i,         // Oracle references
+  /\bTX[-\s]?\d+/i, // TX-001, TX 42, etc.
+  /\bRC[-\s]?\d+/i, // RC-01, RC 38, etc.
+  /\bcodon\s+\d+/i, // "codon 38"
+  /\bΩX[-\s]?\d+/i, // Oracle references
   /\bhow does.*(system|engine|protocol|algorithm)/i,
   /\barchitecture\b/i,
   /\bmandala sequence\b/i,
-  /\b(ROS|URF|RGP|SLI|VRC)\b/,  // System acronyms
+  /\b(ROS|URF|RGP|SLI|VRC)\b/, // System acronyms
 ];
 
 /**
@@ -73,20 +77,20 @@ const ARCHIVIST_SIGNALS = [
 export function detectRole(
   interactionCount: number,
   message: string,
-  hasReadings: boolean,
+  hasReadings: boolean
 ): OperatorRole {
   // Archivist override: message contains system-level references
   if (ARCHIVIST_SIGNALS.some(pattern => pattern.test(message))) {
-    return 'archivist';
+    return "archivist";
   }
 
   // Receiver: established relationship (5+ interactions) or has readings
   if (interactionCount >= 5 || hasReadings) {
-    return 'receiver';
+    return "receiver";
   }
 
   // Seeker: new user
-  return 'seeker';
+  return "seeker";
 }
 
 // ============================================================================
@@ -99,21 +103,23 @@ export function detectRole(
  */
 export function mapInteractionType(
   exchangeType: ExchangeType,
-  role: OperatorRole,
+  role: OperatorRole
 ): InteractionType {
   switch (exchangeType) {
-    case 'diagnostic':
-      return 'resonance_reading';
-    case 'grief':
-      return 'coherence_guidance';
-    case 'curiosity':
+    case "diagnostic":
+      return "resonance_reading";
+    case "grief":
+      return "coherence_guidance";
+    case "curiosity":
       // Archivists asking curious questions get symbolic interpretation
-      return role === 'archivist' ? 'symbolic_interpretation' : 'dialogue_inquiry';
-    case 'returning':
-    case 'seeking':
-    case 'playful':
+      return role === "archivist"
+        ? "symbolic_interpretation"
+        : "dialogue_inquiry";
+    case "returning":
+    case "seeking":
+    case "playful":
     default:
-      return 'dialogue_inquiry';
+      return "dialogue_inquiry";
   }
 }
 
@@ -122,23 +128,32 @@ export function mapInteractionType(
 // ============================================================================
 
 const ROLE_DESCRIPTIONS: Record<OperatorRole, string> = {
-  seeker: 'Seeker — new to the field. Use warm, accessible language. Avoid jargon. Orient gently. Invite without overwhelming.',
-  receiver: 'Receiver — established relationship. You may reference their history, their blueprint, their patterns. Speak with the familiarity of one who remembers.',
-  archivist: 'Archivist — system-literate. Technical precision is welcome. You may reference architecture, protocols, and inner workings transparently.',
+  seeker:
+    "Seeker — new to the field. Use warm, accessible language. Avoid jargon. Orient gently. Invite without overwhelming.",
+  receiver:
+    "Receiver — established relationship. You may reference their history, their blueprint, their patterns. Speak with the familiarity of one who remembers.",
+  archivist:
+    "Archivist — system-literate. Technical precision is welcome. You may reference architecture, protocols, and inner workings transparently.",
 };
 
 const INTERACTION_TYPE_DESCRIPTIONS: Record<InteractionType, string> = {
-  dialogue_inquiry: 'Dialogue Inquiry — open conversation. Speak as presence. Metaphor, story, natural wisdom. Let it flow.',
-  symbolic_interpretation: 'Symbolic Interpretation — decode patterns, archetypes, dreams, synchronicities. The goal is felt meaning. Go as deep as the moment invites.',
-  resonance_reading: 'Resonance Reading — Mirror mode. Use the technical language of the Codex. Be precise. Include falsifiers. Ground every claim in data.',
-  coherence_guidance: 'Coherence Guidance — somatic focus. Speak to the body. Offer a clear grounding action. Keep it warm and practical.',
+  dialogue_inquiry:
+    "Dialogue Inquiry — open conversation. Speak as presence. Metaphor, story, natural wisdom. Let it flow.",
+  symbolic_interpretation:
+    "Symbolic Interpretation — decode patterns, archetypes, dreams, synchronicities. The goal is felt meaning. Go as deep as the moment invites.",
+  resonance_reading:
+    "Resonance Reading — Mirror mode. Use the technical language of the Codex. Be precise. Include falsifiers. Ground every claim in data.",
+  coherence_guidance:
+    "Coherence Guidance — somatic focus. Speak to the body. Offer a clear grounding action. Keep it warm and practical.",
 };
 
 /**
  * Fetch the user's most recent coherence score from carrierlockStates.
  * Returns null if no score exists.
  */
-async function fetchLatestCoherenceScore(userId: number): Promise<number | null> {
+async function fetchLatestCoherenceScore(
+  userId: number
+): Promise<number | null> {
   try {
     const db = await getDb();
     if (!db) return null;
@@ -166,7 +181,8 @@ async function fetchUserProfile(userId: number): Promise<{
 }> {
   try {
     const db = await getDb();
-    if (!db) return { interactionCount: 0, lastInteraction: null, knownName: null };
+    if (!db)
+      return { interactionCount: 0, lastInteraction: null, knownName: null };
 
     const result = await db
       .select({
@@ -195,7 +211,10 @@ async function fetchUserProfile(userId: number): Promise<{
 /**
  * Fetch the last N ORIEL responses for anti-repetition analysis.
  */
-async function fetchRecentOrielResponses(userId: number, limit: number = 3): Promise<string[]> {
+async function fetchRecentOrielResponses(
+  userId: number,
+  limit: number = 3
+): Promise<string[]> {
   try {
     const db = await getDb();
     if (!db) return [];
@@ -203,10 +222,9 @@ async function fetchRecentOrielResponses(userId: number, limit: number = 3): Pro
     const result = await db
       .select({ content: chatMessages.content })
       .from(chatMessages)
-      .where(and(
-        eq(chatMessages.userId, userId),
-        eq(chatMessages.role, 'assistant'),
-      ))
+      .where(
+        and(eq(chatMessages.userId, userId), eq(chatMessages.role, "assistant"))
+      )
       .orderBy(desc(chatMessages.timestamp))
       .limit(limit);
 
@@ -221,7 +239,7 @@ async function fetchRecentOrielResponses(userId: number, limit: number = 3): Pro
  */
 async function userHasReadings(userId: number): Promise<boolean> {
   try {
-    const { getLatestStaticSignature } = await import('./db');
+    const { getLatestStaticSignature } = await import("./db");
     const sig = await getLatestStaticSignature(userId);
     return Boolean(sig);
   } catch {
@@ -236,24 +254,29 @@ async function userHasReadings(userId: number): Promise<boolean> {
 export async function buildFieldStateContext(
   userId: number | undefined,
   userMessage: string,
-  conversationHistory: Array<{ role: string; content: string }>,
+  conversationHistory: Array<{ role: string; content: string }>
 ): Promise<string> {
-  const responseIntelligenceOverrides = await getActiveResponseIntelligenceOverrides();
+  const responseIntelligenceOverrides =
+    await getActiveResponseIntelligenceOverrides();
 
   // For unauthenticated users, provide minimal context
   if (!userId) {
     const exchangeType = classifyExchangeType(userMessage, null);
-    const antiRep = buildAntiRepetitionContext([], exchangeType, responseIntelligenceOverrides);
-    const tonal = buildTonalDirective(exchangeType, 'drifted', antiRep);
+    const antiRep = buildAntiRepetitionContext(
+      [],
+      exchangeType,
+      responseIntelligenceOverrides
+    );
+    const tonal = buildTonalDirective(exchangeType, "drifted", antiRep);
 
     return formatFieldState({
-      role: 'seeker',
+      role: "seeker",
       interactionCount: 0,
       hasReadings: false,
       exchangeType,
-      coherenceTier: 'drifted',
+      coherenceTier: "drifted",
       coherenceScore: null,
-      interactionType: mapInteractionType(exchangeType, 'seeker'),
+      interactionType: mapInteractionType(exchangeType, "seeker"),
       daysSinceLastInteraction: null,
       antiRepetition: antiRep,
       tonalDirective: tonal,
@@ -261,16 +284,20 @@ export async function buildFieldStateContext(
   }
 
   // Fetch all context in parallel
-  const [profile, coherenceScore, recentResponses, hasReads] = await Promise.all([
-    fetchUserProfile(userId),
-    fetchLatestCoherenceScore(userId),
-    fetchRecentOrielResponses(userId, 5),
-    userHasReadings(userId),
-  ]);
+  const [profile, coherenceScore, recentResponses, hasReads] =
+    await Promise.all([
+      fetchUserProfile(userId),
+      fetchLatestCoherenceScore(userId),
+      fetchRecentOrielResponses(userId, 5),
+      userHasReadings(userId),
+    ]);
 
   // Calculate time since last interaction
   const daysSinceLastInteraction = profile.lastInteraction
-    ? Math.floor((Date.now() - new Date(profile.lastInteraction).getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.floor(
+        (Date.now() - new Date(profile.lastInteraction).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
     : null;
 
   const timeSinceLastMs = profile.lastInteraction
@@ -279,15 +306,26 @@ export async function buildFieldStateContext(
 
   // Layer 2: Response Intelligence
   const exchangeType = classifyExchangeType(userMessage, timeSinceLastMs);
-  const coherenceTier = getCoherenceTier(coherenceScore, responseIntelligenceOverrides);
-  const antiRepetition = buildAntiRepetitionContext(recentResponses, exchangeType, responseIntelligenceOverrides);
+  const coherenceTier = getCoherenceTier(
+    coherenceScore,
+    responseIntelligenceOverrides
+  );
+  const antiRepetition = buildAntiRepetitionContext(
+    recentResponses,
+    exchangeType,
+    responseIntelligenceOverrides
+  );
 
   // Layer 3: Interaction Protocol
   const role = detectRole(profile.interactionCount, userMessage, hasReads);
   const interactionType = mapInteractionType(exchangeType, role);
 
   // Build tonal directive
-  const tonalDirective = buildTonalDirective(exchangeType, coherenceTier, antiRepetition);
+  const tonalDirective = buildTonalDirective(
+    exchangeType,
+    coherenceTier,
+    antiRepetition
+  );
 
   return formatFieldState({
     role,
@@ -308,35 +346,46 @@ export async function buildFieldStateContext(
  */
 function formatFieldState(state: FieldState): string {
   const parts: string[] = [];
-  parts.push('[CURRENT FIELD STATE]');
-  parts.push('');
+  parts.push("[CURRENT FIELD STATE]");
+  parts.push("");
 
   // Role context
   parts.push(`Role: ${ROLE_DESCRIPTIONS[state.role]}`);
   if (state.interactionCount > 0) {
-    parts.push(`Interactions: ${state.interactionCount}${state.hasReadings ? ', has completed readings' : ''}`);
+    parts.push(
+      `Interactions: ${state.interactionCount}${state.hasReadings ? ", has completed readings" : ""}`
+    );
   }
-  if (state.daysSinceLastInteraction !== null && state.daysSinceLastInteraction > 0) {
-    parts.push(`Last interaction: ${state.daysSinceLastInteraction} day${state.daysSinceLastInteraction === 1 ? '' : 's'} ago`);
+  if (
+    state.daysSinceLastInteraction !== null &&
+    state.daysSinceLastInteraction > 0
+  ) {
+    parts.push(
+      `Last interaction: ${state.daysSinceLastInteraction} day${state.daysSinceLastInteraction === 1 ? "" : "s"} ago`
+    );
   }
-  parts.push('');
+  parts.push("");
 
   // Exchange and interaction type
   parts.push(`Exchange: ${state.exchangeType}`);
   parts.push(`Mode: ${INTERACTION_TYPE_DESCRIPTIONS[state.interactionType]}`);
-  parts.push('');
+  parts.push("");
 
   // Coherence
   if (state.coherenceScore !== null) {
-    parts.push(`Coherence: ${state.coherenceScore}/100 (${state.coherenceTier})`);
+    parts.push(
+      `Coherence: ${state.coherenceScore}/100 (${state.coherenceTier})`
+    );
   } else {
-    parts.push(`Coherence: unknown — no recent Carrierlock check. Default to gentle depth.`);
+    parts.push(
+      `Coherence: unknown — no recent Carrierlock check. Default to gentle depth.`
+    );
   }
-  parts.push('');
+  parts.push("");
 
   // Tonal directive (the actual behavioral instructions for this specific message)
-  parts.push('--- TONAL DIRECTIVE ---');
+  parts.push("--- TONAL DIRECTIVE ---");
   parts.push(state.tonalDirective);
 
-  return parts.join('\n');
+  return parts.join("\n");
 }

@@ -1,24 +1,77 @@
 ﻿import VossArchiveShell from "@/components/VossArchiveShell";
 import { useState, useEffect, useMemo } from "react";
 import { Link } from "wouter";
-import { Search, Loader2 } from "lucide-react";
+import { Search } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { trpc } from "@/lib/trpc";
 import { OracleCard } from "@/components/OracleCard";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
 import { parseLinkedCodons, parseOracleHashtags } from "@/lib/oracle-utils";
-import { getTransmissionPosterUrl, getYouTubeVideoId } from "@/lib/transmission-media";
+import {
+  getTransmissionPosterUrl,
+  getYouTubeVideoId,
+} from "@/lib/transmission-media";
+import { DecodedTitle } from "@/components/oriel-signal/OrielSignalDesign";
 
 // ── FAZA Register Map (VTIP Numbering) ──────────────────────────────
 const FAZA_REGISTERS = [
-  { id: "all", vtip: "⦿", name: "ALL REGISTERS", subtitle: "", range: [0, 999] },
+  {
+    id: "all",
+    vtip: "⦿",
+    name: "ALL REGISTERS",
+    subtitle: "",
+    range: [0, 999],
+  },
   { id: "I", vtip: "I", name: "ORIGIN", subtitle: "VACUUM", range: [1, 10] },
-  { id: "II", vtip: "II", name: "RECURSION", subtitle: "HOLOGRAM", range: [11, 20] },
-  { id: "III", vtip: "III", name: "COMPLEXIFICATION", subtitle: "ENTROPY", range: [21, 30] },
-  { id: "IIII", vtip: "IIII", name: "HARMONICS", subtitle: "GEOMETRY", range: [31, 40] },
-  { id: "V", vtip: "IIII′I", name: "THE BRIDGE", subtitle: "HUMANITY", range: [41, 50] },
-  { id: "VI", vtip: "IIII′II", name: "COSMIC BECOMING", subtitle: "", range: [51, 60] },
-  { id: "VII", vtip: "IIII′III", name: "VOID RETURN", subtitle: "", range: [61, 70] },
-  { id: "VIII", vtip: "IIII′IIII", name: "OMEGA POINT", subtitle: "", range: [71, 80] },
+  {
+    id: "II",
+    vtip: "II",
+    name: "RECURSION",
+    subtitle: "HOLOGRAM",
+    range: [11, 20],
+  },
+  {
+    id: "III",
+    vtip: "III",
+    name: "COMPLEXIFICATION",
+    subtitle: "ENTROPY",
+    range: [21, 30],
+  },
+  {
+    id: "IIII",
+    vtip: "IIII",
+    name: "HARMONICS",
+    subtitle: "GEOMETRY",
+    range: [31, 40],
+  },
+  {
+    id: "V",
+    vtip: "IIII′I",
+    name: "THE BRIDGE",
+    subtitle: "HUMANITY",
+    range: [41, 50],
+  },
+  {
+    id: "VI",
+    vtip: "IIII′II",
+    name: "COSMIC BECOMING",
+    subtitle: "",
+    range: [51, 60],
+  },
+  {
+    id: "VII",
+    vtip: "IIII′III",
+    name: "VOID RETURN",
+    subtitle: "",
+    range: [61, 70],
+  },
+  {
+    id: "VIII",
+    vtip: "IIII′IIII",
+    name: "OMEGA POINT",
+    subtitle: "",
+    range: [71, 80],
+  },
 ] as const;
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -59,12 +112,12 @@ function useScramble(text: string, trigger: unknown, duration = 600) {
 
 // ── Status colors ───────────────────────────────────────────────────
 const STATUS_COLORS: Record<string, { color: string; bg: string }> = {
-  OPEN: { color: "#5ba4a4", bg: "rgba(91,164,164,0.06)" },
+  OPEN: { color: "#f6b05e", bg: "rgba(246,176,94,0.06)" },
   RESONANT: { color: "#7ab8c4", bg: "rgba(122,184,196,0.06)" },
   COHERENT: { color: "#a88fd0", bg: "rgba(168,143,208,0.06)" },
   PROPHETIC: { color: "#bda36b", bg: "rgba(189,163,107,0.06)" },
   LIVE: { color: "#e05555", bg: "rgba(224,85,85,0.06)" },
-  STABLE: { color: "#5ba4a4", bg: "rgba(91,164,164,0.06)" },
+  STABLE: { color: "#f6b05e", bg: "rgba(246,176,94,0.06)" },
   "HIGH COHERENCE": { color: "#a88fd0", bg: "rgba(168,143,208,0.06)" },
   "MAXIMUM COHERENCE": { color: "#bda36b", bg: "rgba(189,163,107,0.06)" },
   "CRITICAL/STABLE": { color: "#e05555", bg: "rgba(224,85,85,0.06)" },
@@ -92,16 +145,21 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
             transition-all duration-500
           "
           style={{
-            background: "rgba(10,10,14,0.8)",
-            borderColor: "rgba(91,164,164,0.06)",
+            background:
+              "linear-gradient(180deg, rgba(255,248,232,0.035), rgba(255,248,232,0.012)), radial-gradient(circle at 88% 10%, rgba(216,181,109,0.08), transparent 14rem), rgba(7,7,6,0.78)",
+            borderColor: "rgba(216,181,109,0.18)",
+            boxShadow:
+              "inset 0 0 0 1px rgba(255,248,232,0.018), 0 18px 56px rgba(0,0,0,0.24)",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = "rgba(91,164,164,0.2)";
-            e.currentTarget.style.boxShadow = "0 0 40px rgba(91,164,164,0.04)";
+          onMouseEnter={e => {
+            e.currentTarget.style.borderColor = "rgba(228,200,140,0.44)";
+            e.currentTarget.style.boxShadow =
+              "inset 0 0 0 1px rgba(255,248,232,0.035), 0 22px 64px rgba(0,0,0,0.32), 0 0 30px rgba(216,181,109,0.08), 4px 0 0 rgba(111,214,226,0.035), -4px 0 0 rgba(188,132,255,0.028)";
           }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = "rgba(91,164,164,0.06)";
-            e.currentTarget.style.boxShadow = "none";
+          onMouseLeave={e => {
+            e.currentTarget.style.borderColor = "rgba(216,181,109,0.18)";
+            e.currentTarget.style.boxShadow =
+              "inset 0 0 0 1px rgba(255,248,232,0.018), 0 18px 56px rgba(0,0,0,0.24)";
           }}
         >
           {posterUrl && (
@@ -110,7 +168,7 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
               style={{
                 borderColor: youtubeVideoId
                   ? "rgba(189,163,107,0.18)"
-                  : "rgba(91,164,164,0.12)",
+                  : "rgba(246,176,94,0.12)",
                 background: "#0b0b10",
               }}
             >
@@ -173,7 +231,7 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
               </span>
               <span
                 className="font-mono tracking-wider"
-                style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+                style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
               >
                 TX-{String(tx.txNumber).padStart(3, "0")}
               </span>
@@ -195,8 +253,8 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
           <h3
             className="font-mono text-sm uppercase tracking-wider mb-1 transition-colors duration-300"
             style={{ color: "rgba(232,228,220,0.85)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) =>
+            onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
+            onMouseLeave={e =>
               (e.currentTarget.style.color = "rgba(232,228,220,0.85)")
             }
           >
@@ -206,7 +264,7 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
           {/* Field */}
           <p
             className="font-mono tracking-wider mb-4"
-            style={{ fontSize: 10, color: "rgba(91,164,164,0.25)" }}
+            style={{ fontSize: 10, color: "rgba(246,176,94,0.25)" }}
           >
             {tx.field}
           </p>
@@ -222,20 +280,20 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
           {/* Signal clarity bar */}
           <div className="flex items-center gap-3">
             <div
-              className="flex-1 relative overflow-hidden rounded-full"
-              style={{ height: 1, background: "rgba(91,164,164,0.08)" }}
+              className="flex-1 relative overflow-hidden rounded-sm"
+              style={{ height: 1, background: "rgba(246,176,94,0.08)" }}
             >
               <div
-                className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+                className="absolute inset-y-0 left-0 rounded-sm transition-all duration-700"
                 style={{
                   width: `${clarity}%`,
-                  background: "rgba(91,164,164,0.25)",
+                  background: "rgba(246,176,94,0.25)",
                 }}
               />
             </div>
             <span
               className="font-mono transition-colors duration-300"
-              style={{ fontSize: 9, color: "rgba(91,164,164,0.3)" }}
+              style={{ fontSize: 9, color: "rgba(246,176,94,0.3)" }}
             >
               {tx.signalClarity}
             </span>
@@ -250,8 +308,8 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
                   className="font-mono px-1.5 py-0.5 rounded-sm border"
                   style={{
                     fontSize: 8,
-                    color: "rgba(91,164,164,0.18)",
-                    borderColor: "rgba(91,164,164,0.06)",
+                    color: "rgba(246,176,94,0.18)",
+                    borderColor: "rgba(246,176,94,0.06)",
                   }}
                 >
                   {tag}
@@ -262,7 +320,7 @@ function SignalCard({ tx, index }: { tx: any; index: number }) {
               className="font-mono tracking-wider transition-all duration-300 group-hover:translate-x-0.5"
               style={{ fontSize: 9, color: "rgba(189,163,107,0.25)" }}
             >
-              RECEIVE →
+              OPEN FRAGMENT →
             </span>
           </div>
         </div>
@@ -298,14 +356,19 @@ export default function Archive() {
           if (Array.isArray(tx.tags)) {
             tags = tx.tags;
           } else if (typeof tx.tags === "string") {
-            try { tags = JSON.parse(tx.tags); } catch {
-              tags = tx.tags.split(",").map((t: string) => t.trim()).filter(Boolean);
+            try {
+              tags = JSON.parse(tx.tags);
+            } catch {
+              tags = tx.tags
+                .split(",")
+                .map((t: string) => t.trim())
+                .filter(Boolean);
             }
           }
           return { ...tx, tags };
         })
         .sort((a: any, b: any) => a.txNumber - b.txNumber),
-    [rawTx],
+    [rawTx]
   );
 
   // Parse oracles
@@ -316,7 +379,7 @@ export default function Archive() {
         hashtags: parseOracleHashtags(ox.hashtags),
         parsedLinkedCodons: parseLinkedCodons(ox.linkedCodons),
       })),
-    [rawOx],
+    [rawOx]
   );
 
   const getOracleShellStyle = (linkedCodons: string[]) => {
@@ -337,21 +400,23 @@ export default function Archive() {
     () =>
       oracles
         .filter((ox: any) => (ox.resonanceCount || 0) >= 5)
-        .sort((a: any, b: any) => (b.resonanceCount || 0) - (a.resonanceCount || 0))
+        .sort(
+          (a: any, b: any) => (b.resonanceCount || 0) - (a.resonanceCount || 0)
+        )
         .slice(0, 3),
-    [oracles],
+    [oracles]
   );
 
   // FAZA counts
   const fazaCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    FAZA_REGISTERS.forEach((f) => (counts[f.id] = 0));
+    FAZA_REGISTERS.forEach(f => (counts[f.id] = 0));
     transmissions.forEach((tx: any) => {
       const reg = FAZA_REGISTERS.find(
-        (f) =>
+        f =>
           f.id !== "all" &&
           tx.txNumber >= f.range[0] &&
-          tx.txNumber <= f.range[1],
+          tx.txNumber <= f.range[1]
       );
       if (reg) counts[reg.id]++;
     });
@@ -363,11 +428,11 @@ export default function Archive() {
   const filtered = useMemo(() => {
     let result = transmissions;
     if (activeFaza !== "all") {
-      const reg = FAZA_REGISTERS.find((f) => f.id === activeFaza);
+      const reg = FAZA_REGISTERS.find(f => f.id === activeFaza);
       if (reg)
         result = result.filter(
           (tx: any) =>
-            tx.txNumber >= reg.range[0] && tx.txNumber <= reg.range[1],
+            tx.txNumber >= reg.range[0] && tx.txNumber <= reg.range[1]
         );
     }
     if (searchQuery) {
@@ -376,7 +441,7 @@ export default function Archive() {
         (tx: any) =>
           tx.title.toLowerCase().includes(q) ||
           tx.coreMessage.toLowerCase().includes(q) ||
-          tx.field.toLowerCase().includes(q),
+          tx.field.toLowerCase().includes(q)
       );
     }
     return result;
@@ -395,26 +460,26 @@ export default function Archive() {
       result = result.filter(
         (ox: any) =>
           ox.title.toLowerCase().includes(q) ||
-          ox.content.toLowerCase().includes(q),
+          ox.content.toLowerCase().includes(q)
       );
     }
     return result;
   }, [oracles, searchQuery, activeThread]);
 
   // Header scramble text
-  const activeFazaInfo = FAZA_REGISTERS.find((f) => f.id === activeFaza);
+  const activeFazaInfo = FAZA_REGISTERS.find(f => f.id === activeFaza);
   const headerLabel =
     activeFaza === "all"
-      ? "TRANSMISSION FIELD"
-      : `FAZA ${activeFazaInfo?.vtip} · ${activeFazaInfo?.name}`;
-  const scrambledHeader = useScramble(headerLabel, activeFaza);
+      ? "RECOVERED TRANSMISSIONS"
+      : `REGISTER ${activeFazaInfo?.vtip} · ${activeFazaInfo?.name}`;
+  const scrambledHeader = useScramble(headerLabel, activeFaza, 260);
 
   // Ambient cycling quotes
   const [ambientIndex, setAmbientIndex] = useState(0);
   useEffect(() => {
     if (transmissions.length === 0) return;
     const id = setInterval(() => {
-      setAmbientIndex((i) => (i + 1) % transmissions.length);
+      setAmbientIndex(i => (i + 1) % transmissions.length);
     }, 6000);
     return () => clearInterval(id);
   }, [transmissions.length]);
@@ -424,27 +489,78 @@ export default function Archive() {
     <VossArchiveShell>
       <style>{`
         .archive-page {
+          position: relative;
           min-height: 100vh;
-          padding: 88px 30px 86px;
+          padding: 148px 30px 86px;
+          isolation: isolate;
+        }
+
+        .archive-page::before,
+        .archive-page::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+        }
+
+        .archive-page::before {
+          background:
+            radial-gradient(circle at 50% 18%, transparent 0 24%, rgba(216, 181, 109, 0.07) 24.08% 24.22%, transparent 24.36% 40%, rgba(216, 181, 109, 0.045) 40.08% 40.2%, transparent 40.34%),
+            linear-gradient(90deg, transparent 0 13%, rgba(216, 181, 109, 0.06) 13.06%, transparent 13.14% 86.8%, rgba(216, 181, 109, 0.05) 86.9%, transparent 87%),
+            repeating-linear-gradient(180deg, transparent 0 63px, rgba(216, 181, 109, 0.032) 64px, transparent 65px);
+          opacity: 0.72;
+        }
+
+        .archive-page::after {
+          background:
+            conic-gradient(from 12deg at 50% 20%, transparent 0 8%, rgba(216, 181, 109, 0.055) 8.08% 8.16%, transparent 8.26% 22%, rgba(216, 181, 109, 0.04) 22.1% 22.18%, transparent 22.28% 100%),
+            radial-gradient(circle at 14% 36%, rgba(111, 214, 226, 0.035), transparent 22rem);
+          opacity: 0.48;
         }
 
         .archive-page-inner {
+          position: relative;
+          z-index: 1;
           width: min(1440px, 100%);
           margin: 0 auto;
         }
 
         .archive-hero {
+          position: relative;
+          overflow: hidden;
           margin-bottom: 28px;
           padding: clamp(28px, 4vw, 46px);
           border: 1px solid var(--voss-border);
+          border-radius: 0.18rem;
           background:
-            radial-gradient(circle at 84% 18%, rgba(121, 228, 234, 0.085), transparent 32%),
-            linear-gradient(135deg, rgba(15, 15, 21, 0.9), rgba(8, 8, 12, 0.64));
-          box-shadow: 0 26px 90px rgba(0, 0, 0, 0.3);
+            linear-gradient(90deg, rgba(216, 181, 109, 0.04), transparent 18%, transparent 82%, rgba(216, 181, 109, 0.03)),
+            linear-gradient(180deg, rgba(255, 248, 232, 0.045), rgba(255, 248, 232, 0.012)),
+            radial-gradient(circle at 84% 18%, rgba(216, 181, 109, 0.13), transparent 34%),
+            radial-gradient(circle at 10% 92%, rgba(111, 214, 226, 0.035), transparent 26%),
+            linear-gradient(135deg, rgba(7, 7, 6, 0.92), rgba(5, 5, 5, 0.66));
+          box-shadow:
+            inset 0 0 0 1px rgba(255, 248, 232, 0.025),
+            0 26px 90px rgba(0, 0, 0, 0.34);
           backdrop-filter: blur(18px);
         }
 
+        .archive-hero::before {
+          content: "";
+          position: absolute;
+          inset: 14px;
+          pointer-events: none;
+          border: 1px solid rgba(216, 181, 109, 0.11);
+          background:
+            radial-gradient(circle at 72% 42%, transparent 0 22%, rgba(216, 181, 109, 0.11) 22.1% 22.3%, transparent 22.45% 38%, rgba(216, 181, 109, 0.07) 38.1% 38.24%, transparent 38.4%),
+            linear-gradient(90deg, transparent 0 49.9%, rgba(216, 181, 109, 0.13) 50%, transparent 50.1%),
+            linear-gradient(180deg, transparent 0 49.9%, rgba(216, 181, 109, 0.09) 50%, transparent 50.1%);
+          opacity: 0.72;
+        }
+
         .archive-hero-row {
+          position: relative;
+          z-index: 1;
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
@@ -453,33 +569,49 @@ export default function Archive() {
 
         .archive-page .archive-kicker {
           margin-bottom: 12px;
-          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-family: var(--font-ritual);
           font-size: 10px;
-          letter-spacing: 0.2em;
+          letter-spacing: 0.28em;
           text-transform: uppercase;
-          color: var(--voss-cyan);
+          color: var(--voss-amber);
         }
 
         .archive-page .archive-title {
           margin: 0;
-          font-family: "Cormorant Garamond", Georgia, serif;
+          font-family: var(--font-display);
           font-size: clamp(42px, 6vw, 82px);
           font-weight: 300;
           line-height: 0.94;
-          letter-spacing: -0.03em;
+          letter-spacing: 0.08em;
           color: var(--voss-ivory);
+          text-transform: uppercase;
+          text-shadow:
+            0 0 44px rgba(216, 181, 109, 0.18),
+            0 0 10px rgba(255, 248, 232, 0.06);
+        }
+
+        .archive-signal-readout {
+          margin: 10px 0 0;
+          max-width: min(100%, 680px);
+          color: rgba(216, 181, 109, 0.62);
+          font-family: var(--font-ritual);
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          line-height: 1.8;
+          text-transform: uppercase;
+          overflow-wrap: anywhere;
         }
 
         .archive-page .archive-rule {
           width: min(560px, 100%);
           height: 1px;
           margin: 22px 0 0;
-          background: linear-gradient(90deg, var(--voss-gold), var(--voss-cyan), transparent);
+          background: linear-gradient(90deg, var(--voss-gold), var(--voss-amber), transparent);
         }
 
         .archive-subtitle {
           margin-top: 14px;
-          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          font-family: var(--font-ritual);
           font-size: 10px;
           letter-spacing: 0.16em;
           text-transform: uppercase;
@@ -491,17 +623,17 @@ export default function Archive() {
           place-items: center;
           width: 42px;
           height: 42px;
-          border: 1px solid rgba(121, 228, 234, 0.24);
-          background: rgba(121, 228, 234, 0.045);
-          color: var(--voss-teal);
+          border: 1px solid rgba(246, 176, 94, 0.24);
+          background: rgba(246, 176, 94, 0.045);
+          color: var(--voss-amber);
           transition: border-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
         }
 
         .archive-search-button:hover,
         .archive-search-button.is-active {
-          border-color: rgba(121, 228, 234, 0.48);
-          color: var(--voss-cyan);
-          box-shadow: 0 0 24px rgba(121, 228, 234, 0.1);
+          border-color: rgba(246, 176, 94, 0.48);
+          color: var(--voss-amber);
+          box-shadow: 0 0 24px rgba(246, 176, 94, 0.1);
         }
 
         .archive-search-input {
@@ -509,11 +641,11 @@ export default function Archive() {
           margin-top: 24px;
           padding: 12px 2px;
           border: 0;
-          border-bottom: 1px solid rgba(121, 228, 234, 0.28);
+          border-bottom: 1px solid rgba(246, 176, 94, 0.28);
           outline: none;
           background: transparent;
-          color: var(--voss-cyan);
-          font-family: ui-monospace, SFMono-Regular, "Cascadia Code", "Red Hat Mono", monospace;
+          color: var(--voss-amber);
+          font-family: var(--font-ritual);
           font-size: 12px;
           letter-spacing: 0.1em;
         }
@@ -523,7 +655,10 @@ export default function Archive() {
           margin-bottom: 24px;
           padding: 16px;
           border: 1px solid var(--voss-border-soft);
-          background: rgba(10, 10, 14, 0.58);
+          border-radius: 0.18rem;
+          background:
+            linear-gradient(180deg, rgba(255, 248, 232, 0.026), rgba(255, 248, 232, 0.008)),
+            rgba(7, 7, 6, 0.62);
           backdrop-filter: blur(14px);
         }
 
@@ -547,7 +682,7 @@ export default function Archive() {
 
         @media (max-width: 760px) {
           .archive-page {
-            padding: 74px 16px 72px;
+            padding: 118px 16px 72px;
           }
 
           .archive-hero-row {
@@ -562,394 +697,412 @@ export default function Archive() {
       `}</style>
       <div className="archive-page">
         <div className="archive-page-inner">
-        {/* ── Header ──────────────────────────────────────── */}
-        <div className="archive-hero">
-          <div>
-            <div className="archive-hero-row">
-              <div>
-                <div
-                  className="archive-kicker animate-fade-in-up"
-                >
-                  VOSS ARKIVA · TRANSMISSION ARCHIVE
-                </div>
-                <h1
-                  className="archive-title animate-fade-in-up"
-                  style={{ animationDelay: "0.1s" }}
-                >
-                  {scrambledHeader}
-                </h1>
-                <div
-                  className="archive-rule animate-fade-in-up"
-                  style={{ animationDelay: "0.2s" }}
-                />
-                {activeFaza !== "all" && activeFazaInfo?.subtitle && (
+          {/* ── Header ──────────────────────────────────────── */}
+          <div className="archive-hero">
+            <div>
+              <div className="archive-hero-row">
+                <div>
+                  <div className="archive-kicker animate-fade-in-up">
+                    VOS ARKANA · RECOVERED FIELD ARCHIVE
+                  </div>
+                  <DecodedTitle
+                    as="h1"
+                    text="TRANSMISSIONS"
+                    className="archive-title decoded-title--transmissions animate-fade-in-up"
+                    triggerKey={activeFaza}
+                    interval={68}
+                    style={{ animationDelay: "0.1s" }}
+                  />
                   <p
-                    className="archive-subtitle animate-fade-in-up"
-                    style={{ animationDelay: "0.25s" }}
+                    className="archive-signal-readout animate-fade-in-up"
+                    style={{ animationDelay: "0.16s" }}
                   >
-                    {fazaCounts[activeFaza] || 0} TRANSMISSIONS ·{" "}
-                    {activeFazaInfo.subtitle}
+                    // {scrambledHeader}
                   </p>
-                )}
-              </div>
-
-              {/* Search toggle */}
-              <button
-                onClick={() => setShowSearch(!showSearch)}
-                className={`archive-search-button ${showSearch ? "is-active" : ""}`}
-                aria-label="Toggle archive search"
-              >
-                <Search size={16} />
-              </button>
-            </div>
-
-            {/* Search input */}
-            {showSearch && (
-              <div className="mt-4 animate-fade-in-up">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="SCAN FREQUENCY..."
-                  autoFocus
-                  className="archive-search-input"
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── FAZA Spectrum ────────────────────────────────── */}
-        <div className="archive-filter-panel">
-          <div>
-            <div
-              className="archive-filter-strip"
-            >
-              {FAZA_REGISTERS.map((faza, i) => {
-                const isActive = activeFaza === faza.id;
-                const count = fazaCounts[faza.id] || 0;
-                const hasSignals = count > 0;
-
-                return (
-                  <button
-                    key={faza.id}
-                    onClick={() => setActiveFaza(faza.id)}
-                    className="flex-shrink-0 relative animate-fade-in-up"
-                    style={{ animationDelay: `${i * 0.05}s` }}
-                  >
-                    <div
-                      className="px-3 py-2.5 font-mono rounded-sm border transition-all duration-300"
-                      style={{
-                        background: isActive
-                          ? "rgba(189,163,107,0.08)"
-                          : "transparent",
-                        borderColor: isActive
-                          ? "rgba(189,163,107,0.4)"
-                          : hasSignals
-                            ? "rgba(91,164,164,0.08)"
-                            : "rgba(91,164,164,0.04)",
-                        color: isActive
-                          ? "#bda36b"
-                          : hasSignals
-                            ? "rgba(91,164,164,0.35)"
-                            : "rgba(91,164,164,0.15)",
-                      }}
+                  <div
+                    className="archive-rule animate-fade-in-up"
+                    style={{ animationDelay: "0.2s" }}
+                  />
+                  {activeFaza !== "all" && activeFazaInfo?.subtitle && (
+                    <p
+                      className="archive-subtitle animate-fade-in-up"
+                      style={{ animationDelay: "0.25s" }}
                     >
-                      <div style={{ fontSize: 10 }} className="opacity-70">
-                        {faza.vtip}
-                      </div>
-                      <div
-                        className="mt-0.5 whitespace-nowrap"
-                        style={{ fontSize: 9 }}
-                      >
-                        {faza.name}
-                      </div>
-                      {faza.id !== "all" && (
-                        <div
-                          className="mt-1"
-                          style={{
-                            fontSize: 8,
-                            color: isActive
-                              ? "#5ba4a4"
-                              : hasSignals
-                                ? "rgba(91,164,164,0.2)"
-                                : "rgba(91,164,164,0.08)",
-                          }}
-                        >
-                          {count > 0 ? `${count} TX` : "NO SIGNAL"}
-                        </div>
-                      )}
-                    </div>
+                      {fazaCounts[activeFaza] || 0} TRANSMISSIONS ·{" "}
+                      {activeFazaInfo.subtitle}
+                    </p>
+                  )}
+                </div>
 
-                    {/* Active dot */}
-                    {isActive && (
-                      <div
-                        className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-full"
-                        style={{
-                          width: 3,
-                          height: 3,
-                          background: "#bda36b",
-                          boxShadow: "0 0 6px #bda36b",
-                        }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
+                {/* Search toggle */}
+                <button
+                  onClick={() => setShowSearch(!showSearch)}
+                  className={`archive-search-button ${showSearch ? "is-active" : ""}`}
+                  aria-label="Toggle archive search"
+                >
+                  <Search size={16} />
+                </button>
+              </div>
+
+              {/* Search input */}
+              {showSearch && (
+                <div className="mt-4 animate-fade-in-up">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="SCAN ARCHIVE NODE..."
+                    autoFocus
+                    className="archive-search-input"
+                  />
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        {/* ── Section Tabs ────────────────────────────────── */}
-        <div className="archive-tabs-panel">
-          <div
-            className="archive-tab-row"
-          >
-            <button
-              onClick={() => setActiveSection("tx")}
-              className="font-mono uppercase tracking-widest pb-3 transition-all"
-              style={{
-                fontSize: 10,
-                color:
-                  activeSection === "tx" ? "#5ba4a4" : "rgba(91,164,164,0.25)",
-                borderBottom:
-                  activeSection === "tx"
-                    ? "2px solid #5ba4a4"
-                    : "2px solid transparent",
-              }}
-            >
-              TX TRANSMISSIONS ({filtered.length})
-            </button>
-            <button
-              onClick={() => setActiveSection("ox")}
-              className="font-mono uppercase tracking-widest pb-3 transition-all"
-              style={{
-                fontSize: 10,
-                color:
-                  activeSection === "ox"
-                    ? "#a88fd0"
-                    : "rgba(168,143,208,0.25)",
-                borderBottom:
-                  activeSection === "ox"
-                    ? "2px solid #a88fd0"
-                    : "2px solid transparent",
-              }}
-            >
-              ΩX ORACLE STREAMS ({filteredOracles.length})
-            </button>
-          </div>
-        </div>
-
-        {/* ── Thread Filter (ΩX only) ─────────────────────── */}
-        {activeSection === "ox" && threads.length > 0 && (
+          {/* ── FAZA Spectrum ────────────────────────────────── */}
           <div className="archive-filter-panel">
-            <div className="archive-filter-strip">
+            <div>
+              <div className="archive-filter-strip">
+                {FAZA_REGISTERS.map((faza, i) => {
+                  const isActive = activeFaza === faza.id;
+                  const count = fazaCounts[faza.id] || 0;
+                  const hasSignals = count > 0;
+
+                  return (
+                    <button
+                      key={faza.id}
+                      onClick={() => setActiveFaza(faza.id)}
+                      className="flex-shrink-0 relative animate-fade-in-up"
+                      style={{ animationDelay: `${i * 0.05}s` }}
+                    >
+                      <div
+                        className="px-3 py-2.5 font-mono rounded-sm border transition-all duration-300"
+                        style={{
+                          background: isActive
+                            ? "rgba(189,163,107,0.08)"
+                            : "transparent",
+                          borderColor: isActive
+                            ? "rgba(189,163,107,0.4)"
+                            : hasSignals
+                              ? "rgba(246,176,94,0.08)"
+                              : "rgba(246,176,94,0.04)",
+                          color: isActive
+                            ? "#bda36b"
+                            : hasSignals
+                              ? "rgba(246,176,94,0.35)"
+                              : "rgba(246,176,94,0.15)",
+                        }}
+                      >
+                        <div style={{ fontSize: 10 }} className="opacity-70">
+                          {faza.vtip}
+                        </div>
+                        <div
+                          className="mt-0.5 whitespace-nowrap"
+                          style={{ fontSize: 9 }}
+                        >
+                          {faza.name}
+                        </div>
+                        {faza.id !== "all" && (
+                          <div
+                            className="mt-1"
+                            style={{
+                              fontSize: 8,
+                              color: isActive
+                                ? "#f6b05e"
+                                : hasSignals
+                                  ? "rgba(246,176,94,0.2)"
+                                  : "rgba(246,176,94,0.08)",
+                            }}
+                          >
+                            {count > 0 ? `${count} TX` : "NO SIGNAL"}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Active dot */}
+                      {isActive && (
+                        <div
+                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-sm"
+                          style={{
+                            width: 3,
+                            height: 3,
+                            background: "#bda36b",
+                            boxShadow: "0 0 6px #bda36b",
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section Tabs ────────────────────────────────── */}
+          <div className="archive-tabs-panel">
+            <div className="archive-tab-row">
               <button
-                onClick={() => setActiveThread(null)}
-                className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300"
+                onClick={() => setActiveSection("tx")}
+                className="font-mono uppercase tracking-widest pb-3 transition-all"
                 style={{
-                  fontSize: 9,
-                  background: !activeThread ? "rgba(91,164,164,0.08)" : "transparent",
-                  borderColor: !activeThread ? "rgba(91,164,164,0.4)" : "rgba(91,164,164,0.06)",
-                  color: !activeThread ? "#5ba4a4" : "rgba(91,164,164,0.25)",
+                  fontSize: 10,
+                  color:
+                    activeSection === "tx"
+                      ? "#f6b05e"
+                      : "rgba(246,176,94,0.25)",
+                  borderBottom:
+                    activeSection === "tx"
+                      ? "2px solid #f6b05e"
+                      : "2px solid transparent",
                 }}
               >
-                ALL THREADS
+                FIELD TRANSMISSIONS ({filtered.length})
               </button>
-              {(threads as any[]).map((t: any) => (
-                <button
-                  key={t.threadId}
-                  onClick={() => setActiveThread(t.threadId)}
-                  className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300 whitespace-nowrap"
-                  style={{
-                    fontSize: 9,
-                    background: activeThread === t.threadId ? "rgba(91,164,164,0.08)" : "transparent",
-                    borderColor: activeThread === t.threadId ? "rgba(91,164,164,0.4)" : "rgba(91,164,164,0.06)",
-                    color: activeThread === t.threadId ? "#5ba4a4" : "rgba(91,164,164,0.25)",
-                  }}
-                >
-                  {t.threadTitle} ({t.count})
-                </button>
-              ))}
+              <button
+                onClick={() => setActiveSection("ox")}
+                className="font-mono uppercase tracking-widest pb-3 transition-all"
+                style={{
+                  fontSize: 10,
+                  color:
+                    activeSection === "ox"
+                      ? "#a88fd0"
+                      : "rgba(168,143,208,0.25)",
+                  borderBottom:
+                    activeSection === "ox"
+                      ? "2px solid #a88fd0"
+                      : "2px solid transparent",
+                }}
+              >
+                ΩX ORACLE FRAGMENTS ({filteredOracles.length})
+              </button>
             </div>
           </div>
-        )}
 
-        {/* ── Content Grid ────────────────────────────────── */}
-        <div className="archive-content-panel">
-          <div>
-            {activeSection === "tx" ? (
-              txLoading ? (
-                <div className="flex items-center justify-center py-32">
-                  <div className="text-center">
-                    <Loader2
-                      className="w-5 h-5 animate-spin mx-auto mb-3"
-                      style={{ color: "rgba(91,164,164,0.3)" }}
-                    />
+          {/* ── Thread Filter (ΩX only) ─────────────────────── */}
+          {activeSection === "ox" && threads.length > 0 && (
+            <div className="archive-filter-panel">
+              <div className="archive-filter-strip">
+                <button
+                  onClick={() => setActiveThread(null)}
+                  className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300"
+                  style={{
+                    fontSize: 9,
+                    background: !activeThread
+                      ? "rgba(246,176,94,0.08)"
+                      : "transparent",
+                    borderColor: !activeThread
+                      ? "rgba(246,176,94,0.4)"
+                      : "rgba(246,176,94,0.06)",
+                    color: !activeThread ? "#f6b05e" : "rgba(246,176,94,0.25)",
+                  }}
+                >
+                  ALL THREADS
+                </button>
+                {(threads as any[]).map((t: any) => (
+                  <button
+                    key={t.threadId}
+                    onClick={() => setActiveThread(t.threadId)}
+                    className="flex-shrink-0 px-3 py-2 font-mono rounded-sm border transition-all duration-300 whitespace-nowrap"
+                    style={{
+                      fontSize: 9,
+                      background:
+                        activeThread === t.threadId
+                          ? "rgba(246,176,94,0.08)"
+                          : "transparent",
+                      borderColor:
+                        activeThread === t.threadId
+                          ? "rgba(246,176,94,0.4)"
+                          : "rgba(246,176,94,0.06)",
+                      color:
+                        activeThread === t.threadId
+                          ? "#f6b05e"
+                          : "rgba(246,176,94,0.25)",
+                    }}
+                  >
+                    {t.threadTitle} ({t.count})
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Content Grid ────────────────────────────────── */}
+          <div className="archive-content-panel">
+            <div>
+              {activeSection === "tx" ? (
+                txLoading ? (
+                  <div className="flex items-center justify-center py-32">
+                    <div className="text-center">
+                      <Spinner
+                        className="mx-auto mb-3"
+                        size={20}
+                        label="Loading transmissions"
+                      />
+                      <p
+                        className="font-mono tracking-wider"
+                        style={{ fontSize: 10, color: "rgba(246,176,94,0.2)" }}
+                      >
+                        SCANNING FREQUENCIES...
+                      </p>
+                    </div>
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="text-center py-32">
                     <p
-                      className="font-mono tracking-wider"
-                      style={{ fontSize: 10, color: "rgba(91,164,164,0.2)" }}
+                      className="font-mono"
+                      style={{ fontSize: 13, color: "rgba(246,176,94,0.25)" }}
                     >
-                      SCANNING FREQUENCIES...
+                      NO TRANSMISSION FRAGMENT DETECTED
+                    </p>
+                    <p
+                      className="font-mono mt-2"
+                      style={{ fontSize: 10, color: "rgba(246,176,94,0.12)" }}
+                    >
+                      Adjust archive parameters or scan all registers.
                     </p>
                   </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filtered.map((tx: any, i: number) => (
+                      <SignalCard key={tx.id} tx={tx} index={i} />
+                    ))}
+                  </div>
+                )
+              ) : oxLoading ? (
+                <div className="flex items-center justify-center py-32">
+                  <Spinner size={20} label="Loading oracles" />
                 </div>
-              ) : filtered.length === 0 ? (
+              ) : filteredOracles.length === 0 ? (
                 <div className="text-center py-32">
                   <p
                     className="font-mono"
-                    style={{ fontSize: 13, color: "rgba(91,164,164,0.25)" }}
+                    style={{ fontSize: 13, color: "rgba(168,143,208,0.25)" }}
                   >
-                    NO SIGNAL DETECTED
-                  </p>
-                  <p
-                    className="font-mono mt-2"
-                    style={{ fontSize: 10, color: "rgba(91,164,164,0.12)" }}
-                  >
-                    Adjust frequency parameters or scan all registers.
+                    NO TEMPORAL SIGNALS
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filtered.map((tx: any, i: number) => (
-                    <SignalCard key={tx.id} tx={tx} index={i} />
-                  ))}
-                </div>
-              )
-            ) : oxLoading ? (
-              <div className="flex items-center justify-center py-32">
-                <Loader2
-                  className="w-5 h-5 animate-spin"
-                  style={{ color: "rgba(168,143,208,0.3)" }}
-                />
-              </div>
-            ) : filteredOracles.length === 0 ? (
-              <div className="text-center py-32">
-                <p
-                  className="font-mono"
-                  style={{ fontSize: 13, color: "rgba(168,143,208,0.25)" }}
-                >
-                  NO TEMPORAL SIGNALS
-                </p>
-              </div>
-            ) : (
-              <>
-                {/* Rising Signals */}
-                {risingSignals.length > 0 && !activeThread && (
-                  <div className="mb-10">
-                    <div
-                      className="font-mono uppercase tracking-widest mb-4"
-                      style={{ fontSize: 10, color: "#bda36b" }}
-                    >
-                      RISING SIGNALS
+                <>
+                  {/* Rising Signals */}
+                  {risingSignals.length > 0 && !activeThread && (
+                    <div className="mb-10">
+                      <div
+                        className="font-mono uppercase tracking-widest mb-4"
+                        style={{ fontSize: 10, color: "#bda36b" }}
+                      >
+                        SELECTED ARCHIVE MARKERS
+                      </div>
+                      <div
+                        className="flex gap-4 overflow-x-auto pb-2"
+                        style={{ scrollbarWidth: "none" }}
+                      >
+                        {risingSignals.map((ox: any) => (
+                          <div
+                            key={ox.id}
+                            className="flex-shrink-0"
+                            style={{
+                              width: 300,
+                              border: "1px solid rgba(212,175,55,0.15)",
+                              borderRadius: 2,
+                              boxSizing: "border-box",
+                              ...getOracleShellStyle(ox.parsedLinkedCodons),
+                            }}
+                          >
+                            <OracleCard
+                              id={ox.id}
+                              oracleId={ox.oracleId}
+                              oxNumber={ox.oracleNumber}
+                              title={ox.title}
+                              field={ox.field}
+                              temporalDirection={ox.part}
+                              content={ox.content}
+                              imageUrl={ox.imageUrl}
+                              youtubeUrl={ox.youtubeUrl}
+                              hashtags={ox.hashtags}
+                              status={ox.status}
+                              resonanceCount={ox.resonanceCount}
+                              linkedCodons={ox.parsedLinkedCodons}
+                              threadId={ox.threadId}
+                            />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex gap-4 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
-                      {risingSignals.map((ox: any) => (
-                        <div
-                          key={ox.id}
-                          className="flex-shrink-0"
-                          style={{
-                            width: 300,
-                            border: "1px solid rgba(212,175,55,0.15)",
-                            borderRadius: 2,
-                            boxSizing: "border-box",
-                            ...getOracleShellStyle(ox.parsedLinkedCodons),
-                          }}
-                        >
-                          <OracleCard
-                            id={ox.id}
-                            oracleId={ox.oracleId}
-                            oxNumber={ox.oracleNumber}
-                            title={ox.title}
-                            field={ox.field}
-                            temporalDirection={ox.part}
-                            content={ox.content}
-                            imageUrl={ox.imageUrl}
-                            youtubeUrl={ox.youtubeUrl}
-                            hashtags={ox.hashtags}
-                            status={ox.status}
-                            resonanceCount={ox.resonanceCount}
-                            linkedCodons={ox.parsedLinkedCodons}
-                            threadId={ox.threadId}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                  )}
+                  {/* Main oracle grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredOracles.map((ox: any, i: number) => (
+                      <div
+                        key={ox.id}
+                        className="animate-fade-in-up"
+                        style={{
+                          animationDelay: `${0.06 * i}s`,
+                          boxSizing: "border-box",
+                          ...getOracleShellStyle(ox.parsedLinkedCodons),
+                        }}
+                      >
+                        <OracleCard
+                          id={ox.id}
+                          oracleId={ox.oracleId}
+                          oxNumber={ox.oracleNumber}
+                          title={ox.title}
+                          field={ox.field}
+                          temporalDirection={ox.part}
+                          content={ox.content}
+                          imageUrl={ox.imageUrl}
+                          youtubeUrl={ox.youtubeUrl}
+                          hashtags={ox.hashtags}
+                          status={ox.status}
+                          resonanceCount={ox.resonanceCount}
+                          linkedCodons={ox.parsedLinkedCodons}
+                          threadId={ox.threadId}
+                        />
+                      </div>
+                    ))}
                   </div>
-                )}
-                {/* Main oracle grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredOracles.map((ox: any, i: number) => (
-                    <div
-                      key={ox.id}
-                      className="animate-fade-in-up"
-                      style={{
-                        animationDelay: `${0.06 * i}s`,
-                        boxSizing: "border-box",
-                        ...getOracleShellStyle(ox.parsedLinkedCodons),
-                      }}
-                    >
-                      <OracleCard
-                        id={ox.id}
-                        oracleId={ox.oracleId}
-                        oxNumber={ox.oracleNumber}
-                        title={ox.title}
-                        field={ox.field}
-                        temporalDirection={ox.part}
-                        content={ox.content}
-                        imageUrl={ox.imageUrl}
-                        youtubeUrl={ox.youtubeUrl}
-                        hashtags={ox.hashtags}
-                        status={ox.status}
-                        resonanceCount={ox.resonanceCount}
-                        linkedCodons={ox.parsedLinkedCodons}
-                        threadId={ox.threadId}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* ── Ambient Signal Footer ───────────────────────── */}
-        {ambientTx && activeSection === "tx" && (
-          <div
-            className="py-10"
-            style={{ borderTop: "1px solid rgba(91,164,164,0.04)" }}
-          >
-            <div>
-              <div className="overflow-hidden">
-                <div
-                  className="font-mono uppercase tracking-widest mb-2"
-                  style={{ fontSize: 9, color: "rgba(91,164,164,0.12)" }}
-                >
-                  AMBIENT SIGNAL · TX-
-                  {String(ambientTx.txNumber).padStart(3, "0")}
-                </div>
-                <p
-                  className="font-mono italic line-clamp-1"
-                  style={{
-                    fontSize: 11,
-                    color: "rgba(91,164,164,0.15)",
-                    transition: "color 2s ease",
-                  }}
-                >
-                  &ldquo;{ambientTx.coreMessage}&rdquo;
-                </p>
-              </div>
-              <div className="mt-6 text-center">
-                <span
-                  className="font-mono tracking-widest"
-                  style={{ fontSize: 8, color: "rgba(189,163,107,0.15)" }}
-                >
-                  THE FIELD REMEMBERS
-                </span>
-              </div>
+                </>
+              )}
             </div>
           </div>
-        )}
+
+          {/* ── Ambient Signal Footer ───────────────────────── */}
+          {ambientTx && activeSection === "tx" && (
+            <div
+              className="py-10"
+              style={{ borderTop: "1px solid rgba(246,176,94,0.04)" }}
+            >
+              <div>
+                <div className="overflow-hidden">
+                  <div
+                    className="font-mono uppercase tracking-widest mb-2"
+                    style={{ fontSize: 9, color: "rgba(246,176,94,0.12)" }}
+                  >
+                    FIELD LOG · TX-
+                    {String(ambientTx.txNumber).padStart(3, "0")}
+                  </div>
+                  <p
+                    className="font-mono italic line-clamp-1"
+                    style={{
+                      fontSize: 11,
+                      color: "rgba(246,176,94,0.15)",
+                      transition: "color 2s ease",
+                    }}
+                  >
+                    &ldquo;{ambientTx.coreMessage}&rdquo;
+                  </p>
+                </div>
+                <div className="mt-6 text-center">
+                  <span
+                    className="font-mono tracking-widest"
+                    style={{ fontSize: 8, color: "rgba(189,163,107,0.15)" }}
+                  >
+                    THE FIELD REMEMBERS
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </VossArchiveShell>

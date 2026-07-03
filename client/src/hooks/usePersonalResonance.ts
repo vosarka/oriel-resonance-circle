@@ -13,10 +13,9 @@ import { trpc } from "@/lib/trpc";
 export function usePersonalResonance() {
   const { user } = useAuth();
 
-  const { data: profile } = trpc.profile.getStaticProfile.useQuery(
-    undefined,
-    { enabled: !!user },
-  );
+  const { data: profile } = trpc.profile.getStaticProfile.useQuery(undefined, {
+    enabled: !!user,
+  });
 
   const userCodons = useMemo(() => {
     if (!profile?.primeStack) return [];
@@ -24,19 +23,17 @@ export function usePersonalResonance() {
   }, [profile]);
 
   const getMatchingCodons = (
-    linkedCodons: string[] | null | undefined,
+    linkedCodons: string[] | null | undefined
   ): string[] => {
     if (!userCodons.length) return [];
 
     const normalized = parseLinkedCodons(linkedCodons);
     if (!normalized.length) return [];
 
-    return normalized.filter((codon) => userCodons.includes(codon));
+    return normalized.filter(codon => userCodons.includes(codon));
   };
 
-  const hasResonance = (
-    linkedCodons: string[] | null | undefined,
-  ): boolean => {
+  const hasResonance = (linkedCodons: string[] | null | undefined): boolean => {
     return getMatchingCodons(linkedCodons).length > 0;
   };
 

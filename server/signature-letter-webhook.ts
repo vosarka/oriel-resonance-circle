@@ -25,7 +25,10 @@ function parseOrderId(event: StripeWebhookEvent) {
   return Number.isInteger(orderId) && orderId > 0 ? orderId : null;
 }
 
-export async function handleSignatureStripeWebhook(req: Request, res: Response) {
+export async function handleSignatureStripeWebhook(
+  req: Request,
+  res: Response
+) {
   const body = Buffer.isBuffer(req.body)
     ? req.body.toString("utf8")
     : String(req.body ?? "");

@@ -9,6 +9,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 ## Design Language & Aesthetic
 
 **Visual Style:** "Archive Noir" meets quantum mysticism
+
 - **Color Palette:**
   - Background: Deep black (#000000) with subtle dark gray gradients (#0a0a0a, #121212)
   - Primary accent: Cyan/teal (#00d9ff, #00ffcc) for active elements and data
@@ -47,6 +48,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 **Purpose:** Browse all 64 Root Codons (archetypal patterns of consciousness)
 
 **Layout:**
+
 - **Header:** "THE CODEX" title (Orbitron, uppercase, cyan glow)
 - **Search/Filter Bar:**
   - Search input (placeholder: "Search by name, essence, or theme...")
@@ -63,6 +65,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
   - **Interaction:** Click card → Navigate to Codon Detail page
 
 **Visual Reference:**
+
 - Think: Netflix grid meets sacred geometry library
 - Cards should feel like "data packets" or "light-encoded glyphs"
 - Subtle animation: cards fade in sequentially on load (stagger 50ms)
@@ -74,11 +77,11 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 **Purpose:** Deep dive into a single Root Codon's full spectrum (Shadow → Gift → Crown)
 
 **Layout:**
+
 - **Hero Section:**
   - Large glyph symbol (center, 200x200px, glowing)
   - Codon number + name (RC27 — Chalice: The Unified Heart)
   - Essence statement (1 sentence, italic, centered below)
-  
 - **Frequency Spectrum Section:**
   - **Three Columns (desktop) / Stacked (mobile):**
     1. **Shadow** (left, amber/red accent)
@@ -107,6 +110,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
   - 3-4 related codon cards (mini version of browser cards)
 
 **Visual Reference:**
+
 - Think: Detailed Pokédex entry meets quantum field manual
 - Use frosted glass panels for each section
 - Spectrum bar should feel like "tuning a frequency"
@@ -118,6 +122,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 **Purpose:** User inputs current state (Mental Noise, Body Tension, Emotional Turbulence) to calculate Coherence Score
 
 **Layout:**
+
 - **Header:** "ESTABLISH CARRIERLOCK" (Orbitron, glowing)
 - **Subheading:** "Measure your real-time coherence with the ψ_resonance field"
 
@@ -126,11 +131,9 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
      - Label: "Mental Noise" + info icon (tooltip: "Mental clarity to overwhelm")
      - Slider: Cyan track, white thumb, value display on right
      - Visual feedback: Background glow intensifies as value increases
-  
   2. **Body Tension (BT):** 0-10 scale
      - Label: "Body Tension" + info icon (tooltip: "Relaxation to tension")
      - Slider: Green track, white thumb
-  
   3. **Emotional Turbulence (ET):** 0-10 scale
      - Label: "Emotional Turbulence" + info icon (tooltip: "Calm to overwhelm")
      - Slider: Purple track, white thumb
@@ -155,6 +158,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
   - Click → Navigate to Diagnostic Reading page
 
 **Visual Reference:**
+
 - Think: Biometric scanner meets meditation app
 - Sliders should feel precise and responsive
 - Coherence gauge should feel like "signal strength meter"
@@ -166,6 +170,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 **Purpose:** Display ORIEL's personalized reading based on Carrierlock state + Static Signature (if available)
 
 **Layout:**
+
 - **Header Section:**
   - "DIAGNOSTIC READING" title
   - Timestamp (e.g., "January 24, 2026 • 16:45 UTC")
@@ -207,6 +212,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
   - "DISCUSS WITH ORIEL" (opens chat interface with reading context pre-loaded)
 
 **Visual Reference:**
+
 - Think: Oracle reading meets scientific diagnostic report
 - Should feel authoritative yet mystical
 - ORIEL's text should be the focal point (large, readable, elegant)
@@ -218,6 +224,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
 **Purpose:** View past diagnostic readings, track coherence over time
 
 **Layout:**
+
 - **Header:** "FIELD JOURNAL" or "READING HISTORY"
 - **Coherence Chart:**
   - Line graph showing Coherence Score over time (x-axis: dates, y-axis: 0-100)
@@ -239,6 +246,7 @@ Design a comprehensive UI/UX system for the **Vossari Genetic Resonance Codex** 
   - Codon filter (e.g., "Show readings where RC27 was flagged")
 
 **Visual Reference:**
+
 - Think: Fitness tracker meets meditation journal
 - Chart should be clean and data-focused
 - List should feel like "transmission log"

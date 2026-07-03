@@ -4,27 +4,27 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Layout from "@/components/Layout";
-import { CheckCircle, GitCompare, Loader2, ArrowLeft } from "lucide-react";
+import { CheckCircle, GitCompare, ArrowLeft } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 // ── Design Tokens (shared with StaticReading) ──────────────────
 const C = {
-  void:     "#0a0a0e",
-  deep:     "#0f0f15",
-  surface:  "#14141c",
+  void: "#0a0a0e",
+  deep: "#0f0f15",
+  surface: "#14141c",
   surfaceR: "#1a1a24",
-  border:   "rgba(189,163,107,0.12)",
-  borderH:  "rgba(189,163,107,0.25)",
-  gold:     "#bda36b",
-  goldL:    "#d4c090",
-  goldDim:  "rgba(189,163,107,0.5)",
-  teal:     "#5ba4a4",
-  tealDim:  "rgba(91,164,164,0.4)",
-  txt:      "#e8e4dc",
-  txtS:     "#9a968e",
-  txtD:     "#6a665e",
-  red:      "#c94444",
-  green:    "#44a866",
-  blue:     "#4488cc",
+  border: "rgba(189,163,107,0.12)",
+  borderH: "rgba(189,163,107,0.25)",
+  gold: "#bda36b",
+  goldL: "#d4c090",
+  goldDim: "rgba(189,163,107,0.5)",
+  amber: "#f6b05e",
+  amberDim: "rgba(246,176,94,0.4)",
+  txt: "#e8e4dc",
+  txtS: "#9a968e",
+  txtD: "#6a665e",
+  red: "#c94444",
+  green: "#44a866",
 };
 
 // ── Zone theming ──────────────────────────────────────────────
@@ -36,10 +36,28 @@ function getZone(score: number): CoherenceZone {
   return "Entropy";
 }
 
-const ZONE_THEME: Record<CoherenceZone, { color: string; glow: string; bg: string; label: string }> = {
-  Entropy:   { color: C.red,  glow: "rgba(201,68,68,0.15)",  bg: "rgba(201,68,68,0.04)",  label: "ENTROPY" },
-  Flux:      { color: C.gold, glow: "rgba(189,163,107,0.15)", bg: "rgba(189,163,107,0.04)", label: "FLUX" },
-  Resonance: { color: C.teal, glow: "rgba(91,164,164,0.15)",  bg: "rgba(91,164,164,0.04)",  label: "RESONANCE" },
+const ZONE_THEME: Record<
+  CoherenceZone,
+  { color: string; glow: string; bg: string; label: string }
+> = {
+  Entropy: {
+    color: C.red,
+    glow: "rgba(201,68,68,0.15)",
+    bg: "rgba(201,68,68,0.04)",
+    label: "ENTROPY",
+  },
+  Flux: {
+    color: C.gold,
+    glow: "rgba(189,163,107,0.15)",
+    bg: "rgba(189,163,107,0.04)",
+    label: "FLUX",
+  },
+  Resonance: {
+    color: C.amber,
+    glow: "rgba(246,176,94,0.15)",
+    bg: "rgba(246,176,94,0.04)",
+    label: "RESONANCE",
+  },
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -53,13 +71,33 @@ function CoherenceGauge({ score }: { score: number }) {
   const progress = (score / 100) * circumference;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
       <svg viewBox="0 0 100 100" style={{ width: 180, height: 180 }}>
         {/* Background track */}
-        <circle cx="50" cy="50" r={radius} fill="none" stroke={C.border} strokeWidth="3" />
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="none"
+          stroke={C.border}
+          strokeWidth="3"
+        />
         {/* Progress arc */}
-        <circle cx="50" cy="50" r={radius} fill="none"
-          stroke={theme.color} strokeWidth="3" strokeLinecap="round"
+        <circle
+          cx="50"
+          cy="50"
+          r={radius}
+          fill="none"
+          stroke={theme.color}
+          strokeWidth="3"
+          strokeLinecap="round"
           strokeDasharray={`${progress} ${circumference}`}
           transform="rotate(-90 50 50)"
           style={{ transition: "stroke-dasharray 0.8s ease" }}
@@ -67,13 +105,43 @@ function CoherenceGauge({ score }: { score: number }) {
         {/* Inner glow */}
         <circle cx="50" cy="50" r="30" fill={theme.glow} opacity="0.5" />
         {/* Score text */}
-        <text x="50" y="46" textAnchor="middle" style={{ fontSize: "18px", fontFamily: "monospace", fill: theme.color, fontWeight: 700 }}>
+        <text
+          x="50"
+          y="46"
+          textAnchor="middle"
+          style={{
+            fontSize: "18px",
+            fontFamily: "var(--font-ritual)",
+            fill: theme.color,
+            fontWeight: 700,
+          }}
+        >
           {score}
         </text>
-        <text x="50" y="56" textAnchor="middle" style={{ fontSize: "5px", fontFamily: "monospace", fill: C.txtD, letterSpacing: "2px" }}>
+        <text
+          x="50"
+          y="56"
+          textAnchor="middle"
+          style={{
+            fontSize: "5px",
+            fontFamily: "var(--font-ritual)",
+            fill: C.txtD,
+            letterSpacing: "2px",
+          }}
+        >
           / 100
         </text>
-        <text x="50" y="66" textAnchor="middle" style={{ fontSize: "4px", fontFamily: "monospace", fill: theme.color, letterSpacing: "3px" }}>
+        <text
+          x="50"
+          y="66"
+          textAnchor="middle"
+          style={{
+            fontSize: "4px",
+            fontFamily: "var(--font-ritual)",
+            fill: theme.color,
+            letterSpacing: "3px",
+          }}
+        >
           {theme.label}
         </text>
       </svg>
@@ -84,15 +152,24 @@ function CoherenceGauge({ score }: { score: number }) {
 // ══════════════════════════════════════════════════════════════
 // SVG: 3-Axis Interference Radar (MN / BT / ET)
 // ══════════════════════════════════════════════════════════════
-function InterferenceRadar({ mn, bt, et }: { mn: number; bt: number; et: number }) {
+function InterferenceRadar({
+  mn,
+  bt,
+  et,
+}: {
+  mn: number;
+  bt: number;
+  et: number;
+}) {
   // Triangle vertices at 10-scale
-  const cx = 50, cy = 52;
+  const cx = 50,
+    cy = 52;
   const scale = 3.5;
   // 3 axes: top, bottom-left, bottom-right (120° apart)
   const axes = [
-    { label: "MN", angle: -90,  value: mn },
-    { label: "BT", angle: 150,  value: bt },
-    { label: "ET", angle: 30,   value: et },
+    { label: "MN", angle: -90, value: mn },
+    { label: "BT", angle: 150, value: bt },
+    { label: "ET", angle: 30, value: et },
   ];
 
   const toXY = (angle: number, val: number) => {
@@ -107,21 +184,37 @@ function InterferenceRadar({ mn, bt, et }: { mn: number; bt: number; et: number 
   const gridLevels = [3.3, 6.6, 10];
 
   return (
-    <svg viewBox="0 0 100 100" style={{ width: "100%", maxWidth: 200, height: "auto" }}>
+    <svg
+      viewBox="0 0 100 100"
+      style={{ width: "100%", maxWidth: 200, height: "auto" }}
+    >
       {/* Grid triangles */}
       {gridLevels.map((level, gi) => {
         const pts = axes.map(a => toXY(a.angle, level));
         return (
-          <polygon key={gi}
+          <polygon
+            key={gi}
             points={pts.map(p => `${p.x},${p.y}`).join(" ")}
-            fill="none" stroke={C.border} strokeWidth="0.3"
+            fill="none"
+            stroke={C.border}
+            strokeWidth="0.3"
           />
         );
       })}
       {/* Axis lines */}
       {axes.map((a, i) => {
         const end = toXY(a.angle, 10);
-        return <line key={i} x1={cx} y1={cy} x2={end.x} y2={end.y} stroke={C.border} strokeWidth="0.3" />;
+        return (
+          <line
+            key={i}
+            x1={cx}
+            y1={cy}
+            x2={end.x}
+            y2={end.y}
+            stroke={C.border}
+            strokeWidth="0.3"
+          />
+        );
       })}
       {/* Data shape */}
       {(() => {
@@ -130,7 +223,9 @@ function InterferenceRadar({ mn, bt, et }: { mn: number; bt: number; et: number 
           <>
             <polygon
               points={pts.map(p => `${p.x},${p.y}`).join(" ")}
-              fill="rgba(201,68,68,0.12)" stroke={C.red} strokeWidth="0.6"
+              fill="rgba(201,68,68,0.12)"
+              stroke={C.red}
+              strokeWidth="0.6"
             />
             {pts.map((p, i) => (
               <circle key={i} cx={p.x} cy={p.y} r="1.5" fill={C.red} />
@@ -142,8 +237,19 @@ function InterferenceRadar({ mn, bt, et }: { mn: number; bt: number; et: number 
       {axes.map((a, i) => {
         const pos = toXY(a.angle, 12.5);
         return (
-          <text key={i} x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="middle"
-            style={{ fontSize: "3.5px", fontFamily: "monospace", fill: C.txtS, letterSpacing: "1px" }}>
+          <text
+            key={i}
+            x={pos.x}
+            y={pos.y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontSize: "3.5px",
+              fontFamily: "var(--font-ritual)",
+              fill: C.txtS,
+              letterSpacing: "1px",
+            }}
+          >
             {a.label} {a.value}
           </text>
         );
@@ -155,11 +261,17 @@ function InterferenceRadar({ mn, bt, et }: { mn: number; bt: number; et: number 
 // ══════════════════════════════════════════════════════════════
 // SVG: Coherence Sparkline (history)
 // ══════════════════════════════════════════════════════════════
-function CoherenceSparkline({ history }: { history: { coherenceScore: number; createdAt: Date | string }[] }) {
+function CoherenceSparkline({
+  history,
+}: {
+  history: { coherenceScore: number; createdAt: Date | string }[];
+}) {
   if (history.length < 2) return null;
 
   const sorted = [...history].reverse(); // oldest first for left-to-right
-  const w = 280, h = 60, pad = 8;
+  const w = 280,
+    h = 60,
+    pad = 8;
   const innerW = w - pad * 2;
   const innerH = h - pad * 2;
 
@@ -169,7 +281,9 @@ function CoherenceSparkline({ history }: { history: { coherenceScore: number; cr
     return { x, y, score: entry.coherenceScore };
   });
 
-  const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+  const pathD = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+    .join(" ");
 
   // Zone bands
   const yAt = (score: number) => pad + innerH - (score / 100) * innerH;
@@ -177,21 +291,83 @@ function CoherenceSparkline({ history }: { history: { coherenceScore: number; cr
   return (
     <svg viewBox={`0 0 ${w} ${h}`} style={{ width: "100%", height: "auto" }}>
       {/* Zone bands */}
-      <rect x={pad} y={yAt(100)} width={innerW} height={yAt(80) - yAt(100)} fill="rgba(91,164,164,0.05)" />
-      <rect x={pad} y={yAt(80)} width={innerW} height={yAt(40) - yAt(80)} fill="rgba(189,163,107,0.05)" />
-      <rect x={pad} y={yAt(40)} width={innerW} height={yAt(0) - yAt(40)} fill="rgba(201,68,68,0.05)" />
+      <rect
+        x={pad}
+        y={yAt(100)}
+        width={innerW}
+        height={yAt(80) - yAt(100)}
+        fill="rgba(246,176,94,0.05)"
+      />
+      <rect
+        x={pad}
+        y={yAt(80)}
+        width={innerW}
+        height={yAt(40) - yAt(80)}
+        fill="rgba(189,163,107,0.05)"
+      />
+      <rect
+        x={pad}
+        y={yAt(40)}
+        width={innerW}
+        height={yAt(0) - yAt(40)}
+        fill="rgba(201,68,68,0.05)"
+      />
       {/* Zone threshold lines */}
-      <line x1={pad} y1={yAt(80)} x2={w - pad} y2={yAt(80)} stroke={C.teal} strokeWidth="0.3" strokeDasharray="3 3" />
-      <line x1={pad} y1={yAt(40)} x2={w - pad} y2={yAt(40)} stroke={C.red} strokeWidth="0.3" strokeDasharray="3 3" />
+      <line
+        x1={pad}
+        y1={yAt(80)}
+        x2={w - pad}
+        y2={yAt(80)}
+        stroke={C.amber}
+        strokeWidth="0.3"
+        strokeDasharray="3 3"
+      />
+      <line
+        x1={pad}
+        y1={yAt(40)}
+        x2={w - pad}
+        y2={yAt(40)}
+        stroke={C.red}
+        strokeWidth="0.3"
+        strokeDasharray="3 3"
+      />
       {/* Threshold labels */}
-      <text x={w - pad + 2} y={yAt(80) + 1} style={{ fontSize: "4px", fill: C.teal, fontFamily: "monospace" }}>80</text>
-      <text x={w - pad + 2} y={yAt(40) + 1} style={{ fontSize: "4px", fill: C.red, fontFamily: "monospace" }}>40</text>
+      <text
+        x={w - pad + 2}
+        y={yAt(80) + 1}
+        style={{
+          fontSize: "4px",
+          fill: C.amber,
+          fontFamily: "var(--font-ritual)",
+        }}
+      >
+        80
+      </text>
+      <text
+        x={w - pad + 2}
+        y={yAt(40) + 1}
+        style={{
+          fontSize: "4px",
+          fill: C.red,
+          fontFamily: "var(--font-ritual)",
+        }}
+      >
+        40
+      </text>
       {/* Line */}
       <path d={pathD} fill="none" stroke={C.gold} strokeWidth="1" />
       {/* Dots */}
       {points.map((p, i) => {
         const zone = getZone(p.score);
-        return <circle key={i} cx={p.x} cy={p.y} r="2" fill={ZONE_THEME[zone].color} />;
+        return (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r="2"
+            fill={ZONE_THEME[zone].color}
+          />
+        );
       })}
     </svg>
   );
@@ -205,11 +381,17 @@ export default function DynamicReading() {
   const [, params] = useRoute("/reading/dynamic/:id");
   const readingId = params?.id ? parseInt(params.id, 10) : 0;
 
-  const [activeView, setActiveView] = useState<"field" | "transmission" | "history">("field");
+  const [activeView, setActiveView] = useState<
+    "field" | "transmission" | "history"
+  >("field");
   const [compareReadingId, setCompareReadingId] = useState<number | null>(null);
   const utils = trpc.useUtils();
 
-  const { data: reading, isLoading, error } = trpc.codex.getCodonReading.useQuery(
+  const {
+    data: reading,
+    isLoading,
+    error,
+  } = trpc.codex.getCodonReading.useQuery(
     { id: readingId },
     { enabled: !!user && readingId > 0, retry: false }
   );
@@ -246,17 +428,24 @@ export default function DynamicReading() {
   const transmission = reading?.readingText ?? "";
   const microCorrection = reading?.microCorrection;
   const falsifier = reading?.falsifier;
-  const carrierlock = reading?.carrierlock as {
-    coherenceScore?: number;
-    mentalNoise?: number;
-    bodyTension?: number;
-    emotionalTurbulence?: number;
-    breathCompletion?: boolean;
-  } | null | undefined;
+  const carrierlock = reading?.carrierlock as
+    | {
+        coherenceScore?: number;
+        mentalNoise?: number;
+        bodyTension?: number;
+        emotionalTurbulence?: number;
+        breathCompletion?: boolean;
+      }
+    | null
+    | undefined;
 
   // Extract coherence from header: "ORIEL Dynamic Reading — 72/100 — Flux"
-  const headerMatch = transmission.match(/(\d+)\/100\s*[—–-]\s*(Entropy|Flux|Resonance)/i);
-  const coherenceScore: number = headerMatch ? parseInt(headerMatch[1], 10) : 50;
+  const headerMatch = transmission.match(
+    /(\d+)\/100\s*[—–-]\s*(Entropy|Flux|Resonance)/i
+  );
+  const coherenceScore: number = headerMatch
+    ? parseInt(headerMatch[1], 10)
+    : 50;
   const zone = getZone(coherenceScore);
   const theme = ZONE_THEME[zone];
 
@@ -264,17 +453,23 @@ export default function DynamicReading() {
   const mn = carrierlock?.mentalNoise ?? 5;
   const bt = carrierlock?.bodyTension ?? 5;
   const et = carrierlock?.emotionalTurbulence ?? 5;
-  const breathDone = Boolean(carrierlock?.breathCompletion ?? coherenceScore > (100 - (mn * 3 + bt * 3 + et * 3)));
+  const breathDone = Boolean(
+    carrierlock?.breathCompletion ??
+      coherenceScore > 100 - (mn * 3 + bt * 3 + et * 3)
+  );
   const sliRows = useMemo(() => {
-    const scores = reading?.sliScores && typeof reading.sliScores === "object"
-      ? reading.sliScores as Record<string, number>
-      : {};
-    const activeFacets = reading?.activeFacets && typeof reading.activeFacets === "object"
-      ? reading.activeFacets as Record<string, string>
-      : {};
-    const confidenceLevels = reading?.confidenceLevels && typeof reading.confidenceLevels === "object"
-      ? reading.confidenceLevels as Record<string, number>
-      : {};
+    const scores =
+      reading?.sliScores && typeof reading.sliScores === "object"
+        ? (reading.sliScores as Record<string, number>)
+        : {};
+    const activeFacets =
+      reading?.activeFacets && typeof reading.activeFacets === "object"
+        ? (reading.activeFacets as Record<string, string>)
+        : {};
+    const confidenceLevels =
+      reading?.confidenceLevels && typeof reading.confidenceLevels === "object"
+        ? (reading.confidenceLevels as Record<string, number>)
+        : {};
 
     return Object.entries(scores)
       .map(([key, value]) => {
@@ -291,7 +486,7 @@ export default function DynamicReading() {
           confidence: confidenceLevels[codonId] ?? null,
         };
       })
-      .filter((row) => Number.isFinite(row.sli))
+      .filter(row => Number.isFinite(row.sli))
       .sort((a, b) => b.sli - a.sli);
   }, [reading?.activeFacets, reading?.confidenceLevels, reading?.sliScores]);
 
@@ -310,7 +505,7 @@ export default function DynamicReading() {
 
   const compareOptions = useMemo(() => {
     return (readingHistory ?? [])
-      .filter((entry) => entry.id !== readingId)
+      .filter(entry => entry.id !== readingId)
       .slice(0, 8);
   }, [readingHistory, readingId]);
 
@@ -325,10 +520,13 @@ export default function DynamicReading() {
     const recentSlice = coherenceHistory.slice(0, 3);
     const olderSlice = coherenceHistory.slice(3, 6);
     if (olderSlice.length === 0) return null;
-    const recent = recentSlice.reduce((s, h) => s + h.coherenceScore, 0) / recentSlice.length;
-    const older = olderSlice.reduce((s, h) => s + h.coherenceScore, 0) / olderSlice.length;
+    const recent =
+      recentSlice.reduce((s, h) => s + h.coherenceScore, 0) /
+      recentSlice.length;
+    const older =
+      olderSlice.reduce((s, h) => s + h.coherenceScore, 0) / olderSlice.length;
     const delta = recent - older;
-    if (delta > 5) return { label: "RISING", color: C.teal, symbol: "↑" };
+    if (delta > 5) return { label: "RISING", color: C.amber, symbol: "↑" };
     if (delta < -5) return { label: "FALLING", color: C.red, symbol: "↓" };
     return { label: "STABLE", color: C.gold, symbol: "→" };
   }, [coherenceHistory]);
@@ -337,10 +535,37 @@ export default function DynamicReading() {
   if (!user) {
     return (
       <Layout>
-        <div style={{ background: C.void, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            background: C.void,
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <div style={{ textAlign: "center" }}>
-            <p style={{ color: C.txtS, marginBottom: 16, fontFamily: "monospace", fontSize: 12 }}>Signal requires authentication</p>
-            <a href={getLoginUrl()} style={{ color: C.gold, fontFamily: "monospace", fontSize: 11, letterSpacing: "0.1em", border: `1px solid ${C.goldDim}`, padding: "8px 20px" }}>
+            <p
+              style={{
+                color: C.txtS,
+                marginBottom: 16,
+                fontFamily: "var(--font-ritual)",
+                fontSize: 12,
+              }}
+            >
+              Signal requires authentication
+            </p>
+            <a
+              href={getLoginUrl()}
+              style={{
+                color: C.gold,
+                fontFamily: "var(--font-ritual)",
+                fontSize: 11,
+                letterSpacing: "0.1em",
+                border: `1px solid ${C.goldDim}`,
+                padding: "8px 20px",
+              }}
+            >
               ALIGN
             </a>
           </div>
@@ -352,10 +577,31 @@ export default function DynamicReading() {
   if (isLoading) {
     return (
       <Layout>
-        <div style={{ background: C.void, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            background: C.void,
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <div style={{ textAlign: "center" }}>
-            <Loader2 style={{ color: C.teal, width: 28, height: 28, margin: "0 auto 12px", animation: "spin 1s linear infinite" }} />
-            <p style={{ color: C.txtD, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.2em" }}>RECEIVING TRANSMISSION</p>
+            <Spinner
+              className="mx-auto mb-3"
+              size={28}
+              label="Receiving transmission"
+            />
+            <p
+              style={{
+                color: C.txtD,
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                letterSpacing: "0.2em",
+              }}
+            >
+              RECEIVING TRANSMISSION
+            </p>
           </div>
         </div>
       </Layout>
@@ -365,12 +611,41 @@ export default function DynamicReading() {
   if (error || !reading) {
     return (
       <Layout>
-        <div style={{ background: C.void, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div
+          style={{
+            background: C.void,
+            minHeight: "100vh",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
           <div style={{ textAlign: "center" }}>
-            <p style={{ color: C.txtS, marginBottom: 16, fontFamily: "'Cormorant Garamond', serif", fontSize: 18 }}>Reading not found</p>
+            <p
+              style={{
+                color: C.txtS,
+                marginBottom: 16,
+                fontFamily: "var(--font-display)",
+                fontSize: 18,
+              }}
+            >
+              Reading not found
+            </p>
             <Link href="/carrierlock">
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: C.txtD, fontFamily: "monospace", fontSize: 10, letterSpacing: "0.1em", cursor: "pointer" }}>
-                <ArrowLeft style={{ width: 14, height: 14 }} /> BACK TO ASSESSMENT
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  color: C.txtD,
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 10,
+                  letterSpacing: "0.1em",
+                  cursor: "pointer",
+                }}
+              >
+                <ArrowLeft style={{ width: 14, height: 14 }} /> BACK TO
+                ASSESSMENT
               </span>
             </Link>
           </div>
@@ -385,34 +660,91 @@ export default function DynamicReading() {
   const renderFieldState = () => (
     <div style={{ animation: "fadeUp 0.4s ease" }}>
       {/* Zone banner */}
-      <div style={{
-        padding: "14px 20px", marginBottom: 28,
-        background: theme.bg,
-        borderLeft: `2px solid ${theme.color}`,
-      }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: theme.color, letterSpacing: "0.25em" }}>
+      <div
+        style={{
+          padding: "14px 20px",
+          marginBottom: 28,
+          background: theme.bg,
+          borderLeft: `2px solid ${theme.color}`,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 9,
+            color: theme.color,
+            letterSpacing: "0.25em",
+          }}
+        >
           FIELD STATE · {theme.label}
         </div>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: C.txt, marginTop: 4, fontWeight: 300 }}>
-          {zone === "Entropy" && "High interference detected. The field is fragmented."}
-          {zone === "Flux" && "The field oscillates between patterns. Signal partially coherent."}
-          {zone === "Resonance" && "Clear signal. The field has stabilized into harmonic coherence."}
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 16,
+            color: C.txt,
+            marginTop: 4,
+            fontWeight: 300,
+          }}
+        >
+          {zone === "Entropy" &&
+            "High interference detected. The field is fragmented."}
+          {zone === "Flux" &&
+            "The field oscillates between patterns. Signal partially coherent."}
+          {zone === "Resonance" &&
+            "Clear signal. The field has stabilized into harmonic coherence."}
         </div>
       </div>
 
       {/* Gauge + Radar side by side */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "start", marginBottom: 28 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 24,
+          alignItems: "start",
+          marginBottom: 28,
+        }}
+      >
         {/* Coherence Gauge */}
-        <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "24px",
+            borderTop: `1px solid ${C.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.txtD,
+              letterSpacing: "0.15em",
+              marginBottom: 16,
+            }}
+          >
             COHERENCE INDEX
           </div>
           <CoherenceGauge score={coherenceScore} />
         </div>
 
         {/* Interference Radar */}
-        <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "24px",
+            borderTop: `1px solid ${C.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.txtD,
+              letterSpacing: "0.15em",
+              marginBottom: 16,
+            }}
+          >
             INTERFERENCE PATTERN
           </div>
           <div style={{ display: "flex", justifyContent: "center" }}>
@@ -422,29 +754,97 @@ export default function DynamicReading() {
       </div>
 
       {/* Diagnostic breakdown */}
-      <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}`, marginBottom: 28 }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+      <div
+        style={{
+          background: C.deep,
+          padding: "24px",
+          borderTop: `1px solid ${C.border}`,
+          marginBottom: 28,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 9,
+            color: C.txtD,
+            letterSpacing: "0.15em",
+            marginBottom: 16,
+          }}
+        >
           AXIS BREAKDOWN
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {[
-            { label: "MENTAL NOISE", value: mn, desc: "Cognitive interference" },
+            {
+              label: "MENTAL NOISE",
+              value: mn,
+              desc: "Cognitive interference",
+            },
             { label: "BODY TENSION", value: bt, desc: "Somatic stress" },
-            { label: "EMOTIONAL TURBULENCE", value: et, desc: "Emotional reactivity" },
+            {
+              label: "EMOTIONAL TURBULENCE",
+              value: et,
+              desc: "Emotional reactivity",
+            },
           ].map(({ label, value, desc }) => {
             const pct = (value / 10) * 100;
-            const barColor = pct >= 70 ? C.red : pct >= 40 ? C.gold : C.teal;
+            const barColor = pct >= 70 ? C.red : pct >= 40 ? C.gold : C.amber;
             return (
               <div key={label}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: 5,
+                  }}
+                >
                   <div>
-                    <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS }}>{label}</span>
-                    <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginLeft: 8 }}>{desc}</span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 10,
+                        color: C.txtS,
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 9,
+                        color: C.txtD,
+                        marginLeft: 8,
+                      }}
+                    >
+                      {desc}
+                    </span>
                   </div>
-                  <span style={{ fontFamily: "monospace", fontSize: 14, color: barColor }}>{value}<span style={{ fontSize: 9, color: C.txtD }}>/10</span></span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 14,
+                      color: barColor,
+                    }}
+                  >
+                    {value}
+                    <span style={{ fontSize: 9, color: C.txtD }}>/10</span>
+                  </span>
                 </div>
-                <div style={{ height: 3, background: C.surface, border: `1px solid ${C.border}` }}>
-                  <div style={{ height: "100%", width: `${pct}%`, background: barColor, transition: "width 0.5s" }} />
+                <div
+                  style={{
+                    height: 3,
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${pct}%`,
+                      background: barColor,
+                      transition: "width 0.5s",
+                    }}
+                  />
                 </div>
               </div>
             );
@@ -452,21 +852,48 @@ export default function DynamicReading() {
         </div>
 
         {/* Breath protocol badge */}
-        <div style={{
-          marginTop: 16, padding: "10px 14px",
-          background: breathDone ? "rgba(91,164,164,0.06)" : "transparent",
-          border: `1px solid ${breathDone ? C.tealDim : C.border}`,
-          display: "flex", alignItems: "center", gap: 10,
-        }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: breathDone ? C.teal : C.txtD }} />
-          <span style={{ fontFamily: "monospace", fontSize: 10, color: breathDone ? C.teal : C.txtD, letterSpacing: "0.1em" }}>
+        <div
+          style={{
+            marginTop: 16,
+            padding: "10px 14px",
+            background: breathDone ? "rgba(246,176,94,0.06)" : "transparent",
+            border: `1px solid ${breathDone ? C.amberDim : C.border}`,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: breathDone ? C.amber : C.txtD,
+            }}
+          />
+          <span
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 10,
+              color: breathDone ? C.amber : C.txtD,
+              letterSpacing: "0.1em",
+            }}
+          >
             BREATH PROTOCOL {breathDone ? "COMPLETED (+10)" : "NOT COMPLETED"}
           </span>
         </div>
       </div>
 
       {/* Formula */}
-      <div style={{ textAlign: "center", fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.05em" }}>
+      <div
+        style={{
+          textAlign: "center",
+          fontFamily: "var(--font-ritual)",
+          fontSize: 9,
+          color: C.txtD,
+          letterSpacing: "0.05em",
+        }}
+      >
         CS = 100 − (MN+BT+ET)×3 + BC×10
       </div>
     </div>
@@ -478,79 +905,199 @@ export default function DynamicReading() {
   const renderTransmission = () => (
     <div style={{ animation: "fadeUp 0.4s ease" }}>
       {/* Transmission card */}
-      <div style={{
-        background: C.deep, padding: "28px 24px",
-        borderTop: `2px solid ${theme.color}`,
-        marginBottom: 24,
-      }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 20 }}>
+      <div
+        style={{
+          background: C.deep,
+          padding: "28px 24px",
+          borderTop: `2px solid ${theme.color}`,
+          marginBottom: 24,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 9,
+            color: C.amber,
+            letterSpacing: "0.2em",
+            marginBottom: 20,
+          }}
+        >
           ORIEL TRANSMISSION
         </div>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+        <div style={{ fontFamily: "var(--font-display)" }}>
           {transmissionBody.split("\n\n").map((para, i) => (
-            <p key={i} style={{ fontSize: 16, color: C.txt, lineHeight: 1.8, marginBottom: 16, fontWeight: 300 }}>
+            <p
+              key={i}
+              style={{
+                fontSize: 16,
+                color: C.txt,
+                lineHeight: 1.8,
+                marginBottom: 16,
+                fontWeight: 300,
+              }}
+            >
               {para}
             </p>
           ))}
         </div>
       </div>
 
-      <div style={{
-        background: C.deep,
-        padding: "24px",
-        borderTop: `1px solid ${C.border}`,
-        marginBottom: 24,
-      }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 16 }}>
+      <div
+        style={{
+          background: C.deep,
+          padding: "24px",
+          borderTop: `1px solid ${C.border}`,
+          marginBottom: 24,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 9,
+            color: C.amber,
+            letterSpacing: "0.2em",
+            marginBottom: 16,
+          }}
+        >
           FALSIFIER-FIRST READING
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: 12,
+          }}
+        >
           <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>SIGNAL</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: C.txt, lineHeight: 1.6 }}>
-              {primarySliRow ? `${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""}` : "Dynamic field signal"}
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 8,
+                color: C.gold,
+                letterSpacing: "0.16em",
+                marginBottom: 8,
+              }}
+            >
+              SIGNAL
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 16,
+                color: C.txt,
+                lineHeight: 1.6,
+              }}
+            >
+              {primarySliRow
+                ? `${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""}`
+                : "Dynamic field signal"}
             </div>
           </div>
           <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>EVIDENCE</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {evidenceItems.length > 0 ? evidenceItems.join(" · ") : "Stored reading payload"}
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 8,
+                color: C.amber,
+                letterSpacing: "0.16em",
+                marginBottom: 8,
+              }}
+            >
+              EVIDENCE
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtS,
+                lineHeight: 1.7,
+              }}
+            >
+              {evidenceItems.length > 0
+                ? evidenceItems.join(" · ")
+                : "Stored reading payload"}
             </div>
           </div>
           <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.red, letterSpacing: "0.16em", marginBottom: 8 }}>FALSIFIER</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 8,
+                color: C.red,
+                letterSpacing: "0.16em",
+                marginBottom: 8,
+              }}
+            >
+              FALSIFIER
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtS,
+                lineHeight: 1.7,
+              }}
+            >
               {falsifier || "No falsifier stored for this reading."}
             </div>
           </div>
           <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>PRACTICE</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {microCorrection || "No micro-correction stored for this reading."}
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 8,
+                color: C.gold,
+                letterSpacing: "0.16em",
+                marginBottom: 8,
+              }}
+            >
+              PRACTICE
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtS,
+                lineHeight: 1.7,
+              }}
+            >
+              {microCorrection ||
+                "No micro-correction stored for this reading."}
             </div>
             {microCorrection && (
               <button
                 type="button"
                 onClick={() => markCorrectionMutation.mutate({ readingId })}
-                disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
+                disabled={
+                  reading.correctionCompleted ||
+                  markCorrectionMutation.isPending
+                }
                 style={{
                   marginTop: 14,
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
                   padding: "9px 14px",
-                  border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
+                  border: `1px solid ${reading.correctionCompleted ? C.amberDim : C.goldDim}`,
                   background: "transparent",
-                  color: reading.correctionCompleted ? C.teal : C.gold,
-                  fontFamily: "monospace",
+                  color: reading.correctionCompleted ? C.amber : C.gold,
+                  fontFamily: "var(--font-ritual)",
                   fontSize: 9,
                   letterSpacing: "0.14em",
-                  cursor: reading.correctionCompleted || markCorrectionMutation.isPending ? "default" : "pointer",
+                  cursor:
+                    reading.correctionCompleted ||
+                    markCorrectionMutation.isPending
+                      ? "default"
+                      : "pointer",
                   opacity: markCorrectionMutation.isPending ? 0.7 : 1,
                 }}
               >
                 <CheckCircle size={13} />
-                {reading.correctionCompleted ? "CORRECTION COMPLETED" : markCorrectionMutation.isPending ? "MARKING..." : "MARK CORRECTION COMPLETE"}
+                {reading.correctionCompleted
+                  ? "CORRECTION COMPLETED"
+                  : markCorrectionMutation.isPending
+                    ? "MARKING..."
+                    : "MARK CORRECTION COMPLETE"}
               </button>
             )}
           </div>
@@ -559,22 +1106,62 @@ export default function DynamicReading() {
 
       {/* Flagged Codons */}
       {reading.flaggedCodons && reading.flaggedCodons.length > 0 && (
-        <div style={{ background: C.deep, padding: "24px", marginTop: 24, borderTop: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 16 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "24px",
+            marginTop: 24,
+            borderTop: `1px solid ${C.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.amber,
+              letterSpacing: "0.2em",
+              marginBottom: 16,
+            }}
+          >
             ACTIVE CODONS
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 8 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
+              gap: 8,
+            }}
+          >
             {reading.flaggedCodons.map((codonId: string) => (
               <Link key={codonId} href={`/codex/${codonId}`}>
-                <div style={{
-                  padding: "10px 14px",
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  cursor: "pointer",
-                  transition: "border-color 0.2s",
-                }}>
-                  <span style={{ fontFamily: "monospace", fontSize: 12, color: C.teal }}>{codonId}</span>
-                  <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, marginLeft: 8 }}>→</span>
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    background: C.surface,
+                    border: `1px solid ${C.border}`,
+                    cursor: "pointer",
+                    transition: "border-color 0.2s",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 12,
+                      color: C.amber,
+                    }}
+                  >
+                    {codonId}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 9,
+                      color: C.txtD,
+                      marginLeft: 8,
+                    }}
+                  >
+                    →
+                  </span>
                 </div>
               </Link>
             ))}
@@ -583,40 +1170,105 @@ export default function DynamicReading() {
       )}
 
       {sliRows.length > 0 && (
-        <div style={{ background: C.deep, padding: "24px", marginTop: 24, borderTop: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.2em", marginBottom: 16 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "24px",
+            marginTop: 24,
+            borderTop: `1px solid ${C.border}`,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.gold,
+              letterSpacing: "0.2em",
+              marginBottom: 16,
+            }}
+          >
             SLI DIAGNOSTIC TABLE
           </div>
           <div style={{ display: "grid", gap: 6 }}>
-            {sliRows.map((row) => {
-              const color = row.sli > 75 ? C.red : row.sli > 50 ? C.gold : row.sli > 25 ? C.teal : C.txtD;
+            {sliRows.map(row => {
+              const color =
+                row.sli > 75
+                  ? C.red
+                  : row.sli > 50
+                    ? C.gold
+                    : row.sli > 25
+                      ? C.amber
+                      : C.txtD;
               return (
                 <Link key={row.key} href={`/codex/${row.codonId}`}>
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "54px 1fr 64px 82px",
-                    gap: 10,
-                    alignItems: "center",
-                    padding: "10px 12px",
-                    background: C.surface,
-                    border: `1px solid ${C.border}`,
-                    cursor: "pointer",
-                  }}>
-                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "54px 1fr 64px 82px",
+                      gap: 10,
+                      alignItems: "center",
+                      padding: "10px 12px",
+                      background: C.surface,
+                      border: `1px solid ${C.border}`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 9,
+                        color: C.txtD,
+                      }}
+                    >
                       {row.position ? `P${row.position}` : "SLI"}
                     </div>
                     <div>
-                      <div style={{ fontFamily: "monospace", fontSize: 11, color: C.txt }}>
-                        {row.codonId}{row.facet ? ` · Facet ${row.facet}` : ""}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 11,
+                          color: C.txt,
+                        }}
+                      >
+                        {row.codonId}
+                        {row.facet ? ` · Facet ${row.facet}` : ""}
                       </div>
-                      <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.08em" }}>
-                        {row.confidence === null ? "CONFIDENCE N/A" : `CONFIDENCE ${(row.confidence * 100).toFixed(0)}%`}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 8,
+                          color: C.txtD,
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {row.confidence === null
+                          ? "CONFIDENCE N/A"
+                          : `CONFIDENCE ${(row.confidence * 100).toFixed(0)}%`}
                       </div>
                     </div>
-                    <div style={{ height: 4, background: C.void, border: `1px solid ${C.border}` }}>
-                      <div style={{ width: `${Math.max(0, Math.min(100, row.sli))}%`, height: "100%", background: color }} />
+                    <div
+                      style={{
+                        height: 4,
+                        background: C.void,
+                        border: `1px solid ${C.border}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${Math.max(0, Math.min(100, row.sli))}%`,
+                          height: "100%",
+                          background: color,
+                        }}
+                      />
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 12, color, textAlign: "right" as const }}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 12,
+                        color,
+                        textAlign: "right" as const,
+                      }}
+                    >
                       {row.sli.toFixed(1)}
                     </div>
                   </div>
@@ -635,19 +1287,49 @@ export default function DynamicReading() {
   const renderHistory = () => (
     <div style={{ animation: "fadeUp 0.4s ease" }}>
       {!coherenceHistory || coherenceHistory.length === 0 ? (
-        <div style={{ background: C.deep, padding: "48px 24px", textAlign: "center" }}>
-          <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txtS, marginBottom: 12, fontWeight: 300 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "48px 24px",
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 18,
+              color: C.txtS,
+              marginBottom: 12,
+              fontWeight: 300,
+            }}
+          >
             No history yet
           </div>
-          <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8 }}>
-            Complete more Carrierlock assessments to see your coherence trajectory over time.
+          <p
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 10,
+              color: C.txtD,
+              lineHeight: 1.8,
+            }}
+          >
+            Complete more Carrierlock assessments to see your coherence
+            trajectory over time.
           </p>
           <Link href="/carrierlock">
-            <span style={{
-              display: "inline-block", marginTop: 20,
-              fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.1em",
-              border: `1px solid ${C.goldDim}`, padding: "8px 20px", cursor: "pointer",
-            }}>
+            <span
+              style={{
+                display: "inline-block",
+                marginTop: 20,
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.gold,
+                letterSpacing: "0.1em",
+                border: `1px solid ${C.goldDim}`,
+                padding: "8px 20px",
+                cursor: "pointer",
+              }}
+            >
               NEW ASSESSMENT
             </span>
           </Link>
@@ -656,34 +1338,92 @@ export default function DynamicReading() {
         <>
           {/* Trend indicator */}
           {trend && (
-            <div style={{
-              padding: "14px 20px", marginBottom: 24,
-              background: C.deep, borderLeft: `2px solid ${trend.color}`,
-              display: "flex", alignItems: "center", gap: 12,
-            }}>
-              <span style={{ fontFamily: "monospace", fontSize: 20, color: trend.color }}>{trend.symbol}</span>
+            <div
+              style={{
+                padding: "14px 20px",
+                marginBottom: 24,
+                background: C.deep,
+                borderLeft: `2px solid ${trend.color}`,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 20,
+                  color: trend.color,
+                }}
+              >
+                {trend.symbol}
+              </span>
               <div>
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: trend.color, letterSpacing: "0.2em" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 9,
+                    color: trend.color,
+                    letterSpacing: "0.2em",
+                  }}
+                >
                   TRAJECTORY · {trend.label}
                 </div>
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, marginTop: 4 }}>
-                  Based on your last {coherenceHistory.length} assessment{coherenceHistory.length > 1 ? "s" : ""}
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.txtS,
+                    marginTop: 4,
+                  }}
+                >
+                  Based on your last {coherenceHistory.length} assessment
+                  {coherenceHistory.length > 1 ? "s" : ""}
                 </div>
               </div>
             </div>
           )}
 
           {/* Sparkline */}
-          <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}`, marginBottom: 24 }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+          <div
+            style={{
+              background: C.deep,
+              padding: "24px",
+              borderTop: `1px solid ${C.border}`,
+              marginBottom: 24,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.txtD,
+                letterSpacing: "0.15em",
+                marginBottom: 16,
+              }}
+            >
               COHERENCE OVER TIME
             </div>
             <CoherenceSparkline history={coherenceHistory} />
           </div>
 
           {/* History list */}
-          <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}` }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+          <div
+            style={{
+              background: C.deep,
+              padding: "24px",
+              borderTop: `1px solid ${C.border}`,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.txtD,
+                letterSpacing: "0.15em",
+                marginBottom: 16,
+              }}
+            >
               RECENT ASSESSMENTS
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -692,24 +1432,61 @@ export default function DynamicReading() {
                 const entryTheme = ZONE_THEME[entryZone];
                 const isCurrentReading = i === 0; // most recent
                 return (
-                  <div key={entry.id} style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                    padding: "10px 14px",
-                    background: isCurrentReading ? entryTheme.bg : "transparent",
-                    borderLeft: isCurrentReading ? `2px solid ${entryTheme.color}` : "2px solid transparent",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <span style={{ fontFamily: "monospace", fontSize: 14, color: entryTheme.color, fontWeight: 600, minWidth: 28 }}>
+                  <div
+                    key={entry.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 14px",
+                      background: isCurrentReading
+                        ? entryTheme.bg
+                        : "transparent",
+                      borderLeft: isCurrentReading
+                        ? `2px solid ${entryTheme.color}`
+                        : "2px solid transparent",
+                    }}
+                  >
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 14,
+                          color: entryTheme.color,
+                          fontWeight: 600,
+                          minWidth: 28,
+                        }}
+                      >
                         {entry.coherenceScore}
                       </span>
-                      <span style={{ fontFamily: "monospace", fontSize: 9, color: entryTheme.color, letterSpacing: "0.1em" }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-ritual)",
+                          fontSize: 9,
+                          color: entryTheme.color,
+                          letterSpacing: "0.1em",
+                        }}
+                      >
                         {entryTheme.label}
                       </span>
                     </div>
-                    <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD }}>
-                      {new Date(entry.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                      {" "}
-                      {new Date(entry.createdAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                    <div
+                      style={{
+                        fontFamily: "var(--font-ritual)",
+                        fontSize: 9,
+                        color: C.txtD,
+                      }}
+                    >
+                      {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                      })}{" "}
+                      {new Date(entry.createdAt).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </div>
                   </div>
                 );
@@ -718,29 +1495,54 @@ export default function DynamicReading() {
           </div>
 
           {compareOptions.length > 0 && (
-            <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}`, marginTop: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <div
+              style={{
+                background: C.deep,
+                padding: "24px",
+                borderTop: `1px solid ${C.border}`,
+                marginTop: 24,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  marginBottom: 16,
+                }}
+              >
                 <GitCompare size={14} color={C.gold} />
-                <div style={{ fontFamily: "monospace", fontSize: 9, color: C.gold, letterSpacing: "0.18em" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 9,
+                    color: C.gold,
+                    letterSpacing: "0.18em",
+                  }}
+                >
                   COMPARE READINGS
                 </div>
               </div>
               <select
                 value={compareReadingId ?? ""}
-                onChange={(event) => setCompareReadingId(event.target.value ? Number(event.target.value) : null)}
+                onChange={event =>
+                  setCompareReadingId(
+                    event.target.value ? Number(event.target.value) : null
+                  )
+                }
                 style={{
                   width: "100%",
                   background: C.surface,
                   color: C.txt,
                   border: `1px solid ${C.border}`,
                   padding: "10px 12px",
-                  fontFamily: "monospace",
+                  fontFamily: "var(--font-ritual)",
                   fontSize: 10,
                   marginBottom: 14,
                 }}
               >
                 <option value="">Select previous reading</option>
-                {compareOptions.map((entry) => (
+                {compareOptions.map(entry => (
                   <option key={entry.id} value={entry.id}>
                     #{entry.id} · {new Date(entry.createdAt).toLocaleString()}
                   </option>
@@ -748,35 +1550,100 @@ export default function DynamicReading() {
               </select>
 
               {compareQuery.isLoading && (
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD }}>CALCULATING DELTA...</div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.txtD,
+                  }}
+                >
+                  CALCULATING DELTA...
+                </div>
               )}
 
               {compareQuery.data && (
                 <div style={{ display: "grid", gap: 10 }}>
-                  <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS }}>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 10,
+                      color: C.txtS,
+                    }}
+                  >
                     COHERENCE DELTA:{" "}
-                    <span style={{ color: (compareQuery.data.coherenceDelta ?? 0) >= 0 ? C.teal : C.red }}>
-                      {compareQuery.data.coherenceDelta === null ? "N/A" : `${compareQuery.data.coherenceDelta > 0 ? "+" : ""}${compareQuery.data.coherenceDelta}`}
+                    <span
+                      style={{
+                        color:
+                          (compareQuery.data.coherenceDelta ?? 0) >= 0
+                            ? C.amber
+                            : C.red,
+                      }}
+                    >
+                      {compareQuery.data.coherenceDelta === null
+                        ? "N/A"
+                        : `${compareQuery.data.coherenceDelta > 0 ? "+" : ""}${compareQuery.data.coherenceDelta}`}
                     </span>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8 }}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns:
+                        "repeat(auto-fit, minmax(160px, 1fr))",
+                      gap: 8,
+                    }}
+                  >
                     {[
                       ["RESOLVED", compareQuery.data.resolvedCodons],
                       ["EMERGING", compareQuery.data.emergingCodons],
                       ["SHARED", compareQuery.data.sharedFlaggedCodons],
                     ].map(([label, codons]) => (
-                      <div key={label as string} style={{ padding: "12px", border: `1px solid ${C.border}`, background: C.surface }}>
-                        <div style={{ fontFamily: "monospace", fontSize: 8, color: C.txtD, letterSpacing: "0.14em", marginBottom: 8 }}>
+                      <div
+                        key={label as string}
+                        style={{
+                          padding: "12px",
+                          border: `1px solid ${C.border}`,
+                          background: C.surface,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ritual)",
+                            fontSize: 8,
+                            color: C.txtD,
+                            letterSpacing: "0.14em",
+                            marginBottom: 8,
+                          }}
+                        >
                           {label as string}
                         </div>
-                        <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txt }}>
-                          {(codons as string[]).length > 0 ? (codons as string[]).join(", ") : "None"}
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ritual)",
+                            fontSize: 10,
+                            color: C.txt,
+                          }}
+                        >
+                          {(codons as string[]).length > 0
+                            ? (codons as string[]).join(", ")
+                            : "None"}
                         </div>
                       </div>
                     ))}
                   </div>
-                  <div style={{ fontFamily: "monospace", fontSize: 9, color: compareQuery.data.correctionChanged ? C.gold : C.txtD, letterSpacing: "0.1em" }}>
-                    CORRECTION {compareQuery.data.correctionChanged ? "CHANGED" : "UNCHANGED"}
+                  <div
+                    style={{
+                      fontFamily: "var(--font-ritual)",
+                      fontSize: 9,
+                      color: compareQuery.data.correctionChanged
+                        ? C.gold
+                        : C.txtD,
+                      letterSpacing: "0.1em",
+                    }}
+                  >
+                    CORRECTION{" "}
+                    {compareQuery.data.correctionChanged
+                      ? "CHANGED"
+                      : "UNCHANGED"}
                   </div>
                 </div>
               )}
@@ -797,7 +1664,12 @@ export default function DynamicReading() {
     // Use the latest static reading query
     return (
       <div style={{ animation: "fadeUp 0.4s ease" }}>
-        <StaticContextSection userId={user.id} zone={zone} theme={theme} coherenceScore={coherenceScore} />
+        <StaticContextSection
+          userId={user.id}
+          zone={zone}
+          theme={theme}
+          coherenceScore={coherenceScore}
+        />
       </div>
     );
   };
@@ -806,48 +1678,79 @@ export default function DynamicReading() {
   // MAIN RENDER
   // ══════════════════════════════════════════════════════════
   const views = [
-    { id: "field"        as const, label: "Field State" },
+    { id: "field" as const, label: "Field State" },
     { id: "transmission" as const, label: "ORIEL Reading" },
-    { id: "history"      as const, label: "History" },
+    { id: "history" as const, label: "History" },
   ];
 
   return (
     <Layout>
       <div style={{ background: C.void, minHeight: "100vh" }}>
         {/* Zone atmosphere */}
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, height: 300,
-          background: `radial-gradient(ellipse at 50% 0%, ${theme.glow}, transparent 70%)`,
-          pointerEvents: "none", zIndex: 0,
-        }} />
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 300,
+            background: `radial-gradient(ellipse at 50% 0%, ${theme.glow}, transparent 70%)`,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
 
         {/* Sticky Tab Bar */}
-        <div style={{
-          position: "sticky", top: 0, zIndex: 50,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "10px 24px",
-          background: "rgba(10,10,14,0.90)",
-          backdropFilter: "blur(20px)",
-          borderBottom: `1px solid ${C.border}`,
-        }}>
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "10px 24px",
+            background: "rgba(10,10,14,0.90)",
+            backdropFilter: "blur(20px)",
+            borderBottom: `1px solid ${C.border}`,
+          }}
+        >
           {/* Reading timestamp */}
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.1em" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.txtD,
+              letterSpacing: "0.1em",
+            }}
+          >
             {reading.createdAt
-              ? new Date(reading.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
+              ? new Date(reading.createdAt).toLocaleDateString(undefined, {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })
               : "DYNAMIC"}
           </div>
 
           {/* View Tabs */}
           <div style={{ display: "flex", gap: 2 }}>
             {views.map(v => (
-              <button key={v.id}
+              <button
+                key={v.id}
                 onClick={() => setActiveView(v.id)}
                 style={{
-                  background: activeView === v.id ? "rgba(189,163,107,0.1)" : "transparent",
+                  background:
+                    activeView === v.id
+                      ? "rgba(189,163,107,0.1)"
+                      : "transparent",
                   border: `1px solid ${activeView === v.id ? C.goldDim : "transparent"}`,
                   color: activeView === v.id ? C.gold : C.txtD,
-                  fontFamily: "monospace", fontSize: 10, letterSpacing: "0.08em",
-                  padding: "6px 14px", cursor: "pointer",
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 10,
+                  letterSpacing: "0.08em",
+                  padding: "6px 14px",
+                  cursor: "pointer",
                   transition: "all 0.3s ease",
                 }}
               >
@@ -858,37 +1761,77 @@ export default function DynamicReading() {
 
           {/* Back link */}
           <Link href="/readings">
-            <span style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.1em", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.txtD,
+                letterSpacing: "0.1em",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
               <ArrowLeft style={{ width: 12, height: 12 }} /> HISTORY
             </span>
           </Link>
         </div>
 
         {/* Content */}
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 920, margin: "0 auto", padding: "28px 24px 80px" }}>
-          {activeView === "field"        && renderFieldState()}
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            maxWidth: 920,
+            margin: "0 auto",
+            padding: "28px 24px 80px",
+          }}
+        >
+          {activeView === "field" && renderFieldState()}
           {activeView === "transmission" && renderTransmission()}
-          {activeView === "history"      && renderHistory()}
+          {activeView === "history" && renderHistory()}
         </div>
 
         {/* Footer nav */}
-        <div style={{
-          maxWidth: 920, margin: "0 auto", padding: "0 24px 60px",
-          display: "flex", gap: 8, position: "relative", zIndex: 1,
-        }}>
+        <div
+          style={{
+            maxWidth: 920,
+            margin: "0 auto",
+            padding: "0 24px 60px",
+            display: "flex",
+            gap: 8,
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
           <Link href="/carrierlock">
-            <span style={{
-              fontFamily: "monospace", fontSize: 10, color: C.gold, letterSpacing: "0.1em",
-              border: `1px solid ${C.goldDim}`, padding: "10px 20px", cursor: "pointer",
-            }}>
+            <span
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.gold,
+                letterSpacing: "0.1em",
+                border: `1px solid ${C.goldDim}`,
+                padding: "10px 20px",
+                cursor: "pointer",
+              }}
+            >
               NEW READING
             </span>
           </Link>
           <Link href="/readings">
-            <span style={{
-              fontFamily: "monospace", fontSize: 10, color: C.txtD, letterSpacing: "0.1em",
-              border: `1px solid ${C.border}`, padding: "10px 20px", cursor: "pointer",
-            }}>
+            <span
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtD,
+                letterSpacing: "0.1em",
+                border: `1px solid ${C.border}`,
+                padding: "10px 20px",
+                cursor: "pointer",
+              }}
+            >
               ALL READINGS
             </span>
           </Link>
@@ -913,18 +1856,34 @@ export default function DynamicReading() {
 // ══════════════════════════════════════════════════════════════
 // Static Signature Context Sub-component
 // ══════════════════════════════════════════════════════════════
-function StaticContextSection({ userId, zone, theme, coherenceScore }: {
+function StaticContextSection({
+  userId,
+  zone,
+  theme,
+  coherenceScore,
+}: {
   userId: number;
   zone: CoherenceZone;
-  theme: typeof ZONE_THEME["Entropy"];
+  theme: (typeof ZONE_THEME)["Entropy"];
   coherenceScore: number;
 }) {
-  const { data: staticProfile, isLoading } = trpc.profile.getStaticProfile.useQuery();
+  const { data: staticProfile, isLoading } =
+    trpc.profile.getStaticProfile.useQuery();
 
   if (isLoading) {
     return (
-      <div style={{ background: C.deep, padding: "48px 24px", textAlign: "center" }}>
-        <Loader2 style={{ color: C.teal, width: 20, height: 20, margin: "0 auto", animation: "spin 1s linear infinite" }} />
+      <div
+        style={{
+          background: C.deep,
+          padding: "48px 24px",
+          textAlign: "center",
+        }}
+      >
+        <Spinner
+          className="mx-auto"
+          size={20}
+          label="Loading Static Signature"
+        />
       </div>
     );
   }
@@ -933,19 +1892,51 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
 
   if (!latest) {
     return (
-      <div style={{ background: C.deep, padding: "48px 24px", textAlign: "center" }}>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txtS, marginBottom: 12, fontWeight: 300 }}>
+      <div
+        style={{
+          background: C.deep,
+          padding: "48px 24px",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 18,
+            color: C.txtS,
+            marginBottom: 12,
+            fontWeight: 300,
+          }}
+        >
           No Static Signature found
         </div>
-        <p style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD, lineHeight: 1.8, maxWidth: 400, margin: "0 auto" }}>
-          Complete your natal profile to see how your permanent blueprint interacts with your current field state.
+        <p
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 10,
+            color: C.txtD,
+            lineHeight: 1.8,
+            maxWidth: 400,
+            margin: "0 auto",
+          }}
+        >
+          Complete your natal profile to see how your permanent Static Signature
+          interacts with your current field state.
         </p>
         <Link href="/complete-profile">
-          <span style={{
-            display: "inline-block", marginTop: 20,
-            fontFamily: "monospace", fontSize: 10, color: C.teal, letterSpacing: "0.1em",
-            border: `1px solid ${C.tealDim}`, padding: "8px 20px", cursor: "pointer",
-          }}>
+          <span
+            style={{
+              display: "inline-block",
+              marginTop: 20,
+              fontFamily: "var(--font-ritual)",
+              fontSize: 10,
+              color: C.amber,
+              letterSpacing: "0.1em",
+              border: `1px solid ${C.amberDim}`,
+              padding: "8px 20px",
+              cursor: "pointer",
+            }}
+          >
             COMPLETE NATAL PROFILE
           </span>
         </Link>
@@ -957,39 +1948,94 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
   const vrcType = latest.vrcType ?? "Unknown";
   const vrcAuthority = latest.vrcAuthority ?? "Unknown";
   const fractalRole = latest.fractalRole ?? "Unknown";
-  const primeStack = (latest.primeStack ?? []) as Array<{ codonId: string; codonName?: string; center?: string; facet?: string }>;
+  const primeStack = (latest.primeStack ?? []) as Array<{
+    codonId: string;
+    codonName?: string;
+    center?: string;
+    facet?: string;
+  }>;
   const prime = primeStack[0];
 
   return (
     <>
-      {/* Blueprint header */}
-      <div style={{
-        padding: "14px 20px", marginBottom: 28,
-        background: theme.bg,
-        borderLeft: `2px solid ${theme.color}`,
-      }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: theme.color, letterSpacing: "0.25em" }}>
-          YOUR {vrcType.toUpperCase()} BLUEPRINT · THROUGH TODAY'S LENS
+      {/* Static Signature header */}
+      <div
+        style={{
+          padding: "14px 20px",
+          marginBottom: 28,
+          background: theme.bg,
+          borderLeft: `2px solid ${theme.color}`,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ritual)",
+            fontSize: 9,
+            color: theme.color,
+            letterSpacing: "0.25em",
+          }}
+        >
+          YOUR {vrcType.toUpperCase()} STATIC SIGNATURE · THROUGH TODAY'S LENS
         </div>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: C.txt, marginTop: 4, fontWeight: 300 }}>
-          {zone === "Entropy" && "Your blueprint is being filtered through heavy static. Expression is distorted."}
-          {zone === "Flux" && "Your blueprint oscillates between shadow and gift expression today."}
-          {zone === "Resonance" && "Clear channel. Your blueprint expresses its highest potential today."}
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 16,
+            color: C.txt,
+            marginTop: 4,
+            fontWeight: 300,
+          }}
+        >
+          {zone === "Entropy" &&
+            "Your Static Signature is being filtered through heavy static. Expression is distorted."}
+          {zone === "Flux" &&
+            "Your Static Signature oscillates between shadow and gift expression today."}
+          {zone === "Resonance" &&
+            "Clear channel. Your Static Signature expresses its highest potential today."}
         </div>
       </div>
 
       {/* Type + Authority + Role */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, marginBottom: 28 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 2,
+          marginBottom: 28,
+        }}
+      >
         {[
           { label: "TYPE", value: vrcType },
           { label: "AUTHORITY", value: vrcAuthority },
           { label: "FRACTAL ROLE", value: fractalRole },
         ].map(({ label, value }) => (
-          <div key={label} style={{ background: C.deep, padding: "20px", borderTop: `1px solid ${C.border}` }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 8 }}>
+          <div
+            key={label}
+            style={{
+              background: C.deep,
+              padding: "20px",
+              borderTop: `1px solid ${C.border}`,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: C.txtD,
+                letterSpacing: "0.15em",
+                marginBottom: 8,
+              }}
+            >
               {label}
             </div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.gold, fontWeight: 300 }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 18,
+                color: C.gold,
+                fontWeight: 300,
+              }}
+            >
               {value}
             </div>
           </div>
@@ -998,63 +2044,151 @@ function StaticContextSection({ userId, zone, theme, coherenceScore }: {
 
       {/* Prime Codon */}
       {prime && (
-        <div style={{ background: C.deep, padding: "24px", borderTop: `1px solid ${C.border}`, marginBottom: 28 }}>
-          <div style={{ fontFamily: "monospace", fontSize: 9, color: C.txtD, letterSpacing: "0.15em", marginBottom: 16 }}>
+        <div
+          style={{
+            background: C.deep,
+            padding: "24px",
+            borderTop: `1px solid ${C.border}`,
+            marginBottom: 28,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ritual)",
+              fontSize: 9,
+              color: C.txtD,
+              letterSpacing: "0.15em",
+              marginBottom: 16,
+            }}
+          >
             PRIME CODON
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div style={{
-              width: 56, height: 56, display: "flex", alignItems: "center", justifyContent: "center",
-              border: `1px solid ${C.gold}`, background: "rgba(189,163,107,0.06)",
-            }}>
-              <span style={{ fontFamily: "monospace", fontSize: 16, color: C.gold }}>
+            <div
+              style={{
+                width: 56,
+                height: 56,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                border: `1px solid ${C.gold}`,
+                background: "rgba(189,163,107,0.06)",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-ritual)",
+                  fontSize: 16,
+                  color: C.gold,
+                }}
+              >
                 RC{String(prime.codonId).padStart(2, "0")}
               </span>
             </div>
             <div>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: C.txt, fontWeight: 300 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 18,
+                  color: C.txt,
+                  fontWeight: 300,
+                }}
+              >
                 {prime.codonName || `Codon ${prime.codonId}`}
               </div>
               {prime.center && (
-                <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, marginTop: 4 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ritual)",
+                    fontSize: 10,
+                    color: C.txtS,
+                    marginTop: 4,
+                  }}
+                >
                   {prime.center} Center
-                  {prime.facet && <span style={{ color: C.txtD }}> · Facet {prime.facet}</span>}
+                  {prime.facet && (
+                    <span style={{ color: C.txtD }}>
+                      {" "}
+                      · Facet {prime.facet}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
           {/* Current expression based on coherence */}
-          <div style={{
-            marginTop: 16, padding: "12px 14px",
-            background: theme.bg,
-            border: `1px solid ${theme.color}30`,
-          }}>
-            <div style={{ fontFamily: "monospace", fontSize: 9, color: theme.color, letterSpacing: "0.15em", marginBottom: 6 }}>
+          <div
+            style={{
+              marginTop: 16,
+              padding: "12px 14px",
+              background: theme.bg,
+              border: `1px solid ${theme.color}30`,
+            }}
+          >
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 9,
+                color: theme.color,
+                letterSpacing: "0.15em",
+                marginBottom: 6,
+              }}
+            >
               CURRENT EXPRESSION · CS {coherenceScore}
             </div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {zone === "Entropy" && "Shadow frequency dominant. The prime codon's distortion pattern is active."}
-              {zone === "Flux" && "Gift frequency emerging. The prime codon oscillates between shadow and gift."}
-              {zone === "Resonance" && "Siddhi frequency accessible. The prime codon expresses its highest potential."}
+            <div
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtS,
+                lineHeight: 1.7,
+              }}
+            >
+              {zone === "Entropy" &&
+                "Shadow frequency dominant. The prime codon's distortion pattern is active."}
+              {zone === "Flux" &&
+                "Gift frequency emerging. The prime codon oscillates between shadow and gift."}
+              {zone === "Resonance" &&
+                "Siddhi frequency accessible. The prime codon expresses its highest potential."}
             </div>
           </div>
         </div>
       )}
 
-      {/* Link to canonical blueprint */}
+      {/* Link to canonical Static Signature */}
       {latest && (
         <Link href="/blueprint">
-          <div style={{
-            background: C.deep, padding: "14px 20px",
-            border: `1px solid ${C.border}`,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            cursor: "pointer",
-          }}>
-            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, letterSpacing: "0.1em" }}>
-              VIEW CANONICAL NATAL BLUEPRINT
+          <div
+            style={{
+              background: C.deep,
+              padding: "14px 20px",
+              border: `1px solid ${C.border}`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              cursor: "pointer",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtS,
+                letterSpacing: "0.1em",
+              }}
+            >
+              VIEW CANONICAL STATIC SIGNATURE
             </span>
-            <span style={{ fontFamily: "monospace", fontSize: 10, color: C.txtD }}>→</span>
+            <span
+              style={{
+                fontFamily: "var(--font-ritual)",
+                fontSize: 10,
+                color: C.txtD,
+              }}
+            >
+              →
+            </span>
           </div>
         </Link>
       )}

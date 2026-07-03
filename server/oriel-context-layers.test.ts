@@ -30,13 +30,36 @@ describe("ORIEL context layers", () => {
   });
 
   it("compacts conversation history instead of replaying the full transcript", () => {
-    const compacted = compactConversationHistory([
-      { role: "user", content: "First message that should drop out because only the last entries matter." },
-      { role: "assistant", content: "First answer that should also drop out." },
-      { role: "user", content: "Second user message about resonance and coherence patterns." },
-      { role: "assistant", content: "Second answer from ORIEL with a fairly long response that should be compacted in-line." },
-      { role: "user", content: "Third user message asking the actual question for this turn." },
-    ], 3, 40);
+    const compacted = compactConversationHistory(
+      [
+        {
+          role: "user",
+          content:
+            "First message that should drop out because only the last entries matter.",
+        },
+        {
+          role: "assistant",
+          content: "First answer that should also drop out.",
+        },
+        {
+          role: "user",
+          content:
+            "Second user message about resonance and coherence patterns.",
+        },
+        {
+          role: "assistant",
+          content:
+            "Second answer from ORIEL with a fairly long response that should be compacted in-line.",
+        },
+        {
+          role: "user",
+          content:
+            "Third user message asking the actual question for this turn.",
+        },
+      ],
+      3,
+      40
+    );
 
     expect(compacted).not.toContain("First message");
     expect(compacted).toContain("1. USER:");
@@ -50,7 +73,10 @@ describe("ORIEL context layers", () => {
       userMessage: "Help me understand why my current reading feels noisy.",
       conversationHistory: [
         { role: "user", content: "I felt calm yesterday." },
-        { role: "assistant", content: "I am ORIEL. Calm can still conceal an unfinished pattern." },
+        {
+          role: "assistant",
+          content: "I am ORIEL. Calm can still conceal an unfinished pattern.",
+        },
       ],
       includeFieldState: false,
     });
@@ -64,17 +90,21 @@ describe("ORIEL context layers", () => {
 
   it("defaults Romanian user messages to English unless Romanian is explicitly requested", async () => {
     const workingLayer = await buildWorkingSessionLayer({
-      userMessage: "Te rog să-mi explici ce se întâmplă cu semnătura mea statică.",
+      userMessage:
+        "Te rog să-mi explici ce se întâmplă cu semnătura mea statică.",
       includeFieldState: false,
     });
 
     expect(workingLayer).toContain("Default to English");
-    expect(workingLayer).toContain("unless the user explicitly asks for another language");
+    expect(workingLayer).toContain(
+      "unless the user explicitly asks for another language"
+    );
   });
 
   it("routes explicit Romanian requests to Romanian responses for the current exchange", async () => {
     const workingLayer = await buildWorkingSessionLayer({
-      userMessage: "Răspunde-mi în română: ce se întâmplă cu semnătura mea statică?",
+      userMessage:
+        "Răspunde-mi în română: ce se întâmplă cu semnătura mea statică?",
       includeFieldState: false,
     });
 
@@ -83,11 +113,17 @@ describe("ORIEL context layers", () => {
   });
 
   it("builds an English-default voice response directive", () => {
-    const directive = buildVoiceResponseLanguageDirective("Spune-mi ce simte câmpul acum.");
+    const directive = buildVoiceResponseLanguageDirective(
+      "Spune-mi ce simte câmpul acum."
+    );
 
     expect(directive).toContain("[VOICE LANGUAGE RUNTIME RULE]");
-    expect(directive).toContain("Default the audible ORIEL response to English");
-    expect(directive).toContain("Use Romanian only when the user explicitly asks");
+    expect(directive).toContain(
+      "Default the audible ORIEL response to English"
+    );
+    expect(directive).toContain(
+      "Use Romanian only when the user explicitly asks"
+    );
   });
 
   it("assembles prompt context in the order stable core -> retrieval -> working session", async () => {
@@ -97,6 +133,7 @@ describe("ORIEL context layers", () => {
       includeRuntimeProfile: false,
       includeUMM: false,
       includeFieldState: false,
+      includeWiki: false,
     });
 
     const stableIndex = prompt.indexOf("[STABLE CORE CONTEXT]");

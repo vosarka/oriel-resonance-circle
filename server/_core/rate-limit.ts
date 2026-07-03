@@ -62,11 +62,15 @@ function normalizeHeaderValue(value: unknown) {
 function getHeader(headers: unknown, name: string) {
   if (!headers || typeof headers !== "object") return "";
   const record = headers as Record<string, unknown>;
-  return normalizeHeaderValue(record[name] ?? record[name.toLowerCase()] ?? record[name.toUpperCase()]);
+  return normalizeHeaderValue(
+    record[name] ?? record[name.toLowerCase()] ?? record[name.toUpperCase()]
+  );
 }
 
 function getClientIp(ctx: Partial<TrpcContext>) {
-  const req = (ctx as { req?: { headers?: unknown; socket?: { remoteAddress?: string } } }).req;
+  const req = (
+    ctx as { req?: { headers?: unknown; socket?: { remoteAddress?: string } } }
+  ).req;
   const forwardedFor = getHeader(req?.headers, "x-forwarded-for")
     .split(",")
     .map(part => part.trim())
@@ -75,8 +79,14 @@ function getClientIp(ctx: Partial<TrpcContext>) {
   return forwardedFor || realIp || req?.socket?.remoteAddress || "anonymous";
 }
 
-function getIdentity(ctx: Partial<TrpcContext>): { tier: RateLimitTier; key: string } {
-  const user = ctx.user as { id?: string | number; openId?: string | number } | null | undefined;
+function getIdentity(ctx: Partial<TrpcContext>): {
+  tier: RateLimitTier;
+  key: string;
+} {
+  const user = ctx.user as
+    | { id?: string | number; openId?: string | number }
+    | null
+    | undefined;
   const userId = user?.id ?? user?.openId;
 
   if (userId !== undefined && userId !== null) {
@@ -102,7 +112,10 @@ export type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
-export function checkRateLimit(ctx: Partial<TrpcContext>, bucket: RateLimitBucket): RateLimitResult {
+export function checkRateLimit(
+  ctx: Partial<TrpcContext>,
+  bucket: RateLimitBucket
+): RateLimitResult {
   const config = RATE_LIMITS[bucket];
   const identity = getIdentity(ctx);
   const limit = config[identity.tier];
@@ -132,7 +145,10 @@ export function checkRateLimit(ctx: Partial<TrpcContext>, bucket: RateLimitBucke
       limit,
       remaining: 0,
       resetAt: existing.resetAt,
-      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - currentTime) / 1000)),
+      retryAfterSeconds: Math.max(
+        1,
+        Math.ceil((existing.resetAt - currentTime) / 1000)
+      ),
     };
   }
 
@@ -144,7 +160,10 @@ export function checkRateLimit(ctx: Partial<TrpcContext>, bucket: RateLimitBucke
     limit,
     remaining: Math.max(0, limit - existing.count),
     resetAt: existing.resetAt,
-    retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - currentTime) / 1000)),
+    retryAfterSeconds: Math.max(
+      1,
+      Math.ceil((existing.resetAt - currentTime) / 1000)
+    ),
   };
 }
 

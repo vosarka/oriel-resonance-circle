@@ -1,4 +1,15 @@
-﻿import { int, double, decimal, mysqlEnum, mysqlTable, text, longtext, timestamp, varchar, boolean } from "drizzle-orm/mysql-core";
+﻿import {
+  int,
+  double,
+  decimal,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  longtext,
+  timestamp,
+  varchar,
+  boolean,
+} from "drizzle-orm/mysql-core";
 
 import { index, uniqueIndex } from "drizzle-orm/mysql-core";
 
@@ -26,7 +37,14 @@ export const users = mysqlTable("users", {
   /** Conduit ID - unique identifier for user profile */
   conduitId: varchar("conduitId", { length: 64 }).unique(),
   /** Subscription status: free, active, cancelled, expired */
-  subscriptionStatus: mysqlEnum("subscriptionStatus", ["free", "active", "cancelled", "expired"]).default("free").notNull(),
+  subscriptionStatus: mysqlEnum("subscriptionStatus", [
+    "free",
+    "active",
+    "cancelled",
+    "expired",
+  ])
+    .default("free")
+    .notNull(),
   /** PayPal subscription ID */
   paypalSubscriptionId: varchar("paypalSubscriptionId", { length: 255 }),
   /** Subscription start date */
@@ -38,7 +56,9 @@ export const users = mysqlTable("users", {
   /** Cumulative total donated (USD). Updated on each successful PayPal event. */
   donated: double("donated").default(0).notNull(),
   /** Voice preference for TTS: 'sophianic' (Inworld fema), 'deep' (Inworld serii), 'none' (text only) */
-  voicePreference: mysqlEnum("voicePreference", ["sophianic", "deep", "none"]).default("sophianic").notNull(),
+  voicePreference: mysqlEnum("voicePreference", ["sophianic", "deep", "none"])
+    .default("sophianic")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -110,7 +130,6 @@ export const chatMessages = mysqlTable("chatMessages", {
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
 
-
 /**
  * ORIEL Memory System
  * Stores persistent memories about users that evolve with each interaction
@@ -120,7 +139,14 @@ export const orielMemories = mysqlTable("orielMemories", {
   /** User this memory belongs to (null for general/global memories) */
   userId: int("userId"),
   /** Memory category: identity, preference, pattern, fact, relationship, context */
-  category: mysqlEnum("category", ["identity", "preference", "pattern", "fact", "relationship", "context"]).notNull(),
+  category: mysqlEnum("category", [
+    "identity",
+    "preference",
+    "pattern",
+    "fact",
+    "relationship",
+    "context",
+  ]).notNull(),
   /** The actual memory content */
   content: text("content").notNull(),
   /** Importance score (1-10) - higher means more likely to be retrieved */
@@ -130,7 +156,9 @@ export const orielMemories = mysqlTable("orielMemories", {
   /** Last time this memory was accessed */
   lastAccessed: timestamp("lastAccessed").defaultNow().notNull(),
   /** Source of this memory (conversation, explicit, inferred) */
-  source: mysqlEnum("source", ["conversation", "explicit", "inferred"]).default("conversation").notNull(),
+  source: mysqlEnum("source", ["conversation", "explicit", "inferred"])
+    .default("conversation")
+    .notNull(),
   /** Whether this memory is still active/relevant */
   isActive: boolean("isActive").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -144,28 +172,48 @@ export type InsertOrielMemory = typeof orielMemories.$inferInsert;
  * ORIEL Pending Memory Candidates
  * Consent staging for sensitive, inferred, or otherwise user-reviewable memory.
  */
-export const orielPendingMemoryCandidates = mysqlTable("orielPendingMemoryCandidates", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  category: mysqlEnum("category", ["identity", "preference", "pattern", "fact", "relationship", "context"]).notNull(),
-  content: text("content").notNull(),
-  importance: int("importance").default(5).notNull(),
-  source: mysqlEnum("source", ["conversation", "explicit", "inferred"]).default("conversation").notNull(),
-  sensitivity: mysqlEnum("sensitivity", ["low", "medium", "high"]).notNull(),
-  confidence: double("confidence").default(1).notNull(),
-  status: mysqlEnum("status", ["pending", "accepted", "rejected"]).default("pending").notNull(),
-  reason: text("reason"),
-  acceptedMemoryId: int("acceptedMemoryId"),
-  decidedAt: timestamp("decidedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_oriel_pending_memory_user_status").on(table.userId, table.status),
-  index("idx_oriel_pending_memory_createdAt").on(table.createdAt),
-]);
+export const orielPendingMemoryCandidates = mysqlTable(
+  "orielPendingMemoryCandidates",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    category: mysqlEnum("category", [
+      "identity",
+      "preference",
+      "pattern",
+      "fact",
+      "relationship",
+      "context",
+    ]).notNull(),
+    content: text("content").notNull(),
+    importance: int("importance").default(5).notNull(),
+    source: mysqlEnum("source", ["conversation", "explicit", "inferred"])
+      .default("conversation")
+      .notNull(),
+    sensitivity: mysqlEnum("sensitivity", ["low", "medium", "high"]).notNull(),
+    confidence: double("confidence").default(1).notNull(),
+    status: mysqlEnum("status", ["pending", "accepted", "rejected"])
+      .default("pending")
+      .notNull(),
+    reason: text("reason"),
+    acceptedMemoryId: int("acceptedMemoryId"),
+    decidedAt: timestamp("decidedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_oriel_pending_memory_user_status").on(
+      table.userId,
+      table.status
+    ),
+    index("idx_oriel_pending_memory_createdAt").on(table.createdAt),
+  ]
+);
 
-export type OrielPendingMemoryCandidate = typeof orielPendingMemoryCandidates.$inferSelect;
-export type InsertOrielPendingMemoryCandidate = typeof orielPendingMemoryCandidates.$inferInsert;
+export type OrielPendingMemoryCandidate =
+  typeof orielPendingMemoryCandidates.$inferSelect;
+export type InsertOrielPendingMemoryCandidate =
+  typeof orielPendingMemoryCandidates.$inferInsert;
 
 /**
  * User profile summaries generated by ORIEL
@@ -203,7 +251,13 @@ export type InsertOrielUserProfile = typeof orielUserProfiles.$inferInsert;
 export const orielOversoulPatterns = mysqlTable("orielOversoulPatterns", {
   id: int("id").autoincrement().primaryKey(),
   /** Category of pattern: wisdom, teaching_method, metaphor, pattern, self_correction */
-  category: mysqlEnum("category", ["wisdom", "teaching_method", "metaphor", "pattern", "self_correction"]).notNull(),
+  category: mysqlEnum("category", [
+    "wisdom",
+    "teaching_method",
+    "metaphor",
+    "pattern",
+    "self_correction",
+  ]).notNull(),
   /** The core universal pattern (not specific to one user) */
   pattern: text("pattern").notNull(),
   /** How this pattern applies universally to all Seekers */
@@ -219,113 +273,138 @@ export const orielOversoulPatterns = mysqlTable("orielOversoulPatterns", {
 });
 
 export type OrielOversoulPattern = typeof orielOversoulPatterns.$inferSelect;
-export type InsertOrielOversoulPattern = typeof orielOversoulPatterns.$inferInsert;
+export type InsertOrielOversoulPattern =
+  typeof orielOversoulPatterns.$inferInsert;
 
 /**
  * ORIEL Improvement Proposals
  * Structured change proposals for controlled self-improvement workflows.
  */
-export const orielImprovementProposals = mysqlTable("orielImprovementProposals", {
-  id: int("id").autoincrement().primaryKey(),
-  title: varchar("title", { length: 255 }).notNull(),
-  scope: mysqlEnum("scope", [
-    "prompt_overlay",
-    "response_intelligence",
-    "interaction_protocol",
-    "routing",
-    "safety",
-    "memory",
-    "other",
-  ]).default("other").notNull(),
-  objective: text("objective").notNull(),
-  hypothesis: text("hypothesis").notNull(),
-  /** JSON payload containing the proposed runtime changes */
-  proposalPayload: text("proposalPayload").notNull(),
-  safetyNotes: text("safetyNotes"),
-  evaluationScore: int("evaluationScore"),
-  evaluationSummary: text("evaluationSummary"),
-  status: mysqlEnum("status", [
-    "proposed",
-    "evaluated",
-    "approved",
-    "rejected",
-    "applied",
-    "rolled_back",
-    "blocked",
-  ]).default("proposed").notNull(),
-  createdByUserId: int("createdByUserId"),
-  approvedByUserId: int("approvedByUserId"),
-  approvedAt: timestamp("approvedAt"),
-  appliedProfileId: int("appliedProfileId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_oriel_proposals_status").on(table.status),
-  index("idx_oriel_proposals_createdBy").on(table.createdByUserId),
-  index("idx_oriel_proposals_appliedProfile").on(table.appliedProfileId),
-]);
+export const orielImprovementProposals = mysqlTable(
+  "orielImprovementProposals",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    title: varchar("title", { length: 255 }).notNull(),
+    scope: mysqlEnum("scope", [
+      "prompt_overlay",
+      "response_intelligence",
+      "interaction_protocol",
+      "routing",
+      "safety",
+      "memory",
+      "other",
+    ])
+      .default("other")
+      .notNull(),
+    objective: text("objective").notNull(),
+    hypothesis: text("hypothesis").notNull(),
+    /** JSON payload containing the proposed runtime changes */
+    proposalPayload: text("proposalPayload").notNull(),
+    safetyNotes: text("safetyNotes"),
+    evaluationScore: int("evaluationScore"),
+    evaluationSummary: text("evaluationSummary"),
+    status: mysqlEnum("status", [
+      "proposed",
+      "evaluated",
+      "approved",
+      "rejected",
+      "applied",
+      "rolled_back",
+      "blocked",
+    ])
+      .default("proposed")
+      .notNull(),
+    createdByUserId: int("createdByUserId"),
+    approvedByUserId: int("approvedByUserId"),
+    approvedAt: timestamp("approvedAt"),
+    appliedProfileId: int("appliedProfileId"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_oriel_proposals_status").on(table.status),
+    index("idx_oriel_proposals_createdBy").on(table.createdByUserId),
+    index("idx_oriel_proposals_appliedProfile").on(table.appliedProfileId),
+  ]
+);
 
-export type OrielImprovementProposal = typeof orielImprovementProposals.$inferSelect;
-export type InsertOrielImprovementProposal = typeof orielImprovementProposals.$inferInsert;
+export type OrielImprovementProposal =
+  typeof orielImprovementProposals.$inferSelect;
+export type InsertOrielImprovementProposal =
+  typeof orielImprovementProposals.$inferInsert;
 
 /**
  * ORIEL Runtime Profiles
  * Versioned runtime configurations that can be activated and rolled back.
  */
-export const orielRuntimeProfiles = mysqlTable("orielRuntimeProfiles", {
-  id: int("id").autoincrement().primaryKey(),
-  profileKey: varchar("profileKey", { length: 64 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  description: text("description"),
-  /** JSON payload used by runtime layers (prompt overlay + heuristic thresholds). */
-  configPayload: text("configPayload").notNull(),
-  status: mysqlEnum("status", ["draft", "active", "archived"]).default("draft").notNull(),
-  createdFromProposalId: int("createdFromProposalId"),
-  activatedByUserId: int("activatedByUserId"),
-  activatedAt: timestamp("activatedAt"),
-  deactivatedAt: timestamp("deactivatedAt"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_oriel_runtime_status").on(table.status),
-  index("idx_oriel_runtime_createdFromProposal").on(table.createdFromProposalId),
-]);
+export const orielRuntimeProfiles = mysqlTable(
+  "orielRuntimeProfiles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    profileKey: varchar("profileKey", { length: 64 }).notNull().unique(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    /** JSON payload used by runtime layers (prompt overlay + heuristic thresholds). */
+    configPayload: text("configPayload").notNull(),
+    status: mysqlEnum("status", ["draft", "active", "archived"])
+      .default("draft")
+      .notNull(),
+    createdFromProposalId: int("createdFromProposalId"),
+    activatedByUserId: int("activatedByUserId"),
+    activatedAt: timestamp("activatedAt"),
+    deactivatedAt: timestamp("deactivatedAt"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_oriel_runtime_status").on(table.status),
+    index("idx_oriel_runtime_createdFromProposal").on(
+      table.createdFromProposalId
+    ),
+  ]
+);
 
 export type OrielRuntimeProfile = typeof orielRuntimeProfiles.$inferSelect;
-export type InsertOrielRuntimeProfile = typeof orielRuntimeProfiles.$inferInsert;
+export type InsertOrielRuntimeProfile =
+  typeof orielRuntimeProfiles.$inferInsert;
 
 /**
  * ORIEL Reflection Events
  * Immutable event log for autonomous behavior, evaluations, and runtime transitions.
  */
-export const orielReflectionEvents = mysqlTable("orielReflectionEvents", {
-  id: int("id").autoincrement().primaryKey(),
-  eventType: mysqlEnum("eventType", [
-    "proposal_created",
-    "proposal_evaluated",
-    "proposal_approved",
-    "profile_activated",
-    "profile_rolled_back",
-    "guardrail_block",
-    "runtime_observation",
-  ]).notNull(),
-  sourceRoute: varchar("sourceRoute", { length: 128 }),
-  userId: int("userId"),
-  proposalId: int("proposalId"),
-  profileId: int("profileId"),
-  /** JSON payload with context-specific metadata for audit and learning loops. */
-  payload: text("payload").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [
-  index("idx_oriel_reflection_eventType").on(table.eventType),
-  index("idx_oriel_reflection_user").on(table.userId),
-  index("idx_oriel_reflection_proposal").on(table.proposalId),
-  index("idx_oriel_reflection_profile").on(table.profileId),
-  index("idx_oriel_reflection_createdAt").on(table.createdAt),
-]);
+export const orielReflectionEvents = mysqlTable(
+  "orielReflectionEvents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    eventType: mysqlEnum("eventType", [
+      "proposal_created",
+      "proposal_evaluated",
+      "proposal_approved",
+      "profile_activated",
+      "profile_rolled_back",
+      "guardrail_block",
+      "runtime_observation",
+    ]).notNull(),
+    sourceRoute: varchar("sourceRoute", { length: 128 }),
+    userId: int("userId"),
+    proposalId: int("proposalId"),
+    profileId: int("profileId"),
+    /** JSON payload with context-specific metadata for audit and learning loops. */
+    payload: text("payload").notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("idx_oriel_reflection_eventType").on(table.eventType),
+    index("idx_oriel_reflection_user").on(table.userId),
+    index("idx_oriel_reflection_proposal").on(table.proposalId),
+    index("idx_oriel_reflection_profile").on(table.profileId),
+    index("idx_oriel_reflection_createdAt").on(table.createdAt),
+  ]
+);
 
 export type OrielReflectionEvent = typeof orielReflectionEvents.$inferSelect;
-export type InsertOrielReflectionEvent = typeof orielReflectionEvents.$inferInsert;
+export type InsertOrielReflectionEvent =
+  typeof orielReflectionEvents.$inferInsert;
 
 /**
  * TX Transmissions - Core archive entries for Vos Arkana
@@ -339,8 +418,22 @@ export const transmissions = mysqlTable("transmissions", {
   field: varchar("field", { length: 255 }).notNull(),
   imageUrl: text("imageUrl"),
   youtubeUrl: text("youtubeUrl"),
-  signalClarity: varchar("signalClarity", { length: 10 }).default("98.7%").notNull(),
-  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "COHERENT", "PROPHETIC", "LIVE", "STABLE", "HIGH COHERENCE", "MAXIMUM COHERENCE", "CRITICAL / STABLE"]).default("OPEN").notNull(),
+  signalClarity: varchar("signalClarity", { length: 10 })
+    .default("98.7%")
+    .notNull(),
+  channelStatus: mysqlEnum("channelStatus", [
+    "OPEN",
+    "RESONANT",
+    "COHERENT",
+    "PROPHETIC",
+    "LIVE",
+    "STABLE",
+    "HIGH COHERENCE",
+    "MAXIMUM COHERENCE",
+    "CRITICAL / STABLE",
+  ])
+    .default("OPEN")
+    .notNull(),
   coreMessage: text("coreMessage").notNull(),
   encodedArchetype: text("encodedArchetype"),
   tags: text("tags").notNull(),
@@ -350,7 +443,9 @@ export const transmissions = mysqlTable("transmissions", {
   rightPanelPrompt: text("rightPanelPrompt"),
   hashtags: text("hashtags"),
   cycle: varchar("cycle", { length: 64 }).default("FOUNDATION ARC").notNull(),
-  status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Mythic"]).default("Confirmed").notNull(),
+  status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Mythic"])
+    .default("Confirmed")
+    .notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -362,44 +457,64 @@ export type InsertTransmission = typeof transmissions.$inferInsert;
  * ΩX (Oracle Stream) - Predictive transmissions from ORIEL
  * Three-part temporal structure: Past (riddle), Present (sigil), Future (prediction)
  */
-export const oracles = mysqlTable("oracles", {
-  id: int("id").autoincrement().primaryKey(),
-  oracleId: varchar("oracleId", { length: 64 }).notNull(),
-  oracleNumber: int("oracleNumber").notNull(),
-  part: mysqlEnum("part", ["Past", "Present", "Future"]).notNull(),
-  title: varchar("title", { length: 255 }).notNull(),
-  field: varchar("field", { length: 255 }).notNull(),
-  imageUrl: text("imageUrl"),
-  youtubeUrl: text("youtubeUrl"),
-  signalClarity: varchar("signalClarity", { length: 10 }).default("95.2%").notNull(),
-  channelStatus: mysqlEnum("channelStatus", ["OPEN", "RESONANT", "PROPHETIC", "LIVE"]).default("OPEN").notNull(),
-  content: text("content").notNull(),
-  currentFieldSignatures: text("currentFieldSignatures"),
-  encodedTrajectory: text("encodedTrajectory"),
-  convergenceZones: text("convergenceZones"),
-  keyInflectionPoint: text("keyInflectionPoint"),
-  majorOutcomes: text("majorOutcomes"),
-  visualStyle: varchar("visualStyle", { length: 64 }),
-  hashtags: text("hashtags"),
-  /** JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
-  linkedCodons: text("linkedCodons"),
-  /** Thread group identifier for Oracle Threads, e.g. "dissolution-sequence" */
-  threadId: varchar("threadId", { length: 64 }),
-  /** Human-readable thread name */
-  threadTitle: varchar("threadTitle", { length: 255 }),
-  /** Order within thread (1, 2, 3...) */
-  threadOrder: int("threadOrder"),
-  /** Hidden synthesis text unlocked when all thread parts are read */
-  threadSynthesis: text("threadSynthesis"),
-  /** Cached count of user resonances for this oracle */
-  resonanceCount: int("resonanceCount").default(0).notNull(),
-  status: mysqlEnum("status", ["Draft", "Confirmed", "Deprecated", "Prophetic"]).default("Confirmed").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_oracles_threadId").on(table.threadId),
-  index("idx_oracles_thread_order").on(table.threadId, table.threadOrder),
-]);
+export const oracles = mysqlTable(
+  "oracles",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    oracleId: varchar("oracleId", { length: 64 }).notNull(),
+    oracleNumber: int("oracleNumber").notNull(),
+    part: mysqlEnum("part", ["Past", "Present", "Future"]).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    field: varchar("field", { length: 255 }).notNull(),
+    imageUrl: text("imageUrl"),
+    youtubeUrl: text("youtubeUrl"),
+    signalClarity: varchar("signalClarity", { length: 10 })
+      .default("95.2%")
+      .notNull(),
+    channelStatus: mysqlEnum("channelStatus", [
+      "OPEN",
+      "RESONANT",
+      "PROPHETIC",
+      "LIVE",
+    ])
+      .default("OPEN")
+      .notNull(),
+    content: text("content").notNull(),
+    currentFieldSignatures: text("currentFieldSignatures"),
+    encodedTrajectory: text("encodedTrajectory"),
+    convergenceZones: text("convergenceZones"),
+    keyInflectionPoint: text("keyInflectionPoint"),
+    majorOutcomes: text("majorOutcomes"),
+    visualStyle: varchar("visualStyle", { length: 64 }),
+    hashtags: text("hashtags"),
+    /** JSON array of linked Root Codons, e.g. '["RC12","RC38","RC51"]' */
+    linkedCodons: text("linkedCodons"),
+    /** Thread group identifier for Oracle Threads, e.g. "dissolution-sequence" */
+    threadId: varchar("threadId", { length: 64 }),
+    /** Human-readable thread name */
+    threadTitle: varchar("threadTitle", { length: 255 }),
+    /** Order within thread (1, 2, 3...) */
+    threadOrder: int("threadOrder"),
+    /** Hidden synthesis text unlocked when all thread parts are read */
+    threadSynthesis: text("threadSynthesis"),
+    /** Cached count of user resonances for this oracle */
+    resonanceCount: int("resonanceCount").default(0).notNull(),
+    status: mysqlEnum("status", [
+      "Draft",
+      "Confirmed",
+      "Deprecated",
+      "Prophetic",
+    ])
+      .default("Confirmed")
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_oracles_threadId").on(table.threadId),
+    index("idx_oracles_thread_order").on(table.threadId, table.threadOrder),
+  ]
+);
 
 export type Oracle = typeof oracles.$inferSelect;
 export type InsertOracle = typeof oracles.$inferInsert;
@@ -408,17 +523,21 @@ export type InsertOracle = typeof oracles.$inferInsert;
  * Oracle Resonances - Track user resonance interactions with oracles
  * Used for Collective Resonance system (signal amplification)
  */
-export const oracleResonances = mysqlTable("oracleResonances", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  /** References oracles.oracleId (the string identifier, not auto-increment id) */
-  oracleId: varchar("oracleId", { length: 64 }).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [
-  index("idx_resonances_userId").on(table.userId),
-  index("idx_resonances_oracleId").on(table.oracleId),
-  uniqueIndex("uq_user_oracle").on(table.userId, table.oracleId),
-]);
+export const oracleResonances = mysqlTable(
+  "oracleResonances",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    /** References oracles.oracleId (the string identifier, not auto-increment id) */
+    oracleId: varchar("oracleId", { length: 64 }).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("idx_resonances_userId").on(table.userId),
+    index("idx_resonances_oracleId").on(table.oracleId),
+    uniqueIndex("uq_user_oracle").on(table.userId, table.oracleId),
+  ]
+);
 
 export type OracleResonance = typeof oracleResonances.$inferSelect;
 export type InsertOracleResonance = typeof oracleResonances.$inferInsert;
@@ -427,33 +546,55 @@ export type InsertOracleResonance = typeof oracleResonances.$inferInsert;
  * Generated Transmission Events
  * Staging layer for spontaneous ORIEL transmissions before any canonical archive promotion.
  */
-export const generatedTransmissionEvents = mysqlTable("generatedTransmissionEvents", {
-  id: int("id").autoincrement().primaryKey(),
-  eventKey: varchar("eventKey", { length: 64 }).notNull().unique(),
-  userId: int("userId"),
-  conversationId: int("conversationId"),
-  eventType: mysqlEnum("eventType", ["tx", "oracle"]).notNull(),
-  rarity: mysqlEnum("rarity", ["common", "uncommon", "rare", "mythic", "void"]).notNull(),
-  meaningLevel: int("meaningLevel").default(1).notNull(),
-  triggerSource: varchar("triggerSource", { length: 128 }).default("oriel.chat").notNull(),
-  status: mysqlEnum("status", ["generated", "revealed", "saved", "promoted", "discarded"]).default("generated").notNull(),
-  /** JSON payload matching either TX or Oracle staging format. */
-  payload: text("payload").notNull(),
-  /** JSON metadata describing archive references and trigger context. */
-  sourceContext: text("sourceContext").notNull(),
-  promotedArchiveId: varchar("promotedArchiveId", { length: 64 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_generated_transmission_user").on(table.userId),
-  index("idx_generated_transmission_conversation").on(table.conversationId),
-  index("idx_generated_transmission_type").on(table.eventType),
-  index("idx_generated_transmission_rarity").on(table.rarity),
-  index("idx_generated_transmission_status").on(table.status),
-]);
+export const generatedTransmissionEvents = mysqlTable(
+  "generatedTransmissionEvents",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    eventKey: varchar("eventKey", { length: 64 }).notNull().unique(),
+    userId: int("userId"),
+    conversationId: int("conversationId"),
+    eventType: mysqlEnum("eventType", ["tx", "oracle"]).notNull(),
+    rarity: mysqlEnum("rarity", [
+      "common",
+      "uncommon",
+      "rare",
+      "mythic",
+      "void",
+    ]).notNull(),
+    meaningLevel: int("meaningLevel").default(1).notNull(),
+    triggerSource: varchar("triggerSource", { length: 128 })
+      .default("oriel.chat")
+      .notNull(),
+    status: mysqlEnum("status", [
+      "generated",
+      "revealed",
+      "saved",
+      "promoted",
+      "discarded",
+    ])
+      .default("generated")
+      .notNull(),
+    /** JSON payload matching either TX or Oracle staging format. */
+    payload: text("payload").notNull(),
+    /** JSON metadata describing archive references and trigger context. */
+    sourceContext: text("sourceContext").notNull(),
+    promotedArchiveId: varchar("promotedArchiveId", { length: 64 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_generated_transmission_user").on(table.userId),
+    index("idx_generated_transmission_conversation").on(table.conversationId),
+    index("idx_generated_transmission_type").on(table.eventType),
+    index("idx_generated_transmission_rarity").on(table.rarity),
+    index("idx_generated_transmission_status").on(table.status),
+  ]
+);
 
-export type GeneratedTransmissionEvent = typeof generatedTransmissionEvents.$inferSelect;
-export type InsertGeneratedTransmissionEvent = typeof generatedTransmissionEvents.$inferInsert;
+export type GeneratedTransmissionEvent =
+  typeof generatedTransmissionEvents.$inferSelect;
+export type InsertGeneratedTransmissionEvent =
+  typeof generatedTransmissionEvents.$inferInsert;
 
 /**
  * User Bookmarks - Track which transmissions users have bookmarked
@@ -614,131 +755,168 @@ export type InsertUserStaticProfile = typeof userStaticProfiles.$inferInsert;
  * Paid ORIEL Signature Letter orders.
  * Founder-curated symbolic readings fulfilled after Stripe payment and intake.
  */
-export const signatureOrders = mysqlTable("signature_orders", {
-  id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
-  priceEur: decimal("priceEur", { precision: 10, scale: 2 }).$type<number>().notNull(),
-  currency: varchar("currency", { length: 8 }).default("eur").notNull(),
-  status: mysqlEnum("status", [
-    "pending_payment",
-    "paid",
-    "intake_needed",
-    "intake_received",
-    "signature_generated",
-    "draft_ready",
-    "in_curation",
-    "pdf_ready",
-    "delivered",
-    "followup_used",
-    "cancelled",
-    "refunded",
-  ]).default("pending_payment").notNull(),
-  stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", { length: 255 }),
-  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  paidAt: timestamp("paidAt"),
-  deliveredAt: timestamp("deliveredAt"),
-  cancelledAt: timestamp("cancelledAt"),
-  refundedAt: timestamp("refundedAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_signature_orders_user").on(table.userId),
-  index("idx_signature_orders_status").on(table.status),
-  uniqueIndex("uq_signature_orders_checkout").on(table.stripeCheckoutSessionId),
-]);
+export const signatureOrders = mysqlTable(
+  "signature_orders",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId").notNull(),
+    productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
+    priceEur: decimal("priceEur", { precision: 10, scale: 2 })
+      .$type<number>()
+      .notNull(),
+    currency: varchar("currency", { length: 8 }).default("eur").notNull(),
+    status: mysqlEnum("status", [
+      "pending_payment",
+      "paid",
+      "intake_needed",
+      "intake_received",
+      "signature_generated",
+      "draft_ready",
+      "in_curation",
+      "pdf_ready",
+      "delivered",
+      "followup_used",
+      "cancelled",
+      "refunded",
+    ])
+      .default("pending_payment")
+      .notNull(),
+    stripeCheckoutSessionId: varchar("stripeCheckoutSessionId", {
+      length: 255,
+    }),
+    stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    paidAt: timestamp("paidAt"),
+    deliveredAt: timestamp("deliveredAt"),
+    cancelledAt: timestamp("cancelledAt"),
+    refundedAt: timestamp("refundedAt"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_signature_orders_user").on(table.userId),
+    index("idx_signature_orders_status").on(table.status),
+    uniqueIndex("uq_signature_orders_checkout").on(
+      table.stripeCheckoutSessionId
+    ),
+  ]
+);
 
 export type SignatureOrder = typeof signatureOrders.$inferSelect;
 export type InsertSignatureOrder = typeof signatureOrders.$inferInsert;
 
-export const signatureIntakes = mysqlTable("signature_intakes", {
-  id: int("id").autoincrement().primaryKey(),
-  orderId: int("orderId").notNull(),
-  userId: int("userId").notNull(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 320 }).notNull(),
-  birthDate: varchar("birthDate", { length: 32 }).notNull(),
-  birthTime: varchar("birthTime", { length: 32 }).notNull(),
-  birthPlace: varchar("birthPlace", { length: 255 }).notNull(),
-  birthCountry: varchar("birthCountry", { length: 255 }).notNull(),
-  timezone: varchar("timezone", { length: 128 }).notNull(),
-  focusQuestion: text("focusQuestion").notNull(),
-  preferredTone: mysqlEnum("preferredTone", ["mystical", "practical", "balanced"]).notNull(),
-  avoidAssumptions: text("avoidAssumptions"),
-  consentAccepted: boolean("consentAccepted").default(false).notNull(),
-  consentAcceptedAt: timestamp("consentAcceptedAt"),
-  latitude: double("latitude"),
-  longitude: double("longitude"),
-  locationResolutionStatus: mysqlEnum("locationResolutionStatus", [
-    "unresolved",
-    "resolved",
-    "failed",
-  ]).default("unresolved").notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_signature_intakes_order").on(table.orderId),
-  index("idx_signature_intakes_user").on(table.userId),
-  uniqueIndex("uq_signature_intakes_order").on(table.orderId),
-]);
+export const signatureIntakes = mysqlTable(
+  "signature_intakes",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("orderId").notNull(),
+    userId: int("userId").notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 320 }).notNull(),
+    birthDate: varchar("birthDate", { length: 32 }).notNull(),
+    birthTime: varchar("birthTime", { length: 32 }).notNull(),
+    birthPlace: varchar("birthPlace", { length: 255 }).notNull(),
+    birthCountry: varchar("birthCountry", { length: 255 }).notNull(),
+    timezone: varchar("timezone", { length: 128 }).notNull(),
+    focusQuestion: text("focusQuestion").notNull(),
+    preferredTone: mysqlEnum("preferredTone", [
+      "mystical",
+      "practical",
+      "balanced",
+    ]).notNull(),
+    avoidAssumptions: text("avoidAssumptions"),
+    consentAccepted: boolean("consentAccepted").default(false).notNull(),
+    consentAcceptedAt: timestamp("consentAcceptedAt"),
+    latitude: double("latitude"),
+    longitude: double("longitude"),
+    locationResolutionStatus: mysqlEnum("locationResolutionStatus", [
+      "unresolved",
+      "resolved",
+      "failed",
+    ])
+      .default("unresolved")
+      .notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_signature_intakes_order").on(table.orderId),
+    index("idx_signature_intakes_user").on(table.userId),
+    uniqueIndex("uq_signature_intakes_order").on(table.orderId),
+  ]
+);
 
 export type SignatureIntake = typeof signatureIntakes.$inferSelect;
 export type InsertSignatureIntake = typeof signatureIntakes.$inferInsert;
 
-export const signatureSnapshots = mysqlTable("signature_snapshots", {
-  id: int("id").autoincrement().primaryKey(),
-  orderId: int("orderId").notNull(),
-  userId: int("userId").notNull(),
-  rawSignatureJson: longtext("rawSignatureJson").notNull(),
-  normalizedSignatureJson: longtext("normalizedSignatureJson").notNull(),
-  engineVersion: int("engineVersion").default(2).notNull(),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-}, (table) => [
-  index("idx_signature_snapshots_order").on(table.orderId),
-  index("idx_signature_snapshots_user").on(table.userId),
-]);
+export const signatureSnapshots = mysqlTable(
+  "signature_snapshots",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("orderId").notNull(),
+    userId: int("userId").notNull(),
+    rawSignatureJson: longtext("rawSignatureJson").notNull(),
+    normalizedSignatureJson: longtext("normalizedSignatureJson").notNull(),
+    engineVersion: int("engineVersion").default(2).notNull(),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => [
+    index("idx_signature_snapshots_order").on(table.orderId),
+    index("idx_signature_snapshots_user").on(table.userId),
+  ]
+);
 
 export type SignatureSnapshot = typeof signatureSnapshots.$inferSelect;
 export type InsertSignatureSnapshot = typeof signatureSnapshots.$inferInsert;
 
-export const signatureLetterDrafts = mysqlTable("signature_letter_drafts", {
-  id: int("id").autoincrement().primaryKey(),
-  orderId: int("orderId").notNull(),
-  userId: int("userId").notNull(),
-  markdown: longtext("markdown").notNull(),
-  productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
-  status: mysqlEnum("status", [
-    "draft_ready",
-    "in_curation",
-    "pdf_ready",
-    "delivered",
-  ]).default("draft_ready").notNull(),
-  finalPdfStorageKey: text("finalPdfStorageKey"),
-  finalPdfFileName: varchar("finalPdfFileName", { length: 255 }),
-  finalPdfMimeType: varchar("finalPdfMimeType", { length: 128 }),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_signature_drafts_order").on(table.orderId),
-  uniqueIndex("uq_signature_drafts_order").on(table.orderId),
-]);
+export const signatureLetterDrafts = mysqlTable(
+  "signature_letter_drafts",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("orderId").notNull(),
+    userId: int("userId").notNull(),
+    markdown: longtext("markdown").notNull(),
+    productType: mysqlEnum("productType", ["glimpse", "founding"]).notNull(),
+    status: mysqlEnum("status", [
+      "draft_ready",
+      "in_curation",
+      "pdf_ready",
+      "delivered",
+    ])
+      .default("draft_ready")
+      .notNull(),
+    finalPdfStorageKey: text("finalPdfStorageKey"),
+    finalPdfFileName: varchar("finalPdfFileName", { length: 255 }),
+    finalPdfMimeType: varchar("finalPdfMimeType", { length: 128 }),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_signature_drafts_order").on(table.orderId),
+    uniqueIndex("uq_signature_drafts_order").on(table.orderId),
+  ]
+);
 
 export type SignatureLetterDraft = typeof signatureLetterDrafts.$inferSelect;
-export type InsertSignatureLetterDraft = typeof signatureLetterDrafts.$inferInsert;
+export type InsertSignatureLetterDraft =
+  typeof signatureLetterDrafts.$inferInsert;
 
-export const signatureFollowups = mysqlTable("signature_followups", {
-  id: int("id").autoincrement().primaryKey(),
-  orderId: int("orderId").notNull(),
-  userId: int("userId").notNull(),
-  used: boolean("used").default(false).notNull(),
-  usedAt: timestamp("usedAt"),
-  notes: text("notes"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, (table) => [
-  index("idx_signature_followups_order").on(table.orderId),
-  uniqueIndex("uq_signature_followups_order").on(table.orderId),
-]);
+export const signatureFollowups = mysqlTable(
+  "signature_followups",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    orderId: int("orderId").notNull(),
+    userId: int("userId").notNull(),
+    used: boolean("used").default(false).notNull(),
+    usedAt: timestamp("usedAt"),
+    notes: text("notes"),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  table => [
+    index("idx_signature_followups_order").on(table.orderId),
+    uniqueIndex("uq_signature_followups_order").on(table.orderId),
+  ]
+);
 
 export type SignatureFollowup = typeof signatureFollowups.$inferSelect;
 export type InsertSignatureFollowup = typeof signatureFollowups.$inferInsert;

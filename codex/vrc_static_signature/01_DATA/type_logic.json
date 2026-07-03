@@ -1,0 +1,32 @@
+{
+  "logic_order": [
+    {
+      "step": 1,
+      "type": "REFLECTOR",
+      "role_name": "The Mirror",
+      "condition": "All 9 centers are open"
+    },
+    {
+      "step": 2,
+      "type": "RESONATOR",
+      "role_name": "Generator",
+      "condition": "Sacral Center is defined",
+      "subcheck": {
+        "sub_type": "Manifesting Resonator",
+        "condition": "Any motor (Sacral, Root, Solar Plexus, Heart) is connected to Throat Center"
+      }
+    },
+    {
+      "step": 3,
+      "type": "CATALYST",
+      "role_name": "Manifestor",
+      "condition": "Sacral Center is open AND at least one motor (Root, Solar Plexus, Heart) is connected to Throat Center"
+    },
+    {
+      "step": 4,
+      "type": "HARMONIZER",
+      "role_name": "Projector",
+      "condition": "Sacral Center is open AND Throat Center is not connected to any motor"
+    }
+  ]
+}

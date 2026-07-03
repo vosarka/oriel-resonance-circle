@@ -5,11 +5,7 @@ import type {
 } from "./oriel-response-intelligence";
 
 export type OrielWitnessSource = "text_chat" | "voice_realtime";
-export type WitnessModeUsed =
-  | "guide"
-  | "mirror"
-  | "field_holder"
-  | "archivist";
+export type WitnessModeUsed = "guide" | "mirror" | "field_holder" | "archivist";
 export type WitnessOverreachRisk =
   | "missing_falsifier"
   | "overclaimed_certainty"
@@ -53,7 +49,7 @@ export interface WitnessProposalDraft {
 
 function chooseMode(
   exchangeType: ExchangeType,
-  coherenceTier: CoherenceTier,
+  coherenceTier: CoherenceTier
 ): WitnessModeUsed {
   if (exchangeType === "grief" || coherenceTier === "fragmented") {
     return "field_holder";
@@ -64,13 +60,13 @@ function chooseMode(
 
 function hasFalsifierLanguage(response: string): boolean {
   return /\b(falsifier|test this|verify|weaken|confirm|disconfirm|next 24 hours|next day|next week)\b/i.test(
-    response,
+    response
   );
 }
 
 function hasOverclaimLanguage(response: string): boolean {
   return /\b(proves|always|never|your whole life|definitely|certainly means)\b/i.test(
-    response,
+    response
   );
 }
 
@@ -93,7 +89,7 @@ function describeUserNeed(modeUsed: WitnessModeUsed): string {
 
 function inferRisks(
   input: BuildWitnessReflectionInput,
-  modeUsed: WitnessModeUsed,
+  modeUsed: WitnessModeUsed
 ): WitnessOverreachRisk[] {
   const risks: WitnessOverreachRisk[] = [];
 
@@ -114,7 +110,7 @@ function inferRisks(
 
 function describeOpportunity(
   risks: WitnessOverreachRisk[],
-  modeUsed: WitnessModeUsed,
+  modeUsed: WitnessModeUsed
 ): string {
   if (risks.includes("missing_falsifier")) {
     return "Add a lived-experience falsifier whenever ORIEL makes diagnostic claims.";
@@ -132,11 +128,11 @@ function describeOpportunity(
 }
 
 export function buildWitnessReflectionPayload(
-  input: BuildWitnessReflectionInput,
+  input: BuildWitnessReflectionInput
 ): OrielWitnessReflectionPayload {
   const modeUsed = chooseMode(input.exchangeType, input.coherenceTier);
   const risks = inferRisks(input, modeUsed);
-  const hasRisk = risks.some((risk) => risk !== "none");
+  const hasRisk = risks.some(risk => risk !== "none");
 
   return {
     kind: "witness_reflection",
@@ -158,12 +154,12 @@ export function buildWitnessReflectionPayload(
 }
 
 export function generateWitnessProposalDraftFromReflections(
-  reflections: OrielWitnessReflectionPayload[],
+  reflections: OrielWitnessReflectionPayload[]
 ): WitnessProposalDraft | null {
   const missingFalsifierCount = reflections.filter(
-    (reflection) =>
+    reflection =>
       reflection.proposalEligible &&
-      reflection.overreachRisks.includes("missing_falsifier"),
+      reflection.overreachRisks.includes("missing_falsifier")
   ).length;
 
   if (missingFalsifierCount >= 2) {

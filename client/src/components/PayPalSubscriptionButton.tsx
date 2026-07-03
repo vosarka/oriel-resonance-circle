@@ -25,7 +25,8 @@ export default function PayPalSubscriptionButton({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const updateSubscriptionMutation = trpc.profile.updateSubscription.useMutation();
+  const updateSubscriptionMutation =
+    trpc.profile.updateSubscription.useMutation();
 
   useEffect(() => {
     // Load PayPal SDK dynamically only when this component mounts
@@ -60,7 +61,8 @@ export default function PayPalSubscriptionButton({
           }
         };
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error";
         setError(errorMessage);
         setIsLoading(false);
         onSubscriptionError?.(errorMessage);
@@ -78,31 +80,43 @@ export default function PayPalSubscriptionButton({
           // Hosted button ID for monthly subscription
           const hostedButtonId = "3CUYAWGL4XBEA";
 
-          await window.paypal!.HostedButtons!.render(`#${containerRef.current!.id}`);
+          await window.paypal!.HostedButtons!.render(
+            `#${containerRef.current!.id}`
+          );
 
           // Listen for subscription events
           if (window.paypal) {
             // Store reference to handle subscription completion
-            (window as any).onPayPalSubscriptionSuccess = async (subscriptionId: string) => {
+            (window as any).onPayPalSubscriptionSuccess = async (
+              subscriptionId: string
+            ) => {
               try {
                 // Update user subscription in database
                 await updateSubscriptionMutation.mutateAsync({
                   subscriptionStatus: "active",
                   paypalSubscriptionId: subscriptionId,
                   subscriptionStartDate: new Date(),
-                  subscriptionRenewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+                  subscriptionRenewalDate: new Date(
+                    Date.now() + 30 * 24 * 60 * 60 * 1000
+                  ), // 30 days from now
                 });
 
                 onSubscriptionSuccess?.();
               } catch (err) {
-                const errorMessage = err instanceof Error ? err.message : "Failed to update subscription";
+                const errorMessage =
+                  err instanceof Error
+                    ? err.message
+                    : "Failed to update subscription";
                 setError(errorMessage);
                 onSubscriptionError?.(errorMessage);
               }
             };
           }
         } catch (err) {
-          const errorMessage = err instanceof Error ? err.message : "Failed to render PayPal button";
+          const errorMessage =
+            err instanceof Error
+              ? err.message
+              : "Failed to render PayPal button";
           setError(errorMessage);
           onSubscriptionError?.(errorMessage);
         }
@@ -110,7 +124,12 @@ export default function PayPalSubscriptionButton({
 
       renderButton();
     }
-  }, [isLoading, updateSubscriptionMutation, onSubscriptionSuccess, onSubscriptionError]);
+  }, [
+    isLoading,
+    updateSubscriptionMutation,
+    onSubscriptionSuccess,
+    onSubscriptionError,
+  ]);
 
   if (error) {
     return (

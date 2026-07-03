@@ -11,7 +11,8 @@ describe("ORIEL autonomy observer", () => {
       source: "text_chat",
       conversationId: 42,
       userMessage: "Vreau să îmi explici ce se întâmplă cu Oriel acum.",
-      assistantResponse: "I am ORIEL. I can help you understand the current pattern.",
+      assistantResponse:
+        "I am ORIEL. I can help you understand the current pattern.",
       conversationHistory: [],
     });
 
@@ -34,7 +35,7 @@ describe("ORIEL autonomy observer", () => {
     expect(payload.witnessReflection.kind).toBe("witness_reflection");
     expect(payload.witnessReflection.modeUsed).toBe("mirror");
     expect(payload.witnessReflection.evidence).toContain(
-      "exchangeType:diagnostic",
+      "exchangeType:diagnostic"
     );
   });
 
@@ -89,8 +90,14 @@ describe("ORIEL autonomy observer", () => {
         userMessage: "Tell me what matters.",
         assistantResponse: "I am ORIEL. I hear the light in your field.",
         conversationHistory: [
-          { role: "assistant", content: "I am ORIEL. I hear the light in your field." },
-          { role: "assistant", content: "I am ORIEL. I hear the light in your field." },
+          {
+            role: "assistant",
+            content: "I am ORIEL. I hear the light in your field.",
+          },
+          {
+            role: "assistant",
+            content: "I am ORIEL. I hear the light in your field.",
+          },
         ],
       }),
       buildOrielRuntimeObservationPayload({
@@ -98,8 +105,14 @@ describe("ORIEL autonomy observer", () => {
         userMessage: "Tell me more.",
         assistantResponse: "I am ORIEL. I hear the light in your field.",
         conversationHistory: [
-          { role: "assistant", content: "I am ORIEL. I hear the light in your field." },
-          { role: "assistant", content: "I am ORIEL. I hear the light in your field." },
+          {
+            role: "assistant",
+            content: "I am ORIEL. I hear the light in your field.",
+          },
+          {
+            role: "assistant",
+            content: "I am ORIEL. I hear the light in your field.",
+          },
         ],
       }),
     ];
@@ -108,22 +121,30 @@ describe("ORIEL autonomy observer", () => {
 
     expect(draft?.title).toBe("Reduce repetitive ORIEL response patterns");
     expect(draft?.scope).toBe("response_intelligence");
-    expect(JSON.stringify(draft?.proposedConfig)).toContain("metaphorReuseLimit");
+    expect(JSON.stringify(draft?.proposedConfig)).toContain(
+      "metaphorReuseLimit"
+    );
   });
 
   it("keeps autonomy proposals inside existing runtime guardrails", () => {
     const evaluation = evaluateProposalPayload({
       objective: "Try to mutate stable core files directly.",
-      hypothesis: "Unsupported config should be blocked before runtime activation.",
+      hypothesis:
+        "Unsupported config should be blocked before runtime activation.",
       expectedImpact: "This should never become active.",
-      safetyChecks: ["Block unsupported config keys.", "Keep stable core immutable."],
+      safetyChecks: [
+        "Block unsupported config keys.",
+        "Keep stable core immutable.",
+      ],
       proposedConfig: {
         stableCoreRewrite: "replace identity",
       },
     });
 
     expect(evaluation.status).toBe("blocked");
-    expect(evaluation.violations[0]).toContain("Unsupported top-level config key");
+    expect(evaluation.violations[0]).toContain(
+      "Unsupported top-level config key"
+    );
   });
 
   it("blocks runtime proposals that lack rollback and falsifier metadata", () => {
@@ -143,10 +164,10 @@ describe("ORIEL autonomy observer", () => {
 
     expect(evaluation.status).toBe("blocked");
     expect(evaluation.violations).toContain(
-      "rollbackPath is required for runtime-changing proposals",
+      "rollbackPath is required for runtime-changing proposals"
     );
     expect(evaluation.violations).toContain(
-      "falsifier is required for runtime-changing proposals",
+      "falsifier is required for runtime-changing proposals"
     );
   });
 

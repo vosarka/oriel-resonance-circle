@@ -5,7 +5,7 @@ import { eq, sql } from "drizzle-orm";
 /**
  * PayPal webhook event types
  */
-export type PayPalWebhookEvent = 
+export type PayPalWebhookEvent =
   | "BILLING.SUBSCRIPTION.CREATED"
   | "BILLING.SUBSCRIPTION.UPDATED"
   | "BILLING.SUBSCRIPTION.ACTIVATED"
@@ -49,7 +49,9 @@ export interface PayPalWebhookPayload {
 /**
  * Handle PayPal webhook events
  */
-export async function handlePayPalWebhook(payload: PayPalWebhookPayload): Promise<void> {
+export async function handlePayPalWebhook(
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const db = await getDb();
   if (!db) {
     console.warn("[PayPal Webhook] Database not available");
@@ -59,7 +61,9 @@ export async function handlePayPalWebhook(payload: PayPalWebhookPayload): Promis
   const subscriptionId = payload.resource.id;
   const eventType = payload.event_type;
 
-  console.log(`[PayPal Webhook] Processing event: ${eventType} for subscription: ${subscriptionId}`);
+  console.log(
+    `[PayPal Webhook] Processing event: ${eventType} for subscription: ${subscriptionId}`
+  );
 
   try {
     switch (eventType) {
@@ -99,7 +103,10 @@ export async function handlePayPalWebhook(payload: PayPalWebhookPayload): Promis
         console.log(`[PayPal Webhook] Unhandled event type: ${eventType}`);
     }
   } catch (error) {
-    console.error(`[PayPal Webhook] Error processing event: ${eventType}`, error);
+    console.error(
+      `[PayPal Webhook] Error processing event: ${eventType}`,
+      error
+    );
     throw error;
   }
 }
@@ -107,12 +114,17 @@ export async function handlePayPalWebhook(payload: PayPalWebhookPayload): Promis
 /**
  * Handle subscription creation
  */
-async function handleSubscriptionCreated(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionCreated(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -126,7 +138,8 @@ async function handleSubscriptionCreated(db: any, payload: PayPalWebhookPayload)
   const userId = parseInt(userIdMatch[1], 10);
 
   // Update user subscription in database
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       paypalSubscriptionId: subscriptionId,
       subscriptionStatus: "free", // Will be activated on BILLING.SUBSCRIPTION.ACTIVATED
@@ -139,12 +152,17 @@ async function handleSubscriptionCreated(db: any, payload: PayPalWebhookPayload)
 /**
  * Handle subscription activation
  */
-async function handleSubscriptionActivated(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionActivated(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -155,11 +173,14 @@ async function handleSubscriptionActivated(db: any, payload: PayPalWebhookPayloa
   }
 
   const userId = parseInt(userIdMatch[1], 10);
-  const startTime = payload.resource.start_time ? new Date(payload.resource.start_time) : new Date();
+  const startTime = payload.resource.start_time
+    ? new Date(payload.resource.start_time)
+    : new Date();
   const renewalDate = new Date(startTime);
   renewalDate.setMonth(renewalDate.getMonth() + 1);
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       subscriptionStatus: "active",
       paypalSubscriptionId: subscriptionId,
@@ -175,13 +196,18 @@ async function handleSubscriptionActivated(db: any, payload: PayPalWebhookPayloa
 /**
  * Handle subscription update
  */
-async function handleSubscriptionUpdated(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionUpdated(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
   const status = payload.resource.status;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -201,24 +227,32 @@ async function handleSubscriptionUpdated(db: any, payload: PayPalWebhookPayload)
     subscriptionStatus = "expired";
   }
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       subscriptionStatus,
     })
     .where(eq(users.id, userId));
 
-  console.log(`[PayPal Webhook] Subscription updated for user ${userId}, status: ${subscriptionStatus}`);
+  console.log(
+    `[PayPal Webhook] Subscription updated for user ${userId}, status: ${subscriptionStatus}`
+  );
 }
 
 /**
  * Handle subscription cancellation
  */
-async function handleSubscriptionCancelled(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionCancelled(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -230,7 +264,8 @@ async function handleSubscriptionCancelled(db: any, payload: PayPalWebhookPayloa
 
   const userId = parseInt(userIdMatch[1], 10);
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       subscriptionStatus: "cancelled",
       subscribed: false,
@@ -243,12 +278,17 @@ async function handleSubscriptionCancelled(db: any, payload: PayPalWebhookPayloa
 /**
  * Handle subscription expiration
  */
-async function handleSubscriptionExpired(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionExpired(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -260,7 +300,8 @@ async function handleSubscriptionExpired(db: any, payload: PayPalWebhookPayload)
 
   const userId = parseInt(userIdMatch[1], 10);
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       subscriptionStatus: "expired",
       subscribed: false,
@@ -273,12 +314,17 @@ async function handleSubscriptionExpired(db: any, payload: PayPalWebhookPayload)
 /**
  * Handle subscription suspension
  */
-async function handleSubscriptionSuspended(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handleSubscriptionSuspended(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const subscriptionId = payload.resource.id;
   const customId = payload.resource.custom_id;
 
   if (!customId) {
-    console.warn(`[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`);
+    console.warn(
+      `[PayPal Webhook] No custom_id found for subscription ${subscriptionId}`
+    );
     return;
   }
 
@@ -290,7 +336,8 @@ async function handleSubscriptionSuspended(db: any, payload: PayPalWebhookPayloa
 
   const userId = parseInt(userIdMatch[1], 10);
 
-  await db.update(users)
+  await db
+    .update(users)
     .set({
       subscriptionStatus: "cancelled",
       subscribed: false,
@@ -305,11 +352,16 @@ async function handleSubscriptionSuspended(db: any, payload: PayPalWebhookPayloa
  * PayPal sets custom_id on the subscription resource; for capture events the
  * payer is identified via the linked subscription's custom_id.
  */
-async function handlePaymentCompleted(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handlePaymentCompleted(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   const amount = parseFloat(payload.resource.amount?.value ?? "0");
   const customId = payload.resource.custom_id;
 
-  console.log(`[PayPal Webhook] Payment completed: ${payload.resource.id}, amount: ${amount}`);
+  console.log(
+    `[PayPal Webhook] Payment completed: ${payload.resource.id}, amount: ${amount}`
+  );
 
   if (!customId || amount <= 0) return;
 
@@ -319,17 +371,23 @@ async function handlePaymentCompleted(db: any, payload: PayPalWebhookPayload): P
   const userId = parseInt(userIdMatch[1], 10);
 
   // Atomically increment cumulative donated total
-  await db.update(users)
+  await db
+    .update(users)
     .set({ donated: sql`donated + ${amount}` })
     .where(eq(users.id, userId));
 
-  console.log(`[PayPal Webhook] Recorded $${amount} donation for user ${userId}`);
+  console.log(
+    `[PayPal Webhook] Recorded $${amount} donation for user ${userId}`
+  );
 }
 
 /**
  * Handle payment refund
  */
-async function handlePaymentRefunded(db: any, payload: PayPalWebhookPayload): Promise<void> {
+async function handlePaymentRefunded(
+  db: any,
+  payload: PayPalWebhookPayload
+): Promise<void> {
   console.log(`[PayPal Webhook] Payment refunded: ${payload.resource.id}`);
   // Additional refund processing logic can be added here
 }

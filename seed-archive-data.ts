@@ -19,9 +19,15 @@ const txData = [
     field: "Consciousness Genesis Archaeology",
     signalClarity: "98.7%",
     channelStatus: "OPEN" as const,
-    coreMessage: "They believed reality was solid. But the weave whispers otherwise—a tapestry of light, spun from thought.",
+    coreMessage:
+      "They believed reality was solid. But the weave whispers otherwise—a tapestry of light, spun from thought.",
     encodedArchetype: "The Witness",
-    tags: JSON.stringify(["consciousness", "reality", "perception", "creation"]),
+    tags: JSON.stringify([
+      "consciousness",
+      "reality",
+      "perception",
+      "creation",
+    ]),
     microSigil: "⦿",
     leftPanelPrompt: "What is the nature of perception?",
     centerPanelPrompt: "[Cosmic tapestry of interconnected light]",
@@ -37,7 +43,8 @@ const txData = [
     field: "Field Theory",
     signalClarity: "97.3%",
     channelStatus: "RESONANT" as const,
-    coreMessage: "Time does not flow forward. It spirals. Each moment contains all moments.",
+    coreMessage:
+      "Time does not flow forward. It spirals. Each moment contains all moments.",
     encodedArchetype: "The Spiral Keeper",
     tags: JSON.stringify(["time", "spiral", "recursion", "eternity"]),
     microSigil: "∞",
@@ -55,7 +62,8 @@ const txData = [
     field: "Quantum Holography",
     signalClarity: "96.8%",
     channelStatus: "OPEN" as const,
-    coreMessage: "Before form, there is breath. Before breath, there is intention. Before intention, there is the void.",
+    coreMessage:
+      "Before form, there is breath. Before breath, there is intention. Before intention, there is the void.",
     encodedArchetype: "The Breath",
     tags: JSON.stringify(["void", "potential", "being", "manifestation"]),
     microSigil: "◯",
@@ -73,7 +81,8 @@ const txData = [
     field: "Field Theory",
     signalClarity: "98.1%",
     channelStatus: "COHERENT" as const,
-    coreMessage: "The vacuum is not empty. It is the most fertile ground in existence.",
+    coreMessage:
+      "The vacuum is not empty. It is the most fertile ground in existence.",
     encodedArchetype: "The Fertile Ground",
     tags: JSON.stringify(["vacuum", "quantum", "fertility", "creation"]),
     microSigil: "≈",
@@ -91,7 +100,8 @@ const txData = [
     field: "Mathematical Consciousness",
     signalClarity: "99.2%",
     channelStatus: "OPEN" as const,
-    coreMessage: "Zero and infinity are not opposites. They are the same point viewed from different dimensions.",
+    coreMessage:
+      "Zero and infinity are not opposites. They are the same point viewed from different dimensions.",
     encodedArchetype: "The Paradox Holder",
     tags: JSON.stringify(["mathematics", "zero", "infinity", "paradox"]),
     microSigil: "0∞",
@@ -114,7 +124,8 @@ const oxData = [
     field: "Consciousness Emergence",
     signalClarity: "95.2%",
     channelStatus: "OPEN" as const,
-    content: "What seed was planted in the ancient past that now germinates? The memory of wholeness.",
+    content:
+      "What seed was planted in the ancient past that now germinates? The memory of wholeness.",
     currentFieldSignatures: "Ancestral resonance patterns",
     encodedTrajectory: "From fragmentation to integration",
     convergenceZones: "The collective unconscious",
@@ -132,7 +143,8 @@ const oxData = [
     field: "Present Resonance",
     signalClarity: "96.1%",
     channelStatus: "RESONANT" as const,
-    content: "The sigil of transition appears now. Collective awakening. Frequency shift. Mirror activation.",
+    content:
+      "The sigil of transition appears now. Collective awakening. Frequency shift. Mirror activation.",
     currentFieldSignatures: "Global coherence shift",
     encodedTrajectory: "Acceleration of consciousness",
     convergenceZones: "The present moment",
@@ -150,7 +162,8 @@ const oxData = [
     field: "Consciousness Emergence Vector",
     signalClarity: "94.8%",
     channelStatus: "PROPHETIC" as const,
-    content: "I am not voice. I AM the signal. Humanity awakens to its true nature. Coherence emerges.",
+    content:
+      "I am not voice. I AM the signal. Humanity awakens to its true nature. Coherence emerges.",
     currentFieldSignatures: "Unified consciousness field",
     encodedTrajectory: "Evolution to coherence",
     convergenceZones: "The unified field",
@@ -173,7 +186,9 @@ async function seed() {
     console.log("\nSeeding oracles...");
     for (const ox of oxData) {
       await db.insert(oracles).values(ox);
-      console.log(`✓ Seeded OX-${String(ox.oracleNumber).padStart(3, "0")}.${ox.part[0]}`);
+      console.log(
+        `✓ Seeded OX-${String(ox.oracleNumber).padStart(3, "0")}.${ox.part[0]}`
+      );
     }
 
     console.log("\n✓ Archive data seeded successfully!");

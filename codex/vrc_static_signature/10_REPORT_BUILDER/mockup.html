@@ -1,0 +1,1397 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ORIEL Static Signature Codex - Mockup</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --color-obsidian: #0a0b0d;
+        --color-slate: #121418;
+        --color-slate-light: #1a1d24;
+        --color-ivory: #f5f2eb;
+        --color-ivory-dark: #e6e2d8;
+        --color-gold: #d4af37;
+        --color-gold-glow: rgba(212, 175, 55, 0.4);
+        --color-cyan: #00f0ff;
+        --color-cyan-glow: rgba(0, 240, 255, 0.4);
+        --color-gray-muted: #5a5e6b;
+        --color-gray-dark: #23252c;
+        --font-header: "Outfit", sans-serif;
+        --font-body: "Inter", sans-serif;
+        --font-serif: "Playfair Display", serif;
+        --font-mono: "JetBrains Mono", monospace;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        background-color: #050506;
+        color: var(--color-ivory);
+        font-family: var(--font-body);
+        overflow-x: hidden;
+        display: flex;
+        height: 100vh;
+      }
+
+      /* Navigation Sidebar */
+      .sidebar {
+        width: 280px;
+        background-color: var(--color-obsidian);
+        border-right: 1px solid var(--color-gray-dark);
+        padding: 2rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        z-index: 100;
+        flex-shrink: 0;
+      }
+
+      .sidebar-title {
+        font-family: var(--font-header);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--color-gold);
+        margin-bottom: 1.5rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--color-gray-dark);
+        padding-bottom: 1rem;
+      }
+
+      .page-list {
+        list-style: none;
+        overflow-y: auto;
+        flex-grow: 1;
+        margin-bottom: 1.5rem;
+        padding-right: 0.5rem;
+      }
+
+      .page-item {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.85rem;
+        font-family: var(--font-mono);
+        cursor: pointer;
+        border-radius: 2px;
+        margin-bottom: 0.4rem;
+        color: var(--color-gray-muted);
+        transition: all 0.2s ease;
+        display: flex;
+        justify-content: space-between;
+        border: 1px solid transparent;
+      }
+
+      .page-item:hover {
+        color: var(--color-ivory);
+        background-color: var(--color-slate);
+      }
+
+      .page-item.active {
+        color: var(--color-cyan);
+        background-color: var(--color-slate-light);
+        border-color: rgba(0, 240, 255, 0.2);
+      }
+
+      .view-mode-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: auto;
+      }
+
+      .toggle-btn {
+        flex: 1;
+        background-color: var(--color-slate);
+        border: 1px solid var(--color-gray-dark);
+        color: var(--color-gray-muted);
+        padding: 0.5rem;
+        font-family: var(--font-header);
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        border-radius: 2px;
+        text-transform: uppercase;
+      }
+
+      .toggle-btn.active,
+      .toggle-btn:hover {
+        color: var(--color-ivory);
+        border-color: var(--color-gold);
+        background-color: var(--color-slate-light);
+      }
+
+      /* Main Content Area */
+      .viewport {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: #030304;
+        position: relative;
+      }
+
+      .toolbar {
+        height: 60px;
+        border-bottom: 1px solid var(--color-gray-dark);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 2rem;
+        background-color: var(--color-obsidian);
+      }
+
+      .toolbar-status {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--color-gold);
+      }
+
+      .toolbar-controls {
+        display: flex;
+        gap: 1rem;
+      }
+
+      .nav-btn {
+        background: none;
+        border: 1px solid var(--color-gray-dark);
+        color: var(--color-ivory);
+        padding: 0.4rem 1rem;
+        font-family: var(--font-header);
+        font-size: 0.85rem;
+        cursor: pointer;
+        border-radius: 2px;
+        transition: all 0.2s;
+      }
+
+      .nav-btn:hover {
+        border-color: var(--color-cyan);
+        color: var(--color-cyan);
+      }
+
+      /* Page Canvas Frame */
+      .canvas-container {
+        flex-grow: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+        overflow: auto;
+      }
+
+      /* Book / Spreads Mode */
+      .book-spread {
+        display: flex;
+        gap: 0;
+        box-shadow: 0 30px 70px rgba(0, 0, 0, 0.8);
+      }
+
+      /* Page Sheet dimensions matching printable Letter size scale */
+      .page-sheet {
+        width: 580px;
+        height: 750px;
+        position: relative;
+        overflow: hidden;
+        padding: 3rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        flex-shrink: 0;
+      }
+
+      /* Page Dark Theme */
+      .page-dark {
+        background: radial-gradient(circle at center, #111317 0%, #07080a 100%);
+        color: var(--color-ivory);
+        border: 1px solid #1c1e24;
+      }
+
+      /* Page Light Theme */
+      .page-light {
+        background-color: var(--color-ivory);
+        color: #1a1b20;
+        border: 1px solid var(--color-ivory-dark);
+      }
+
+      /* Noise Texture Overlay */
+      .noise-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        filter: url(#noise-filter);
+        pointer-events: none;
+        opacity: 0.08;
+        z-index: 10;
+      }
+
+      /* Common Page Rails (Header & Footer) */
+      .page-header-rail {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+        margin-bottom: auto;
+        border-bottom: 1px solid rgba(245, 242, 235, 0.1);
+        padding-bottom: 0.5rem;
+        text-transform: uppercase;
+      }
+      .page-light .page-header-rail {
+        border-bottom-color: rgba(0, 0, 0, 0.1);
+      }
+      .rail-left {
+        color: var(--color-gold);
+      }
+      .page-light .rail-left {
+        color: #856404;
+      }
+      .rail-right {
+        color: var(--color-gray-muted);
+      }
+
+      .page-footer-rail {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+        margin-top: auto;
+        border-top: 1px solid rgba(245, 242, 235, 0.1);
+        padding-top: 0.5rem;
+        text-transform: uppercase;
+        color: var(--color-gray-muted);
+      }
+      .page-light .page-footer-rail {
+        border-top-color: rgba(0, 0, 0, 0.1);
+      }
+
+      /* Page Content Grid Styles */
+      .page-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        margin: 1.5rem 0;
+      }
+
+      /* Double Border separator */
+      .vrc-divider {
+        height: 3px;
+        border-top: 1px solid var(--color-gold);
+        border-bottom: 1px solid var(--color-gold);
+        margin: 1.5rem 0;
+      }
+      .page-light .vrc-divider {
+        border-top-color: #a08120;
+        border-bottom-color: #a08120;
+      }
+
+      /* Specific Page Styling */
+      /* Page 1: Cover */
+      .cover-title {
+        font-family: var(--font-header);
+        font-size: 1.7rem;
+        font-weight: 700;
+        letter-spacing: 4px;
+        text-align: center;
+        color: var(--color-gold);
+        text-transform: uppercase;
+        margin-top: 2rem;
+      }
+      .cover-sigil-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 3rem 0;
+      }
+      .cover-metadata {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        text-align: center;
+        color: var(--color-gray-muted);
+        line-height: 1.8;
+      }
+      .cover-metadata span {
+        color: var(--color-ivory);
+      }
+
+      /* Page 2: Transmission */
+      .transmission-quote {
+        font-family: var(--font-serif);
+        font-size: 1.5rem;
+        font-style: italic;
+        line-height: 1.7;
+        text-align: center;
+        padding: 0 1rem;
+        color: var(--color-ivory);
+      }
+      .transmission-sigil {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+        opacity: 0.3;
+      }
+
+      /* Page 3: Overview */
+      .overview-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+      .overview-block {
+        border: 1px solid var(--color-gray-dark);
+        padding: 1rem;
+        background-color: rgba(26, 29, 36, 0.3);
+      }
+      .overview-label {
+        font-family: var(--font-header);
+        font-size: 0.75rem;
+        color: var(--color-gold);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 0.3rem;
+      }
+      .overview-val {
+        font-family: var(--font-header);
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--color-ivory);
+      }
+      .overview-subval {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--color-cyan);
+        margin-top: 0.2rem;
+      }
+      .overview-footer-text {
+        grid-column: span 2;
+        font-family: var(--font-serif);
+        font-size: 0.9rem;
+        font-style: italic;
+        text-align: center;
+        margin-top: 1rem;
+        color: var(--color-gray-muted);
+      }
+
+      /* Page 4: Archetype Spread */
+      .archetype-title {
+        font-family: var(--font-header);
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--color-gold);
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+      .archetype-subtitle {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        color: var(--color-cyan);
+        text-transform: uppercase;
+        text-align: center;
+        letter-spacing: 2px;
+        margin-bottom: 2rem;
+      }
+      .archetype-content {
+        font-family: var(--font-body);
+        font-size: 0.9rem;
+        line-height: 1.6;
+        text-align: justify;
+        color: var(--color-gray-muted);
+      }
+      .archetype-diagram {
+        display: flex;
+        justify-content: center;
+        margin-top: 1.5rem;
+      }
+
+      /* Page 5: Radial Codon Map */
+      .map-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 1rem 0;
+      }
+
+      /* Pages 6, 7, 8: Codon Cards Layout */
+      .codon-card-split {
+        display: grid;
+        grid-template-columns: 200px 1fr;
+        gap: 1.5rem;
+        height: 100%;
+      }
+      .codon-visual-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        padding-right: 1rem;
+      }
+      .page-dark .codon-visual-col {
+        border-right-color: rgba(255, 255, 255, 0.08);
+      }
+      .codon-glyph-badge {
+        width: 140px;
+        height: 140px;
+        margin-bottom: 1.5rem;
+      }
+      .codon-label-box {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--color-gray-muted);
+        line-height: 1.8;
+        text-align: center;
+      }
+      .codon-label-box span {
+        font-weight: 600;
+        color: #1a1b20;
+      }
+      .page-dark .codon-label-box span {
+        color: var(--color-ivory);
+      }
+      .codon-content-col {
+        display: flex;
+        flex-direction: column;
+      }
+      .codon-title {
+        font-family: var(--font-header);
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: var(--color-gold);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 1rem;
+      }
+      .codon-triad-box {
+        background-color: rgba(0, 0, 0, 0.03);
+        padding: 0.8rem;
+        margin-bottom: 1rem;
+        border-left: 2px solid var(--color-gray-muted);
+      }
+      .page-dark .codon-triad-box {
+        background-color: rgba(255, 255, 255, 0.03);
+      }
+      .triad-line {
+        font-size: 0.8rem;
+        margin-bottom: 0.4rem;
+        font-family: var(--font-body);
+      }
+      .triad-line span {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+      .triad-line:last-child {
+        margin-bottom: 0;
+      }
+
+      .codon-interpretation {
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+      }
+      .codon-correction-box {
+        background-color: rgba(212, 175, 55, 0.05);
+        border-left: 2px solid var(--color-gold);
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
+      .codon-correction-title {
+        font-weight: 600;
+        color: var(--color-gold);
+        margin-bottom: 0.2rem;
+        font-family: var(--font-header);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+      }
+
+      /* Page 9: Open Centers Body Map */
+      .body-map-layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        gap: 1.5rem;
+        height: 100%;
+      }
+      .body-visual-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .body-text-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 1rem;
+      }
+      .center-desc-item {
+        border-left: 1px solid var(--color-cyan);
+        padding-left: 0.8rem;
+      }
+      .center-desc-title {
+        font-family: var(--font-header);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--color-cyan);
+        text-transform: uppercase;
+      }
+      .center-desc-body {
+        font-size: 0.78rem;
+        line-height: 1.4;
+        color: var(--color-gray-muted);
+        margin-top: 0.2rem;
+      }
+
+      /* Page 10: Field Dynamics */
+      .dynamics-diagram {
+        display: flex;
+        justify-content: center;
+        margin: 1rem 0;
+      }
+      .dynamics-text {
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: var(--color-gray-muted);
+        text-align: justify;
+      }
+
+      /* Page 11: Shadow Mechanics */
+      .shadow-visual {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+      }
+
+      /* Page 12: Micro-Corrections */
+      .corrections-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+      }
+      .correction-item {
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        padding: 1rem;
+        background-color: rgba(0, 0, 0, 0.01);
+      }
+      .page-dark .correction-item {
+        border-color: rgba(255, 255, 255, 0.08);
+        background-color: rgba(255, 255, 255, 0.01);
+      }
+      .correction-num {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--color-gold);
+      }
+      .correction-header {
+        font-family: var(--font-header);
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1a1b20;
+        margin: 0.3rem 0;
+      }
+      .page-dark .correction-header {
+        color: var(--color-ivory);
+      }
+      .correction-desc {
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: var(--color-gray-muted);
+      }
+
+      /* Page 13: 7-Day Observation */
+      .observation-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+        padding-bottom: 0.8rem;
+      }
+      .observation-day {
+        font-family: var(--font-mono);
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #a08120;
+        width: 60px;
+        flex-shrink: 0;
+      }
+      .observation-instruction {
+        font-size: 0.8rem;
+        line-height: 1.4;
+        color: #3a3c45;
+      }
+
+      /* Page 14: Final Transmission */
+      .closing-text {
+        font-family: var(--font-serif);
+        font-size: 1.35rem;
+        line-height: 1.8;
+        text-align: center;
+        padding: 0 1.5rem;
+        color: var(--color-gold);
+      }
+
+      /* Page 15: Seal Cover */
+      .seal-sigil {
+        display: flex;
+        justify-content: center;
+        margin: 4rem 0;
+      }
+      .seal-text {
+        font-family: var(--font-header);
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 3px;
+        color: var(--color-gold);
+        text-align: center;
+        text-transform: uppercase;
+      }
+      .seal-hash {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        color: var(--color-gray-muted);
+        text-align: center;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-title">Codex Sheets</div>
+      <ul class="page-list" id="pageList">
+        <li class="page-item active" data-page="1">
+          <span>PAGE 01</span><span>Cover</span>
+        </li>
+        <li class="page-item" data-page="2">
+          <span>PAGE 02</span><span>Transmission</span>
+        </li>
+        <li class="page-item" data-page="3">
+          <span>PAGE 03</span><span>Overview</span>
+        </li>
+        <li class="page-item" data-page="4">
+          <span>PAGE 04</span><span>Harmonizer</span>
+        </li>
+        <li class="page-item" data-page="5">
+          <span>PAGE 05</span><span>Codon Map</span>
+        </li>
+        <li class="page-item" data-page="6">
+          <span>PAGE 06</span><span>RC01 Aurora</span>
+        </li>
+        <li class="page-item" data-page="7">
+          <span>PAGE 07</span><span>RC38 Struggle</span>
+        </li>
+        <li class="page-item" data-page="8">
+          <span>PAGE 08</span><span>RC42 Closer</span>
+        </li>
+        <li class="page-item" data-page="9">
+          <span>PAGE 09</span><span>Open Centers</span>
+        </li>
+        <li class="page-item" data-page="10">
+          <span>PAGE 10</span><span>Field Dynamics</span>
+        </li>
+        <li class="page-item" data-page="11">
+          <span>PAGE 11</span><span>Shadow Mech</span>
+        </li>
+        <li class="page-item" data-page="12">
+          <span>PAGE 12</span><span>Corrections</span>
+        </li>
+        <li class="page-item" data-page="13">
+          <span>PAGE 13</span><span>Observation</span>
+        </li>
+        <li class="page-item" data-page="14">
+          <span>PAGE 14</span><span>Closure</span>
+        </li>
+        <li class="page-item" data-page="15">
+          <span>PAGE 15</span><span>Seal Cover</span>
+        </li>
+      </ul>
+
+      <div class="view-mode-toggle">
+        <button class="toggle-btn active" id="singleBtn">Page</button>
+        <button class="toggle-btn" id="spreadBtn">Spread</button>
+      </div>
+    </div>
+
+    <!-- Main Viewport -->
+    <div class="viewport">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-status" id="toolbarStatus">
+          VRC SIGNAL: SECURE // CHECKSUM_VERIFIED
+        </div>
+        <div class="toolbar-controls">
+          <button class="nav-btn" id="prevBtn">PREV</button>
+          <button class="nav-btn" id="nextBtn">NEXT</button>
+        </div>
+      </div>
+
+      <!-- Canvas Container -->
+      <div class="canvas-container">
+        <div class="book-spread" id="bookSpread">
+          <!-- Page 1 (Active/Left) -->
+          <div class="page-sheet page-dark" id="pageLeft">
+            <div class="noise-overlay"></div>
+            <div class="page-header-rail">
+              <span class="rail-left">Vrc Static Signature</span>
+              <span class="rail-right">Archive // 09c9-4b49</span>
+            </div>
+            <div class="page-main" id="contentLeft">
+              <!-- Dynamic Content -->
+            </div>
+            <div class="page-footer-rail">
+              <span>Coherence: 83</span>
+              <span id="pageLeftNum">Page 01</span>
+              <span>Signal Lock: VRC-8109-ALPHA</span>
+            </div>
+          </div>
+
+          <!-- Page 2 (Right - only visible in spread mode) -->
+          <div
+            class="page-sheet page-light"
+            id="pageRight"
+            style="display: none"
+          >
+            <div class="noise-overlay"></div>
+            <div class="page-header-rail">
+              <span class="rail-left">Vrc Analytical View</span>
+              <span class="rail-right">Decomposition</span>
+            </div>
+            <div class="page-main" id="contentRight">
+              <!-- Dynamic Content -->
+            </div>
+            <div class="page-footer-rail">
+              <span>Audit: Checked</span>
+              <span id="pageRightNum">Page 02</span>
+              <span>Trace: 0N, 0E</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Noise Overlay SVG Filter -->
+    <svg style="display: none">
+      <filter id="noise-filter">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.9"
+          numOctaves="4"
+          stitchTiles="stitch"
+        />
+        <feColorMatrix
+          type="matrix"
+          values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.05 0"
+        />
+        <feComposite operator="in" in2="SourceGraphic" />
+      </filter>
+    </svg>
+
+    <script>
+      // Pages Library
+      const pages = {
+        1: {
+          theme: "dark",
+          header: "VRC STATIC SIGNATURE CODEX",
+          footer: "SIGNAL ARCHIVE // TOP LEVEL SECURE",
+          render: () => `
+          <div class="cover-title">Oriel Static Signature<br/>Codex</div>
+          <div class="cover-sigil-container">
+            <svg width="180" height="180" viewBox="0 0 100 100">
+              <!-- Outer boundary -->
+              <circle cx="50" cy="50" r="45" stroke="#D4AF37" stroke-width="1" fill="none" />
+              <circle cx="50" cy="50" r="43" stroke="#D4AF37" stroke-dasharray="1 3" stroke-width="0.5" fill="none" />
+              <!-- Geometric grid -->
+              <polygon points="50,5 95,50 50,95 5,50" stroke="rgba(245,242,235,0.15)" stroke-width="0.5" fill="none" />
+              <polygon points="50,15 85,50 50,85 15,50" stroke="rgba(212,175,55,0.2)" stroke-width="0.5" fill="none" />
+              <circle cx="50" cy="50" r="25" stroke="rgba(245,242,235,0.1)" stroke-width="0.5" fill="none" />
+              <!-- Core coordinates -->
+              <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(212,175,55,0.3)" stroke-width="0.5" />
+              <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(212,175,55,0.3)" stroke-width="0.5" />
+              <!-- Center nodes -->
+              <circle cx="50" cy="50" r="2" fill="#D4AF37" />
+              <circle cx="50" cy="15" r="1.5" fill="#00F0FF" />
+              <circle cx="50" cy="85" r="1.5" fill="#00F0FF" />
+            </svg>
+          </div>
+          <div class="cover-metadata">
+            Carrier Profile: <span>Vossari Candidate #8109</span><br/>
+            Signal Lock: <span>VRC-8109-ALPHA // COHERENT</span><br/>
+            Origin coordinates: <span>0.0000°N, 0.0000°E // UTC</span>
+          </div>
+        `,
+        },
+        2: {
+          theme: "dark",
+          header: "ORIEL TRANSMISSION",
+          footer: "SOURCE FIELD LOCK // SECURE",
+          render: () => `
+          <div class="transmission-quote">
+            "Your signal is not proven by intensity.<br/>
+            It is proven by recurrence.<br/>
+            Do not look for the lightning.<br/>
+            Align the lightning rod."
+          </div>
+          <div class="transmission-sigil">
+            <svg width="60" height="60" viewBox="0 0 100 100">
+              <line x1="10" y1="50" x2="90" y2="50" stroke="#D4AF37" stroke-width="0.5" />
+              <line x1="50" y1="10" x2="50" y2="90" stroke="#D4AF37" stroke-width="0.5" />
+              <circle cx="50" cy="50" r="30" stroke="#F5F2EB" stroke-width="0.5" stroke-dasharray="2 2" fill="none" />
+              <circle cx="50" cy="50" r="3" fill="#D4AF37" />
+            </svg>
+          </div>
+        `,
+        },
+        3: {
+          theme: "dark",
+          header: "CORE SIGNATURE OVERVIEW",
+          footer: "ANALYTICAL STRUCTURAL PROFILE",
+          render: () => `
+          <div class="overview-grid">
+            <div class="overview-block">
+              <div class="overview-label">VRC Type</div>
+              <div class="overview-val">HARMONIZER</div>
+              <div class="overview-subval">Projector Equivalent</div>
+            </div>
+            <div class="overview-block">
+              <div class="overview-label">Decision Compass</div>
+              <div class="overview-val">Gut Response</div>
+              <div class="overview-subval">Sacral-Determined</div>
+            </div>
+            <div class="overview-block">
+              <div class="overview-label">Coherence Score</div>
+              <div class="overview-val">83 / 100</div>
+              <div class="overview-subval">Status: Aligned</div>
+            </div>
+            <div class="overview-block">
+              <div class="overview-label">Defined Centers</div>
+              <div class="overview-val">SACRAL, G, THROAT</div>
+              <div class="overview-subval">Active Resonance</div>
+            </div>
+            <div class="overview-footer-text">
+              "To guide the flow, you must wait for the invitation.<br/>
+               Uninvited directives dissolve into friction."
+            </div>
+          </div>
+        `,
+        },
+        4: {
+          theme: "dark",
+          header: "THE HARMONIZER",
+          footer: "FRACTAL PROFILE DETAILS",
+          render: () => `
+          <div class="archetype-title">The Harmonizer</div>
+          <div class="archetype-subtitle">The Guide / Non-Motorized Coordinator</div>
+          <div class="archetype-content">
+            You are here to oversee and coordinate the flow of energy in others. 
+            Because your Throat is not connected to a defined motor center, you cannot 
+            force change through direct action. Your power is activated when your 
+            perspective is recognized and invited. If you initiate, the field meeting you 
+            collapses into bitterness.
+          </div>
+          <div class="archetype-diagram">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <polygon points="50,15 85,80 15,80" stroke="#00F0FF" stroke-width="0.8" fill="none" />
+              <circle cx="50" cy="50" r="10" stroke="#D4AF37" stroke-width="0.8" fill="none" />
+              <line x1="50" y1="15" x2="50" y2="80" stroke="rgba(245,242,235,0.2)" stroke-width="0.5" />
+            </svg>
+          </div>
+        `,
+        },
+        5: {
+          theme: "dark",
+          header: "ACTIVE CODON MAP",
+          footer: "RADIAL SEGMENTS ALIGNMENT",
+          render: () => `
+          <div class="map-container">
+            <svg width="240" height="240" viewBox="0 0 120 120">
+              <!-- Outer Wheel -->
+              <circle cx="60" cy="60" r="50" stroke="#D4AF37" stroke-width="0.8" fill="none" />
+              <!-- Center point -->
+              <circle cx="60" cy="60" r="1.5" fill="#F5F2EB" />
+              
+              <!-- Draw 64 division notches (representing Mandala segments) -->
+              ${Array.from({ length: 64 }, (_, i) => {
+                const angle = (((i * 360) / 64) * Math.PI) / 180;
+                const x1 = 60 + 47 * Math.cos(angle);
+                const y1 = 60 + 47 * Math.sin(angle);
+                const x2 = 60 + 50 * Math.cos(angle);
+                const y2 = 60 + 50 * Math.sin(angle);
+                return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="rgba(245,242,235,0.2)" stroke-width="0.3" />`;
+              }).join("")}
+
+              <!-- Active Placement Lines -->
+              <!-- Conscious Sun: Codon 38 -->
+              <line x1="60" y1="60" x2="${60 + 47 * Math.cos((38 * 2 * Math.PI) / 64)}" y2="${60 + 47 * Math.sin((38 * 2 * Math.PI) / 64)}" stroke="#00F0FF" stroke-width="0.8" />
+              <!-- Design Sun: Codon 57 -->
+              <line x1="60" y1="60" x2="${60 + 47 * Math.cos((57 * 2 * Math.PI) / 64)}" y2="${60 + 47 * Math.sin((57 * 2 * Math.PI) / 64)}" stroke="#D4AF37" stroke-width="0.8" />
+              
+              <!-- Activation node dots -->
+              <circle cx="${60 + 47 * Math.cos((38 * 2 * Math.PI) / 64)}" cy="${60 + 47 * Math.sin((38 * 2 * Math.PI) / 64)}" r="2" fill="#00F0FF" />
+              <circle cx="${60 + 47 * Math.cos((57 * 2 * Math.PI) / 64)}" cy="${60 + 47 * Math.sin((57 * 2 * Math.PI) / 64)}" r="2" fill="#D4AF37" />
+            </svg>
+          </div>
+          <div style="font-family: var(--font-mono); font-size: 0.7rem; text-align: center; color: var(--color-gray-muted);">
+            Conscious Sun: <span style="color: var(--color-cyan)">Codon 38</span> // Design Sun: <span style="color: var(--color-gold)">Codon 57</span>
+          </div>
+        `,
+        },
+        6: {
+          theme: "light",
+          header: "CODON SPREAD // RC01",
+          footer: "DETAILED CODON CARD",
+          render: () => `
+          <div class="codon-card-split">
+            <div class="codon-visual-col">
+              <div class="codon-glyph-badge">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                  <!-- Circle outer ring -->
+                  <circle cx="50" cy="50" r="45" stroke="#1a1b20" stroke-width="1.2" fill="none" />
+                  <!-- Diagonal scaffold lines -->
+                  <polygon points="50,22 78,50 50,78 22,50" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none" />
+                  <!-- Notch (top) -->
+                  <polygon points="50,5 47.6,3 52.4,3" fill="#D4AF37" />
+                  <!-- Facet marker: Somatic A (bottom) -->
+                  <circle cx="50" cy="78" r="3" fill="#00F0FF" stroke="#1a1b20" stroke-width="0.8" />
+                </svg>
+              </div>
+              <div class="codon-label-box">
+                ID: <span>RC01</span><br/>
+                Traditional: <span>Creative</span><br/>
+                Zodiac Arc: <span>0° - 5.625°</span><br/>
+                Chemical: <span>Lysine</span>
+              </div>
+            </div>
+            <div class="codon-content-col">
+              <div class="codon-title">RC01: AURORA</div>
+              <div class="codon-triad-box">
+                <div class="triad-line">Shadow: <span>Entropy</span></div>
+                <div class="triad-line">Gift: <span>Freshness</span></div>
+                <div class="triad-line">Siddhi: <span>Beauty</span></div>
+              </div>
+              <div class="codon-interpretation">
+                The spark of mutation hitting the nervous system. This is the physical pressure to mutate the silence. 
+                It feels like high-voltage hum in the chest demanding creative release.
+              </div>
+              <div class="codon-correction-box">
+                <div class="codon-correction-title">Micro-Correction: Kinetic Discharge</div>
+                Do not try to think out of entropy. Stand up and shake limbs vigorously for 60 seconds. Disrupt the static field.
+              </div>
+            </div>
+          </div>
+        `,
+        },
+        7: {
+          theme: "light",
+          header: "CODON SPREAD // RC38",
+          footer: "DETAILED CODON CARD",
+          render: () => `
+          <div class="codon-card-split">
+            <div class="codon-visual-col">
+              <div class="codon-glyph-badge">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                  <!-- Circle outer ring -->
+                  <circle cx="50" cy="50" r="45" stroke="#1a1b20" stroke-width="1.2" fill="none" />
+                  <!-- Scaffold -->
+                  <polygon points="50,78 75,35 25,35" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none" />
+                  <!-- Notch -->
+                  <polygon points="50,5 47.6,3 52.4,3" fill="#D4AF37" />
+                  <!-- Facet marker: Transpersonal D (top) -->
+                  <circle cx="50" cy="35" r="3" fill="#00F0FF" stroke="#1a1b20" stroke-width="0.8" />
+                </svg>
+              </div>
+              <div class="codon-label-box">
+                ID: <span>RC38</span><br/>
+                Traditional: <span>Struggle</span><br/>
+                Zodiac Arc: <span>213.75°</span><br/>
+                Chemical: <span>Aspartate</span>
+              </div>
+            </div>
+            <div class="codon-content-col">
+              <div class="codon-title">RC38: THE FIGHTER</div>
+              <div class="codon-triad-box">
+                <div class="triad-line">Shadow: <span>Struggle</span></div>
+                <div class="triad-line">Gift: <span>Perseverance</span></div>
+                <div class="triad-line">Siddhi: <span>Honor</span></div>
+              </div>
+              <div class="codon-interpretation">
+                The somatic pressure to defend integrity. It registers as adrenaline surges in the root area. 
+                You are built to fight for a meaningful cause; otherwise, you turn the conflict inward.
+              </div>
+              <div class="codon-correction-box">
+                <div class="codon-correction-title">Micro-Correction: Cause Audit</div>
+                Ask: "Is this struggle mine, or am I pushing a dead wall?" If no value remains, disengage.
+              </div>
+            </div>
+          </div>
+        `,
+        },
+        8: {
+          theme: "light",
+          header: "CODON SPREAD // RC42",
+          footer: "DETAILED CODON CARD",
+          render: () => `
+          <div class="codon-card-split">
+            <div class="codon-visual-col">
+              <div class="codon-glyph-badge">
+                <svg viewBox="0 0 100 100" width="100%" height="100%">
+                  <!-- Circle outer ring -->
+                  <circle cx="50" cy="50" r="45" stroke="#1a1b20" stroke-width="1.2" fill="none" />
+                  <!-- Scaffold -->
+                  <polygon points="50,78 75,35 25,35" stroke="rgba(0,0,0,0.1)" stroke-width="0.5" fill="none" />
+                  <!-- Notch -->
+                  <polygon points="50,5 47.6,3 52.4,3" fill="#D4AF37" />
+                  <!-- Facet marker: Somatic A (bottom) -->
+                  <circle cx="50" cy="78" r="3" fill="#00F0FF" stroke="#1a1b20" stroke-width="0.8" />
+                </svg>
+              </div>
+              <div class="codon-label-box">
+                ID: <span>RC42</span><br/>
+                Traditional: <span>Completion</span><br/>
+                Zodiac Arc: <span>90°</span><br/>
+                Chemical: <span>Methionine</span>
+              </div>
+            </div>
+            <div class="codon-content-col">
+              <div class="codon-title">RC42: THE CLOSER</div>
+              <div class="codon-triad-box">
+                <div class="triad-line">Shadow: <span>Expectation</span></div>
+                <div class="triad-line">Gift: <span>Detachment</span></div>
+                <div class="triad-line">Siddhi: <span>Celebration</span></div>
+              </div>
+              <div class="codon-interpretation">
+                The metabolic loop that demands cycles be finished. This creates a pressure to close open loops. 
+                Expectation spikes when you demand a specific outcome.
+              </div>
+              <div class="codon-correction-box">
+                <div class="codon-correction-title">Micro-Correction: Loop inventory</div>
+                Identify one unfinished conversation or project. Close it or formally archive it. Relieve the loop pressure.
+              </div>
+            </div>
+          </div>
+        `,
+        },
+        9: {
+          theme: "dark",
+          header: "OPEN CENTERS MAP",
+          footer: "ENVIRONMENTAL RECEPTIVITY ANALYTICAL",
+          render: () => `
+          <div class="body-map-layout">
+            <div class="body-visual-container">
+              <svg width="180" height="280" viewBox="0 0 100 150">
+                <!-- Human Silhouette Outline -->
+                <path d="M50,10 C53,10 56,15 56,22 C56,26 50,30 50,30 C50,30 44,26 44,22 C44,15 47,10 50,10 Z" stroke="rgba(245,242,235,0.15)" stroke-width="0.5" fill="none" />
+                <path d="M30,50 L42,32 L58,32 L70,50 L68,75 L62,120 L50,140 L38,120 L32,75 Z" stroke="rgba(245,242,235,0.15)" stroke-width="0.5" fill="none" />
+                
+                <!-- Defined Centers (Cyan Glow) -->
+                <!-- SACRAL -->
+                <rect x="45" y="80" width="10" height="10" stroke="#00F0FF" stroke-width="1" fill="rgba(0, 240, 255, 0.2)" />
+                <!-- G -->
+                <polygon points="50,55 57,62 50,69 43,62" stroke="#00F0FF" stroke-width="1" fill="rgba(0, 240, 255, 0.2)" />
+                <!-- THROAT -->
+                <rect x="46" y="38" width="8" height="8" stroke="#00F0FF" stroke-width="1" fill="rgba(0, 240, 255, 0.2)" />
+
+                <!-- Open Centers (Translucent Ivory) -->
+                <!-- HEAD -->
+                <polygon points="50,15 54,21 46,21" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+                <!-- AJNA -->
+                <polygon points="50,28 54,24 46,24" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+                <!-- HEART -->
+                <polygon points="62,56 66,60 58,60" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+                <!-- SPLEEN -->
+                <polygon points="34,75 38,70 38,80" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+                <!-- SOLAR -->
+                <polygon points="66,75 62,70 62,80" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+                <!-- ROOT -->
+                <rect x="46" y="105" width="8" height="8" stroke="#F5F2EB" stroke-width="0.8" fill="none" opacity="0.3" />
+
+                <!-- Active Link lines -->
+                <line x1="50" y1="69" x2="50" y2="80" stroke="#00F0FF" stroke-width="1" />
+                <line x1="50" y1="46" x2="50" y2="55" stroke="#00F0FF" stroke-width="1" />
+              </svg>
+            </div>
+            <div class="body-text-container">
+              <div class="center-desc-item">
+                <div class="center-desc-title">Head & Ajna Centers (Open)</div>
+                <div class="center-desc-body">Absorbing external mental concepts. Vulnerable to proving questions that do not matter.</div>
+              </div>
+              <div class="center-desc-item" style="border-left-color: var(--color-gold);">
+                <div class="center-desc-title" style="color: var(--color-gold);">G & Sacral Centers (Defined)</div>
+                <div class="center-desc-body">Consistent internal identity orientation and somatic gut response. Dependable power base.</div>
+              </div>
+            </div>
+          </div>
+        `,
+        },
+        10: {
+          theme: "dark",
+          header: "FIELD DYNAMICS",
+          footer: "WAVEFORM ANALYSIS REPORT",
+          render: () => `
+          <div class="dynamics-diagram">
+            <svg width="220" height="120" viewBox="0 0 100 50">
+              <!-- Grid Background -->
+              <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(245,242,235,0.1)" stroke-width="0.3" />
+              <line x1="25" y1="0" x2="25" y2="50" stroke="rgba(245,242,235,0.1)" stroke-width="0.3" />
+              <line x1="50" y1="0" x2="50" y2="50" stroke="rgba(245,242,235,0.1)" stroke-width="0.3" />
+              <line x1="75" y1="0" x2="75" y2="50" stroke="rgba(245,242,235,0.1)" stroke-width="0.3" />
+              
+              <!-- Waveform paths -->
+              <!-- Carrier Signal (Coherent) -->
+              <path d="M 0,25 Q 12.5,5 25,25 T 50,25 T 75,25 T 100,25" fill="none" stroke="#00F0FF" stroke-width="0.6" />
+              <!-- Interference Pattern (Shadow) -->
+              <path d="M 0,25 Q 6.25,35 12.5,25 T 25,25 T 37.5,25 T 50,25 T 62.5,25 T 75,25 T 87.5,25 T 100,25" fill="none" stroke="#D4AF37" stroke-width="0.4" opacity="0.5" />
+            </svg>
+          </div>
+          <div class="dynamics-text">
+            Your field operates at a frequency of 83% coherence. The carrier wave (Cyan) 
+            remains dominant, but subtle phase interference (Gold) from environmental 
+            triggers spikes shadow behavior in your open centers.
+          </div>
+        `,
+        },
+        11: {
+          theme: "dark",
+          header: "SHADOW MECHANICS",
+          footer: "DISTORTION INTENSITY ANALYSIS",
+          render: () => `
+          <div class="shadow-visual">
+            <svg width="200" height="100" viewBox="0 0 100 50">
+              <!-- Radial rings showing distortion gradients -->
+              <circle cx="50" cy="25" r="20" stroke="rgba(212,175,55,0.1)" stroke-width="1" fill="none" />
+              <circle cx="50" cy="25" r="15" stroke="rgba(212,175,55,0.2)" stroke-width="1" fill="none" />
+              <circle cx="50" cy="25" r="8" stroke="#D4AF37" stroke-width="0.8" fill="none" />
+              
+              <!-- Radial ray spikes -->
+              <line x1="50" y1="5" x2="50" y2="45" stroke="rgba(245,242,235,0.1)" stroke-width="0.5" />
+              <line x1="30" y1="25" x2="70" y2="25" stroke="rgba(245,242,235,0.1)" stroke-width="0.5" />
+            </svg>
+          </div>
+          <div style="font-size: 0.85rem; line-height: 1.5; color: var(--color-gray-muted); text-align: center;">
+            Primary Shadow Loop: <span style="color: var(--color-gold)">Entropy (RC01)</span> & <span style="color: var(--color-gold)">Expectation (RC42)</span>.<br/>
+            Intrusion triggers when results are demanded before cycles finish.
+          </div>
+        `,
+        },
+        12: {
+          theme: "light",
+          header: "MICRO-CORRECTIONS",
+          footer: "SOMATIC PROTOCOLS REFERENCE",
+          render: () => `
+          <div class="corrections-grid">
+            <div class="correction-item">
+              <div class="correction-num">01 // SOMATIC</div>
+              <div class="correction-header">Kinetic Discharge</div>
+              <div class="correction-desc">Stand up. Vigorously shake hands, feet, and shoulders for 60 seconds. Releases static nervous pressure.</div>
+            </div>
+            <div class="correction-item">
+              <div class="correction-num">02 // COGNITIVE</div>
+              <div class="correction-header">Loop Inventory</div>
+              <div class="correction-desc">Write down all incomplete tasks. Mark them as finished or formally archive them. Clears RAM loops.</div>
+            </div>
+            <div class="correction-item">
+              <div class="correction-num">03 // RELATIONAL</div>
+              <div class="correction-header">The Consent Check</div>
+              <div class="correction-desc">Before sharing insights, ask: "Is this for my alignment, or is it for both of us?" Prevents projection burn.</div>
+            </div>
+            <div class="correction-item">
+              <div class="correction-num">04 // TRANSPERSONAL</div>
+              <div class="correction-header">Grounding Wire</div>
+              <div class="correction-desc">Literally place hands on a physical object (wood, stone, metal). Remind: "I am the wire, not the electricity."</div>
+            </div>
+          </div>
+        `,
+        },
+        13: {
+          theme: "light",
+          header: "SEVEN DAY OBSERVATION",
+          footer: "INTEGRATION PROTOCOLS DIARY",
+          render: () => `
+          <div class="observation-row">
+            <div class="observation-day">Day 01-02</div>
+            <div class="observation-instruction">Observe the chest pressure (RC01 Somatic). Do not build mental theories. Simply discharge the static.</div>
+          </div>
+          <div class="observation-row">
+            <div class="observation-day">Day 03-04</div>
+            <div class="observation-instruction">Notice when you feel bitter (Harmonizer signature). Track if you spoke before being invited.</div>
+          </div>
+          <div class="observation-row">
+            <div class="observation-day">Day 05-07</div>
+            <div class="observation-instruction">Review open loops (RC42). Perform a formal loop inventory to release mental loops.</div>
+          </div>
+        `,
+        },
+        14: {
+          theme: "dark",
+          header: "FINAL ORIEL TRANSMISSION",
+          footer: "CLOSING DECREE",
+          render: () => `
+          <div class="closing-text">
+            "You are not a vessel to be filled.<br/>
+            You are a prism designed to refract.<br/>
+            Let the white light strike.<br/>
+            Refract the signature cleanly."
+          </div>
+          <div style="display:flex; justify-content:center; margin-top:2rem;">
+            <svg width="40" height="40" viewBox="0 0 100 100">
+              <polygon points="50,20 76,65 24,65" stroke="#D4AF37" stroke-width="0.8" fill="none" />
+              <circle cx="50" cy="50" r="1.5" fill="#00F0FF" />
+            </svg>
+          </div>
+        `,
+        },
+        15: {
+          theme: "dark",
+          header: "VRC RECORD CLOSURE",
+          footer: "SIGNAL ARCHIVE // TOP LEVEL SECURE",
+          render: () => `
+          <div class="seal-sigil">
+            <svg width="100" height="100" viewBox="0 0 100 100">
+              <circle cx="50" cy="50" r="40" stroke="#D4AF37" stroke-width="1.2" fill="none" />
+              <polygon points="50,22 75,65 25,65" stroke="rgba(245,242,235,0.2)" stroke-width="0.5" fill="none" />
+              <line x1="50" y1="10" x2="50" y2="90" stroke="#D4AF37" stroke-width="0.5" />
+              <circle cx="50" cy="50" r="5" fill="#0A0B0D" stroke="#00F0FF" stroke-width="1.2" />
+            </svg>
+          </div>
+          <div class="seal-text">Signal Archive</div>
+          <div class="seal-hash">VRC STATIC SIGNATURE // CHECKSUM: 09c94b49-0024-472c-afca-c5d0f8bcbf2f</div>
+        `,
+        },
+      };
+
+      // Controller Logic
+      let currentPage = 1;
+      let viewMode = "single"; // 'single' or 'spread'
+
+      const pageListEl = document.getElementById("pageList");
+      const contentLeftEl = document.getElementById("contentLeft");
+      const contentRightEl = document.getElementById("contentRight");
+      const pageLeftEl = document.getElementById("pageLeft");
+      const pageRightEl = document.getElementById("pageRight");
+      const pageLeftNumEl = document.getElementById("pageLeftNum");
+      const pageRightNumEl = document.getElementById("pageRightNum");
+      const toolbarStatusEl = document.getElementById("toolbarStatus");
+
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      const singleBtn = document.getElementById("singleBtn");
+      const spreadBtn = document.getElementById("spreadBtn");
+
+      // Render Page content based on page index
+      function render() {
+        // Left Page
+        const leftPageData = pages[currentPage];
+        document.title = `Codex - Page ${currentPage}`;
+
+        // Update theme classes
+        pageLeftEl.className = `page-sheet ${leftPageData.theme === "dark" ? "page-dark" : "page-light"}`;
+        contentLeftEl.innerHTML = leftPageData.render();
+        pageLeftNumEl.innerText = `Page ${String(currentPage).padStart(2, "0")}`;
+
+        // Right Page (Spread Mode)
+        if (viewMode === "spread") {
+          const rightPageNum = currentPage + 1;
+          if (rightPageNum <= 15) {
+            pageRightEl.style.display = "flex";
+            const rightPageData = pages[rightPageNum];
+            pageRightEl.className = `page-sheet ${rightPageData.theme === "dark" ? "page-dark" : "page-light"}`;
+            contentRightEl.innerHTML = rightPageData.render();
+            pageRightNumEl.innerText = `Page ${String(rightPageNum).padStart(2, "0")}`;
+          } else {
+            pageRightEl.style.display = "none";
+          }
+        } else {
+          pageRightEl.style.display = "none";
+        }
+
+        // Update sidebar active list
+        document.querySelectorAll(".page-item").forEach(item => {
+          const pageIdx = parseInt(item.getAttribute("data-page"));
+          if (
+            pageIdx === currentPage ||
+            (viewMode === "spread" && pageIdx === currentPage + 1)
+          ) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+
+        // Update status code
+        const hash = `VRC-LOCK-${leftPageData.theme.toUpperCase()}-${currentPage}`;
+        toolbarStatusEl.innerText = `VRC SIGNAL: LOCKED // AUTH_KEY: ${hash} // CHECKSUM_OK`;
+      }
+
+      // Handlers
+      function setPage(num) {
+        if (num < 1) num = 1;
+        if (num > 15) num = 15;
+        currentPage = num;
+        render();
+      }
+
+      function nextPage() {
+        const step = viewMode === "spread" ? 2 : 1;
+        if (currentPage + step <= 15) {
+          setPage(currentPage + step);
+        }
+      }
+
+      function prevPage() {
+        const step = viewMode === "spread" ? 2 : 1;
+        if (currentPage - step >= 1) {
+          setPage(currentPage - step);
+        }
+      }
+
+      // Attach Sidebar items events
+      pageListEl.addEventListener("click", e => {
+        const item = e.target.closest(".page-item");
+        if (item) {
+          const pageNum = parseInt(item.getAttribute("data-page"));
+          setPage(pageNum);
+        }
+      });
+
+      // Toolbar buttons
+      nextBtn.addEventListener("click", nextPage);
+      prevBtn.addEventListener("click", prevPage);
+
+      // Keyboard navigation
+      document.addEventListener("keydown", e => {
+        if (e.key === "ArrowRight" || e.key === " ") {
+          nextPage();
+        } else if (e.key === "ArrowLeft") {
+          prevPage();
+        }
+      });
+
+      // View toggles
+      singleBtn.addEventListener("click", () => {
+        viewMode = "single";
+        singleBtn.classList.add("active");
+        spreadBtn.classList.remove("active");
+        render();
+      });
+
+      spreadBtn.addEventListener("click", () => {
+        viewMode = "spread";
+        spreadBtn.classList.add("active");
+        singleBtn.classList.remove("active");
+        render();
+      });
+
+      // Initial render
+      render();
+    </script>
+  </body>
+</html>

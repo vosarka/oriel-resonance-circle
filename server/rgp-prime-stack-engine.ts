@@ -33,14 +33,14 @@ import {
   type VrcAuthority,
   type ChannelStatus,
   CODON_NAMES,
-} from './rgp-256-codon-engine';
+} from "./rgp-256-codon-engine";
 
 import {
   calculateWeightedFrequency,
   PRIME_STACK_CONFIG,
-} from './rgp-256-codon-engine';
+} from "./rgp-256-codon-engine";
 
-import { getVossariName } from './vrc-codon-library';
+import { getVossariName } from "./vrc-codon-library";
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -66,33 +66,33 @@ export interface PlanetaryActivation {
   codonId: number;
   facet: FacetLetter;
   center: CenterName;
-  layer: 'conscious' | 'design';
+  layer: "conscious" | "design";
   weight: number;
 }
 
 /** One position in the Prime Stack with its resolved Codon and Facet. */
 export interface PrimeStackCodon {
-  position: number;         // 1–9
-  name: string;             // e.g. "Conscious Sun"
-  source: 'conscious' | 'design';
-  planetaryBody: string;    // e.g. "Sun", "Earth"
+  position: number; // 1–9
+  name: string; // e.g. "Conscious Sun"
+  source: "conscious" | "design";
+  planetaryBody: string; // e.g. "Sun", "Earth"
   weight: number;
-  longitude: number;        // raw degrees used for mapping
-  codon: number;            // 1–64 (VRC gate number)
+  longitude: number; // raw degrees used for mapping
+  codon: number; // 1–64 (VRC gate number)
   codonName: string;
-  facet: FacetLetter;       // A/B/C/D (legacy alias)
-  facetFull: string;        // Somatic/Relational/Cognitive/Transpersonal
-  codon256Id: string;       // e.g. "38-A"
+  facet: FacetLetter; // A/B/C/D (legacy alias)
+  facetFull: string; // Somatic/Relational/Cognitive/Transpersonal
+  codon256Id: string; // e.g. "38-A"
   center: CenterName;
-  baseFrequency: number;    // 0–100 local codon-arc position
-  weightedFrequency: number;// 0–180 weighted amplitude for ranking/SLI
+  baseFrequency: number; // 0–100 local codon-arc position
+  weightedFrequency: number; // 0–180 weighted amplitude for ranking/SLI
   // Keep legacy fields for UI backwards compatibility
-  rootCodonId: string;      // e.g. "RC38" (legacy format)
-  frequency: 'shadow' | 'gift' | 'crown' | 'siddhi'; // legacy facet label
+  rootCodonId: string; // e.g. "RC38" (legacy format)
+  frequency: "shadow" | "gift" | "crown" | "siddhi"; // legacy facet label
 }
 
 export interface CoreCodonEngine {
-  dominant: PrimeStackCodon[];   // Top 3 by weighted frequency
+  dominant: PrimeStackCodon[]; // Top 3 by weighted frequency
   supporting: PrimeStackCodon[]; // Next 3 (positions 4–6 by weight rank)
 }
 
@@ -106,7 +106,7 @@ export interface PrimeStackMap {
   coreCodonEngine: CoreCodonEngine;
   // VRC Bio-Circuitry outputs
   channelStatuses: ChannelStatus[];
-  centerStatuses: Record<CenterName, 'defined' | 'open'>;
+  centerStatuses: Record<CenterName, "defined" | "open">;
   vrcType: VrcType;
   vrcAuthority: VrcAuthority;
 }
@@ -114,25 +114,28 @@ export interface PrimeStackMap {
 export interface CircuitLink {
   position1: number;
   position2: number;
-  linkType: 'harmonic' | 'opposition' | 'square' | 'trine';
+  linkType: "harmonic" | "opposition" | "square" | "trine";
   strength: number;
 }
 
 // ─── Legacy frequency label map ───────────────────────────────────────────────
 
-const FACET_FREQUENCY_LABEL: Record<FacetLetter, 'shadow' | 'gift' | 'crown' | 'siddhi'> = {
-  A: 'shadow',
-  B: 'gift',
-  C: 'crown',
-  D: 'siddhi',
+const FACET_FREQUENCY_LABEL: Record<
+  FacetLetter,
+  "shadow" | "gift" | "crown" | "siddhi"
+> = {
+  A: "shadow",
+  B: "gift",
+  C: "crown",
+  D: "siddhi",
 };
 
 const ACTIVATION_WEIGHTS: Record<string, number> = {
   Sun: 100,
   Earth: 100,
   Moon: 70,
-  'North Node': 60,
-  'South Node': 60,
+  "North Node": 60,
+  "South Node": 60,
   Mercury: 50,
   Venus: 45,
   Mars: 40,
@@ -153,18 +156,21 @@ const REQUIRED_CHART_PLANETS = Object.keys(ACTIVATION_WEIGHTS);
 function resolvePosition(
   config: (typeof PRIME_STACK_CONFIG)[number],
   longitude: number,
-  source: 'conscious' | 'design'
+  source: "conscious" | "design"
 ): PrimeStackCodon {
   const { codon, facet, center } = longitudeToCodonFacet(longitude);
   const codonName = getVossariName(codon);
   const facetLetter = facetNameToLetter(facet);
 
   // Base frequency: position of longitude within its codon's 5.625° arc, normalized to 0–100
-  const normalized = ((longitude - 11.25) % 360 + 360) % 360;
+  const normalized = (((longitude - 11.25) % 360) + 360) % 360;
   const localPos = normalized % 5.625;
   const baseFrequency = (localPos / 5.625) * 100;
 
-  const weightedFrequency = Math.min(180, calculateWeightedFrequency(config.position, baseFrequency));
+  const weightedFrequency = Math.min(
+    180,
+    calculateWeightedFrequency(config.position, baseFrequency)
+  );
 
   return {
     position: config.position,
@@ -182,7 +188,7 @@ function resolvePosition(
     baseFrequency,
     weightedFrequency,
     // Legacy compatibility
-    rootCodonId: `RC${String(codon).padStart(2, '0')}`,
+    rootCodonId: `RC${String(codon).padStart(2, "0")}`,
     frequency: FACET_FREQUENCY_LABEL[facetLetter],
   };
 }
@@ -199,29 +205,32 @@ function extractLongitude(
 }
 
 function assertCompleteChart(
-  label: 'conscious' | 'design',
+  label: "conscious" | "design",
   planetsMap: Record<string, { longitude: number }>
 ) {
-  const failures = REQUIRED_CHART_PLANETS.filter((planet) => {
+  const failures = REQUIRED_CHART_PLANETS.filter(planet => {
     const longitude = planetsMap[planet]?.longitude;
     return !Number.isFinite(longitude);
   });
 
   if (failures.length > 0) {
     throw new Error(
-      `Incomplete ${label} Prime Stack chart: missing or non-finite ${failures.join(', ')}`
+      `Incomplete ${label} Prime Stack chart: missing or non-finite ${failures.join(", ")}`
     );
   }
 }
 
 function buildActivations(
   planetsMap: Record<string, { longitude: number }>,
-  layer: 'conscious' | 'design'
+  layer: "conscious" | "design"
 ): PlanetaryActivation[] {
   const activations: PlanetaryActivation[] = [];
 
   for (const [planet, position] of Object.entries(planetsMap)) {
-    if (typeof position?.longitude !== 'number' || ACTIVATION_WEIGHTS[planet] === undefined) {
+    if (
+      typeof position?.longitude !== "number" ||
+      ACTIVATION_WEIGHTS[planet] === undefined
+    ) {
       continue;
     }
 
@@ -253,54 +262,77 @@ export function calculatePrimeStack(
   const normalizedConsciousChart = { ...consciousChart };
   const normalizedDesignChart = { ...designChart };
 
-  if (normalizedConsciousChart['Sun'] && !normalizedConsciousChart['Earth']) {
-    normalizedConsciousChart['Earth'] = {
-      longitude: earthLongitude(normalizedConsciousChart['Sun'].longitude),
+  if (normalizedConsciousChart["Sun"] && !normalizedConsciousChart["Earth"]) {
+    normalizedConsciousChart["Earth"] = {
+      longitude: earthLongitude(normalizedConsciousChart["Sun"].longitude),
     };
   }
-  if (normalizedConsciousChart['North Node'] && !normalizedConsciousChart['South Node']) {
-    normalizedConsciousChart['South Node'] = {
-      longitude: earthLongitude(normalizedConsciousChart['North Node'].longitude),
-    };
-  }
-
-  if (normalizedDesignChart['Sun'] && !normalizedDesignChart['Earth']) {
-    normalizedDesignChart['Earth'] = {
-      longitude: earthLongitude(normalizedDesignChart['Sun'].longitude),
-    };
-  }
-  if (normalizedDesignChart['North Node'] && !normalizedDesignChart['South Node']) {
-    normalizedDesignChart['South Node'] = {
-      longitude: earthLongitude(normalizedDesignChart['North Node'].longitude),
+  if (
+    normalizedConsciousChart["North Node"] &&
+    !normalizedConsciousChart["South Node"]
+  ) {
+    normalizedConsciousChart["South Node"] = {
+      longitude: earthLongitude(
+        normalizedConsciousChart["North Node"].longitude
+      ),
     };
   }
 
-  assertCompleteChart('conscious', normalizedConsciousChart);
-  assertCompleteChart('design', normalizedDesignChart);
+  if (normalizedDesignChart["Sun"] && !normalizedDesignChart["Earth"]) {
+    normalizedDesignChart["Earth"] = {
+      longitude: earthLongitude(normalizedDesignChart["Sun"].longitude),
+    };
+  }
+  if (
+    normalizedDesignChart["North Node"] &&
+    !normalizedDesignChart["South Node"]
+  ) {
+    normalizedDesignChart["South Node"] = {
+      longitude: earthLongitude(normalizedDesignChart["North Node"].longitude),
+    };
+  }
+
+  assertCompleteChart("conscious", normalizedConsciousChart);
+  assertCompleteChart("design", normalizedDesignChart);
 
   // Extract key longitudes from both charts
-  const cSun   = extractLongitude(normalizedConsciousChart, 'Sun');
-  const cMoon  = extractLongitude(normalizedConsciousChart, 'Moon');
-  const cNode  = extractLongitude(normalizedConsciousChart, 'North Node');
-  const cEarth = extractLongitude(normalizedConsciousChart, 'Earth', earthLongitude(cSun));
-  const cSouth = extractLongitude(normalizedConsciousChart, 'South Node', earthLongitude(cNode));
+  const cSun = extractLongitude(normalizedConsciousChart, "Sun");
+  const cMoon = extractLongitude(normalizedConsciousChart, "Moon");
+  const cNode = extractLongitude(normalizedConsciousChart, "North Node");
+  const cEarth = extractLongitude(
+    normalizedConsciousChart,
+    "Earth",
+    earthLongitude(cSun)
+  );
+  const cSouth = extractLongitude(
+    normalizedConsciousChart,
+    "South Node",
+    earthLongitude(cNode)
+  );
 
-  const dSun   = extractLongitude(normalizedDesignChart, 'Sun');
-  const dMoon  = extractLongitude(normalizedDesignChart, 'Moon');
-  const dNode  = extractLongitude(normalizedDesignChart, 'North Node');
-  const dEarth = extractLongitude(normalizedDesignChart, 'Earth', earthLongitude(dSun));
+  const dSun = extractLongitude(normalizedDesignChart, "Sun");
+  const dMoon = extractLongitude(normalizedDesignChart, "Moon");
+  const dNode = extractLongitude(normalizedDesignChart, "North Node");
+  const dEarth = extractLongitude(
+    normalizedDesignChart,
+    "Earth",
+    earthLongitude(dSun)
+  );
 
   // Build each Prime Stack position
-  const lonByPosition: Record<number, { lon: number; source: 'conscious' | 'design' }> = {
-    1: { lon: cSun,   source: 'conscious' },
-    2: { lon: cEarth, source: 'conscious' },
-    3: { lon: dSun,   source: 'design' },
-    4: { lon: dEarth, source: 'design' },
-    5: { lon: cMoon,  source: 'conscious' },
-    6: { lon: dMoon,  source: 'design' },
-    7: { lon: cNode,  source: 'conscious' },
-    8: { lon: dNode,  source: 'design' },
-    9: { lon: cSouth, source: 'conscious' },
+  const lonByPosition: Record<
+    number,
+    { lon: number; source: "conscious" | "design" }
+  > = {
+    1: { lon: cSun, source: "conscious" },
+    2: { lon: cEarth, source: "conscious" },
+    3: { lon: dSun, source: "design" },
+    4: { lon: dEarth, source: "design" },
+    5: { lon: cMoon, source: "conscious" },
+    6: { lon: dMoon, source: "design" },
+    7: { lon: cNode, source: "conscious" },
+    8: { lon: dNode, source: "design" },
+    9: { lon: cSouth, source: "conscious" },
   };
 
   const positions: PrimeStackCodon[] = [];
@@ -309,7 +341,10 @@ export function calculatePrimeStack(
   let maxWeightedFrequency = 0;
 
   for (const config of PRIME_STACK_CONFIG) {
-    const { lon, source } = lonByPosition[config.position] ?? { lon: 0, source: 'conscious' as const };
+    const { lon, source } = lonByPosition[config.position] ?? {
+      lon: 0,
+      source: "conscious" as const,
+    };
     const entry = resolvePosition(config, lon, source);
     positions.push(entry);
     totalWeight += config.weight;
@@ -323,22 +358,24 @@ export function calculatePrimeStack(
   // ─── Bio-Circuitry evaluation ───────────────────────────────────────────────
   // Spec: all 26 activations (13 per chart) define the gate set for channel evaluation.
   const activations = [
-    ...buildActivations(normalizedConsciousChart, 'conscious'),
-    ...buildActivations(normalizedDesignChart, 'design'),
+    ...buildActivations(normalizedConsciousChart, "conscious"),
+    ...buildActivations(normalizedDesignChart, "design"),
   ];
-  const definedGates = new Set<number>(activations.map((activation) => activation.codonId));
+  const definedGates = new Set<number>(
+    activations.map(activation => activation.codonId)
+  );
 
   const channelStatuses = evaluateChannels(definedGates);
-  const centerStatuses  = evaluateCenters(channelStatuses);
-  const vrcType         = determineType(centerStatuses, channelStatuses);
-  const vrcAuthority    = determineAuthority(centerStatuses, vrcType);
+  const centerStatuses = evaluateCenters(channelStatuses);
+  const vrcType = determineType(centerStatuses, channelStatuses);
+  const vrcAuthority = determineAuthority(centerStatuses, vrcType);
 
   // ─── Core Codon Engine (spec § 14): 3 dominant + 3 supporting ───────────────
   const sortedByWeight = [...positions].sort(
     (a, b) => b.weightedFrequency - a.weightedFrequency
   );
   const coreCodonEngine: CoreCodonEngine = {
-    dominant:   sortedByWeight.slice(0, 3),
+    dominant: sortedByWeight.slice(0, 3),
     supporting: sortedByWeight.slice(3, 6),
   };
 
@@ -365,20 +402,22 @@ function buildLegacyCircuitLinks(positions: PrimeStackCodon[]): CircuitLink[] {
   const links: CircuitLink[] = [];
   for (let i = 0; i < positions.length; i++) {
     for (let j = i + 1; j < positions.length; j++) {
-      const dist = Math.abs(positions[i].baseFrequency - positions[j].baseFrequency);
-      let linkType: CircuitLink['linkType'] = 'harmonic';
+      const dist = Math.abs(
+        positions[i].baseFrequency - positions[j].baseFrequency
+      );
+      let linkType: CircuitLink["linkType"] = "harmonic";
       let strength = 0;
       if (dist < 10) {
-        linkType = 'harmonic';
+        linkType = "harmonic";
         strength = 100 - dist * 5;
       } else if (dist > 45) {
-        linkType = 'opposition';
+        linkType = "opposition";
         strength = 100 - Math.abs(dist - 50) * 2;
       } else if (dist > 40) {
-        linkType = 'trine';
+        linkType = "trine";
         strength = 100 - Math.abs(dist - 45) * 2;
       } else if (dist > 30) {
-        linkType = 'square';
+        linkType = "square";
         strength = 100 - Math.abs(dist - 35) * 2;
       }
       if (strength > 30) {
@@ -403,19 +442,43 @@ function buildLegacyCircuitLinks(positions: PrimeStackCodon[]): CircuitLink[] {
  */
 export function calculate9CenterMap(
   primeStack: PrimeStackMap
-): Record<string, { centerName: CenterName; codon256Id: string; frequency: number; defined: boolean }> {
-  const result: Record<string, { centerName: CenterName; codon256Id: string; frequency: number; defined: boolean }> = {};
+): Record<
+  string,
+  {
+    centerName: CenterName;
+    codon256Id: string;
+    frequency: number;
+    defined: boolean;
+  }
+> {
+  const result: Record<
+    string,
+    {
+      centerName: CenterName;
+      codon256Id: string;
+      frequency: number;
+      defined: boolean;
+    }
+  > = {};
 
   // Initialise all 9 centers
   const allCenters: CenterName[] = [
-    'Crown', 'Ajna', 'Throat', 'G-Self', 'Heart', 'Solar Plexus', 'Sacral', 'Spleen', 'Root',
+    "Crown",
+    "Ajna",
+    "Throat",
+    "G-Self",
+    "Heart",
+    "Solar Plexus",
+    "Sacral",
+    "Spleen",
+    "Root",
   ];
   for (const c of allCenters) {
     result[c] = {
       centerName: c,
-      codon256Id: '',
+      codon256Id: "",
       frequency: 0,
-      defined: primeStack.centerStatuses[c] === 'defined',
+      defined: primeStack.centerStatuses[c] === "defined",
     };
   }
 
@@ -427,7 +490,7 @@ export function calculate9CenterMap(
         centerName: center,
         codon256Id: pos.codon256Id,
         frequency: pos.weightedFrequency,
-        defined: primeStack.centerStatuses[center] === 'defined',
+        defined: primeStack.centerStatuses[center] === "defined",
       };
     }
   }
@@ -437,21 +500,25 @@ export function calculate9CenterMap(
 
 // ─── Fractal Role ─────────────────────────────────────────────────────────────
 
-export function calculateFractalRole(
-  primeStack: PrimeStackMap
-): { role: string; description: string; alignment: number } {
+export function calculateFractalRole(primeStack: PrimeStackMap): {
+  role: string;
+  description: string;
+  alignment: number;
+} {
   const type = primeStack.vrcType;
   const descriptions: Record<typeof type, string> = {
-    Reflector:  'Samples and reflects the state of the collective field',
-    Resonator:  "Generates sustainable response to life's invitations",
-    Catalyst:   'Initiates and sparks action in the world',
-    Harmonizer: 'Guides and directs others through recognition',
+    Reflector: "Samples and reflects the state of the collective field",
+    Resonator: "Generates sustainable response to life's invitations",
+    Catalyst: "Initiates and sparks action in the world",
+    Harmonizer: "Guides and directs others through recognition",
   };
 
   const facetCounts: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
   for (const p of primeStack.positions) facetCounts[p.facet]++;
   const totalPositions = primeStack.positions.length || 1;
-  const dominantFacet = (Object.entries(facetCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'A') as FacetLetter;
+  const dominantFacet = (Object.entries(facetCounts).sort(
+    (a, b) => b[1] - a[1]
+  )[0]?.[0] ?? "A") as FacetLetter;
   const alignment = (facetCounts[dominantFacet] / totalPositions) * 100;
 
   return { role: type, description: descriptions[type], alignment };
@@ -459,11 +526,15 @@ export function calculateFractalRole(
 
 // ─── Authority Node ────────────────────────────────────────────────────────────
 
-export function calculateAuthorityNode(
-  primeStack: PrimeStackMap
-): { node: string; position: number; strength: number } {
+export function calculateAuthorityNode(primeStack: PrimeStackMap): {
+  node: string;
+  position: number;
+  strength: number;
+} {
   const authority = primeStack.vrcAuthority;
-  const dominant = primeStack.positions.find(p => p.position === primeStack.dominantPosition);
+  const dominant = primeStack.positions.find(
+    p => p.position === primeStack.dominantPosition
+  );
   return {
     node: authority,
     position: dominant?.position ?? 1,
@@ -473,17 +544,26 @@ export function calculateAuthorityNode(
 
 // ─── Validation ────────────────────────────────────────────────────────────────
 
-export function validatePrimeStack(primeStack: PrimeStackMap): { valid: boolean; errors: string[] } {
+export function validatePrimeStack(primeStack: PrimeStackMap): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
   if (primeStack.positions.length !== 9) {
-    errors.push(`Prime Stack should have 9 positions, found ${primeStack.positions.length}`);
+    errors.push(
+      `Prime Stack should have 9 positions, found ${primeStack.positions.length}`
+    );
   }
   if (primeStack.activations.length !== 26) {
-    errors.push(`Unified activation model should have 26 activations, found ${primeStack.activations.length}`);
+    errors.push(
+      `Unified activation model should have 26 activations, found ${primeStack.activations.length}`
+    );
   }
   for (const p of primeStack.positions) {
-    if (!p.codon256Id.includes('-')) {
-      errors.push(`Position ${p.position} has invalid codon256Id: ${p.codon256Id}`);
+    if (!p.codon256Id.includes("-")) {
+      errors.push(
+        `Position ${p.position} has invalid codon256Id: ${p.codon256Id}`
+      );
     }
     if (p.codon < 1 || p.codon > 64) {
       errors.push(`Position ${p.position} has out-of-range codon: ${p.codon}`);
@@ -493,7 +573,7 @@ export function validatePrimeStack(primeStack: PrimeStackMap): { valid: boolean;
 }
 
 export function generatePrimeStackSummary(primeStack: PrimeStackMap): string {
-  let summary = 'Prime Stack Analysis:\n\n';
+  let summary = "Prime Stack Analysis:\n\n";
   for (const p of primeStack.positions) {
     summary += `${p.position}. ${p.name} [${p.source}]\n`;
     summary += `   Codon ${p.codon} (${p.codonName}) — Facet ${p.facet} (${p.facetFull})\n`;

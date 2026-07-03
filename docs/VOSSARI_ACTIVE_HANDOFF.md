@@ -1,6 +1,6 @@
 # Vossari Active Handoff
 
-Last updated: 2026-05-19T21:12:24+03:00
+Last updated: 2026-06-04T22:47:09+03:00
 
 Purpose: this file is the persistent working contract for Hermes/Vossari. Do not rely on chat memory alone. Every new session must read this file first, then verify current repo state with git before doing work.
 
@@ -143,6 +143,17 @@ Items:
 
 Verify in repo before relying on any item:
 
+- ORIEL SIGNAL public redesign implemented and locally verified on 2026-06-04; uncommitted at handoff time:
+  - New/updated public routes: `/`, `/static-signature`, `/founder-letter`.
+  - Shared design primitives added under `client/src/components/oriel-signal/`.
+  - Global header updated to larger ORIEL logo/wordmark and smaller refined nav: Home / ORIEL / Static Signature / Transmissions / Founder Letter / Enter.
+  - Homepage hero currently uses `/media/fa_mi_un_videoclip_loop_ca_sa.mp4`, copied from `shared/fa_mi_un_videoclip_loop_ca_sa.mp4`; browser DOM confirmed exactly one `<video>`, currentSrc on the new mp4, readyState 4, and playing. Poster fallback remains `/media/oriel-signal-poster.png`.
+  - Verification passed: `pnpm check`; `pnpm build`; `git diff --check`; browser QA on `/`, `/static-signature`, `/founder-letter`; Chrome mobile screenshots at 390px for all three routes.
+  - Voice/TTS/realtime code was intentionally not touched.
+- ORIEL voice returned to Inworld on 2026-06-04:
+  - VoxCPM2 provider/runtime integration was reverted for launch because observed audio latency was too high for the live experience.
+  - Current launch direction: use Inworld for voice, finish design, then deploy live.
+  - Verification passed after revert: `pnpm vitest run server/voice-mode.test.ts server/inworld-realtime-config.test.ts server/conduit-voice.test.ts server/rate-limit-router.test.ts --reporter=verbose`; `pnpm check`; `pnpm build`.
 - Stripe webhook integration hardening completed 2026-05-19:
   - `/api/stripe/webhook` route registration extracted to `server/signature-letter-webhook-route.ts`
   - route uses `express.raw({ type: "application/json" })` before global JSON parsing
@@ -190,7 +201,14 @@ If subagents are used for coding, prefer isolated worktrees or one task at a tim
 The next actual coding step should be:
 
 ```bash
-git status --short
+git status --short --branch
 ```
 
-Then begin P0 rate limiting/auth quotas: inspect the ORIEL chat, TTS, image/lore generation, and public RGP/static endpoints; add focused tests before implementing shared rate-limit/auth quota middleware.
+Then follow Vos's current launch priority:
+
+1. Review the uncommitted ORIEL SIGNAL public redesign files visually with Vos and fix only launch-blocking design issues.
+2. Decide what to do with unrelated untracked files currently outside the redesign slice.
+3. Commit the coherent redesign slice.
+4. Run final `pnpm check` + `pnpm build`, then prepare deploy live.
+
+Voice note: do not reopen VoxCPM2 for launch. Use Inworld unless Vos explicitly restarts the private TTS track after deploy.

@@ -366,7 +366,9 @@ describe("ORIEL chat image messages", () => {
   });
 
   it("fails closed when the image provider returns an untrusted URL", async () => {
-    mocks.generateImage.mockResolvedValueOnce({ url: "https://example.test/image.png" });
+    mocks.generateImage.mockResolvedValueOnce({
+      url: "https://example.test/image.png",
+    });
     const caller = callerFor();
 
     await expect(
@@ -377,7 +379,9 @@ describe("ORIEL chat image messages", () => {
   });
 
   it("strips generated image metadata before sending chat history to the LLM", async () => {
-    mocks.chatWithORIEL.mockResolvedValueOnce("I am ORIEL. The field is clear.");
+    mocks.chatWithORIEL.mockResolvedValueOnce(
+      "I am ORIEL. The field is clear."
+    );
     const caller = callerFor();
     const storedAssistantMessage = appendOrielChatImageToContent(
       "I am ORIEL. The previous image formed.",

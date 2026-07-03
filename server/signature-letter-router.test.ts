@@ -7,7 +7,7 @@ describe("Signature Letter router access", () => {
     const caller = appRouter.createCaller({ user: null } as never);
 
     await expect(
-      caller.signature.createCheckout({ productType: "glimpse" }),
+      caller.signature.createCheckout({ productType: "glimpse" })
     ).rejects.toMatchObject({
       code: "UNAUTHORIZED",
     });
@@ -22,7 +22,7 @@ describe("Signature Letter router access", () => {
     } as never);
 
     await expect(
-      caller.admin.signatureLetters.listOrders(),
+      caller.admin.signatureLetters.listOrders()
     ).rejects.toMatchObject({
       code: "FORBIDDEN",
     });

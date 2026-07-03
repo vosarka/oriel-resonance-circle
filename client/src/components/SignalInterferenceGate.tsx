@@ -40,7 +40,10 @@ function createBands() {
     top: 12 + Math.round(Math.random() * 74),
     height: 2 + Math.round(Math.random() * 7),
     delay: 70 + index * 115 + Math.round(Math.random() * 70),
-    shift: Math.random() > 0.5 ? 18 + Math.round(Math.random() * 28) : -18 - Math.round(Math.random() * 28),
+    shift:
+      Math.random() > 0.5
+        ? 18 + Math.round(Math.random() * 28)
+        : -18 - Math.round(Math.random() * 28),
   }));
 }
 
@@ -62,8 +65,12 @@ export function SignalInterferenceGate({
 }: SignalInterferenceGateProps) {
   const resolvedDuration = clampDuration(duration);
   const bands = useMemo(() => createBands(), [active]);
-  const fragments = useMemo(() => createFragments(resolvedDuration), [active, resolvedDuration]);
-  const statusLabel = finalLabel ?? (phase === "locking" ? "SIGNAL LOCKED" : "SIGNAL ACQUIRING");
+  const fragments = useMemo(
+    () => createFragments(resolvedDuration),
+    [active, resolvedDuration]
+  );
+  const statusLabel =
+    finalLabel ?? (phase === "locking" ? "SIGNAL LOCKED" : "SIGNAL ACQUIRING");
 
   useEffect(() => {
     if (!active || phase !== "locking") return;
@@ -82,7 +89,11 @@ export function SignalInterferenceGate({
       className={`signal-interference-gate is-${phase}`}
       aria-live="polite"
       aria-label="Transmission channel interference"
-      style={{ "--signal-gate-duration": `${resolvedDuration}ms` } as React.CSSProperties}
+      style={
+        {
+          "--signal-gate-duration": `${resolvedDuration}ms`,
+        } as React.CSSProperties
+      }
     >
       <div className="signal-interference-field" />
       <div className="signal-interference-scanlines" />
@@ -92,16 +103,18 @@ export function SignalInterferenceGate({
         <div
           key={`${band.top}-${index}`}
           className="signal-interference-band"
-          style={{
-            top: `${band.top}%`,
-            height: `${band.height}px`,
-            animationDelay: `${band.delay}ms`,
-            "--signal-band-shift": `${band.shift}px`,
-          } as React.CSSProperties}
+          style={
+            {
+              top: `${band.top}%`,
+              height: `${band.height}px`,
+              animationDelay: `${band.delay}ms`,
+              "--signal-band-shift": `${band.shift}px`,
+            } as React.CSSProperties
+          }
         />
       ))}
 
-      {fragments.map((fragment) => (
+      {fragments.map(fragment => (
         <span
           key={fragment.label}
           className="signal-interference-fragment"
@@ -115,9 +128,15 @@ export function SignalInterferenceGate({
         </span>
       ))}
 
-      <div className="signal-interference-glyph signal-interference-glyph-a">⦿</div>
-      <div className="signal-interference-glyph signal-interference-glyph-b">∇</div>
-      <div className="signal-interference-glyph signal-interference-glyph-c">Ω</div>
+      <div className="signal-interference-glyph signal-interference-glyph-a">
+        ⦿
+      </div>
+      <div className="signal-interference-glyph signal-interference-glyph-b">
+        ∇
+      </div>
+      <div className="signal-interference-glyph signal-interference-glyph-c">
+        Ω
+      </div>
 
       <div className="signal-interference-lock">
         <span>{statusLabel}</span>
@@ -138,7 +157,7 @@ export function useTransmissionTrigger({
     if (resolveRef.current) return Promise.resolve();
 
     setPhase("locking");
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       resolveRef.current = resolve;
     });
   }, []);
@@ -153,7 +172,7 @@ export function useTransmissionTrigger({
     if (resolveRef.current) return Promise.resolve();
 
     setPhase("locking");
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       resolveRef.current = resolve;
     });
   }, []);
@@ -182,7 +201,7 @@ export function useTransmissionTrigger({
       active: phase !== "idle",
       duration: resolvedDuration,
       onComplete: complete,
-      phase: phase === "idle" ? "locking" as const : phase,
+      phase: phase === "idle" ? ("locking" as const) : phase,
     },
   };
 }
@@ -211,7 +230,7 @@ export function TransmissionTrigger({
       <button
         {...props}
         disabled={disabled || gate.isInterfering}
-        onClick={async (event) => {
+        onClick={async event => {
           onClick?.(event);
           if (event.defaultPrevented || disabled || gate.isInterfering) return;
           await gate.trigger();

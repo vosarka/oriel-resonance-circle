@@ -1,0 +1,23 @@
+{
+  "activation_weights": {
+    "Sun": 100,
+    "Earth": 100,
+    "Moon": 70,
+    "North Node": 60,
+    "South Node": 60,
+    "Mercury": 50,
+    "Venus": 45,
+    "Mars": 40,
+    "Jupiter": 35,
+    "Saturn": 35,
+    "Uranus": 30,
+    "Neptune": 30,
+    "Pluto": 30
+  },
+  "prime_stack_multipliers": {
+    "Conscious Sun": 1.8,
+    "Conscious Earth": 1.2,
+    "Conscious Moon": 1.1,
+    "Others": "UNSPECIFIED"
+  }
+}

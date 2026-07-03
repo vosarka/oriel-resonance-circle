@@ -1,4 +1,4 @@
-import SwissEph from 'swisseph-wasm';
+import SwissEph from "swisseph-wasm";
 
 /**
  * Planetary body identifiers for Swiss Ephemeris
@@ -19,18 +19,18 @@ export const PLANETS = {
 } as const;
 
 export const PLANET_NAMES: Record<number, string> = {
-  0: 'Sun',
-  1: 'Moon',
-  2: 'Mercury',
-  3: 'Venus',
-  4: 'Mars',
-  5: 'Jupiter',
-  6: 'Saturn',
-  7: 'Uranus',
-  8: 'Neptune',
-  9: 'Pluto',
-  11: 'North Node',
-  10: 'Mean Node',
+  0: "Sun",
+  1: "Moon",
+  2: "Mercury",
+  3: "Venus",
+  4: "Mars",
+  5: "Jupiter",
+  6: "Saturn",
+  7: "Uranus",
+  8: "Neptune",
+  9: "Pluto",
+  11: "North Node",
+  10: "Mean Node",
 };
 
 const CALCULATED_PLANET_IDS = [
@@ -48,19 +48,19 @@ const CALCULATED_PLANET_IDS = [
 ] as const;
 
 const REQUIRED_CHART_BODIES = [
-  'Sun',
-  'Moon',
-  'Mercury',
-  'Venus',
-  'Mars',
-  'Jupiter',
-  'Saturn',
-  'Uranus',
-  'Neptune',
-  'Pluto',
-  'North Node',
-  'South Node',
-  'Earth',
+  "Sun",
+  "Moon",
+  "Mercury",
+  "Venus",
+  "Mars",
+  "Jupiter",
+  "Saturn",
+  "Uranus",
+  "Neptune",
+  "Pluto",
+  "North Node",
+  "South Node",
+  "Earth",
 ] as const;
 
 // Swiss Ephemeris does not guarantee populated speed fields unless SEFLG_SPEED
@@ -110,14 +110,27 @@ export interface HouseSystem {
  * Zodiac signs and their properties
  */
 const ZODIAC_SIGNS = [
-  'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-  'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpio",
+  "Sagittarius",
+  "Capricorn",
+  "Aquarius",
+  "Pisces",
 ];
 
 /**
  * Get zodiac sign from longitude (0-360 degrees)
  */
-function getLongitudeToZodiac(longitude: number): { sign: string; degree: number } {
+function getLongitudeToZodiac(longitude: number): {
+  sign: string;
+  degree: number;
+} {
   const normalized = ((longitude % 360) + 360) % 360;
   const signIndex = Math.floor(normalized / 30);
   const degree = normalized % 30;
@@ -176,58 +189,60 @@ async function calcPlanetsAtJD(
       };
     } catch (error) {
       failures.push(
-        `${planetName}: ${error instanceof Error ? error.message : 'unknown error'}`
+        `${planetName}: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
   }
 
   // Canonical derived activations from the unified specification:
   // Earth = opposite of Sun, South Node = opposite of North Node.
-  if (planets['Sun']) {
-    const earthLongitude = ((planets['Sun'].longitude + 180) % 360 + 360) % 360;
+  if (planets["Sun"]) {
+    const earthLongitude =
+      (((planets["Sun"].longitude + 180) % 360) + 360) % 360;
     const zodiac = getLongitudeToZodiac(earthLongitude);
-    planets['Earth'] = {
-      planet: 'Earth',
+    planets["Earth"] = {
+      planet: "Earth",
       planetId: -1,
       longitude: earthLongitude,
       latitude: 0,
-      distance: planets['Sun'].distance,
-      speed: planets['Sun'].speed,
+      distance: planets["Sun"].distance,
+      speed: planets["Sun"].speed,
       zodiacSign: zodiac.sign,
       zodiacDegree: zodiac.degree,
     };
   }
 
-  if (planets['North Node']) {
-    const southNodeLongitude = ((planets['North Node'].longitude + 180) % 360 + 360) % 360;
+  if (planets["North Node"]) {
+    const southNodeLongitude =
+      (((planets["North Node"].longitude + 180) % 360) + 360) % 360;
     const zodiac = getLongitudeToZodiac(southNodeLongitude);
-    planets['South Node'] = {
-      planet: 'South Node',
+    planets["South Node"] = {
+      planet: "South Node",
       planetId: -2,
       longitude: southNodeLongitude,
-      latitude: planets['North Node'].latitude,
-      distance: planets['North Node'].distance,
-      speed: planets['North Node'].speed,
+      latitude: planets["North Node"].latitude,
+      distance: planets["North Node"].distance,
+      speed: planets["North Node"].speed,
       zodiacSign: zodiac.sign,
       zodiacDegree: zodiac.degree,
     };
   }
 
   const missing = REQUIRED_CHART_BODIES.filter(
-    (body) => !Number.isFinite(planets[body]?.longitude)
+    body => !Number.isFinite(planets[body]?.longitude)
   );
 
   if (failures.length > 0 || missing.length > 0) {
     const details = [
-      failures.length > 0
-        ? `calculation failures: ${failures.join('; ')}`
-        : '',
+      failures.length > 0 ? `calculation failures: ${failures.join("; ")}` : "",
       missing.length > 0
-        ? `missing required bodies: ${missing.join(', ')}`
-        : '',
+        ? `missing required bodies: ${missing.join(", ")}`
+        : "",
     ].filter(Boolean);
 
-    throw new Error(`Incomplete ephemeris chart at JD ${jd}: ${details.join('. ')}`);
+    throw new Error(
+      `Incomplete ephemeris chart at JD ${jd}: ${details.join(". ")}`
+    );
   }
 
   return planets;
@@ -252,10 +267,12 @@ async function findDesignJD(
   se: SwissEph
 ): Promise<number> {
   if (!Number.isFinite(consciousSunLon)) {
-    throw new Error('Design solar-arc search requires a finite conscious Sun longitude');
+    throw new Error(
+      "Design solar-arc search requires a finite conscious Sun longitude"
+    );
   }
 
-  const targetLon = ((consciousSunLon - 88.0) % 360 + 360) % 360;
+  const targetLon = (((consciousSunLon - 88.0) % 360) + 360) % 360;
 
   // Initial estimate: approximately 88 days before birth
   // (Sun moves ~0.9856°/day on average, so 88° ≈ 88–89 days)
@@ -271,15 +288,19 @@ async function findDesignJD(
     const speed: number = result?.longitudeSpeed;
 
     if (!Number.isFinite(currentLon)) {
-      throw new Error('Design solar-arc search failed: Sun longitude is missing or non-finite');
+      throw new Error(
+        "Design solar-arc search failed: Sun longitude is missing or non-finite"
+      );
     }
 
     if (!Number.isFinite(speed) || speed === 0) {
-      throw new Error('Design solar-arc search failed: Sun speed is missing, non-finite, or zero');
+      throw new Error(
+        "Design solar-arc search failed: Sun speed is missing, non-finite, or zero"
+      );
     }
 
     // Shortest angular difference (handles 0°/360° wrap-around)
-    let diff = ((targetLon - currentLon) % 360 + 360) % 360;
+    let diff = (((targetLon - currentLon) % 360) + 360) % 360;
     if (diff > 180) diff -= 360;
 
     if (Math.abs(diff) < TOLERANCE) {
@@ -291,7 +312,9 @@ async function findDesignJD(
   }
 
   if (!converged) {
-    throw new Error('Design solar-arc search failed to converge within 50 iterations');
+    throw new Error(
+      "Design solar-arc search failed to converge within 50 iterations"
+    );
   }
 
   return jd;
@@ -306,10 +329,10 @@ function parseBirthDateTime(
   birthTime: string,
   timezoneOffsetHours: number
 ): Date {
-  const timeParts = birthTime.split(':');
+  const timeParts = birthTime.split(":");
   const hours = parseInt(timeParts[0], 10);
   const minutes = parseInt(timeParts[1], 10);
-  const seconds = parseInt(timeParts[2] || '0', 10);
+  const seconds = parseInt(timeParts[2] || "0", 10);
 
   // Apply timezone correction to get UTC
   const utc = new Date(birthDate);
@@ -323,10 +346,10 @@ function parseBirthDateTime(
  */
 export async function calculateBirthChart(
   birthDate: Date,
-  birthTime: string,     // Format: "HH:MM" or "HH:MM:SS"
-  latitude: number,      // Birth location latitude
-  longitude: number,     // Birth location longitude
-  timezone: number = 0   // Timezone offset in hours (VRC: convert to UTC)
+  birthTime: string, // Format: "HH:MM" or "HH:MM:SS"
+  latitude: number, // Birth location latitude
+  longitude: number, // Birth location longitude
+  timezone: number = 0 // Timezone offset in hours (VRC: convert to UTC)
 ): Promise<BirthChart> {
   try {
     const se = await initEphemeris();
@@ -336,14 +359,17 @@ export async function calculateBirthChart(
     const year = utcDate.getUTCFullYear();
     const month = utcDate.getUTCMonth() + 1;
     const day = utcDate.getUTCDate();
-    const hour = utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600;
+    const hour =
+      utcDate.getUTCHours() +
+      utcDate.getUTCMinutes() / 60 +
+      utcDate.getUTCSeconds() / 3600;
 
     const jd = se.julday(year, month, day, hour);
     const planets = await calcPlanetsAtJD(jd, se);
 
     // VRC § 1: House System = None / Equal — the VRC relies on the Mandala (360°), not House cusps.
     const houses: HouseSystem = {
-      system: 'None',
+      system: "None",
       houses: Array.from({ length: 12 }, (_, i) => i * 30),
       ascendant: 0,
       midheaven: 0,
@@ -359,8 +385,10 @@ export async function calculateBirthChart(
       houses,
     };
   } catch (error) {
-    console.error('Error calculating birth chart:', error);
-    throw new Error(`Failed to calculate birth chart: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error("Error calculating birth chart:", error);
+    throw new Error(
+      `Failed to calculate birth chart: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 
@@ -387,20 +415,23 @@ export async function calculateBothCharts(
   const year = utcDate.getUTCFullYear();
   const month = utcDate.getUTCMonth() + 1;
   const day = utcDate.getUTCDate();
-  const hour = utcDate.getUTCHours() + utcDate.getUTCMinutes() / 60 + utcDate.getUTCSeconds() / 3600;
+  const hour =
+    utcDate.getUTCHours() +
+    utcDate.getUTCMinutes() / 60 +
+    utcDate.getUTCSeconds() / 3600;
 
   const consciousJD = se.julday(year, month, day, hour);
 
   // Step A: Conscious chart
   const consciousPlanets = await calcPlanetsAtJD(consciousJD, se);
-  const consciousSunLon = consciousPlanets['Sun'].longitude;
+  const consciousSunLon = consciousPlanets["Sun"].longitude;
 
   // Step B: Design chart — iterative Solar Arc search
   const designJD = await findDesignJD(consciousJD, consciousSunLon, se);
   const designPlanets = await calcPlanetsAtJD(designJD, se);
 
   const noHouses: HouseSystem = {
-    system: 'None',
+    system: "None",
     houses: Array.from({ length: 12 }, (_, i) => i * 30),
     ascendant: 0,
     midheaven: 0,
@@ -417,7 +448,8 @@ export async function calculateBothCharts(
   };
 
   const design: BirthChart = {
-    timestamp: utcDate.getTime() - Math.round((consciousJD - designJD) * 86400000),
+    timestamp:
+      utcDate.getTime() - Math.round((consciousJD - designJD) * 86400000),
     jd: designJD,
     latitude,
     longitude,
@@ -432,14 +464,19 @@ export async function calculateBothCharts(
 /**
  * Get planetary position by name
  */
-export function getPlanetPosition(birthChart: BirthChart, planetName: string): PlanetaryPosition | undefined {
+export function getPlanetPosition(
+  birthChart: BirthChart,
+  planetName: string
+): PlanetaryPosition | undefined {
   return birthChart.planets[planetName];
 }
 
 /**
  * Get all planetary positions
  */
-export function getAllPlanetPositions(birthChart: BirthChart): PlanetaryPosition[] {
+export function getAllPlanetPositions(
+  birthChart: BirthChart
+): PlanetaryPosition[] {
   return Object.values(birthChart.planets);
 }
 

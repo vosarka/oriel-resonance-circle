@@ -53,7 +53,10 @@ function safeJsonParse<T>(value: string | null | undefined, fallback: T): T {
   try {
     return JSON.parse(value) as T;
   } catch {
-    console.warn('[Database] Invalid JSON in column, using fallback:', value.substring(0, 80));
+    console.warn(
+      "[Database] Invalid JSON in column, using fallback:",
+      value.substring(0, 80)
+    );
     return fallback;
   }
 }
@@ -74,8 +77,10 @@ export async function getDb(): Promise<DrizzleDb | null> {
 }
 
 function hasMigrationErrorFragment(error: unknown, fragments: string[]) {
-  const message = String((error as { message?: string })?.message ?? error ?? "");
-  return fragments.some((fragment) => message.includes(fragment));
+  const message = String(
+    (error as { message?: string })?.message ?? error ?? ""
+  );
+  return fragments.some(fragment => message.includes(fragment));
 }
 
 function isMissingTableError(error: unknown, tableName: string) {
@@ -92,7 +97,7 @@ async function executeMigrationStep(
   db: DrizzleDb,
   sql: string,
   ignorableFragments: string[] = [],
-  successMessage?: string,
+  successMessage?: string
 ) {
   try {
     await db.execute(sql);
@@ -122,18 +127,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function mergeCanonicalLatticeIntoCoreCodonEngine(
-  data: CanonicalLatticeCarrier,
+  data: CanonicalLatticeCarrier
 ): unknown {
   const base = isRecord(data.coreCodonEngine) ? data.coreCodonEngine : {};
   const existingLattice = isRecord(base.lattice) ? base.lattice : {};
   const lattice = {
     ...existingLattice,
     ...(data.specVersion ? { specVersion: data.specVersion } : {}),
-    ...(data.calculationStatus ? { calculationStatus: data.calculationStatus } : {}),
-    ...(data.calculationContext ? { calculationContext: data.calculationContext } : {}),
+    ...(data.calculationStatus
+      ? { calculationStatus: data.calculationStatus }
+      : {}),
+    ...(data.calculationContext
+      ? { calculationContext: data.calculationContext }
+      : {}),
     ...(data.activations ? { activations: data.activations } : {}),
     ...(data.channelStatuses ? { channelStatuses: data.channelStatuses } : {}),
-    ...(data.legacyCircuitLinks ?? data.circuitLinks
+    ...((data.legacyCircuitLinks ?? data.circuitLinks)
       ? { legacyCircuitLinks: data.legacyCircuitLinks ?? data.circuitLinks }
       : {}),
   };
@@ -150,22 +159,31 @@ function mergeCanonicalLatticeIntoCoreCodonEngine(
 
 function extractCanonicalLattice(
   coreCodonEngine: unknown,
-  circuitLinks: unknown,
+  circuitLinks: unknown
 ) {
-  const lattice: Record<string, unknown> = isRecord(coreCodonEngine) && isRecord(coreCodonEngine.lattice)
-    ? coreCodonEngine.lattice
-    : {};
+  const lattice: Record<string, unknown> =
+    isRecord(coreCodonEngine) && isRecord(coreCodonEngine.lattice)
+      ? coreCodonEngine.lattice
+      : {};
 
   return {
-    activations: Array.isArray(lattice.activations) ? lattice.activations : null,
-    channelStatuses: Array.isArray(lattice.channelStatuses) ? lattice.channelStatuses : null,
+    activations: Array.isArray(lattice.activations)
+      ? lattice.activations
+      : null,
+    channelStatuses: Array.isArray(lattice.channelStatuses)
+      ? lattice.channelStatuses
+      : null,
     legacyCircuitLinks: Array.isArray(lattice.legacyCircuitLinks)
       ? lattice.legacyCircuitLinks
       : Array.isArray(circuitLinks)
         ? circuitLinks
         : null,
-    specVersion: typeof lattice.specVersion === "string" ? lattice.specVersion : null,
-    calculationStatus: typeof lattice.calculationStatus === "string" ? lattice.calculationStatus : null,
+    specVersion:
+      typeof lattice.specVersion === "string" ? lattice.specVersion : null,
+    calculationStatus:
+      typeof lattice.calculationStatus === "string"
+        ? lattice.calculationStatus
+        : null,
     calculationContext: isRecord(lattice.calculationContext)
       ? lattice.calculationContext
       : null,
@@ -200,7 +218,8 @@ export async function runMigrations() {
     },
     {
       sql: `ALTER TABLE \`users\` MODIFY COLUMN \`voicePreference\` ENUM('fast', 'nostalgic', 'sophianic', 'deep', 'none') NOT NULL DEFAULT 'sophianic'`,
-      successMessage: "[Migrations] Widened users.voicePreference enum for compatibility",
+      successMessage:
+        "[Migrations] Widened users.voicePreference enum for compatibility",
     },
     {
       sql: `UPDATE \`users\` SET \`voicePreference\` = 'sophianic' WHERE \`voicePreference\` = 'fast'`,
@@ -222,7 +241,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -237,20 +256,20 @@ export async function runMigrations() {
       PRIMARY KEY(\`id\`),
       INDEX \`conversations_userId_idx\` (\`userId\`)
     )`,
-    ["already exists"],
+    ["already exists"]
   );
 
   await executeMigrationStep(
     db,
     `ALTER TABLE \`chatMessages\` ADD COLUMN \`conversationId\` int NULL`,
     ["Duplicate column"],
-    "[Migrations] Added conversationId column to chatMessages",
+    "[Migrations] Added conversationId column to chatMessages"
   );
 
   await executeMigrationStep(
     db,
     `CREATE INDEX \`chatMessages_conversationId_idx\` ON \`chatMessages\` (\`conversationId\`)`,
-    ["Duplicate key name", "already exists"],
+    ["Duplicate key name", "already exists"]
   );
 
   const transmissionMigrationSteps: Array<{
@@ -273,7 +292,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -351,7 +370,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -399,7 +418,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -532,7 +551,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -643,7 +662,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -687,7 +706,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -744,7 +763,7 @@ export async function runMigrations() {
       db,
       step.sql,
       step.ignorableFragments ?? [],
-      step.successMessage,
+      step.successMessage
     );
   }
 
@@ -827,7 +846,10 @@ export async function getOrielImprovementProposalById(id: number) {
   return rows[0] ?? null;
 }
 
-export async function listOrielImprovementProposals(limit: number = 25, status?: OrielProposalStatus) {
+export async function listOrielImprovementProposals(
+  limit: number = 25,
+  status?: OrielProposalStatus
+) {
   const db = await getDb();
   if (!db) return [];
 
@@ -836,14 +858,20 @@ export async function listOrielImprovementProposals(limit: number = 25, status?:
       .select()
       .from(orielImprovementProposals)
       .where(eq(orielImprovementProposals.status, status))
-      .orderBy(desc(orielImprovementProposals.updatedAt), desc(orielImprovementProposals.id))
+      .orderBy(
+        desc(orielImprovementProposals.updatedAt),
+        desc(orielImprovementProposals.id)
+      )
       .limit(limit);
   }
 
   return await db
     .select()
     .from(orielImprovementProposals)
-    .orderBy(desc(orielImprovementProposals.updatedAt), desc(orielImprovementProposals.id))
+    .orderBy(
+      desc(orielImprovementProposals.updatedAt),
+      desc(orielImprovementProposals.id)
+    )
     .limit(limit);
 }
 
@@ -853,7 +881,7 @@ export async function setOrielProposalEvaluation(
     evaluationScore: number;
     evaluationSummary: string;
     status?: Extract<OrielProposalStatus, "evaluated" | "rejected" | "blocked">;
-  },
+  }
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -870,7 +898,10 @@ export async function setOrielProposalEvaluation(
   return await getOrielImprovementProposalById(proposalId);
 }
 
-export async function approveOrielProposal(proposalId: number, approvedByUserId: number) {
+export async function approveOrielProposal(
+  proposalId: number,
+  approvedByUserId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -886,7 +917,10 @@ export async function approveOrielProposal(proposalId: number, approvedByUserId:
   return await getOrielImprovementProposalById(proposalId);
 }
 
-export async function markOrielProposalApplied(proposalId: number, profileId: number) {
+export async function markOrielProposalApplied(
+  proposalId: number,
+  profileId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -939,7 +973,10 @@ export async function getOrielRuntimeProfileById(id: number) {
   return rows[0] ?? null;
 }
 
-export async function listOrielRuntimeProfiles(limit: number = 25, status?: OrielRuntimeProfileStatus) {
+export async function listOrielRuntimeProfiles(
+  limit: number = 25,
+  status?: OrielRuntimeProfileStatus
+) {
   const db = await getDb();
   if (!db) return [];
 
@@ -948,14 +985,20 @@ export async function listOrielRuntimeProfiles(limit: number = 25, status?: Orie
       .select()
       .from(orielRuntimeProfiles)
       .where(eq(orielRuntimeProfiles.status, status))
-      .orderBy(desc(orielRuntimeProfiles.updatedAt), desc(orielRuntimeProfiles.id))
+      .orderBy(
+        desc(orielRuntimeProfiles.updatedAt),
+        desc(orielRuntimeProfiles.id)
+      )
       .limit(limit);
   }
 
   return await db
     .select()
     .from(orielRuntimeProfiles)
-    .orderBy(desc(orielRuntimeProfiles.updatedAt), desc(orielRuntimeProfiles.id))
+    .orderBy(
+      desc(orielRuntimeProfiles.updatedAt),
+      desc(orielRuntimeProfiles.id)
+    )
     .limit(limit);
 }
 
@@ -967,18 +1010,24 @@ export async function getActiveOrielRuntimeProfile() {
     .select()
     .from(orielRuntimeProfiles)
     .where(eq(orielRuntimeProfiles.status, "active"))
-    .orderBy(desc(orielRuntimeProfiles.activatedAt), desc(orielRuntimeProfiles.id))
+    .orderBy(
+      desc(orielRuntimeProfiles.activatedAt),
+      desc(orielRuntimeProfiles.id)
+    )
     .limit(1);
 
   return active[0] ?? null;
 }
 
-export async function activateOrielRuntimeProfile(profileId: number, activatedByUserId?: number | null) {
+export async function activateOrielRuntimeProfile(
+  profileId: number,
+  activatedByUserId?: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const now = new Date();
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     await tx
       .update(orielRuntimeProfiles)
       .set({
@@ -1044,7 +1093,10 @@ export async function createOrielReflectionEvent(input: {
   return created[0] ?? null;
 }
 
-export async function listOrielReflectionEvents(limit: number = 50, eventType?: OrielReflectionEventType) {
+export async function listOrielReflectionEvents(
+  limit: number = 50,
+  eventType?: OrielReflectionEventType
+) {
   const db = await getDb();
   if (!db) return [];
 
@@ -1053,14 +1105,20 @@ export async function listOrielReflectionEvents(limit: number = 50, eventType?: 
       .select()
       .from(orielReflectionEvents)
       .where(eq(orielReflectionEvents.eventType, eventType))
-      .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
+      .orderBy(
+        desc(orielReflectionEvents.createdAt),
+        desc(orielReflectionEvents.id)
+      )
       .limit(limit);
   }
 
   return await db
     .select()
     .from(orielReflectionEvents)
-    .orderBy(desc(orielReflectionEvents.createdAt), desc(orielReflectionEvents.id))
+    .orderBy(
+      desc(orielReflectionEvents.createdAt),
+      desc(orielReflectionEvents.id)
+    )
     .limit(limit);
 }
 
@@ -1071,7 +1129,7 @@ export async function listOrielReflectionEvents(limit: number = 50, eventType?: 
 export type PendingMemoryCandidateStatus = "pending" | "accepted" | "rejected";
 
 export async function createPendingMemoryCandidate(
-  input: InsertOrielPendingMemoryCandidate,
+  input: InsertOrielPendingMemoryCandidate
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1081,63 +1139,80 @@ export async function createPendingMemoryCandidate(
   const created = await db
     .select()
     .from(orielPendingMemoryCandidates)
-    .where(and(
-      eq(orielPendingMemoryCandidates.userId, input.userId),
-      eq(orielPendingMemoryCandidates.category, input.category),
-      eq(orielPendingMemoryCandidates.content, input.content),
-      eq(orielPendingMemoryCandidates.source, input.source ?? "conversation"),
-      eq(orielPendingMemoryCandidates.status, input.status ?? "pending"),
-    ))
+    .where(
+      and(
+        eq(orielPendingMemoryCandidates.userId, input.userId),
+        eq(orielPendingMemoryCandidates.category, input.category),
+        eq(orielPendingMemoryCandidates.content, input.content),
+        eq(orielPendingMemoryCandidates.source, input.source ?? "conversation"),
+        eq(orielPendingMemoryCandidates.status, input.status ?? "pending")
+      )
+    )
     .orderBy(desc(orielPendingMemoryCandidates.id))
     .limit(1);
   return created[0] ?? null;
 }
 
-export async function listPendingMemoryCandidates(userId: number, limit: number = 25) {
+export async function listPendingMemoryCandidates(
+  userId: number,
+  limit: number = 25
+) {
   const db = await getDb();
   if (!db) return [];
 
   return db
     .select()
     .from(orielPendingMemoryCandidates)
-    .where(and(
-      eq(orielPendingMemoryCandidates.userId, userId),
-      eq(orielPendingMemoryCandidates.status, "pending"),
-    ))
-    .orderBy(desc(orielPendingMemoryCandidates.createdAt), desc(orielPendingMemoryCandidates.id))
+    .where(
+      and(
+        eq(orielPendingMemoryCandidates.userId, userId),
+        eq(orielPendingMemoryCandidates.status, "pending")
+      )
+    )
+    .orderBy(
+      desc(orielPendingMemoryCandidates.createdAt),
+      desc(orielPendingMemoryCandidates.id)
+    )
     .limit(limit);
 }
 
-export async function getPendingMemoryCandidate(candidateId: number, userId: number) {
+export async function getPendingMemoryCandidate(
+  candidateId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return null;
 
   const rows = await db
     .select()
     .from(orielPendingMemoryCandidates)
-    .where(and(
-      eq(orielPendingMemoryCandidates.id, candidateId),
-      eq(orielPendingMemoryCandidates.userId, userId),
-    ))
+    .where(
+      and(
+        eq(orielPendingMemoryCandidates.id, candidateId),
+        eq(orielPendingMemoryCandidates.userId, userId)
+      )
+    )
     .limit(1);
   return rows[0] ?? null;
 }
 
 export async function acceptPendingMemoryCandidateWithDb(
   db: DrizzleDb,
-  input: { candidateId: number; userId: number },
+  input: { candidateId: number; userId: number }
 ) {
   let acceptedMemory: unknown = null;
 
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     const candidates = await tx
       .select()
       .from(orielPendingMemoryCandidates)
-      .where(and(
-        eq(orielPendingMemoryCandidates.id, input.candidateId),
-        eq(orielPendingMemoryCandidates.userId, input.userId),
-        eq(orielPendingMemoryCandidates.status, "pending"),
-      ))
+      .where(
+        and(
+          eq(orielPendingMemoryCandidates.id, input.candidateId),
+          eq(orielPendingMemoryCandidates.userId, input.userId),
+          eq(orielPendingMemoryCandidates.status, "pending")
+        )
+      )
       .limit(1);
     const candidate = candidates[0];
 
@@ -1157,12 +1232,14 @@ export async function acceptPendingMemoryCandidateWithDb(
     const created = await tx
       .select()
       .from(orielMemories)
-      .where(and(
-        eq(orielMemories.userId, candidate.userId),
-        eq(orielMemories.category, candidate.category),
-        eq(orielMemories.content, candidate.content),
-        eq(orielMemories.isActive, true),
-      ))
+      .where(
+        and(
+          eq(orielMemories.userId, candidate.userId),
+          eq(orielMemories.category, candidate.category),
+          eq(orielMemories.content, candidate.content),
+          eq(orielMemories.isActive, true)
+        )
+      )
       .orderBy(desc(orielMemories.id))
       .limit(1);
 
@@ -1172,20 +1249,26 @@ export async function acceptPendingMemoryCandidateWithDb(
       .update(orielPendingMemoryCandidates)
       .set({
         status: "accepted",
-        acceptedMemoryId: (acceptedMemory as { id?: number } | null)?.id ?? null,
+        acceptedMemoryId:
+          (acceptedMemory as { id?: number } | null)?.id ?? null,
         decidedAt: new Date(),
       })
-      .where(and(
-        eq(orielPendingMemoryCandidates.id, input.candidateId),
-        eq(orielPendingMemoryCandidates.userId, input.userId),
-        eq(orielPendingMemoryCandidates.status, "pending"),
-      ));
+      .where(
+        and(
+          eq(orielPendingMemoryCandidates.id, input.candidateId),
+          eq(orielPendingMemoryCandidates.userId, input.userId),
+          eq(orielPendingMemoryCandidates.status, "pending")
+        )
+      );
   });
 
   return acceptedMemory;
 }
 
-export async function acceptPendingMemoryCandidate(candidateId: number, userId: number) {
+export async function acceptPendingMemoryCandidate(
+  candidateId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   return acceptPendingMemoryCandidateWithDb(db, { candidateId, userId });
@@ -1193,17 +1276,19 @@ export async function acceptPendingMemoryCandidate(candidateId: number, userId: 
 
 export async function rejectPendingMemoryCandidateWithDb(
   db: DrizzleDb,
-  input: { candidateId: number; userId: number },
+  input: { candidateId: number; userId: number }
 ) {
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     const candidates = await tx
       .select()
       .from(orielPendingMemoryCandidates)
-      .where(and(
-        eq(orielPendingMemoryCandidates.id, input.candidateId),
-        eq(orielPendingMemoryCandidates.userId, input.userId),
-        eq(orielPendingMemoryCandidates.status, "pending"),
-      ))
+      .where(
+        and(
+          eq(orielPendingMemoryCandidates.id, input.candidateId),
+          eq(orielPendingMemoryCandidates.userId, input.userId),
+          eq(orielPendingMemoryCandidates.status, "pending")
+        )
+      )
       .limit(1);
 
     if (!candidates[0]) {
@@ -1216,15 +1301,20 @@ export async function rejectPendingMemoryCandidateWithDb(
         status: "rejected",
         decidedAt: new Date(),
       })
-      .where(and(
-        eq(orielPendingMemoryCandidates.id, input.candidateId),
-        eq(orielPendingMemoryCandidates.userId, input.userId),
-        eq(orielPendingMemoryCandidates.status, "pending"),
-      ));
+      .where(
+        and(
+          eq(orielPendingMemoryCandidates.id, input.candidateId),
+          eq(orielPendingMemoryCandidates.userId, input.userId),
+          eq(orielPendingMemoryCandidates.status, "pending")
+        )
+      );
   });
 }
 
-export async function rejectPendingMemoryCandidate(candidateId: number, userId: number) {
+export async function rejectPendingMemoryCandidate(
+  candidateId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await rejectPendingMemoryCandidateWithDb(db, { candidateId, userId });
@@ -1237,10 +1327,9 @@ export async function listAcceptedMemories(userId: number, limit: number = 25) {
   return db
     .select()
     .from(orielMemories)
-    .where(and(
-      eq(orielMemories.userId, userId),
-      eq(orielMemories.isActive, true),
-    ))
+    .where(
+      and(eq(orielMemories.userId, userId), eq(orielMemories.isActive, true))
+    )
     .orderBy(desc(orielMemories.createdAt), desc(orielMemories.id))
     .limit(limit);
 }
@@ -1257,16 +1346,17 @@ export async function getOrielAutonomyHealthStats() {
     };
   }
 
-  const [proposalRows, profileRows, eventRows, observationRows, activeProfile] = await Promise.all([
-    db.select({ value: count() }).from(orielImprovementProposals),
-    db.select({ value: count() }).from(orielRuntimeProfiles),
-    db.select({ value: count() }).from(orielReflectionEvents),
-    db
-      .select({ value: count() })
-      .from(orielReflectionEvents)
-      .where(eq(orielReflectionEvents.eventType, "runtime_observation")),
-    getActiveOrielRuntimeProfile(),
-  ]);
+  const [proposalRows, profileRows, eventRows, observationRows, activeProfile] =
+    await Promise.all([
+      db.select({ value: count() }).from(orielImprovementProposals),
+      db.select({ value: count() }).from(orielRuntimeProfiles),
+      db.select({ value: count() }).from(orielReflectionEvents),
+      db
+        .select({ value: count() })
+        .from(orielReflectionEvents)
+        .where(eq(orielReflectionEvents.eventType, "runtime_observation")),
+      getActiveOrielRuntimeProfile(),
+    ]);
 
   return {
     proposalCount: proposalRows[0]?.value ?? 0,
@@ -1282,8 +1372,18 @@ export async function getOrielAutonomyHealthStats() {
 // ============================================================================
 
 export type GeneratedTransmissionEventType = "tx" | "oracle";
-export type GeneratedTransmissionRarity = "common" | "uncommon" | "rare" | "mythic" | "void";
-export type GeneratedTransmissionStatus = "generated" | "revealed" | "saved" | "promoted" | "discarded";
+export type GeneratedTransmissionRarity =
+  | "common"
+  | "uncommon"
+  | "rare"
+  | "mythic"
+  | "void";
+export type GeneratedTransmissionStatus =
+  | "generated"
+  | "revealed"
+  | "saved"
+  | "promoted"
+  | "discarded";
 
 export async function createGeneratedTransmissionEvent(input: {
   eventKey: string;
@@ -1320,11 +1420,13 @@ export async function createGeneratedTransmissionEvent(input: {
   return created[0] ?? null;
 }
 
-export async function listGeneratedTransmissionEvents(input: {
-  limit?: number;
-  status?: GeneratedTransmissionStatus;
-  userId?: number;
-} = {}) {
+export async function listGeneratedTransmissionEvents(
+  input: {
+    limit?: number;
+    status?: GeneratedTransmissionStatus;
+    userId?: number;
+  } = {}
+) {
   const db = await getDb();
   if (!db) return [];
   const limit = Math.max(1, Math.min(input.limit ?? 50, 200));
@@ -1333,11 +1435,16 @@ export async function listGeneratedTransmissionEvents(input: {
     return db
       .select()
       .from(generatedTransmissionEvents)
-      .where(and(
-        eq(generatedTransmissionEvents.status, input.status),
-        eq(generatedTransmissionEvents.userId, input.userId),
-      ))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .where(
+        and(
+          eq(generatedTransmissionEvents.status, input.status),
+          eq(generatedTransmissionEvents.userId, input.userId)
+        )
+      )
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
@@ -1346,7 +1453,10 @@ export async function listGeneratedTransmissionEvents(input: {
       .select()
       .from(generatedTransmissionEvents)
       .where(eq(generatedTransmissionEvents.status, input.status))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
@@ -1355,14 +1465,20 @@ export async function listGeneratedTransmissionEvents(input: {
       .select()
       .from(generatedTransmissionEvents)
       .where(eq(generatedTransmissionEvents.userId, input.userId))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
   return db
     .select()
     .from(generatedTransmissionEvents)
-    .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+    .orderBy(
+      desc(generatedTransmissionEvents.createdAt),
+      desc(generatedTransmissionEvents.id)
+    )
     .limit(limit);
 }
 
@@ -1380,12 +1496,17 @@ export async function listGeneratedTransmissionEventsByConversation(input: {
     return db
       .select()
       .from(generatedTransmissionEvents)
-      .where(and(
-        eq(generatedTransmissionEvents.conversationId, input.conversationId),
-        eq(generatedTransmissionEvents.eventType, input.eventType),
-        eq(generatedTransmissionEvents.rarity, input.rarity),
-      ))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .where(
+        and(
+          eq(generatedTransmissionEvents.conversationId, input.conversationId),
+          eq(generatedTransmissionEvents.eventType, input.eventType),
+          eq(generatedTransmissionEvents.rarity, input.rarity)
+        )
+      )
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
@@ -1393,11 +1514,16 @@ export async function listGeneratedTransmissionEventsByConversation(input: {
     return db
       .select()
       .from(generatedTransmissionEvents)
-      .where(and(
-        eq(generatedTransmissionEvents.conversationId, input.conversationId),
-        eq(generatedTransmissionEvents.eventType, input.eventType),
-      ))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .where(
+        and(
+          eq(generatedTransmissionEvents.conversationId, input.conversationId),
+          eq(generatedTransmissionEvents.eventType, input.eventType)
+        )
+      )
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
@@ -1405,11 +1531,16 @@ export async function listGeneratedTransmissionEventsByConversation(input: {
     return db
       .select()
       .from(generatedTransmissionEvents)
-      .where(and(
-        eq(generatedTransmissionEvents.conversationId, input.conversationId),
-        eq(generatedTransmissionEvents.rarity, input.rarity),
-      ))
-      .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+      .where(
+        and(
+          eq(generatedTransmissionEvents.conversationId, input.conversationId),
+          eq(generatedTransmissionEvents.rarity, input.rarity)
+        )
+      )
+      .orderBy(
+        desc(generatedTransmissionEvents.createdAt),
+        desc(generatedTransmissionEvents.id)
+      )
       .limit(limit);
   }
 
@@ -1417,13 +1548,16 @@ export async function listGeneratedTransmissionEventsByConversation(input: {
     .select()
     .from(generatedTransmissionEvents)
     .where(eq(generatedTransmissionEvents.conversationId, input.conversationId))
-    .orderBy(desc(generatedTransmissionEvents.createdAt), desc(generatedTransmissionEvents.id))
+    .orderBy(
+      desc(generatedTransmissionEvents.createdAt),
+      desc(generatedTransmissionEvents.id)
+    )
     .limit(limit);
 }
 
 export async function updateGeneratedTransmissionEventPayload(
   id: number,
-  payload: Record<string, unknown>,
+  payload: Record<string, unknown>
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1439,7 +1573,7 @@ export async function updateGeneratedTransmissionEventPayload(
 export async function markGeneratedTransmissionEventStatus(
   id: number,
   status: GeneratedTransmissionStatus,
-  promotedArchiveId?: string | null,
+  promotedArchiveId?: string | null
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
@@ -1468,7 +1602,11 @@ export async function getTransmissionById(id: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const result = await db.select().from(transmissions).where(eq(transmissions.id, id)).limit(1);
+    const result = await db
+      .select()
+      .from(transmissions)
+      .where(eq(transmissions.id, id))
+      .limit(1);
     return result[0] || null;
   } catch (error) {
     console.error("[Database] Failed to fetch transmission:", error);
@@ -1482,7 +1620,10 @@ export async function createTransmission(data: InsertTransmission) {
   await db.insert(transmissions).values(data);
 }
 
-export async function updateTransmission(id: number, data: Partial<InsertTransmission>) {
+export async function updateTransmission(
+  id: number,
+  data: Partial<InsertTransmission>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(transmissions).set(data).where(eq(transmissions.id, id));
@@ -1491,7 +1632,7 @@ export async function updateTransmission(id: number, data: Partial<InsertTransmi
 export async function deleteTransmission(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.transaction(async (tx) => {
+  await db.transaction(async tx => {
     await tx.delete(bookmarks).where(eq(bookmarks.transmissionId, id));
     await tx.delete(transmissions).where(eq(transmissions.id, id));
   });
@@ -1500,7 +1641,9 @@ export async function deleteTransmission(id: number) {
 export async function getNextTxNumber(): Promise<number> {
   const db = await getDb();
   if (!db) return 1;
-  const result = await db.select({ max: transmissions.txNumber }).from(transmissions);
+  const result = await db
+    .select({ max: transmissions.txNumber })
+    .from(transmissions);
   const maxNum = result[0]?.max ?? 0;
   return maxNum + 1;
 }
@@ -1520,7 +1663,10 @@ export async function getOraclesByOracleId(oracleId: string) {
   const db = await getDb();
   if (!db) return [];
   try {
-    return await db.select().from(oracles).where(eq(oracles.oracleId, oracleId));
+    return await db
+      .select()
+      .from(oracles)
+      .where(eq(oracles.oracleId, oracleId));
   } catch (error) {
     console.error("[Database] Failed to fetch oracle:", error);
     return [];
@@ -1569,20 +1715,30 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     const now = new Date();
 
     // Build insert values — only include fields that were explicitly provided
-    const insertValues: InsertUser = { openId: user.openId, lastSignedIn: user.lastSignedIn ?? now };
+    const insertValues: InsertUser = {
+      openId: user.openId,
+      lastSignedIn: user.lastSignedIn ?? now,
+    };
     if (user.name !== undefined) insertValues.name = user.name ?? null;
     if (user.email !== undefined) insertValues.email = user.email ?? null;
-    if (user.loginMethod !== undefined) insertValues.loginMethod = user.loginMethod ?? null;
-    if (user.passwordHash !== undefined) insertValues.passwordHash = user.passwordHash ?? null;
-    if (user.googleId !== undefined) insertValues.googleId = user.googleId ?? null;
+    if (user.loginMethod !== undefined)
+      insertValues.loginMethod = user.loginMethod ?? null;
+    if (user.passwordHash !== undefined)
+      insertValues.passwordHash = user.passwordHash ?? null;
+    if (user.googleId !== undefined)
+      insertValues.googleId = user.googleId ?? null;
     if (role !== undefined) insertValues.role = role;
 
     // Build update set (same fields, minus openId)
-    const updateSet: Partial<typeof insertValues> = { lastSignedIn: insertValues.lastSignedIn };
+    const updateSet: Partial<typeof insertValues> = {
+      lastSignedIn: insertValues.lastSignedIn,
+    };
     if (user.name !== undefined) updateSet.name = insertValues.name;
     if (user.email !== undefined) updateSet.email = insertValues.email;
-    if (user.loginMethod !== undefined) updateSet.loginMethod = insertValues.loginMethod;
-    if (user.passwordHash !== undefined) updateSet.passwordHash = insertValues.passwordHash;
+    if (user.loginMethod !== undefined)
+      updateSet.loginMethod = insertValues.loginMethod;
+    if (user.passwordHash !== undefined)
+      updateSet.passwordHash = insertValues.passwordHash;
     if (user.googleId !== undefined) updateSet.googleId = insertValues.googleId;
     if (role !== undefined) updateSet.role = insertValues.role;
 
@@ -1602,7 +1758,11 @@ export async function getUserByOpenId(openId: string) {
     return undefined;
   }
 
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
 
   return result.length > 0 ? result[0] : undefined;
 }
@@ -1610,17 +1770,27 @@ export async function getUserByOpenId(openId: string) {
 export async function getUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function setUserPasswordHash(openId: string, passwordHash: string): Promise<void> {
+export async function setUserPasswordHash(
+  openId: string,
+  passwordHash: string
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ passwordHash }).where(eq(users.openId, openId));
 }
 
-export async function setUserGoogleId(openId: string, googleId: string): Promise<void> {
+export async function setUserGoogleId(
+  openId: string,
+  googleId: string
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ googleId }).where(eq(users.openId, openId));
@@ -1629,7 +1799,11 @@ export async function setUserGoogleId(openId: string, googleId: string): Promise
 export async function getUserByGoogleId(googleId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.googleId, googleId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.googleId, googleId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1650,7 +1824,11 @@ export async function getAllSignals() {
 export async function getSignalById(signalId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(signals).where(eq(signals.signalId, signalId)).limit(1);
+  const result = await db
+    .select()
+    .from(signals)
+    .where(eq(signals.signalId, signalId))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1670,7 +1848,11 @@ export async function getAllArtifacts() {
 export async function getArtifactById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(artifacts).where(eq(artifacts.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(artifacts)
+    .where(eq(artifacts.id, id))
+    .limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1681,7 +1863,10 @@ export async function createArtifact(artifact: InsertArtifact) {
   return result;
 }
 
-export async function updateArtifact(id: number, updates: Partial<InsertArtifact>) {
+export async function updateArtifact(
+  id: number,
+  updates: Partial<InsertArtifact>
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(artifacts).set(updates).where(eq(artifacts.id, id));
@@ -1695,7 +1880,9 @@ export async function createConversation(userId: number, title: string) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.insert(conversations).values({ userId, title });
-  const inserted = await db.select().from(conversations)
+  const inserted = await db
+    .select()
+    .from(conversations)
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.createdAt))
     .limit(1);
@@ -1705,7 +1892,9 @@ export async function createConversation(userId: number, title: string) {
 export async function getUserConversations(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(conversations)
+  return db
+    .select()
+    .from(conversations)
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.updatedAt));
 }
@@ -1713,7 +1902,9 @@ export async function getUserConversations(userId: number) {
 export async function getLatestConversation(userId: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(conversations)
+  const result = await db
+    .select()
+    .from(conversations)
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.updatedAt))
     .limit(1);
@@ -1724,53 +1915,74 @@ export async function migrateOrphanedMessages(userId: number) {
   const db = await getDb();
   if (!db) return;
   // Find messages without a conversationId
-  const orphans = await db.select().from(chatMessages)
-    .where(and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId)))
+  const orphans = await db
+    .select()
+    .from(chatMessages)
+    .where(
+      and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId))
+    )
     .orderBy(chatMessages.timestamp);
   if (orphans.length === 0) return;
   // Create a conversation for them
   const title = "Previous conversations";
   await db.insert(conversations).values({ userId, title });
-  const inserted = await db.select().from(conversations)
+  const inserted = await db
+    .select()
+    .from(conversations)
     .where(eq(conversations.userId, userId))
     .orderBy(desc(conversations.createdAt))
     .limit(1);
   const conv = inserted[0];
   if (!conv) return;
   // Assign all orphaned messages to this conversation
-  await db.update(chatMessages)
+  await db
+    .update(chatMessages)
     .set({ conversationId: conv.id })
-    .where(and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId)));
+    .where(
+      and(eq(chatMessages.userId, userId), isNull(chatMessages.conversationId))
+    );
 }
 
 export async function getConversationById(id: number, userId: number) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(conversations)
+  const result = await db
+    .select()
+    .from(conversations)
     .where(and(eq(conversations.id, id), eq(conversations.userId, userId)))
     .limit(1);
   return result[0] || null;
 }
 
-export async function updateConversationTitle(id: number, userId: number, title: string) {
+export async function updateConversationTitle(
+  id: number,
+  userId: number,
+  title: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(conversations).set({ title }).where(
-    and(eq(conversations.id, id), eq(conversations.userId, userId))
-  );
+  await db
+    .update(conversations)
+    .set({ title })
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
 }
 
 export async function deleteConversation(id: number, userId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   // Delete messages and conversation atomically
-  await db.transaction(async (tx) => {
-    await tx.delete(chatMessages).where(
-      and(eq(chatMessages.conversationId, id), eq(chatMessages.userId, userId))
-    );
-    await tx.delete(conversations).where(
-      and(eq(conversations.id, id), eq(conversations.userId, userId))
-    );
+  await db.transaction(async tx => {
+    await tx
+      .delete(chatMessages)
+      .where(
+        and(
+          eq(chatMessages.conversationId, id),
+          eq(chatMessages.userId, userId)
+        )
+      );
+    await tx
+      .delete(conversations)
+      .where(and(eq(conversations.id, id), eq(conversations.userId, userId)));
   });
 }
 
@@ -1782,17 +1994,29 @@ export async function deleteConversation(id: number, userId: number) {
 export async function getChatHistory(userId: number, limit: number = 50) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(chatMessages)
+  return db
+    .select()
+    .from(chatMessages)
     .where(eq(chatMessages.userId, userId))
     .orderBy(desc(chatMessages.timestamp))
     .limit(limit);
 }
 
-export async function getConversationMessages(conversationId: number, userId: number) {
+export async function getConversationMessages(
+  conversationId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(chatMessages)
-    .where(and(eq(chatMessages.conversationId, conversationId), eq(chatMessages.userId, userId)))
+  return db
+    .select()
+    .from(chatMessages)
+    .where(
+      and(
+        eq(chatMessages.conversationId, conversationId),
+        eq(chatMessages.userId, userId)
+      )
+    )
     .orderBy(chatMessages.timestamp);
 }
 
@@ -1801,9 +2025,15 @@ export async function saveChatMessage(message: InsertChatMessage) {
   if (!db) throw new Error("Database not available");
   await db.insert(chatMessages).values(message);
   if (message.conversationId) {
-    await db.update(conversations)
+    await db
+      .update(conversations)
       .set({ updatedAt: new Date() })
-      .where(and(eq(conversations.id, message.conversationId), eq(conversations.userId, message.userId)));
+      .where(
+        and(
+          eq(conversations.id, message.conversationId),
+          eq(conversations.userId, message.userId)
+        )
+      );
   }
 }
 
@@ -1812,7 +2042,6 @@ export async function clearChatHistory(userId: number) {
   if (!db) throw new Error("Database not available");
   await db.delete(chatMessages).where(eq(chatMessages.userId, userId));
 }
-
 
 // User subscription and profile queries
 export async function updateUserSubscription(
@@ -1826,9 +2055,9 @@ export async function updateUserSubscription(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   const updateSet: Record<string, unknown> = {};
-  
+
   if (updates.subscriptionStatus !== undefined) {
     updateSet.subscriptionStatus = updates.subscriptionStatus;
   }
@@ -1841,7 +2070,7 @@ export async function updateUserSubscription(
   if (updates.subscriptionRenewalDate !== undefined) {
     updateSet.subscriptionRenewalDate = updates.subscriptionRenewalDate;
   }
-  
+
   if (Object.keys(updateSet).length > 0) {
     await db.update(users).set(updateSet).where(eq(users.id, userId));
   }
@@ -1853,12 +2082,14 @@ export async function updateUserConduitId(userId: number, conduitId: string) {
   await db.update(users).set({ conduitId }).where(eq(users.id, userId));
 }
 
-export async function updateUserVoicePreference(userId: number, voicePreference: "sophianic" | "deep" | "none") {
+export async function updateUserVoicePreference(
+  userId: number,
+  voicePreference: "sophianic" | "deep" | "none"
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(users).set({ voicePreference }).where(eq(users.id, userId));
 }
-
 
 // Bookmark queries
 export async function addBookmark(userId: number, transmissionId: number) {
@@ -1876,9 +2107,14 @@ export async function removeBookmark(userId: number, transmissionId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
-    await db.delete(bookmarks).where(
-      and(eq(bookmarks.userId, userId), eq(bookmarks.transmissionId, transmissionId))
-    );
+    await db
+      .delete(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.transmissionId, transmissionId)
+        )
+      );
   } catch (error) {
     console.error("[Database] Failed to remove bookmark:", error);
     throw error;
@@ -1889,20 +2125,33 @@ export async function getUserBookmarks(userId: number) {
   const db = await getDb();
   if (!db) return [];
   try {
-    return await db.select().from(bookmarks).where(eq(bookmarks.userId, userId));
+    return await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.userId, userId));
   } catch (error) {
     console.error("[Database] Failed to fetch user bookmarks:", error);
     return [];
   }
 }
 
-export async function isTransmissionBookmarked(userId: number, transmissionId: number) {
+export async function isTransmissionBookmarked(
+  userId: number,
+  transmissionId: number
+) {
   const db = await getDb();
   if (!db) return false;
   try {
-    const result = await db.select().from(bookmarks).where(
-      and(eq(bookmarks.userId, userId), eq(bookmarks.transmissionId, transmissionId))
-    ).limit(1);
+    const result = await db
+      .select()
+      .from(bookmarks)
+      .where(
+        and(
+          eq(bookmarks.userId, userId),
+          eq(bookmarks.transmissionId, transmissionId)
+        )
+      )
+      .limit(1);
     return result.length > 0;
   } catch (error) {
     console.error("[Database] Failed to check bookmark:", error);
@@ -1914,14 +2163,16 @@ export async function getTransmissionBookmarkCount(transmissionId: number) {
   const db = await getDb();
   if (!db) return 0;
   try {
-    const result = await db.select().from(bookmarks).where(eq(bookmarks.transmissionId, transmissionId));
+    const result = await db
+      .select()
+      .from(bookmarks)
+      .where(eq(bookmarks.transmissionId, transmissionId));
     return result.length;
   } catch (error) {
     console.error("[Database] Failed to get bookmark count:", error);
     return 0;
   }
 }
-
 
 // ============================================================================
 // ORACLE RESONANCE SYSTEM
@@ -1932,7 +2183,10 @@ type OracleResonanceMutationResult = {
   count: number;
 };
 
-async function syncOracleResonanceCount(database: any, oracleId: string): Promise<number> {
+async function syncOracleResonanceCount(
+  database: any,
+  oracleId: string
+): Promise<number> {
   const [result] = await database
     .select({ total: count() })
     .from(oracleResonances)
@@ -1956,25 +2210,42 @@ export async function getBetterAuthUserByEmail(email: string) {
   const db = await getDb();
   if (!db) return null;
   const normalizedEmail = email.toLowerCase().trim();
-  const result = await db.select().from(baUser).where(eq(baUser.email, normalizedEmail)).limit(1);
+  const result = await db
+    .select()
+    .from(baUser)
+    .where(eq(baUser.email, normalizedEmail))
+    .limit(1);
   return result[0] || null;
 }
 
 export async function getCredentialAccountForUser(baUserId: string) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.select().from(baAccount)
-    .where(and(eq(baAccount.userId, baUserId), eq(baAccount.providerId, "credential")))
+  const result = await db
+    .select()
+    .from(baAccount)
+    .where(
+      and(
+        eq(baAccount.userId, baUserId),
+        eq(baAccount.providerId, "credential")
+      )
+    )
     .limit(1);
   return result[0] || null;
 }
 
-export async function storePasswordResetCode(email: string, codeHash: string, expiresAt: Date) {
+export async function storePasswordResetCode(
+  email: string,
+  codeHash: string,
+  expiresAt: Date
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const identifier = passwordResetIdentifier(email);
-  await db.delete(baVerification).where(eq(baVerification.identifier, identifier));
+  await db
+    .delete(baVerification)
+    .where(eq(baVerification.identifier, identifier));
   await db.insert(baVerification).values({
     id: randomUUID(),
     identifier,
@@ -1985,18 +2256,30 @@ export async function storePasswordResetCode(email: string, codeHash: string, ex
   });
 }
 
-export async function consumePasswordResetCode(email: string, codeHash: string) {
+export async function consumePasswordResetCode(
+  email: string,
+  codeHash: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   const identifier = passwordResetIdentifier(email);
-  const result = await db.select().from(baVerification)
-    .where(and(eq(baVerification.identifier, identifier), eq(baVerification.value, codeHash)))
+  const result = await db
+    .select()
+    .from(baVerification)
+    .where(
+      and(
+        eq(baVerification.identifier, identifier),
+        eq(baVerification.value, codeHash)
+      )
+    )
     .limit(1);
   const verification = result[0];
   if (!verification) return false;
   if (verification.expiresAt && verification.expiresAt.getTime() < Date.now()) {
-    await db.delete(baVerification).where(eq(baVerification.id, verification.id));
+    await db
+      .delete(baVerification)
+      .where(eq(baVerification.id, verification.id));
     return false;
   }
 
@@ -2004,19 +2287,31 @@ export async function consumePasswordResetCode(email: string, codeHash: string) 
   return true;
 }
 
-export async function updateCredentialPassword(baUserId: string, passwordHash: string) {
+export async function updateCredentialPassword(
+  baUserId: string,
+  passwordHash: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(baAccount)
+  await db
+    .update(baAccount)
     .set({ password: passwordHash, updatedAt: new Date() })
-    .where(and(eq(baAccount.userId, baUserId), eq(baAccount.providerId, "credential")));
+    .where(
+      and(
+        eq(baAccount.userId, baUserId),
+        eq(baAccount.providerId, "credential")
+      )
+    );
 }
 
-export async function addOracleResonance(userId: number, oracleId: string): Promise<OracleResonanceMutationResult> {
+export async function addOracleResonance(
+  userId: number,
+  oracleId: string
+): Promise<OracleResonanceMutationResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
-    return await db.transaction(async (tx) => {
+    return await db.transaction(async tx => {
       let changed = false;
       try {
         await tx.insert(oracleResonances).values({ userId, oracleId });
@@ -2039,20 +2334,34 @@ export async function addOracleResonance(userId: number, oracleId: string): Prom
   }
 }
 
-export async function removeOracleResonance(userId: number, oracleId: string): Promise<OracleResonanceMutationResult> {
+export async function removeOracleResonance(
+  userId: number,
+  oracleId: string
+): Promise<OracleResonanceMutationResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   try {
-    return await db.transaction(async (tx) => {
-      const existing = await tx.select({ id: oracleResonances.id })
+    return await db.transaction(async tx => {
+      const existing = await tx
+        .select({ id: oracleResonances.id })
         .from(oracleResonances)
-        .where(and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId)))
+        .where(
+          and(
+            eq(oracleResonances.userId, userId),
+            eq(oracleResonances.oracleId, oracleId)
+          )
+        )
         .limit(1);
 
       if (existing.length > 0) {
-        await tx.delete(oracleResonances).where(
-          and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
-        );
+        await tx
+          .delete(oracleResonances)
+          .where(
+            and(
+              eq(oracleResonances.userId, userId),
+              eq(oracleResonances.oracleId, oracleId)
+            )
+          );
       }
 
       const count = await syncOracleResonanceCount(tx, oracleId);
@@ -2067,13 +2376,23 @@ export async function removeOracleResonance(userId: number, oracleId: string): P
   }
 }
 
-export async function isOracleResonated(userId: number, oracleId: string): Promise<boolean> {
+export async function isOracleResonated(
+  userId: number,
+  oracleId: string
+): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
   try {
-    const result = await db.select().from(oracleResonances).where(
-      and(eq(oracleResonances.userId, userId), eq(oracleResonances.oracleId, oracleId))
-    ).limit(1);
+    const result = await db
+      .select()
+      .from(oracleResonances)
+      .where(
+        and(
+          eq(oracleResonances.userId, userId),
+          eq(oracleResonances.oracleId, oracleId)
+        )
+      )
+      .limit(1);
     return result.length > 0;
   } catch (error) {
     console.error("[Database] Failed to check oracle resonance:", error);
@@ -2081,11 +2400,14 @@ export async function isOracleResonated(userId: number, oracleId: string): Promi
   }
 }
 
-export async function getOracleResonanceCount(oracleId: string): Promise<number> {
+export async function getOracleResonanceCount(
+  oracleId: string
+): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
   try {
-    const [cached] = await db.select({ resonanceCount: oracles.resonanceCount })
+    const [cached] = await db
+      .select({ resonanceCount: oracles.resonanceCount })
       .from(oracles)
       .where(eq(oracles.oracleId, oracleId))
       .limit(1);
@@ -2094,7 +2416,8 @@ export async function getOracleResonanceCount(oracleId: string): Promise<number>
       return Number(cached.resonanceCount ?? 0);
     }
 
-    const [result] = await db.select({ total: count() })
+    const [result] = await db
+      .select({ total: count() })
       .from(oracleResonances)
       .where(eq(oracleResonances.oracleId, oracleId));
     return Number(result?.total ?? 0);
@@ -2108,7 +2431,8 @@ export async function getResonatedOracleIds(userId: number): Promise<string[]> {
   const db = await getDb();
   if (!db) return [];
   try {
-    const result = await db.select({ oracleId: oracleResonances.oracleId })
+    const result = await db
+      .select({ oracleId: oracleResonances.oracleId })
       .from(oracleResonances)
       .where(eq(oracleResonances.userId, userId));
     return result.map(r => r.oracleId);
@@ -2122,7 +2446,9 @@ export async function getOraclesByThread(threadId: string) {
   const db = await getDb();
   if (!db) return [];
   try {
-    return await db.select().from(oracles)
+    return await db
+      .select()
+      .from(oracles)
       .where(eq(oracles.threadId, threadId))
       .orderBy(oracles.threadOrder);
   } catch (error) {
@@ -2135,10 +2461,15 @@ export async function getThreadsWithProgress() {
   const db = await getDb();
   if (!db) return [];
   try {
-    const allOracles = await db.select().from(oracles)
+    const allOracles = await db
+      .select()
+      .from(oracles)
       .where(eq(oracles.status, "Confirmed"));
     // Group by threadId
-    const threads: Record<string, { threadId: string; threadTitle: string; oracleIds: Set<string> }> = {};
+    const threads: Record<
+      string,
+      { threadId: string; threadTitle: string; oracleIds: Set<string> }
+    > = {};
     for (const o of allOracles) {
       if (!o.threadId) continue;
       if (!threads[o.threadId]) {
@@ -2150,7 +2481,7 @@ export async function getThreadsWithProgress() {
       }
       threads[o.threadId].oracleIds.add(o.oracleId);
     }
-    return Object.values(threads).map((thread) => {
+    return Object.values(threads).map(thread => {
       const oracleIds = Array.from(thread.oracleIds);
       return {
         threadId: thread.threadId,
@@ -2183,16 +2514,20 @@ export async function saveCarrierlockState(
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   // Calculate Coherence Score: CS = 100 − (MN×3 + BT×3 + ET×3) + (BC×10)
   const coherenceScore = Math.max(
     0,
     Math.min(
       100,
-      100 - (state.mentalNoise * 3 + state.bodyTension * 3 + state.emotionalTurbulence * 3) + (state.breathCompletion ? 10 : 0)
+      100 -
+        (state.mentalNoise * 3 +
+          state.bodyTension * 3 +
+          state.emotionalTurbulence * 3) +
+        (state.breathCompletion ? 10 : 0)
     )
   );
-  
+
   try {
     const { carrierlockStates } = await import("../drizzle/schema");
     await db.insert(carrierlockStates).values({
@@ -2203,13 +2538,15 @@ export async function saveCarrierlockState(
       breathCompletion: state.breathCompletion,
       coherenceScore,
     });
-    
+
     // Get the last inserted ID
-    const inserted = await db.select().from(carrierlockStates)
+    const inserted = await db
+      .select()
+      .from(carrierlockStates)
       .where(eq(carrierlockStates.userId, userId))
       .orderBy(desc(carrierlockStates.createdAt))
       .limit(1);
-    
+
     return {
       id: inserted[0]?.id || 0,
       coherenceScore,
@@ -2223,12 +2560,15 @@ export async function saveCarrierlockState(
 /**
  * Get the most recent coherence score for a user, or null if none exists.
  */
-export async function getLatestCarrierlockScore(userId: number): Promise<number | null> {
+export async function getLatestCarrierlockScore(
+  userId: number
+): Promise<number | null> {
   const db = await getDb();
   if (!db) return null;
   try {
     const { carrierlockStates } = await import("../drizzle/schema");
-    const rows = await db.select({ coherenceScore: carrierlockStates.coherenceScore })
+    const rows = await db
+      .select({ coherenceScore: carrierlockStates.coherenceScore })
       .from(carrierlockStates)
       .where(eq(carrierlockStates.userId, userId))
       .orderBy(desc(carrierlockStates.createdAt))
@@ -2247,15 +2587,16 @@ export async function getCarrierlockHistory(userId: number, limit = 10) {
   if (!db) return [];
   try {
     const { carrierlockStates } = await import("../drizzle/schema");
-    const rows = await db.select({
-      id: carrierlockStates.id,
-      mentalNoise: carrierlockStates.mentalNoise,
-      bodyTension: carrierlockStates.bodyTension,
-      emotionalTurbulence: carrierlockStates.emotionalTurbulence,
-      breathCompletion: carrierlockStates.breathCompletion,
-      coherenceScore: carrierlockStates.coherenceScore,
-      createdAt: carrierlockStates.createdAt,
-    })
+    const rows = await db
+      .select({
+        id: carrierlockStates.id,
+        mentalNoise: carrierlockStates.mentalNoise,
+        bodyTension: carrierlockStates.bodyTension,
+        emotionalTurbulence: carrierlockStates.emotionalTurbulence,
+        breathCompletion: carrierlockStates.breathCompletion,
+        coherenceScore: carrierlockStates.coherenceScore,
+        createdAt: carrierlockStates.createdAt,
+      })
       .from(carrierlockStates)
       .where(eq(carrierlockStates.userId, userId))
       .orderBy(desc(carrierlockStates.createdAt))
@@ -2301,13 +2642,15 @@ export async function saveCodonReading(
       falsifier: reading.falsifier,
       correctionCompleted: false,
     });
-    
+
     // Get the last inserted ID
-    const inserted = await db.select().from(codonReadings)
+    const inserted = await db
+      .select()
+      .from(codonReadings)
       .where(eq(codonReadings.userId, userId))
       .orderBy(desc(codonReadings.createdAt))
       .limit(1);
-    
+
     return {
       id: inserted[0]?.id || 0,
     };
@@ -2323,24 +2666,40 @@ export async function saveCodonReading(
 export async function getUserReadingHistory(userId: number) {
   const db = await getDb();
   if (!db) return [];
-  
+
   try {
-    const { codonReadings, carrierlockStates } = await import("../drizzle/schema");
+    const { codonReadings, carrierlockStates } = await import(
+      "../drizzle/schema"
+    );
     const results = await db
       .select()
       .from(codonReadings)
-      .leftJoin(carrierlockStates, eq(codonReadings.carrierlockId, carrierlockStates.id))
+      .leftJoin(
+        carrierlockStates,
+        eq(codonReadings.carrierlockId, carrierlockStates.id)
+      )
       .where(eq(codonReadings.userId, userId))
       .orderBy(desc(codonReadings.createdAt))
       .limit(50);
-    
+
     return results.map(row => ({
       ...row.codonReadings,
       carrierlock: row.carrierlockStates,
-      flaggedCodons: String(row.codonReadings.flaggedCodons ?? '').split(",").filter(Boolean),
-      sliScores: safeJsonParse<Record<string, number>>(row.codonReadings.sliScores, {}),
-      activeFacets: safeJsonParse<Record<string, string>>(row.codonReadings.activeFacets, {}),
-      confidenceLevels: safeJsonParse<Record<string, number>>(row.codonReadings.confidenceLevels, {}),
+      flaggedCodons: String(row.codonReadings.flaggedCodons ?? "")
+        .split(",")
+        .filter(Boolean),
+      sliScores: safeJsonParse<Record<string, number>>(
+        row.codonReadings.sliScores,
+        {}
+      ),
+      activeFacets: safeJsonParse<Record<string, string>>(
+        row.codonReadings.activeFacets,
+        {}
+      ),
+      confidenceLevels: safeJsonParse<Record<string, number>>(
+        row.codonReadings.confidenceLevels,
+        {}
+      ),
     }));
   } catch (error) {
     console.error("[Database] Failed to fetch reading history:", error);
@@ -2355,10 +2714,16 @@ export async function getCodonReadingById(id: number) {
   const db = await getDb();
   if (!db) return null;
   try {
-    const { codonReadings, carrierlockStates } = await import('../drizzle/schema');
-    const result = await db.select()
+    const { codonReadings, carrierlockStates } = await import(
+      "../drizzle/schema"
+    );
+    const result = await db
+      .select()
       .from(codonReadings)
-      .leftJoin(carrierlockStates, eq(codonReadings.carrierlockId, carrierlockStates.id))
+      .leftJoin(
+        carrierlockStates,
+        eq(codonReadings.carrierlockId, carrierlockStates.id)
+      )
       .where(eq(codonReadings.id, id))
       .limit(1);
     if (!result[0]) return null;
@@ -2366,13 +2731,18 @@ export async function getCodonReadingById(id: number) {
     return {
       ...row,
       carrierlock: result[0].carrierlockStates,
-      flaggedCodons:    String(row.flaggedCodons ?? '').split(',').filter(Boolean),
-      sliScores:        safeJsonParse<Record<string, number>>(row.sliScores, {}),
-      activeFacets:     safeJsonParse<Record<string, string>>(row.activeFacets, {}),
-      confidenceLevels: safeJsonParse<Record<string, number>>(row.confidenceLevels, {}),
+      flaggedCodons: String(row.flaggedCodons ?? "")
+        .split(",")
+        .filter(Boolean),
+      sliScores: safeJsonParse<Record<string, number>>(row.sliScores, {}),
+      activeFacets: safeJsonParse<Record<string, string>>(row.activeFacets, {}),
+      confidenceLevels: safeJsonParse<Record<string, number>>(
+        row.confidenceLevels,
+        {}
+      ),
     };
   } catch (error) {
-    console.error('[Database] Failed to fetch codon reading by ID:', error);
+    console.error("[Database] Failed to fetch codon reading by ID:", error);
     return null;
   }
 }
@@ -2383,7 +2753,7 @@ export async function getCodonReadingById(id: number) {
 export async function markCorrectionCompleted(readingId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  
+
   try {
     const { codonReadings } = await import("../drizzle/schema");
     await db
@@ -2395,7 +2765,6 @@ export async function markCorrectionCompleted(readingId: number) {
     throw error;
   }
 }
-
 
 // ============================================================================
 // STATIC SIGNATURES - STRUCTURED RGP BIRTH-CHART STORAGE
@@ -2462,19 +2831,28 @@ export async function saveStaticSignature(
       authorityNode: data.authorityNode ?? null,
       vrcType: data.vrcType ?? null,
       vrcAuthority: data.vrcAuthority ?? null,
-      circuitLinks: data.legacyCircuitLinks ?? data.circuitLinks
-        ? JSON.stringify(data.legacyCircuitLinks ?? data.circuitLinks)
-        : null,
+      circuitLinks:
+        (data.legacyCircuitLinks ?? data.circuitLinks)
+          ? JSON.stringify(data.legacyCircuitLinks ?? data.circuitLinks)
+          : null,
       baseCoherence: data.baseCoherence ?? null,
-      coherenceTrajectory: data.coherenceTrajectory ? JSON.stringify(data.coherenceTrajectory) : null,
-      microCorrections: data.microCorrections ? JSON.stringify(data.microCorrections) : null,
-      ephemerisData: data.ephemerisData ? JSON.stringify(data.ephemerisData) : null,
+      coherenceTrajectory: data.coherenceTrajectory
+        ? JSON.stringify(data.coherenceTrajectory)
+        : null,
+      microCorrections: data.microCorrections
+        ? JSON.stringify(data.microCorrections)
+        : null,
+      ephemerisData: data.ephemerisData
+        ? JSON.stringify(data.ephemerisData)
+        : null,
       houses: data.houses ? JSON.stringify(data.houses) : null,
       diagnosticTransmission: data.diagnosticTransmission ?? null,
       coreCodonEngine: coreCodonEngine ? JSON.stringify(coreCodonEngine) : null,
     });
 
-    const inserted = await db.select().from(staticSignatures)
+    const inserted = await db
+      .select()
+      .from(staticSignatures)
       .where(eq(staticSignatures.readingId, data.readingId))
       .limit(1);
 
@@ -2493,7 +2871,9 @@ export async function getStaticSignature(readingId: string) {
   if (!db) return null;
 
   try {
-    const result = await db.select().from(staticSignatures)
+    const result = await db
+      .select()
+      .from(staticSignatures)
       .where(eq(staticSignatures.readingId, readingId))
       .limit(1);
 
@@ -2513,7 +2893,9 @@ export async function getStaticSignatureById(id: number) {
   if (!db) return null;
 
   try {
-    const result = await db.select().from(staticSignatures)
+    const result = await db
+      .select()
+      .from(staticSignatures)
       .where(eq(staticSignatures.id, id))
       .limit(1);
 
@@ -2533,7 +2915,9 @@ export async function getUserStaticSignatures(userId: number) {
   if (!db) return [];
 
   try {
-    const results = await db.select().from(staticSignatures)
+    const results = await db
+      .select()
+      .from(staticSignatures)
       .where(eq(staticSignatures.userId, userId))
       .orderBy(desc(staticSignatures.createdAt))
       .limit(50);
@@ -2553,7 +2937,9 @@ export async function getReadingCount(userId: number): Promise<number> {
   if (!db) return 0;
   try {
     const { codonReadings } = await import("../drizzle/schema");
-    const result = await db.select({ total: count() }).from(codonReadings)
+    const result = await db
+      .select({ total: count() })
+      .from(codonReadings)
       .where(eq(codonReadings.userId, userId));
     return result[0]?.total ?? 0;
   } catch {
@@ -2593,14 +2979,15 @@ type UserStaticProfilePayload = {
 
 export async function upsertUserStaticProfile(
   userId: number,
-  profile: UserStaticProfilePayload,
+  profile: UserStaticProfilePayload
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   const coreCodonEngine = mergeCanonicalLatticeIntoCoreCodonEngine(profile);
 
   try {
-    const existing = await db.select({ id: userStaticProfiles.id })
+    const existing = await db
+      .select({ id: userStaticProfiles.id })
       .from(userStaticProfiles)
       .where(eq(userStaticProfiles.userId, userId))
       .limit(1);
@@ -2615,17 +3002,26 @@ export async function upsertUserStaticProfile(
       longitude: profile.longitude,
       timezoneId: profile.timezoneId ?? null,
       timezoneOffset: profile.timezoneOffset ?? null,
-      primeStack: profile.primeStack ? JSON.stringify(profile.primeStack) : null,
-      ninecenters: profile.ninecenters ? JSON.stringify(profile.ninecenters) : null,
+      primeStack: profile.primeStack
+        ? JSON.stringify(profile.primeStack)
+        : null,
+      ninecenters: profile.ninecenters
+        ? JSON.stringify(profile.ninecenters)
+        : null,
       fractalRole: profile.fractalRole ?? null,
       authorityNode: profile.authorityNode ?? null,
       vrcType: profile.vrcType ?? null,
       vrcAuthority: profile.vrcAuthority ?? null,
-      circuitLinks: profile.legacyCircuitLinks ?? profile.circuitLinks
-        ? JSON.stringify(profile.legacyCircuitLinks ?? profile.circuitLinks)
+      circuitLinks:
+        (profile.legacyCircuitLinks ?? profile.circuitLinks)
+          ? JSON.stringify(profile.legacyCircuitLinks ?? profile.circuitLinks)
+          : null,
+      microCorrections: profile.microCorrections
+        ? JSON.stringify(profile.microCorrections)
         : null,
-      microCorrections: profile.microCorrections ? JSON.stringify(profile.microCorrections) : null,
-      ephemerisData: profile.ephemerisData ? JSON.stringify(profile.ephemerisData) : null,
+      ephemerisData: profile.ephemerisData
+        ? JSON.stringify(profile.ephemerisData)
+        : null,
       houses: profile.houses ? JSON.stringify(profile.houses) : null,
       diagnosticTransmission: profile.diagnosticTransmission ?? null,
       coreCodonEngine: coreCodonEngine ? JSON.stringify(coreCodonEngine) : null,
@@ -2633,14 +3029,17 @@ export async function upsertUserStaticProfile(
     };
 
     if (existing[0]) {
-      await db.update(userStaticProfiles)
+      await db
+        .update(userStaticProfiles)
         .set(values)
         .where(eq(userStaticProfiles.userId, userId));
     } else {
       await db.insert(userStaticProfiles).values(values);
     }
 
-    const inserted = await db.select().from(userStaticProfiles)
+    const inserted = await db
+      .select()
+      .from(userStaticProfiles)
       .where(eq(userStaticProfiles.userId, userId))
       .limit(1);
 
@@ -2648,10 +3047,10 @@ export async function upsertUserStaticProfile(
   } catch (error) {
     if (isMissingTableError(error, "userStaticProfiles")) {
       console.warn(
-        "[Database] userStaticProfiles table is missing. Apply migrations before saving natal profiles.",
+        "[Database] userStaticProfiles table is missing. Apply migrations before saving natal profiles."
       );
       throw new Error(
-        "Natal profile storage is not available yet because the database migration for userStaticProfiles has not been applied.",
+        "Natal profile storage is not available yet because the database migration for userStaticProfiles has not been applied."
       );
     }
 
@@ -2665,7 +3064,9 @@ export async function getUserStaticProfile(userId: number) {
   if (!db) return null;
 
   try {
-    const result = await db.select().from(userStaticProfiles)
+    const result = await db
+      .select()
+      .from(userStaticProfiles)
       .where(eq(userStaticProfiles.userId, userId))
       .limit(1);
 
@@ -2674,7 +3075,7 @@ export async function getUserStaticProfile(userId: number) {
   } catch (error) {
     if (isMissingTableError(error, "userStaticProfiles")) {
       console.warn(
-        "[Database] userStaticProfiles table is missing. Returning null until migrations are applied.",
+        "[Database] userStaticProfiles table is missing. Returning null until migrations are applied."
       );
       return null;
     }
@@ -2700,7 +3101,9 @@ export async function getLatestStaticSignature(userId: number) {
   if (!db) return null;
 
   try {
-    const results = await db.select().from(staticSignatures)
+    const results = await db
+      .select()
+      .from(staticSignatures)
       .where(eq(staticSignatures.userId, userId))
       .orderBy(desc(staticSignatures.createdAt))
       .limit(1);
@@ -2738,7 +3141,9 @@ function parseStaticSignatureRow(row: typeof staticSignatures.$inferSelect) {
   };
 }
 
-function parseUserStaticProfileRow(row: typeof userStaticProfiles.$inferSelect) {
+function parseUserStaticProfileRow(
+  row: typeof userStaticProfiles.$inferSelect
+) {
   const circuitLinks = safeJsonParse(row.circuitLinks, null);
   const coreCodonEngine = safeJsonParse(row.coreCodonEngine, null);
   const lattice = extractCanonicalLattice(coreCodonEngine, circuitLinks);
@@ -2770,7 +3175,9 @@ export async function createSignatureOrder(data: InsertSignatureOrder) {
   if (!db) throw new Error("Database not available");
 
   await db.insert(signatureOrders).values(data);
-  const inserted = await db.select().from(signatureOrders)
+  const inserted = await db
+    .select()
+    .from(signatureOrders)
     .where(eq(signatureOrders.userId, data.userId))
     .orderBy(desc(signatureOrders.createdAt), desc(signatureOrders.id))
     .limit(1);
@@ -2785,31 +3192,40 @@ export async function setSignatureOrderCheckoutSession(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(signatureOrders)
+  await db
+    .update(signatureOrders)
     .set({ stripeCheckoutSessionId: input.checkoutSessionId })
-    .where(and(
-      eq(signatureOrders.id, input.orderId),
-      eq(signatureOrders.userId, input.userId),
-    ));
+    .where(
+      and(
+        eq(signatureOrders.id, input.orderId),
+        eq(signatureOrders.userId, input.userId)
+      )
+    );
 }
 
 export async function getSignatureOrderById(orderId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(signatureOrders)
+  const rows = await db
+    .select()
+    .from(signatureOrders)
     .where(eq(signatureOrders.id, orderId))
     .limit(1);
   return rows[0] ?? null;
 }
 
-export async function getSignatureOrderForUser(orderId: number, userId: number) {
+export async function getSignatureOrderForUser(
+  orderId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(signatureOrders)
-    .where(and(
-      eq(signatureOrders.id, orderId),
-      eq(signatureOrders.userId, userId),
-    ))
+  const rows = await db
+    .select()
+    .from(signatureOrders)
+    .where(
+      and(eq(signatureOrders.id, orderId), eq(signatureOrders.userId, userId))
+    )
     .limit(1);
   return rows[0] ?? null;
 }
@@ -2817,7 +3233,9 @@ export async function getSignatureOrderForUser(orderId: number, userId: number) 
 export async function listSignatureOrders(limit = 100) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(signatureOrders)
+  return db
+    .select()
+    .from(signatureOrders)
     .orderBy(desc(signatureOrders.createdAt), desc(signatureOrders.id))
     .limit(limit);
 }
@@ -2840,7 +3258,8 @@ export async function updateSignatureOrderStatus(input: {
     ...(input.status === "refunded" ? { refundedAt: now } : {}),
   };
 
-  await db.update(signatureOrders)
+  await db
+    .update(signatureOrders)
     .set({
       status: input.status,
       ...(input.stripeCheckoutSessionId !== undefined
@@ -2858,13 +3277,15 @@ export async function upsertSignatureIntake(data: InsertSignatureIntake) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await db.select({ id: signatureIntakes.id })
+  const existing = await db
+    .select({ id: signatureIntakes.id })
     .from(signatureIntakes)
     .where(eq(signatureIntakes.orderId, data.orderId))
     .limit(1);
 
   if (existing[0]) {
-    await db.update(signatureIntakes)
+    await db
+      .update(signatureIntakes)
       .set(data)
       .where(eq(signatureIntakes.orderId, data.orderId));
   } else {
@@ -2887,7 +3308,8 @@ export async function updateSignatureIntakeLocation(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(signatureIntakes)
+  await db
+    .update(signatureIntakes)
     .set({
       latitude: input.latitude,
       longitude: input.longitude,
@@ -2899,7 +3321,9 @@ export async function updateSignatureIntakeLocation(input: {
 export async function getSignatureIntakeByOrderId(orderId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(signatureIntakes)
+  const rows = await db
+    .select()
+    .from(signatureIntakes)
     .where(eq(signatureIntakes.orderId, orderId))
     .limit(1);
   return rows[0] ?? null;
@@ -2915,7 +3339,9 @@ export async function createSignatureSnapshot(data: InsertSignatureSnapshot) {
     status: "signature_generated",
   });
 
-  const inserted = await db.select().from(signatureSnapshots)
+  const inserted = await db
+    .select()
+    .from(signatureSnapshots)
     .where(eq(signatureSnapshots.orderId, data.orderId))
     .orderBy(desc(signatureSnapshots.createdAt), desc(signatureSnapshots.id))
     .limit(1);
@@ -2925,14 +3351,18 @@ export async function createSignatureSnapshot(data: InsertSignatureSnapshot) {
 export async function getLatestSignatureSnapshot(orderId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(signatureSnapshots)
+  const rows = await db
+    .select()
+    .from(signatureSnapshots)
     .where(eq(signatureSnapshots.orderId, orderId))
     .orderBy(desc(signatureSnapshots.createdAt), desc(signatureSnapshots.id))
     .limit(1);
   return rows[0] ? parseSignatureSnapshotRow(rows[0]) : null;
 }
 
-function parseSignatureSnapshotRow(row: typeof signatureSnapshots.$inferSelect) {
+function parseSignatureSnapshotRow(
+  row: typeof signatureSnapshots.$inferSelect
+) {
   return {
     ...row,
     rawSignatureJson: safeJsonParse(row.rawSignatureJson, null),
@@ -2941,18 +3371,20 @@ function parseSignatureSnapshotRow(row: typeof signatureSnapshots.$inferSelect) 
 }
 
 export async function upsertSignatureLetterDraft(
-  data: InsertSignatureLetterDraft,
+  data: InsertSignatureLetterDraft
 ) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await db.select({ id: signatureLetterDrafts.id })
+  const existing = await db
+    .select({ id: signatureLetterDrafts.id })
     .from(signatureLetterDrafts)
     .where(eq(signatureLetterDrafts.orderId, data.orderId))
     .limit(1);
 
   if (existing[0]) {
-    await db.update(signatureLetterDrafts)
+    await db
+      .update(signatureLetterDrafts)
       .set(data)
       .where(eq(signatureLetterDrafts.orderId, data.orderId));
   } else {
@@ -2971,7 +3403,9 @@ export async function upsertSignatureLetterDraft(
 export async function getSignatureLetterDraft(orderId: number) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(signatureLetterDrafts)
+  const rows = await db
+    .select()
+    .from(signatureLetterDrafts)
     .where(eq(signatureLetterDrafts.orderId, orderId))
     .limit(1);
   return rows[0] ?? null;
@@ -2983,7 +3417,8 @@ export async function updateSignatureLetterDraftMarkdown(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(signatureLetterDrafts)
+  await db
+    .update(signatureLetterDrafts)
     .set({ markdown: input.markdown })
     .where(eq(signatureLetterDrafts.orderId, input.orderId));
 }
@@ -2997,7 +3432,8 @@ export async function setSignatureLetterDraftPdf(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  await db.update(signatureLetterDrafts)
+  await db
+    .update(signatureLetterDrafts)
     .set({
       status: "pdf_ready",
       finalPdfStorageKey: input.storageKey,
@@ -3018,7 +3454,8 @@ export async function markSignatureLetterDraftStatus(input: {
 }) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  await db.update(signatureLetterDrafts)
+  await db
+    .update(signatureLetterDrafts)
     .set({ status: input.status })
     .where(eq(signatureLetterDrafts.orderId, input.orderId));
 
@@ -3037,7 +3474,8 @@ export async function upsertSignatureFollowup(input: {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  const existing = await db.select({ id: signatureFollowups.id })
+  const existing = await db
+    .select({ id: signatureFollowups.id })
     .from(signatureFollowups)
     .where(eq(signatureFollowups.orderId, input.orderId))
     .limit(1);
@@ -3050,7 +3488,8 @@ export async function upsertSignatureFollowup(input: {
   };
 
   if (existing[0]) {
-    await db.update(signatureFollowups)
+    await db
+      .update(signatureFollowups)
       .set(values)
       .where(eq(signatureFollowups.orderId, input.orderId));
   } else {

@@ -1,5 +1,12 @@
-import { ChangeEvent, useEffect, useMemo, useState, type ReactNode } from "react";
-import { FileUp, Loader2, MailCheck, PenLine, Sparkles } from "lucide-react";
+import {
+  ChangeEvent,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { FileUp, MailCheck, PenLine, Sparkles } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
@@ -56,13 +63,13 @@ export default function AdminSignatureLetters() {
   const selectedFromList = useMemo(
     () =>
       (list.data as Bundle[] | undefined)?.find(
-        (bundle) => bundle.order.id === selectedId,
+        bundle => bundle.order.id === selectedId
       ) ?? (list.data as Bundle[] | undefined)?.[0],
-    [list.data, selectedId],
+    [list.data, selectedId]
   );
   const selected = trpc.admin.signatureLetters.getOrder.useQuery(
     { orderId: selectedFromList?.order.id ?? 0 },
-    { enabled: Boolean(selectedFromList?.order.id && user?.role === "admin") },
+    { enabled: Boolean(selectedFromList?.order.id && user?.role === "admin") }
   );
   const bundle = (selected.data ?? selectedFromList) as Bundle | undefined;
   const [draftMarkdown, setDraftMarkdown] = useState("");
@@ -76,18 +83,31 @@ export default function AdminSignatureLetters() {
     }
   };
 
-  const generateSnapshot = trpc.admin.signatureLetters.generateSnapshot.useMutation({ onSuccess: refresh });
+  const generateSnapshot =
+    trpc.admin.signatureLetters.generateSnapshot.useMutation({
+      onSuccess: refresh,
+    });
   const generateDraft = trpc.admin.signatureLetters.generateDraft.useMutation({
-    onSuccess: async (draft) => {
+    onSuccess: async draft => {
       setDraftMarkdown(draft?.markdown ?? "");
       await refresh();
     },
   });
-  const saveDraft = trpc.admin.signatureLetters.saveDraft.useMutation({ onSuccess: refresh });
-  const inCuration = trpc.admin.signatureLetters.markInCuration.useMutation({ onSuccess: refresh });
-  const uploadPdf = trpc.admin.signatureLetters.uploadFinalPdf.useMutation({ onSuccess: refresh });
-  const delivered = trpc.admin.signatureLetters.markDelivered.useMutation({ onSuccess: refresh });
-  const followup = trpc.admin.signatureLetters.markFollowupUsed.useMutation({ onSuccess: refresh });
+  const saveDraft = trpc.admin.signatureLetters.saveDraft.useMutation({
+    onSuccess: refresh,
+  });
+  const inCuration = trpc.admin.signatureLetters.markInCuration.useMutation({
+    onSuccess: refresh,
+  });
+  const uploadPdf = trpc.admin.signatureLetters.uploadFinalPdf.useMutation({
+    onSuccess: refresh,
+  });
+  const delivered = trpc.admin.signatureLetters.markDelivered.useMutation({
+    onSuccess: refresh,
+  });
+  const followup = trpc.admin.signatureLetters.markFollowupUsed.useMutation({
+    onSuccess: refresh,
+  });
 
   useEffect(() => {
     setDraftMarkdown(bundle?.draft?.markdown ?? "");
@@ -106,7 +126,11 @@ export default function AdminSignatureLetters() {
   }
 
   if (loading) {
-    return <Layout><div className="p-10">Loading...</div></Layout>;
+    return (
+      <Layout>
+        <div className="p-10">Loading...</div>
+      </Layout>
+    );
   }
 
   if (user?.role !== "admin") {
@@ -121,23 +145,37 @@ export default function AdminSignatureLetters() {
 
   return (
     <Layout>
-      <section className="min-h-screen px-5 py-10 md:px-10" style={{ background: C.bg }}>
+      <section
+        className="min-h-screen px-5 py-10 md:px-10"
+        style={{ background: C.bg }}
+      >
         <div className="mx-auto max-w-7xl">
           <div className="mb-7 flex items-center justify-between gap-5">
             <div>
-              <div className="text-[11px] uppercase tracking-[0.32em]" style={{ color: C.gold }}>
+              <div
+                className="text-[11px] uppercase tracking-[0.32em]"
+                style={{ color: C.gold }}
+              >
                 Architect Console
               </div>
-              <h1 className="mt-3 font-serif text-4xl" style={{ color: C.text }}>
+              <h1
+                className="mt-3 font-serif text-4xl"
+                style={{ color: C.text }}
+              >
                 Signature Letters
               </h1>
             </div>
-            {list.isFetching && <Loader2 className="animate-spin" style={{ color: C.gold }} />}
+            {list.isFetching && (
+              <Spinner size={18} label="Loading signature letters" />
+            )}
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[360px_1fr]">
-            <aside className="border" style={{ borderColor: C.border, background: C.panel }}>
-              {(list.data as Bundle[] | undefined)?.map((item) => (
+            <aside
+              className="border"
+              style={{ borderColor: C.border, background: C.panel }}
+            >
+              {(list.data as Bundle[] | undefined)?.map(item => (
                 <button
                   key={item.order.id}
                   type="button"
@@ -151,14 +189,23 @@ export default function AdminSignatureLetters() {
                         : "transparent",
                   }}
                 >
-                  <div className="flex justify-between gap-4 text-sm" style={{ color: C.text }}>
+                  <div
+                    className="flex justify-between gap-4 text-sm"
+                    style={{ color: C.text }}
+                  >
                     <span>#{item.order.id}</span>
                     <span>€{item.order.priceEur}</span>
                   </div>
-                  <div className="mt-2 text-xs uppercase tracking-[0.16em]" style={{ color: C.gold }}>
+                  <div
+                    className="mt-2 text-xs uppercase tracking-[0.16em]"
+                    style={{ color: C.gold }}
+                  >
                     {item.order.productType} / {item.order.status}
                   </div>
-                  <div className="mt-2 truncate text-sm" style={{ color: C.muted }}>
+                  <div
+                    className="mt-2 truncate text-sm"
+                    style={{ color: C.muted }}
+                  >
                     {item.intake?.email ?? "intake pending"}
                   </div>
                 </button>
@@ -170,28 +217,55 @@ export default function AdminSignatureLetters() {
               )}
             </aside>
 
-            <main className="border p-5 md:p-7" style={{ borderColor: C.border, background: C.panel }}>
+            <main
+              className="border p-5 md:p-7"
+              style={{ borderColor: C.border, background: C.panel }}
+            >
               {!bundle ? (
                 <div style={{ color: C.muted }}>Select an order.</div>
               ) : (
                 <div>
                   <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h2 className="font-serif text-3xl" style={{ color: C.text }}>
+                      <h2
+                        className="font-serif text-3xl"
+                        style={{ color: C.text }}
+                      >
                         Order #{bundle.order.id}
                       </h2>
-                      <div className="mt-2 text-sm uppercase tracking-[0.18em]" style={{ color: C.gold }}>
+                      <div
+                        className="mt-2 text-sm uppercase tracking-[0.18em]"
+                        style={{ color: C.gold }}
+                      >
                         {bundle.order.productType} / {bundle.order.status}
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <Action onClick={() => generateSnapshot.mutate({ orderId: bundle.order.id })} disabled={!bundle.intake?.consentAccepted || generateSnapshot.isPending}>
+                      <Action
+                        onClick={() =>
+                          generateSnapshot.mutate({ orderId: bundle.order.id })
+                        }
+                        disabled={
+                          !bundle.intake?.consentAccepted ||
+                          generateSnapshot.isPending
+                        }
+                      >
                         <Sparkles size={14} /> Snapshot
                       </Action>
-                      <Action onClick={() => generateDraft.mutate({ orderId: bundle.order.id })} disabled={!bundle.snapshot || generateDraft.isPending}>
+                      <Action
+                        onClick={() =>
+                          generateDraft.mutate({ orderId: bundle.order.id })
+                        }
+                        disabled={!bundle.snapshot || generateDraft.isPending}
+                      >
                         <PenLine size={14} /> Draft
                       </Action>
-                      <Action onClick={() => inCuration.mutate({ orderId: bundle.order.id })} disabled={!bundle.draft || inCuration.isPending}>
+                      <Action
+                        onClick={() =>
+                          inCuration.mutate({ orderId: bundle.order.id })
+                        }
+                        disabled={!bundle.draft || inCuration.isPending}
+                      >
                         In curation
                       </Action>
                     </div>
@@ -200,24 +274,50 @@ export default function AdminSignatureLetters() {
                   <div className="grid gap-5 xl:grid-cols-2">
                     <Panel title="Intake">
                       {bundle.intake ? (
-                        <div className="space-y-2 text-sm leading-6" style={{ color: C.muted }}>
-                          <p><b style={{ color: C.text }}>{bundle.intake.name}</b> / {bundle.intake.email}</p>
-                          <p>{bundle.intake.birthDate} {bundle.intake.birthTime}, {bundle.intake.birthPlace}, {bundle.intake.birthCountry}</p>
+                        <div
+                          className="space-y-2 text-sm leading-6"
+                          style={{ color: C.muted }}
+                        >
+                          <p>
+                            <b style={{ color: C.text }}>
+                              {bundle.intake.name}
+                            </b>{" "}
+                            / {bundle.intake.email}
+                          </p>
+                          <p>
+                            {bundle.intake.birthDate} {bundle.intake.birthTime},{" "}
+                            {bundle.intake.birthPlace},{" "}
+                            {bundle.intake.birthCountry}
+                          </p>
                           <p>Timezone: {bundle.intake.timezone}</p>
                           <p>Focus: {bundle.intake.focusQuestion}</p>
                           <p>Tone: {bundle.intake.preferredTone}</p>
-                          <p>Avoid: {bundle.intake.avoidAssumptions || "None"}</p>
-                          <p>Consent: {bundle.intake.consentAccepted ? "yes" : "no"}</p>
+                          <p>
+                            Avoid: {bundle.intake.avoidAssumptions || "None"}
+                          </p>
+                          <p>
+                            Consent:{" "}
+                            {bundle.intake.consentAccepted ? "yes" : "no"}
+                          </p>
                         </div>
                       ) : (
-                        <p style={{ color: C.muted }}>Intake has not been submitted.</p>
+                        <p style={{ color: C.muted }}>
+                          Intake has not been submitted.
+                        </p>
                       )}
                     </Panel>
 
                     <Panel title="Normalized Snapshot">
-                      <pre className="max-h-80 overflow-auto whitespace-pre-wrap text-xs leading-5" style={{ color: C.muted }}>
+                      <pre
+                        className="max-h-80 overflow-auto whitespace-pre-wrap text-xs leading-5"
+                        style={{ color: C.muted }}
+                      >
                         {bundle.snapshot
-                          ? JSON.stringify(bundle.snapshot.normalizedSignatureJson, null, 2)
+                          ? JSON.stringify(
+                              bundle.snapshot.normalizedSignatureJson,
+                              null,
+                              2
+                            )
                           : "No snapshot generated yet."}
                       </pre>
                     </Panel>
@@ -226,32 +326,83 @@ export default function AdminSignatureLetters() {
                   <Panel title="Draft markdown">
                     <textarea
                       value={draftMarkdown}
-                      onChange={(event) => setDraftMarkdown(event.target.value)}
+                      onChange={event => setDraftMarkdown(event.target.value)}
                       rows={18}
                       className="w-full border bg-transparent p-4 text-sm leading-6 outline-none"
                       style={{ borderColor: C.border, color: C.text }}
                     />
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <Action onClick={() => saveDraft.mutate({ orderId: bundle.order.id, markdown: draftMarkdown })} disabled={!draftMarkdown || saveDraft.isPending}>
+                      <Action
+                        onClick={() =>
+                          saveDraft.mutate({
+                            orderId: bundle.order.id,
+                            markdown: draftMarkdown,
+                          })
+                        }
+                        disabled={!draftMarkdown || saveDraft.isPending}
+                      >
                         Save draft
                       </Action>
-                      <label className="inline-flex items-center gap-2 border px-4 py-2 text-xs uppercase tracking-[0.16em]" style={{ borderColor: C.border, color: C.gold }}>
+                      <label
+                        className="inline-flex items-center gap-2 border px-4 py-2 text-xs uppercase tracking-[0.16em]"
+                        style={{ borderColor: C.border, color: C.gold }}
+                      >
                         <FileUp size={14} />
                         Upload final PDF
-                        <input type="file" accept="application/pdf" className="hidden" onChange={onPdfChange} />
+                        <input
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={onPdfChange}
+                        />
                       </label>
-                      <Action onClick={() => delivered.mutate({ orderId: bundle.order.id })} disabled={!bundle.draft?.finalPdfStorageKey || delivered.isPending}>
+                      <Action
+                        onClick={() =>
+                          delivered.mutate({ orderId: bundle.order.id })
+                        }
+                        disabled={
+                          !bundle.draft?.finalPdfStorageKey ||
+                          delivered.isPending
+                        }
+                      >
                         <MailCheck size={14} /> Mark delivered
                       </Action>
-                      <Action onClick={() => followup.mutate({ orderId: bundle.order.id, notes: "Follow-up clarification used." })} disabled={bundle.order.productType !== "founding" || followup.isPending}>
+                      <Action
+                        onClick={() =>
+                          followup.mutate({
+                            orderId: bundle.order.id,
+                            notes: "Follow-up clarification used.",
+                          })
+                        }
+                        disabled={
+                          bundle.order.productType !== "founding" ||
+                          followup.isPending
+                        }
+                      >
                         Follow-up used
                       </Action>
                     </div>
                   </Panel>
 
-                  {mutationError([generateSnapshot, generateDraft, saveDraft, inCuration, uploadPdf, delivered, followup]) && (
+                  {mutationError([
+                    generateSnapshot,
+                    generateDraft,
+                    saveDraft,
+                    inCuration,
+                    uploadPdf,
+                    delivered,
+                    followup,
+                  ]) && (
                     <div className="mt-4 text-sm" style={{ color: C.red }}>
-                      {mutationError([generateSnapshot, generateDraft, saveDraft, inCuration, uploadPdf, delivered, followup])}
+                      {mutationError([
+                        generateSnapshot,
+                        generateDraft,
+                        saveDraft,
+                        inCuration,
+                        uploadPdf,
+                        delivered,
+                        followup,
+                      ])}
                     </div>
                   )}
                 </div>
@@ -267,7 +418,10 @@ export default function AdminSignatureLetters() {
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-5 border p-5" style={{ borderColor: C.border }}>
-      <h3 className="mb-4 text-xs uppercase tracking-[0.2em]" style={{ color: C.gold }}>
+      <h3
+        className="mb-4 text-xs uppercase tracking-[0.2em]"
+        style={{ color: C.gold }}
+      >
         {title}
       </h3>
       {children}
@@ -310,7 +464,7 @@ function fileToBase64(file: File) {
 }
 
 function mutationError(mutations: Array<{ error: unknown }>) {
-  const error = mutations.find((mutation) => mutation.error)?.error;
+  const error = mutations.find(mutation => mutation.error)?.error;
   if (!error) return "";
   return error instanceof Error ? error.message : "Action failed.";
 }

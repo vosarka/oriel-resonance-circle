@@ -6,18 +6,27 @@ import BackgroundPattern from "./BackgroundPattern";
 interface LayoutProps {
   children: ReactNode;
   hideFooter?: boolean;
+  hideHeader?: boolean;
   noBackground?: boolean;
+  overlayHeader?: boolean;
 }
 
-export default function Layout({ children, hideFooter, noBackground }: LayoutProps) {
+export default function Layout({
+  children,
+  hideFooter,
+  hideHeader,
+  noBackground,
+  overlayHeader,
+}: LayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="oriel-shell">
       {!noBackground && <BackgroundPattern />}
 
-      <Header />
+      {!hideHeader && <Header />}
 
-      {/* Main content with padding for fixed header */}
-      <main className={`pt-16 ${hideFooter ? "" : "pb-20"} min-h-screen relative z-10`}>
+      <main
+        className={`oriel-main ${overlayHeader ? "oriel-main--overlay" : "oriel-main--padded"} ${hideFooter ? "" : "pb-20"}`}
+      >
         {children}
       </main>
 

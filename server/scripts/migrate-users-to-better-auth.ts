@@ -29,16 +29,18 @@ async function migrate() {
   const db = createDrizzleFromDatabaseUrl(process.env.DATABASE_URL);
 
   console.log("Fetching existing users...");
-  const allUsers = await db.select({
-    id: users.id,
-    openId: users.openId,
-    name: users.name,
-    email: users.email,
-    passwordHash: users.passwordHash,
-    googleId: users.googleId,
-    createdAt: users.createdAt,
-    updatedAt: users.updatedAt,
-  }).from(users);
+  const allUsers = await db
+    .select({
+      id: users.id,
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      passwordHash: users.passwordHash,
+      googleId: users.googleId,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users);
   console.log(`Found ${allUsers.length} users to migrate.`);
 
   let created = 0;
@@ -61,7 +63,9 @@ async function migrate() {
         .limit(1);
 
       if (existing.length > 0) {
-        console.log(`  SKIP user #${user.id} (${user.email}): already exists in ba_user`);
+        console.log(
+          `  SKIP user #${user.id} (${user.email}): already exists in ba_user`
+        );
         skipped++;
         continue;
       }
@@ -89,7 +93,9 @@ async function migrate() {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         });
-        console.log(`  OK user #${user.id} (${user.email}): migrated with credential account`);
+        console.log(
+          `  OK user #${user.id} (${user.email}): migrated with credential account`
+        );
       }
 
       // Create Google account if user has googleId
@@ -102,12 +108,16 @@ async function migrate() {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
         });
-        console.log(`  OK user #${user.id} (${user.email}): migrated with Google account`);
+        console.log(
+          `  OK user #${user.id} (${user.email}): migrated with Google account`
+        );
       }
 
       // If no password and no Google, just create the ba_user (they'll use OTP to sign in)
       if (!user.passwordHash && !user.googleId) {
-        console.log(`  OK user #${user.id} (${user.email}): migrated (will use OTP to sign in)`);
+        console.log(
+          `  OK user #${user.id} (${user.email}): migrated (will use OTP to sign in)`
+        );
       }
 
       created++;
@@ -126,7 +136,7 @@ async function migrate() {
   process.exit(0);
 }
 
-migrate().catch((err) => {
+migrate().catch(err => {
   console.error("Migration failed:", err);
   process.exit(1);
 });

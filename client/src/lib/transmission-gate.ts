@@ -42,11 +42,13 @@ export function getPendingTransmissionPollPlan({
   conversationId,
 }: PendingTransmissionPollPlanInput): PendingTransmissionPollPlan {
   const maxAttempts = Math.ceil(
-    PENDING_TRANSMISSION_POLL_TIMEOUT_MS / PENDING_TRANSMISSION_POLL_INTERVAL_MS,
+    PENDING_TRANSMISSION_POLL_TIMEOUT_MS / PENDING_TRANSMISSION_POLL_INTERVAL_MS
   );
 
   return {
-    shouldPoll: Boolean(isAuthenticated && hasPendingTransmission && conversationId),
+    shouldPoll: Boolean(
+      isAuthenticated && hasPendingTransmission && conversationId
+    ),
     intervalMs: PENDING_TRANSMISSION_POLL_INTERVAL_MS,
     timeoutMs: PENDING_TRANSMISSION_POLL_TIMEOUT_MS,
     maxAttempts,

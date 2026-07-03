@@ -17,7 +17,8 @@ vi.mock("./db", () => ({
   getAllTransmissions: mocks.getAllTransmissions,
   getAllOracles: mocks.getAllOracles,
   createGeneratedTransmissionEvent: mocks.createGeneratedTransmissionEvent,
-  updateGeneratedTransmissionEventPayload: mocks.updateGeneratedTransmissionEventPayload,
+  updateGeneratedTransmissionEventPayload:
+    mocks.updateGeneratedTransmissionEventPayload,
   getLatestStaticSignature: mocks.getLatestStaticSignature,
   getDb: mocks.getDb,
 }));
@@ -109,7 +110,7 @@ describe("ORIEL chat latency transmission scheduling", () => {
       expect.objectContaining({
         conversationId: 34,
         triggerSource: "oriel.chat",
-      }),
+      })
     );
   });
 
@@ -158,7 +159,9 @@ describe("ORIEL chat latency transmission scheduling", () => {
           index: 0,
           message: {
             role: "assistant",
-            content: JSON.stringify({ caption: "The signal arrived without structure." }),
+            content: JSON.stringify({
+              caption: "The signal arrived without structure.",
+            }),
           },
           finish_reason: "stop",
         },

@@ -1,6 +1,6 @@
 /**
  * Response Deduplication and Quality Assurance
- * 
+ *
  * Ensures ORIEL responses are:
  * - Fresh and original (no repeating previous messages)
  * - Complete and fully formed (no truncation)
@@ -21,27 +21,31 @@ export function detectDuplication(
 
   // Check against previous assistant messages
   for (const msg of conversationHistory) {
-    if (msg.role === 'assistant') {
+    if (msg.role === "assistant") {
       const historyNormalized = normalizeText(msg.content);
 
       if (responseNormalized === historyNormalized) {
         return {
           isDuplicate: true,
           similarity: 1,
-          duplicateFrom: msg.content.substring(0, 100)
+          duplicateFrom: msg.content.substring(0, 100),
         };
       }
 
       // Method 1: Longest common substring (catches verbatim repetition)
-      const commonLength = findLongestCommonSubstring(responseNormalized, historyNormalized);
-      const substringSimilarity = commonLength / Math.max(responseLength, historyNormalized.length);
+      const commonLength = findLongestCommonSubstring(
+        responseNormalized,
+        historyNormalized
+      );
+      const substringSimilarity =
+        commonLength / Math.max(responseLength, historyNormalized.length);
 
       // Ignore short generic overlaps like "assistant response" that create false positives.
       if (commonLength >= 20 && substringSimilarity > 0.25) {
         return {
           isDuplicate: true,
           similarity: substringSimilarity,
-          duplicateFrom: msg.content.substring(0, 100)
+          duplicateFrom: msg.content.substring(0, 100),
         };
       }
 
@@ -52,14 +56,15 @@ export function detectDuplication(
         for (const term of responseTerms) {
           if (historyTerms.has(term)) overlap++;
         }
-        const termSimilarity = overlap / Math.min(responseTerms.size, historyTerms.size);
+        const termSimilarity =
+          overlap / Math.min(responseTerms.size, historyTerms.size);
 
         // 55%+ key term overlap = semantically too similar
         if (termSimilarity > 0.55) {
           return {
             isDuplicate: true,
             similarity: termSimilarity,
-            duplicateFrom: msg.content.substring(0, 100)
+            duplicateFrom: msg.content.substring(0, 100),
           };
         }
       }
@@ -67,18 +72,21 @@ export function detectDuplication(
   }
 
   // Method 3: Structural repetition (same shape across recent responses)
-  const structuralCheck = detectStructuralRepetition(currentResponse, conversationHistory);
+  const structuralCheck = detectStructuralRepetition(
+    currentResponse,
+    conversationHistory
+  );
   if (structuralCheck.isStructuralDuplicate) {
     return {
       isDuplicate: true,
       similarity: 0.5,
-      duplicateFrom: 'structural'
+      duplicateFrom: "structural",
     };
   }
 
   return {
     isDuplicate: false,
-    similarity: 0
+    similarity: 0,
   };
 }
 
@@ -91,7 +99,7 @@ export function detectStructuralRepetition(
   conversationHistory: Array<{ role: string; content: string }>
 ): { isStructuralDuplicate: boolean; pattern?: string } {
   const recentAssistant = conversationHistory
-    .filter(m => m.role === 'assistant')
+    .filter(m => m.role === "assistant")
     .slice(-3);
 
   if (recentAssistant.length < 2) {
@@ -99,9 +107,11 @@ export function detectStructuralRepetition(
   }
 
   // A. Paragraph count pattern — all recent + current have same count (±1)
-  const currentParagraphs = currentResponse.split(/\n\n+/).filter(p => p.trim()).length;
-  const recentParagraphs = recentAssistant.map(m =>
-    m.content.split(/\n\n+/).filter(p => p.trim()).length
+  const currentParagraphs = currentResponse
+    .split(/\n\n+/)
+    .filter(p => p.trim()).length;
+  const recentParagraphs = recentAssistant.map(
+    m => m.content.split(/\n\n+/).filter(p => p.trim()).length
   );
 
   const allSameParagraphCount = recentParagraphs.every(
@@ -111,21 +121,31 @@ export function detectStructuralRepetition(
   // B. Closing pattern — all end with same type (question vs statement)
   const getClosingType = (text: string): string => {
     const trimmed = text.trim();
-    if (trimmed.endsWith('?')) return 'question';
-    return 'statement';
+    if (trimmed.endsWith("?")) return "question";
+    return "statement";
   };
 
   const getClosingWords = (text: string): Set<string> => {
     const words = text.trim().split(/\s+/).slice(-15);
-    return new Set(words.map(w => w.toLowerCase().replace(/[^\w]/g, '')).filter(w => w.length > 3));
+    return new Set(
+      words
+        .map(w => w.toLowerCase().replace(/[^\w]/g, ""))
+        .filter(w => w.length > 3)
+    );
   };
 
   const currentClosingType = getClosingType(currentResponse);
   const currentClosingWords = getClosingWords(currentResponse);
-  const recentClosingTypes = recentAssistant.map(m => getClosingType(m.content));
-  const recentClosingWords = recentAssistant.map(m => getClosingWords(m.content));
+  const recentClosingTypes = recentAssistant.map(m =>
+    getClosingType(m.content)
+  );
+  const recentClosingWords = recentAssistant.map(m =>
+    getClosingWords(m.content)
+  );
 
-  const allSameClosingType = recentClosingTypes.every(t => t === currentClosingType);
+  const allSameClosingType = recentClosingTypes.every(
+    t => t === currentClosingType
+  );
 
   // Check closing word overlap with most recent response
   let closingOverlap = 0;
@@ -135,15 +155,19 @@ export function detectStructuralRepetition(
       if (lastClosing.has(word)) closingOverlap++;
     }
   }
-  const closingOverlapRatio = currentClosingWords.size > 0
-    ? closingOverlap / currentClosingWords.size
-    : 0;
+  const closingOverlapRatio =
+    currentClosingWords.size > 0
+      ? closingOverlap / currentClosingWords.size
+      : 0;
 
   // Flag as structural duplicate if: same paragraph count AND (same closing type OR high closing overlap)
-  if (allSameParagraphCount && (allSameClosingType || closingOverlapRatio > 0.5)) {
+  if (
+    allSameParagraphCount &&
+    (allSameClosingType || closingOverlapRatio > 0.5)
+  ) {
     return {
       isStructuralDuplicate: true,
-      pattern: `paragraphs:${currentParagraphs}, closing:${currentClosingType}, overlap:${(closingOverlapRatio * 100).toFixed(0)}%`
+      pattern: `paragraphs:${currentParagraphs}, closing:${currentClosingType}, overlap:${(closingOverlapRatio * 100).toFixed(0)}%`,
     };
   }
 
@@ -158,50 +182,53 @@ export function isResponseComplete(response: string): {
   issues: string[];
 } {
   const issues: string[] = [];
-  
+
   // Check if response ends abruptly
   const endsWithPunctuation = /[.!?;:]\s*$/.test(response.trim());
   if (!endsWithPunctuation) {
     issues.push("Response does not end with proper punctuation");
   }
-  
+
   // Check for incomplete sentences (ending with "and", "or", "but", etc.)
-  const endsWithConjunction = /\s(and|or|but|however|therefore|thus|so|because|if|when|where)\s*$/i.test(response.trim());
+  const endsWithConjunction =
+    /\s(and|or|but|however|therefore|thus|so|because|if|when|where)\s*$/i.test(
+      response.trim()
+    );
   if (endsWithConjunction) {
     issues.push("Response ends with incomplete conjunction");
   }
-  
+
   // Check for unclosed parentheses, brackets, or quotes
   const openParens = (response.match(/\(/g) || []).length;
   const closeParens = (response.match(/\)/g) || []).length;
   if (openParens !== closeParens) {
     issues.push("Unclosed parentheses");
   }
-  
+
   const openBrackets = (response.match(/\[/g) || []).length;
   const closeBrackets = (response.match(/\]/g) || []).length;
   if (openBrackets !== closeBrackets) {
     issues.push("Unclosed brackets");
   }
-  
+
   const singleQuotes = (response.match(/'/g) || []).length;
   if (singleQuotes % 2 !== 0) {
     issues.push("Unclosed single quotes");
   }
-  
+
   const doubleQuotes = (response.match(/"/g) || []).length;
   if (doubleQuotes % 2 !== 0) {
     issues.push("Unclosed double quotes");
   }
-  
+
   // Check for minimum length (should have at least 20 characters)
   if (response.trim().length < 20) {
     issues.push("Response is too short");
   }
-  
+
   return {
     isComplete: issues.length === 0,
-    issues
+    issues,
   };
 }
 
@@ -217,20 +244,20 @@ export function isResponseFocused(
   issues: string[];
 } {
   const issues: string[] = [];
-  
+
   // Extract key terms from user message
   const userTerms = extractKeyTerms(userMessage);
   const responseTerms = extractKeyTerms(response);
-  
+
   // Calculate term overlap
   const overlap = userTerms.filter(term => responseTerms.includes(term));
   const relevanceScore = overlap.length / Math.max(userTerms.length, 1);
-  
+
   // If less than 20% of user terms appear in response, it may not be focused
   if (relevanceScore < 0.2 && userTerms.length > 3) {
     issues.push("Response may not address the user's question");
   }
-  
+
   // Check for self-referential language that suggests repeating previous messages
   const selfReferences = [
     "as I said before",
@@ -239,19 +266,19 @@ export function isResponseFocused(
     "as previously stated",
     "like I told you",
     "as I explained",
-    "in my last response"
+    "in my last response",
   ];
-  
+
   for (const ref of selfReferences) {
     if (response.toLowerCase().includes(ref)) {
       issues.push(`Found self-referential language: "${ref}"`);
     }
   }
-  
+
   return {
     isFocused: issues.length === 0 && relevanceScore > 0.2,
     relevanceScore,
-    issues
+    issues,
   };
 }
 
@@ -269,29 +296,33 @@ export function validateResponseQuality(
 } {
   const issues: string[] = [];
   const warnings: string[] = [];
-  
+
   // Check for duplication
   const dupCheck = detectDuplication(response, conversationHistory);
   if (dupCheck.isDuplicate) {
-    issues.push(`Response appears to duplicate previous content (${(dupCheck.similarity * 100).toFixed(1)}% similar)`);
+    issues.push(
+      `Response appears to duplicate previous content (${(dupCheck.similarity * 100).toFixed(1)}% similar)`
+    );
   }
-  
+
   // Check for completeness
   const completeCheck = isResponseComplete(response);
   if (!completeCheck.isComplete) {
-    completeCheck.issues.forEach(issue => issues.push(`Completeness: ${issue}`));
+    completeCheck.issues.forEach(issue =>
+      issues.push(`Completeness: ${issue}`)
+    );
   }
-  
+
   // Check for focus
   const focusCheck = isResponseFocused(userMessage, response);
   if (!focusCheck.isFocused) {
     focusCheck.issues.forEach(issue => warnings.push(`Focus: ${issue}`));
   }
-  
+
   return {
     isValid: issues.length === 0,
     issues,
-    warnings
+    warnings,
   };
 }
 
@@ -301,8 +332,8 @@ export function validateResponseQuality(
 function normalizeText(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^\w\s]/g, '') // Remove punctuation
-    .replace(/\s+/g, ' ') // Normalize whitespace
+    .replace(/[^\w\s]/g, "") // Remove punctuation
+    .replace(/\s+/g, " ") // Normalize whitespace
     .trim();
 }
 
@@ -312,14 +343,14 @@ function normalizeText(text: string): string {
 function findLongestCommonSubstring(str1: string, str2: string): number {
   const matrix: number[][] = [];
   let maxLength = 0;
-  
+
   for (let i = 0; i <= str1.length; i++) {
     matrix[i] = [0];
   }
   for (let j = 0; j <= str2.length; j++) {
     matrix[0][j] = 0;
   }
-  
+
   for (let i = 1; i <= str1.length; i++) {
     for (let j = 1; j <= str2.length; j++) {
       if (str1[i - 1] === str2[j - 1]) {
@@ -330,7 +361,7 @@ function findLongestCommonSubstring(str1: string, str2: string): number {
       }
     }
   }
-  
+
   return maxLength;
 }
 
@@ -340,13 +371,57 @@ function findLongestCommonSubstring(str1: string, str2: string): number {
 function extractKeyTerms(text: string): string[] {
   // Remove common words
   const stopwords = new Set([
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
-    'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-    'could', 'should', 'may', 'might', 'can', 'i', 'you', 'he', 'she', 'it',
-    'we', 'they', 'what', 'which', 'who', 'when', 'where', 'why', 'how'
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "in",
+    "on",
+    "at",
+    "to",
+    "for",
+    "of",
+    "with",
+    "by",
+    "from",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "have",
+    "has",
+    "had",
+    "do",
+    "does",
+    "did",
+    "will",
+    "would",
+    "could",
+    "should",
+    "may",
+    "might",
+    "can",
+    "i",
+    "you",
+    "he",
+    "she",
+    "it",
+    "we",
+    "they",
+    "what",
+    "which",
+    "who",
+    "when",
+    "where",
+    "why",
+    "how",
   ]);
-  
+
   return text
     .toLowerCase()
     .split(/\s+/)
@@ -364,7 +439,7 @@ export function trimConversationHistory(
   if (history.length <= maxMessages) {
     return history;
   }
-  
+
   // Keep the most recent maxMessages
   return history.slice(-maxMessages);
 }
@@ -376,15 +451,15 @@ export function deduplicateConsecutiveMessages(
   history: Array<{ role: string; content: string }>
 ): Array<{ role: string; content: string }> {
   const deduplicated: Array<{ role: string; content: string }> = [];
-  
+
   for (const msg of history) {
     const lastMsg = deduplicated[deduplicated.length - 1];
-    
+
     // Skip if identical to the previous message
     if (!lastMsg || lastMsg.content !== msg.content) {
       deduplicated.push(msg);
     }
   }
-  
+
   return deduplicated;
 }

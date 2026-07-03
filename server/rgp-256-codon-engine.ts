@@ -37,26 +37,22 @@ export {
   type VrcType,
   type VrcAuthority,
   type ChannelStatus,
-} from './vrc-mandala';
+} from "./vrc-mandala";
 
-import {
-  longitudeToFacet,
-  VRC_MANDALA,
-  type FacetName,
-} from './vrc-mandala';
+import { longitudeToFacet, VRC_MANDALA, type FacetName } from "./vrc-mandala";
 
 // ─── Legacy type aliases (keep UI/tests compiling without changes) ─────────────
 
 /** @deprecated Use FacetName from vrc-mandala.ts */
-export type FacetLetter = 'A' | 'B' | 'C' | 'D';
+export type FacetLetter = "A" | "B" | "C" | "D";
 
 /** Map VRC facet name → legacy letter used by existing UI code. */
 export function facetNameToLetter(name: FacetName): FacetLetter {
   const map: Record<FacetName, FacetLetter> = {
-    Somatic: 'A',
-    Relational: 'B',
-    Cognitive: 'C',
-    Transpersonal: 'D',
+    Somatic: "A",
+    Relational: "B",
+    Cognitive: "C",
+    Transpersonal: "D",
   };
   return map[name];
 }
@@ -64,10 +60,10 @@ export function facetNameToLetter(name: FacetName): FacetLetter {
 /** Map legacy letter → VRC facet name. */
 export function facetLetterToName(letter: FacetLetter): FacetName {
   const map: Record<FacetLetter, FacetName> = {
-    A: 'Somatic',
-    B: 'Relational',
-    C: 'Cognitive',
-    D: 'Transpersonal',
+    A: "Somatic",
+    B: "Relational",
+    C: "Cognitive",
+    D: "Transpersonal",
   };
   return map[letter];
 }
@@ -86,7 +82,10 @@ export function determineFacetFromLongitude(longitude: number): FacetLetter {
  * Generate a 256-codon identifier.
  * Accepts either a numeric codon (VRC format: "38-A") or a legacy RC string ("RC38-A").
  */
-export function generateCodon256Id(codonRef: number | string, facet: FacetLetter): string {
+export function generateCodon256Id(
+  codonRef: number | string,
+  facet: FacetLetter
+): string {
   return `${codonRef}-${facet}`;
 }
 
@@ -99,9 +98,9 @@ export function parseCodon256Id(codon256Id: string): {
   rootCodonId: string; // legacy alias
   facet: FacetLetter;
 } {
-  const parts = codon256Id.split('-');
+  const parts = codon256Id.split("-");
   const rawId = parts[0];
-  const numericPart = rawId.replace(/^RC/, '');
+  const numericPart = rawId.replace(/^RC/, "");
   const codonNumber = parseInt(numericPart, 10);
   return {
     codonNumber,
@@ -113,17 +112,17 @@ export function parseCodon256Id(codon256Id: string): {
 // ─── Coherence & SLI ──────────────────────────────────────────────────────────
 
 export interface CodonFrequency {
-  shadow: number;      // 0-100
-  gift: number;        // 0-100
-  crown: number;       // 0-100
-  siddhi: number;      // 0-100
+  shadow: number; // 0-100
+  gift: number; // 0-100
+  crown: number; // 0-100
+  siddhi: number; // 0-100
 }
 
 export interface FacetLoudness {
-  A: number;           // Somatic amplitude
-  B: number;           // Relational amplitude
-  C: number;           // Cognitive amplitude
-  D: number;           // Transpersonal amplitude
+  A: number; // Somatic amplitude
+  B: number; // Relational amplitude
+  C: number; // Cognitive amplitude
+  D: number; // Transpersonal amplitude
   dominant: FacetLetter;
 }
 
@@ -148,7 +147,10 @@ export function calculateSLI(
   stateAmplifier: number,
   facetAmplitude: number
 ): number {
-  return Math.min(100, Math.max(0, consciousSunFrequency * stateAmplifier * facetAmplitude));
+  return Math.min(
+    100,
+    Math.max(0, consciousSunFrequency * stateAmplifier * facetAmplitude)
+  );
 }
 
 /**
@@ -173,10 +175,15 @@ export function determineFacetLoudness(
   const bt = Math.max(0, Math.min(10, bodyTension)) / 10;
   const et = Math.max(0, Math.min(10, emotionalTurbulence)) / 10;
 
-  const estimatedCoherence = coherenceScore ?? Math.max(
-    0,
-    Math.min(100, 100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3))
-  );
+  const estimatedCoherence =
+    coherenceScore ??
+    Math.max(
+      0,
+      Math.min(
+        100,
+        100 - (mentalNoise * 3 + bodyTension * 3 + emotionalTurbulence * 3)
+      )
+    );
   const lowCoherenceFactor = (100 - estimatedCoherence) / 100;
 
   const A = 25 + bt * 75;
@@ -184,7 +191,12 @@ export function determineFacetLoudness(
   const C = 25 + mn * 75;
   const D = 25 + Math.min(1, lowCoherenceFactor * ((mn + et) / 2)) * 75;
 
-  const pairs: [FacetLetter, number][] = [['A', A], ['B', B], ['C', C], ['D', D]];
+  const pairs: [FacetLetter, number][] = [
+    ["A", A],
+    ["B", B],
+    ["C", C],
+    ["D", D],
+  ];
   const dominant = pairs.reduce((p, c) => (c[1] > p[1] ? c : p))[0];
 
   return { A, B, C, D, dominant };
@@ -193,7 +205,10 @@ export function determineFacetLoudness(
 /**
  * Validate that the VRC Mandala has the correct number of entries.
  */
-export function validate256CodonResolution(): { valid: boolean; errors: string[] } {
+export function validate256CodonResolution(): {
+  valid: boolean;
+  errors: string[];
+} {
   const mandala = VRC_MANDALA;
   const errors: string[] = [];
 
@@ -203,11 +218,15 @@ export function validate256CodonResolution(): { valid: boolean; errors: string[]
 
   const unique = new Set<number>(mandala);
   if (unique.size !== 64) {
-    errors.push(`Mandala has duplicate entries — expected 64 unique codon numbers`);
+    errors.push(
+      `Mandala has duplicate entries — expected 64 unique codon numbers`
+    );
   }
 
   if (PRIME_STACK_CONFIG.length !== 9) {
-    errors.push(`Prime Stack should have 9 positions, found ${PRIME_STACK_CONFIG.length}`);
+    errors.push(
+      `Prime Stack should have 9 positions, found ${PRIME_STACK_CONFIG.length}`
+    );
   }
 
   return { valid: errors.length === 0, errors };
@@ -218,9 +237,14 @@ export function validate256CodonResolution(): { valid: boolean; errors: string[]
 /**
  * @deprecated Use facetLetterToName() instead.
  */
-export function getFacetFrequency(facet: FacetLetter): 'shadow' | 'gift' | 'crown' | 'siddhi' {
-  const map: Record<FacetLetter, 'shadow' | 'gift' | 'crown' | 'siddhi'> = {
-    A: 'shadow', B: 'gift', C: 'crown', D: 'siddhi',
+export function getFacetFrequency(
+  facet: FacetLetter
+): "shadow" | "gift" | "crown" | "siddhi" {
+  const map: Record<FacetLetter, "shadow" | "gift" | "crown" | "siddhi"> = {
+    A: "shadow",
+    B: "gift",
+    C: "crown",
+    D: "siddhi",
   };
   return map[facet];
 }
@@ -233,10 +257,10 @@ export function calculatePrimaryInterference(
 ): Array<{ facet: FacetLetter; amplitude: number }> {
   return (
     [
-      { facet: 'A' as FacetLetter, amplitude: facetLoudness.A },
-      { facet: 'B' as FacetLetter, amplitude: facetLoudness.B },
-      { facet: 'C' as FacetLetter, amplitude: facetLoudness.C },
-      { facet: 'D' as FacetLetter, amplitude: facetLoudness.D },
+      { facet: "A" as FacetLetter, amplitude: facetLoudness.A },
+      { facet: "B" as FacetLetter, amplitude: facetLoudness.B },
+      { facet: "C" as FacetLetter, amplitude: facetLoudness.C },
+      { facet: "D" as FacetLetter, amplitude: facetLoudness.D },
     ] as Array<{ facet: FacetLetter; amplitude: number }>
   ).sort((a, b) => b.amplitude - a.amplitude);
 }
@@ -251,22 +275,42 @@ export interface PrimeStackPosition {
   facet?: FacetLetter;
 }
 
-export function calculateWeightedFrequency(position: number, baseFrequency: number): number {
+export function calculateWeightedFrequency(
+  position: number,
+  baseFrequency: number
+): number {
   const weights: Record<number, number> = {
-    1: 1.8, 2: 1.3, 3: 1.2, 4: 1.1,
-    5: 1.0, 6: 0.9, 7: 0.7, 8: 0.6, 9: 0.5,
+    1: 1.8,
+    2: 1.3,
+    3: 1.2,
+    4: 1.1,
+    5: 1.0,
+    6: 0.9,
+    7: 0.7,
+    8: 0.6,
+    9: 0.5,
   };
   return baseFrequency * (weights[position] ?? 1.0);
 }
 
 export const PRIME_STACK_CONFIG: PrimeStackPosition[] = [
-  { position: 1, name: 'Conscious Sun',       planetaryBody: 'Sun',       weight: 1.8 },
-  { position: 2, name: 'Conscious Earth',     planetaryBody: 'Earth',     weight: 1.3 },
-  { position: 3, name: 'Design Sun',          planetaryBody: 'Sun',       weight: 1.2 },
-  { position: 4, name: 'Design Earth',        planetaryBody: 'Earth',     weight: 1.1 },
-  { position: 5, name: 'Conscious Moon',      planetaryBody: 'Moon',      weight: 1.0 },
-  { position: 6, name: 'Design Moon',         planetaryBody: 'Moon',      weight: 0.9 },
-  { position: 7, name: 'True Node',           planetaryBody: 'North Node',weight: 0.7 },
-  { position: 8, name: 'Design True Node',    planetaryBody: 'North Node',weight: 0.6 },
-  { position: 9, name: 'Conscious South Node',planetaryBody: 'South Node',weight: 0.5 },
+  { position: 1, name: "Conscious Sun", planetaryBody: "Sun", weight: 1.8 },
+  { position: 2, name: "Conscious Earth", planetaryBody: "Earth", weight: 1.3 },
+  { position: 3, name: "Design Sun", planetaryBody: "Sun", weight: 1.2 },
+  { position: 4, name: "Design Earth", planetaryBody: "Earth", weight: 1.1 },
+  { position: 5, name: "Conscious Moon", planetaryBody: "Moon", weight: 1.0 },
+  { position: 6, name: "Design Moon", planetaryBody: "Moon", weight: 0.9 },
+  { position: 7, name: "True Node", planetaryBody: "North Node", weight: 0.7 },
+  {
+    position: 8,
+    name: "Design True Node",
+    planetaryBody: "North Node",
+    weight: 0.6,
+  },
+  {
+    position: 9,
+    name: "Conscious South Node",
+    planetaryBody: "South Node",
+    weight: 0.5,
+  },
 ];

@@ -36,7 +36,7 @@ async function postWebhook(body: string, signatureHeader: string) {
   app.use(express.json());
 
   const server = createServer(app);
-  await new Promise<void>((resolve) => {
+  await new Promise<void>(resolve => {
     server.listen(0, "127.0.0.1", () => resolve());
   });
 
@@ -56,7 +56,7 @@ async function postWebhook(body: string, signatureHeader: string) {
     });
   } finally {
     await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()));
+      server.close(error => (error ? reject(error) : resolve()));
     });
   }
 }
@@ -82,7 +82,7 @@ describe("Signature Letter Stripe webhook route", () => {
         },
       },
       null,
-      2,
+      2
     );
 
     const response = await postWebhook(body, createSignatureHeader(body));
@@ -138,7 +138,7 @@ describe("Signature Letter Stripe webhook route", () => {
 
     const response = await postWebhook(
       body,
-      `t=${timestamp},v1=${"0".repeat(64)}`,
+      `t=${timestamp},v1=${"0".repeat(64)}`
     );
 
     expect(response.status).toBe(400);

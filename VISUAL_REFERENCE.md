@@ -23,11 +23,13 @@ OracleCard with Personal Resonance:
 ## OracleCard Header Transformation
 
 **Without Personal Resonance:**
+
 ```
 ◆ OX-042  |  [Confirmed]
 ```
 
 **With Personal Resonance:**
+
 ```
 ◆ OX-042  |  [⟡ PERSONAL]  ← pulsing animation
                            ← golden color & border
@@ -59,6 +61,7 @@ OracleCard with Personal Resonance:
 ## Archive Oracle Grid
 
 **Without Personal Resonance:**
+
 ```
 ┌──────────────────┐  ┌──────────────────┐
 │   Oracle Card    │  │   Oracle Card    │
@@ -68,6 +71,7 @@ OracleCard with Personal Resonance:
 ```
 
 **With Personal Resonance:**
+
 ```
 ┃ ┌──────────────────┐  ┌──────────────────┐
 ┃ │   Oracle Card    │  │   Oracle Card    │
@@ -96,18 +100,19 @@ RISING SIGNALS
 
 ## Color Palette Summary
 
-| Element | Color | Usage |
-|---------|-------|-------|
-| Primary Gold | #D4AF37 | Thread, badges, text |
-| Glow | rgba(212, 175, 55, 0.5) | Around thread |
-| Border | rgba(212, 175, 55, 0.44) | Section border |
-| Background | rgba(212, 175, 55, 0.03) | Section fill |
-| Text | rgba(212, 175, 55, 0.7) | Body text |
-| Secondary | rgba(212, 175, 55, 0.6) | Quotes, secondary text |
+| Element      | Color                    | Usage                  |
+| ------------ | ------------------------ | ---------------------- |
+| Primary Gold | #D4AF37                  | Thread, badges, text   |
+| Glow         | rgba(212, 175, 55, 0.5)  | Around thread          |
+| Border       | rgba(212, 175, 55, 0.44) | Section border         |
+| Background   | rgba(212, 175, 55, 0.03) | Section fill           |
+| Text         | rgba(212, 175, 55, 0.7)  | Body text              |
+| Secondary    | rgba(212, 175, 55, 0.6)  | Quotes, secondary text |
 
 ## Animation Sequences
 
 ### Personal Signal Badge (OracleCard)
+
 ```
 Duration: 2.5 seconds (infinite loop)
 Opacity: 0.7 → 1.0 → 0.7
@@ -115,6 +120,7 @@ Effect: Subtle breathing pulse
 ```
 
 ### Matching Codons (OracleDetail)
+
 ```
 Each codon badge staggers by 0.1s
 Initial: opacity 0, scale 0.9

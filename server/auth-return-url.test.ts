@@ -5,10 +5,10 @@ import { getAuthRedirectTarget, getLoginUrl } from "../client/src/const";
 describe("auth return URL helpers", () => {
   it("preserves a safe same-site purchase path through login", () => {
     expect(getLoginUrl("/oriel-signature-glimpse")).toBe(
-      "/auth?next=%2Foriel-signature-glimpse",
+      "/auth?next=%2Foriel-signature-glimpse"
     );
     expect(getLoginUrl("/signature-intake/92")).toBe(
-      "/auth?next=%2Fsignature-intake%2F92",
+      "/auth?next=%2Fsignature-intake%2F92"
     );
   });
 
@@ -18,9 +18,9 @@ describe("auth return URL helpers", () => {
   });
 
   it("resolves the post-auth target from the next query parameter", () => {
-    expect(getAuthRedirectTarget("?next=%2Foriel-founding-signature-letter")).toBe(
-      "/oriel-founding-signature-letter",
-    );
+    expect(
+      getAuthRedirectTarget("?next=%2Foriel-founding-signature-letter")
+    ).toBe("/oriel-founding-signature-letter");
     expect(getAuthRedirectTarget("")).toBe("/");
   });
 });

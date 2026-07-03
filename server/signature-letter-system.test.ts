@@ -129,7 +129,7 @@ describe("ORIEL Signature Letter system helpers", () => {
 
   it("only lets paid or intake-ready orders access intake", () => {
     expect(() => assertCanAccessIntake("pending_payment")).toThrow(
-      /paid order/i,
+      /paid order/i
     );
     expect(() => assertCanAccessIntake("paid")).not.toThrow();
     expect(() => assertCanAccessIntake("intake_needed")).not.toThrow();
@@ -141,21 +141,21 @@ describe("ORIEL Signature Letter system helpers", () => {
         status: "paid",
         intakeReceived: false,
         consentAccepted: false,
-      }),
+      })
     ).toThrow(/intake/i);
     expect(() =>
       assertCanGenerateSnapshot({
         status: "intake_received",
         intakeReceived: true,
         consentAccepted: false,
-      }),
+      })
     ).toThrow(/consent/i);
     expect(() =>
       assertCanGenerateSnapshot({
         status: "intake_received",
         intakeReceived: true,
         consentAccepted: true,
-      }),
+      })
     ).not.toThrow();
   });
 
@@ -175,7 +175,7 @@ describe("ORIEL Signature Letter system helpers", () => {
       resonanceLinks: ["Codon 11-Codon 56: Ajna to Throat"],
     });
     expect(normalized.correctionProtocols[0]).toContain(
-      "Complete three slow breaths",
+      "Complete three slow breaths"
     );
     expect(normalized.shadowGiftFraming[0]).toContain("Obscurity");
     expect(normalized.calculationContext).toMatchObject({
@@ -192,21 +192,24 @@ describe("ORIEL Signature Letter system helpers", () => {
   });
 
   it("downgrades incomplete calculation contexts even when explicit gaps are partial", () => {
-    const normalized = normalizeSignatureSnapshot({
-      ...rawSignature,
-      calculationContext: {
-        status: "exact",
-        birthDate: "1990-01-02",
-        birthTime: null,
-        birthPlace: "Bucharest",
-        birthCountry: "Romania",
-        latitude: null,
-        longitude: null,
-        resolvedTimezoneId: "Europe/Bucharest",
-        timezoneOffsetHours: null,
-        missingPrecision: ["birth data source"],
+    const normalized = normalizeSignatureSnapshot(
+      {
+        ...rawSignature,
+        calculationContext: {
+          status: "exact",
+          birthDate: "1990-01-02",
+          birthTime: null,
+          birthPlace: "Bucharest",
+          birthCountry: "Romania",
+          latitude: null,
+          longitude: null,
+          resolvedTimezoneId: "Europe/Bucharest",
+          timezoneOffsetHours: null,
+          missingPrecision: ["birth data source"],
+        },
       },
-    }, "founding");
+      "founding"
+    );
 
     expect(normalized.calculationContext).toMatchObject({
       status: "missing_precision",
@@ -231,7 +234,9 @@ describe("ORIEL Signature Letter system helpers", () => {
     expect(glimpse).toContain("Founder curation required before delivery");
     expect(glimpse).toContain("Calculation Trust Contract");
     expect(glimpse).toContain("Status: exact");
-    expect(glimpse).toContain("Birth data: 1990-01-02 03:04, Bucharest, Romania");
+    expect(glimpse).toContain(
+      "Birth data: 1990-01-02 03:04, Bucharest, Romania"
+    );
     expect(glimpse).toContain("Coordinates: 44.4268, 26.1025");
     expect(glimpse).toContain("Resolved timezone: Europe/Bucharest (UTC+2)");
     expect(glimpse).toContain("What ORIEL should avoid assuming");
@@ -247,7 +252,9 @@ describe("ORIEL Signature Letter system helpers", () => {
     expect(founding).toContain("Active Resonance Links");
     expect(founding).not.toContain("Active Channels");
     expect(founding).toContain("Follow-up clarification");
-    expect(founding.split("\n").length).toBeGreaterThan(glimpse.split("\n").length);
+    expect(founding.split("\n").length).toBeGreaterThan(
+      glimpse.split("\n").length
+    );
   });
 
   it("builds Stripe Checkout payload with order ownership metadata", () => {
@@ -260,10 +267,10 @@ describe("ORIEL Signature Letter system helpers", () => {
     });
 
     expect(payload.success_url).toBe(
-      "https://orielsignal.space/signature-intake/91",
+      "https://orielsignal.space/signature-intake/91"
     );
     expect(payload.cancel_url).toBe(
-      "https://orielsignal.space/oriel-founding-signature-letter?cancelled=1",
+      "https://orielsignal.space/oriel-founding-signature-letter?cancelled=1"
     );
     expect(payload.client_reference_id).toBe("91");
     expect(payload.metadata).toEqual({
@@ -290,7 +297,7 @@ describe("ORIEL Signature Letter system helpers", () => {
     });
 
     expect(glimpsePayload.cancel_url).toBe(
-      "https://orielsignal.space/oriel-signature-glimpse?cancelled=1",
+      "https://orielsignal.space/oriel-signature-glimpse?cancelled=1"
     );
     expect(glimpsePayload.line_items[0]).toMatchObject({
       quantity: 1,
@@ -318,7 +325,7 @@ describe("ORIEL Signature Letter system helpers", () => {
         body,
         signatureHeader: `t=${timestamp},v1=${signature}`,
         secret: "whsec_test",
-      }),
+      })
     ).toBe(true);
 
     expect(
@@ -326,7 +333,7 @@ describe("ORIEL Signature Letter system helpers", () => {
         body,
         signatureHeader: `t=${timestamp},v1=bad`,
         secret: "whsec_test",
-      }),
+      })
     ).toBe(false);
   });
 
@@ -335,14 +342,14 @@ describe("ORIEL Signature Letter system helpers", () => {
       assertCanMarkDelivered({
         status: "draft_ready",
         finalPdfStorageKey: null,
-      }),
+      })
     ).toThrow(/final pdf/i);
 
     expect(() =>
       assertCanMarkDelivered({
         status: "pdf_ready",
         finalPdfStorageKey: "signature-letters/91/final.pdf",
-      }),
+      })
     ).not.toThrow();
   });
 });

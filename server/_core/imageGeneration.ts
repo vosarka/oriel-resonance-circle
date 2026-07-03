@@ -67,7 +67,8 @@ function normalizeGeminiImageModel(model: string | undefined) {
     : trimmed;
   if (!withoutApiPrefix) return DEFAULT_GEMINI_IMAGE_MODEL;
   return (
-    DEPRECATED_GEMINI_IMAGE_MODEL_ALIASES.get(withoutApiPrefix) ?? withoutApiPrefix
+    DEPRECATED_GEMINI_IMAGE_MODEL_ALIASES.get(withoutApiPrefix) ??
+    withoutApiPrefix
   );
 }
 
@@ -96,7 +97,9 @@ function mimeTypeToExtension(mimeType: string) {
 function hasExpectedImageSignature(buffer: Buffer, mimeType: string) {
   switch (mimeType.toLowerCase()) {
     case "image/png":
-      return buffer.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+      return buffer
+        .subarray(0, 4)
+        .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     case "image/jpeg":
     case "image/jpg":
       return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
@@ -119,7 +122,11 @@ function decodeGeneratedInlineImage(data: string, mimeType: string) {
   }
 
   const base64 = stripDataUrlPrefix(data).replace(/\s+/g, "");
-  if (!base64 || base64.length % 4 === 1 || !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)) {
+  if (
+    !base64 ||
+    base64.length % 4 === 1 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(base64)
+  ) {
     throw new Error("Generated image data is not valid base64.");
   }
 
@@ -223,10 +230,7 @@ export async function generateImage(
 
   const model = normalizeGeminiImageModel(ENV.geminiImageModel);
   const controller = new AbortController();
-  const timeout = setTimeout(
-    () => controller.abort(),
-    ENV.llmRequestTimeoutMs
-  );
+  const timeout = setTimeout(() => controller.abort(), ENV.llmRequestTimeoutMs);
   let response: Response;
   try {
     response = await fetch(

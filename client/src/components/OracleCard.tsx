@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { ResonateButton } from "@/components/ResonateButton";
 import { usePersonalResonance } from "@/hooks/usePersonalResonance";
-import { getTransmissionPosterUrl, getYouTubeVideoId } from "@/lib/transmission-media";
+import {
+  getTransmissionPosterUrl,
+  getYouTubeVideoId,
+} from "@/lib/transmission-media";
 
 export interface OracleCardProps {
   id: number;
@@ -31,9 +34,9 @@ const TEMPORAL_COLORS: Record<
     light: "#92702a",
   },
   Present: {
-    glow: "rgba(91,164,164,0.35)",
-    bg: "rgba(91,164,164,0.03)",
-    light: "#5ba4a4",
+    glow: "rgba(246,176,94,0.35)",
+    bg: "rgba(246,176,94,0.03)",
+    light: "#f6b05e",
   },
   Future: {
     glow: "rgba(107,63,160,0.35)",
@@ -63,8 +66,7 @@ export function OracleCard({
   linkedCodons = [],
   threadId,
 }: OracleCardProps) {
-  const colors =
-    TEMPORAL_COLORS[temporalDirection] || TEMPORAL_COLORS.Present;
+  const colors = TEMPORAL_COLORS[temporalDirection] || TEMPORAL_COLORS.Present;
   const glyph = TEMPORAL_GLYPHS[temporalDirection] || "●";
   const { hasResonance } = usePersonalResonance();
   const posterUrl = getTransmissionPosterUrl({ imageUrl, youtubeUrl });
@@ -79,9 +81,7 @@ export function OracleCard({
         className="group relative cursor-pointer"
         style={{
           borderLeft: hasPersonal ? "2px solid #D4AF37" : "none",
-          boxShadow: hasPersonal
-            ? "0 0 12px rgba(212,175,55,0.16)"
-            : "none",
+          boxShadow: hasPersonal ? "0 0 12px rgba(212,175,55,0.16)" : "none",
         }}
       >
         <div
@@ -93,13 +93,13 @@ export function OracleCard({
               ? "0 0 20px rgba(212,175,55,0.1)"
               : "none",
           }}
-          onMouseEnter={(e) => {
+          onMouseEnter={e => {
             e.currentTarget.style.borderColor = isFieldConfirmed
               ? "rgba(212,175,55,0.5)"
               : colors.light;
             e.currentTarget.style.boxShadow = `0 0 30px ${colors.glow}`;
           }}
-          onMouseLeave={(e) => {
+          onMouseLeave={e => {
             e.currentTarget.style.borderColor = isFieldConfirmed
               ? "rgba(212,175,55,0.3)"
               : colors.glow;
@@ -112,7 +112,9 @@ export function OracleCard({
             <div
               className="mb-4 overflow-hidden rounded-sm border"
               style={{
-                borderColor: isFieldConfirmed ? "rgba(212,175,55,0.18)" : `${colors.light}22`,
+                borderColor: isFieldConfirmed
+                  ? "rgba(212,175,55,0.18)"
+                  : `${colors.light}22`,
                 background: "#0b0b10",
               }}
             >
@@ -244,7 +246,7 @@ export function OracleCard({
           >
             <div className="flex items-center gap-3">
               <div
-                onClick={(e) => {
+                onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
                 }}
@@ -258,7 +260,7 @@ export function OracleCard({
               {threadId && (
                 <span
                   className="font-mono"
-                  style={{ fontSize: 8, color: "rgba(91,164,164,0.4)" }}
+                  style={{ fontSize: 8, color: "rgba(246,176,94,0.4)" }}
                 >
                   🔗 THREAD
                 </span>

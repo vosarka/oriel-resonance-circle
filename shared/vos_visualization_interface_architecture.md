@@ -1,6 +1,7 @@
 # Visualization & Interface Architecture
 
 ## Purpose
+
 This document defines the visual layer of the Consciousness Lattice platform. It translates the underlying codon activations, centers, channels, and planetary influences into interactive visual systems that users can explore intuitively.
 
 The interface should feel like a living map of consciousness rather than a static astrology chart.
@@ -14,18 +15,21 @@ The interface should feel like a living map of consciousness rather than a stati
 A circular interface representing the 360° ecliptic divided into 64 codon segments.
 
 Structure:
+
 - 360° full circle
 - 64 codons
 - 5.625° per codon
 - Each codon subdivided into 4 facets (1.40625° each)
 
 Visual Features:
+
 - Color-coded codons
 - Planet markers placed by exact degree
 - Hover reveals codon meaning
 - Clicking expands detailed codon profile
 
 Interaction:
+
 - Zoom into codon
 - Highlight resonance codons
 - Animate planetary movement
@@ -37,19 +41,23 @@ Interaction:
 A 3D geometric network representing the relationships between codons.
 
 Nodes:
+
 - 64 codons
 
 Edges:
+
 - harmonic relationships
 - channel connections
 - resonance pathways
 
 Visual Behavior:
+
 - Nodes light up when activated
 - Strength represented by glow intensity
 - Lines animate when channels are formed
 
 Interaction:
+
 - rotate
 - zoom
 - isolate specific codons
@@ -61,6 +69,7 @@ Interaction:
 A human silhouette containing 9 energetic centers.
 
 Centers:
+
 - Crown
 - Mind
 - Throat
@@ -72,11 +81,13 @@ Centers:
 - Root
 
 Visual Logic:
+
 - Activated centers glow
 - Undefined centers remain open
 - Channels connect centers
 
 Interaction:
+
 - hover center for meaning
 - highlight influencing codons
 
@@ -87,14 +98,17 @@ Interaction:
 Displays energy flow between centers.
 
 Each channel:
+
 - connects two codons
 - forms a defined energetic pathway
 
 Visual Representation:
+
 - animated energy pulses
 - directional flow
 
 Interaction:
+
 - click channel for explanation
 
 ---
@@ -104,6 +118,7 @@ Interaction:
 A radial visualization showing how a user's codons resonate with others.
 
 Features:
+
 - compatibility mapping
 - relationship analysis
 - community resonance
@@ -115,6 +130,7 @@ Features:
 Allows users to see how planetary motion activates codons over time.
 
 Capabilities:
+
 - daily codon activations
 - life cycle periods
 - predictive resonance windows
@@ -141,6 +157,7 @@ Each codon receives a unique hue within its family.
 Movement should communicate energy flow.
 
 Examples:
+
 - slow orbital motion for planets
 - pulses along channels
 - breathing glow for activated centers
@@ -190,4 +207,3 @@ The interface should evoke:
 - living intelligence
 
 The user should feel like they are exploring a map of consciousness rather than reading a report.
-

@@ -3,22 +3,34 @@ import { appRouter } from "./routers";
 import type { Context } from "./_core/context";
 
 // Mock DB functions that require a live MySQL connection
-vi.mock("./db", async (importOriginal) => {
+vi.mock("./db", async importOriginal => {
   const actual = await importOriginal<typeof import("./db")>();
   return {
     ...actual,
-    saveCarrierlockState: vi.fn(async (_userId: number, state: {
-      mentalNoise: number;
-      bodyTension: number;
-      emotionalTurbulence: number;
-      breathCompletion: boolean;
-    }) => {
-      const coherenceScore = Math.max(0, Math.min(100,
-        100 - (state.mentalNoise * 3 + state.bodyTension * 3 + state.emotionalTurbulence * 3)
-        + (state.breathCompletion ? 10 : 0)
-      ));
-      return { id: 1, coherenceScore };
-    }),
+    saveCarrierlockState: vi.fn(
+      async (
+        _userId: number,
+        state: {
+          mentalNoise: number;
+          bodyTension: number;
+          emotionalTurbulence: number;
+          breathCompletion: boolean;
+        }
+      ) => {
+        const coherenceScore = Math.max(
+          0,
+          Math.min(
+            100,
+            100 -
+              (state.mentalNoise * 3 +
+                state.bodyTension * 3 +
+                state.emotionalTurbulence * 3) +
+              (state.breathCompletion ? 10 : 0)
+          )
+        );
+        return { id: 1, coherenceScore };
+      }
+    ),
     saveCodonReading: vi.fn(async () => ({ id: 1 })),
     markCorrectionCompleted: vi.fn(async () => undefined),
     getUserReadingHistory: vi.fn(async () => []),
@@ -82,7 +94,7 @@ describe("Codex Router", () => {
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBeGreaterThan(0);
-      
+
       // Check structure of first codon
       if (result.length > 0) {
         const firstCodon = result[0];
@@ -107,7 +119,7 @@ describe("Codex Router", () => {
   describe("getCodonDetails", () => {
     it("should return detailed info for a specific codon", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
+
       // First get all codons to get a valid ID
       const codons = await caller.codex.getRootCodons();
       if (codons.length > 0) {
@@ -127,7 +139,7 @@ describe("Codex Router", () => {
 
     it("should throw error for invalid codon ID", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
+
       await expect(
         caller.codex.getCodonDetails({ id: "INVALID_ID" })
       ).rejects.toThrow();
@@ -140,7 +152,7 @@ describe("Codex Router", () => {
       const result = await caller.codex.getFacets();
 
       expect(result).toHaveLength(4);
-      expect(result.map((facet) => facet.letter)).toEqual(["A", "B", "C", "D"]);
+      expect(result.map(facet => facet.letter)).toEqual(["A", "B", "C", "D"]);
       expect(result[0]).toHaveProperty("arcDegrees");
     });
 
@@ -149,10 +161,12 @@ describe("Codex Router", () => {
       const result = await caller.codex.getCenters();
 
       expect(result).toHaveLength(9);
-      expect(result.find((center) => center.id === "G-Self")?.codons).toEqual(
+      expect(result.find(center => center.id === "G-Self")?.codons).toEqual(
         expect.arrayContaining([1, 2, 7, 10, 13, 15, 25, 46])
       );
-      expect(result.find((center) => center.id === "Sacral")?.codons).toContain(50);
+      expect(result.find(center => center.id === "Sacral")?.codons).toContain(
+        50
+      );
     });
 
     it("should expose the canonical 36 channels", async () => {
@@ -172,7 +186,7 @@ describe("Codex Router", () => {
   describe("saveCarrierlock", () => {
     it("should save carrierlock state for authenticated user", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       const result = await caller.codex.saveCarrierlock({
         mentalNoise: 5,
         bodyTension: 4,
@@ -190,7 +204,7 @@ describe("Codex Router", () => {
 
     it("should calculate coherence score correctly", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       // Test case: MN=0, BT=0, ET=0, BC=false
       // Expected: 100 - (0*3 + 0*3 + 0*3) + 0 = 100
       const result1 = await caller.codex.saveCarrierlock({
@@ -224,7 +238,7 @@ describe("Codex Router", () => {
 
     it("should require authentication", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
+
       await expect(
         caller.codex.saveCarrierlock({
           mentalNoise: 5,
@@ -237,7 +251,7 @@ describe("Codex Router", () => {
 
     it("should validate input ranges", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       // Test invalid mental noise (> 10)
       await expect(
         caller.codex.saveCarrierlock({
@@ -263,7 +277,7 @@ describe("Codex Router", () => {
   describe("saveReading", () => {
     it("should save diagnostic reading for authenticated user", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       // First create a carrierlock state
       const carrierlockResult = await caller.codex.saveCarrierlock({
         mentalNoise: 5,
@@ -277,9 +291,9 @@ describe("Codex Router", () => {
         carrierlockId: carrierlockResult.id,
         readingText: "Test diagnostic reading",
         flaggedCodons: ["RC01", "RC27"],
-        sliScores: { "RC01": 0.8, "RC27": 0.6 },
-        activeFacets: { "RC01": "A", "RC27": "B" },
-        confidenceLevels: { "RC01": 0.9, "RC27": 0.7 },
+        sliScores: { RC01: 0.8, RC27: 0.6 },
+        activeFacets: { RC01: "A", RC27: "B" },
+        confidenceLevels: { RC01: 0.9, RC27: 0.7 },
         microCorrection: "Test micro-correction",
         correctionFacet: "A",
         falsifier: "Test falsifier",
@@ -292,15 +306,15 @@ describe("Codex Router", () => {
 
     it("should require authentication", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
+
       await expect(
         caller.codex.saveReading({
           carrierlockId: 1,
           readingText: "Test",
           flaggedCodons: ["RC01"],
-          sliScores: { "RC01": 0.8 },
-          activeFacets: { "RC01": "A" },
-          confidenceLevels: { "RC01": 0.9 },
+          sliScores: { RC01: 0.8 },
+          activeFacets: { RC01: "A" },
+          confidenceLevels: { RC01: 0.9 },
         })
       ).rejects.toThrow();
     });
@@ -309,9 +323,9 @@ describe("Codex Router", () => {
   describe("getReadingHistory", () => {
     it("should return reading history for authenticated user", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       const result = await caller.codex.getReadingHistory();
-      
+
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
       // History might be empty for new test user
@@ -319,10 +333,8 @@ describe("Codex Router", () => {
 
     it("should require authentication", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
-      await expect(
-        caller.codex.getReadingHistory()
-      ).rejects.toThrow();
+
+      await expect(caller.codex.getReadingHistory()).rejects.toThrow();
     });
   });
 
@@ -356,7 +368,7 @@ describe("Codex Router", () => {
   describe("markCorrectionComplete", () => {
     it("should mark correction as completed for authenticated user", async () => {
       const caller = appRouter.createCaller(mockAuthContext as Context);
-      
+
       // Create carrierlock and reading first
       const carrierlockResult = await caller.codex.saveCarrierlock({
         mentalNoise: 5,
@@ -369,9 +381,9 @@ describe("Codex Router", () => {
         carrierlockId: carrierlockResult.id,
         readingText: "Test reading",
         flaggedCodons: ["RC01"],
-        sliScores: { "RC01": 0.8 },
-        activeFacets: { "RC01": "A" },
-        confidenceLevels: { "RC01": 0.9 },
+        sliScores: { RC01: 0.8 },
+        activeFacets: { RC01: "A" },
+        confidenceLevels: { RC01: 0.9 },
       });
 
       // Mark as complete
@@ -385,7 +397,7 @@ describe("Codex Router", () => {
 
     it("should require authentication", async () => {
       const caller = appRouter.createCaller(mockPublicContext as Context);
-      
+
       await expect(
         caller.codex.markCorrectionComplete({ readingId: 1 })
       ).rejects.toThrow();

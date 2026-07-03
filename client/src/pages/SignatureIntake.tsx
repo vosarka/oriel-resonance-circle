@@ -1,18 +1,11 @@
 import { FormEvent, useEffect, useState, type ReactNode } from "react";
-import { CheckCircle2, Download, Loader2 } from "lucide-react";
+import { CheckCircle2, Download } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { useRoute } from "wouter";
 import Layout from "@/components/Layout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
-
-const C = {
-  bg: "#050403",
-  panel: "rgba(13,11,9,0.82)",
-  border: "rgba(225,198,139,0.18)",
-  gold: "#e1c68b",
-  text: "#f4e7c2",
-  muted: "rgba(244,231,194,0.62)",
-};
+import { signaturePageStyles } from "./signature-page-styles";
 
 const initialForm = {
   name: "",
@@ -37,7 +30,7 @@ export default function SignatureIntake() {
 
   const orderQuery = trpc.signature.getOrder.useQuery(
     { orderId },
-    { enabled: Boolean(user && orderId) },
+    { enabled: Boolean(user && orderId) }
   );
   const submitIntake = trpc.signature.submitIntake.useMutation({
     onSuccess: async () => {
@@ -45,7 +38,7 @@ export default function SignatureIntake() {
     },
   });
   const pdfUrl = trpc.signature.getFinalPdfUrl.useMutation({
-    onSuccess: (result) => {
+    onSuccess: result => {
       if (result.url) window.open(result.url, "_blank", "noopener,noreferrer");
     },
   });
@@ -69,7 +62,7 @@ export default function SignatureIntake() {
   }, [orderQuery.data?.intake]);
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
-    setForm((current) => ({ ...current, [key]: value }));
+    setForm(current => ({ ...current, [key]: value }));
   }
 
   function onSubmit(event: FormEvent) {
@@ -86,36 +79,43 @@ export default function SignatureIntake() {
 
   return (
     <Layout>
-      <section className="min-h-screen px-5 py-14 md:px-10" style={{ background: C.bg }}>
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-8">
-            <div className="text-[11px] uppercase tracking-[0.32em]" style={{ color: C.gold }}>
-              Signature Intake
-            </div>
-            <h1 className="mt-4 font-serif text-4xl md:text-6xl" style={{ color: C.text, letterSpacing: 0 }}>
-              Prepare your letter.
+      <style>{signaturePageStyles}</style>
+      <section className="signature-page">
+        <div className="signature-container">
+          <div className="mb-10">
+            <div className="signature-eyebrow">Signature Intake</div>
+            <h1 className="signature-title mt-5">
+              Prepare your <em>letter.</em>
             </h1>
+            <p className="signature-lede mt-6">
+              Anchor exact birth data, context, and consent before founder
+              curation begins. The form keeps the same intake logic; only the
+              vessel has been brought into the ORIEL Signal field.
+            </p>
           </div>
 
           {orderQuery.isLoading ? (
-            <div className="flex items-center gap-3" style={{ color: C.muted }}>
-              <Loader2 className="animate-spin" size={18} />
+            <div className="signature-panel flex items-center gap-3 p-6 signature-body">
+              <Spinner
+                className="signature-icon"
+                size={18}
+                label="Loading order"
+              />
               Loading order...
             </div>
           ) : orderQuery.error ? (
-            <div className="border p-5 text-sm" style={{ borderColor: "rgba(201,68,68,0.45)", color: "#f1b5a8" }}>
-              {orderQuery.error.message}
-            </div>
+            <div className="signature-error">{orderQuery.error.message}</div>
           ) : (
             <div className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]">
-              <aside className="border p-5" style={{ borderColor: C.border, background: C.panel }}>
-                <div className="text-sm uppercase tracking-[0.2em]" style={{ color: C.gold }}>
+              <aside className="signature-panel p-6">
+                <div className="signature-status text-[0.72rem] tracking-[0.2em] text-[var(--oriel-amber)]">
                   Order #{orderId}
                 </div>
-                <div className="mt-4 text-sm" style={{ color: C.muted }}>
-                  Status: <span style={{ color: C.text }}>{status}</span>
+                <div className="signature-body mt-4">
+                  Status:{" "}
+                  <span className="text-[var(--oriel-ivory)]">{status}</span>
                 </div>
-                <p className="mt-5 text-sm leading-7" style={{ color: C.muted }}>
+                <p className="signature-body mt-5">
                   Your intake gives ORIEL the exact birth data and the human
                   context needed for founder curation. The final PDF is not
                   auto-delivered from the engine output.
@@ -125,8 +125,7 @@ export default function SignatureIntake() {
                   <button
                     type="button"
                     onClick={() => pdfUrl.mutate({ orderId })}
-                    className="mt-6 inline-flex w-full items-center justify-center gap-3 border px-4 py-3 text-xs uppercase tracking-[0.2em]"
-                    style={{ borderColor: C.border, color: C.gold }}
+                    className="signature-button signature-button--primary mt-6 w-full"
                   >
                     <Download size={15} />
                     Open final PDF
@@ -135,32 +134,85 @@ export default function SignatureIntake() {
               </aside>
 
               {orderQuery.data?.intake && status !== "intake_needed" ? (
-                <div className="border p-8" style={{ borderColor: C.border, background: C.panel }}>
-                  <CheckCircle2 size={34} style={{ color: C.gold }} />
-                  <h2 className="mt-5 font-serif text-3xl" style={{ color: C.text }}>
+                <div className="signature-panel p-8">
+                  <CheckCircle2 size={34} className="signature-icon" />
+                  <h2 className="signature-subheading mt-5">
                     Intake received.
                   </h2>
-                  <p className="mt-4 max-w-2xl text-sm leading-7" style={{ color: C.muted }}>
+                  <p className="signature-body mt-4 max-w-2xl">
                     Your Signature Letter is awaiting founder curation. You can
                     return here after delivery to access the final PDF.
                   </p>
                 </div>
               ) : (
-                <form onSubmit={onSubmit} className="border p-6 md:p-8" style={{ borderColor: C.border, background: C.panel }}>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Field label="Name"><Input value={form.name} onChange={(v) => set("name", v)} required /></Field>
-                    <Field label="Email"><Input type="email" value={form.email} onChange={(v) => set("email", v)} required /></Field>
-                    <Field label="Birth date"><Input type="date" value={form.birthDate} onChange={(v) => set("birthDate", v)} required /></Field>
-                    <Field label="Birth time"><Input type="time" value={form.birthTime} onChange={(v) => set("birthTime", v)} required /></Field>
-                    <Field label="Birth place"><Input value={form.birthPlace} onChange={(v) => set("birthPlace", v)} required /></Field>
-                    <Field label="Birth country"><Input value={form.birthCountry} onChange={(v) => set("birthCountry", v)} required /></Field>
-                    <Field label="Timezone"><Input value={form.timezone} onChange={(v) => set("timezone", v)} placeholder="Europe/Bucharest" required /></Field>
+                <form
+                  onSubmit={onSubmit}
+                  className="signature-panel p-6 md:p-8"
+                >
+                  <div className="signature-form-grid">
+                    <Field label="Name">
+                      <Input
+                        value={form.name}
+                        onChange={value => set("name", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Email">
+                      <Input
+                        type="email"
+                        value={form.email}
+                        onChange={value => set("email", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Birth date">
+                      <Input
+                        type="date"
+                        value={form.birthDate}
+                        onChange={value => set("birthDate", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Birth time">
+                      <Input
+                        type="time"
+                        value={form.birthTime}
+                        onChange={value => set("birthTime", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Birth place">
+                      <Input
+                        value={form.birthPlace}
+                        onChange={value => set("birthPlace", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Birth country">
+                      <Input
+                        value={form.birthCountry}
+                        onChange={value => set("birthCountry", value)}
+                        required
+                      />
+                    </Field>
+                    <Field label="Timezone">
+                      <Input
+                        value={form.timezone}
+                        onChange={value => set("timezone", value)}
+                        placeholder="Europe/Bucharest"
+                        required
+                      />
+                    </Field>
                     <Field label="Preferred tone">
                       <select
                         value={form.preferredTone}
-                        onChange={(event) => set("preferredTone", event.target.value as typeof form.preferredTone)}
-                        className="h-11 border bg-transparent px-3 text-sm"
-                        style={{ borderColor: C.border, color: C.text }}
+                        onChange={event =>
+                          set(
+                            "preferredTone",
+                            event.target.value as typeof form.preferredTone
+                          )
+                        }
+                        className="signature-select"
                       >
                         <option value="mystical">Mystical</option>
                         <option value="practical">Practical</option>
@@ -170,36 +222,45 @@ export default function SignatureIntake() {
                   </div>
 
                   <Field label="Focus question">
-                    <TextArea value={form.focusQuestion} onChange={(v) => set("focusQuestion", v)} required />
+                    <TextArea
+                      value={form.focusQuestion}
+                      onChange={value => set("focusQuestion", value)}
+                      required
+                    />
                   </Field>
                   <Field label="What should ORIEL avoid assuming?">
-                    <TextArea value={form.avoidAssumptions} onChange={(v) => set("avoidAssumptions", v)} />
+                    <TextArea
+                      value={form.avoidAssumptions}
+                      onChange={value => set("avoidAssumptions", value)}
+                    />
                   </Field>
 
-                  <label className="mt-5 flex items-start gap-3 text-sm leading-6" style={{ color: C.muted }}>
+                  <label className="signature-consent mt-6 flex items-start gap-3">
                     <input
                       type="checkbox"
                       checked={form.consentAccepted}
-                      onChange={(event) => set("consentAccepted", event.target.checked)}
-                      className="mt-1"
+                      onChange={event =>
+                        set("consentAccepted", event.target.checked)
+                      }
+                      className="mt-1 accent-[var(--oriel-amber)]"
                       required
                     />
-                    I consent to ORIEL using this birth and intake data to prepare
-                    a symbolic Signature Letter. I understand this is not medical,
-                    legal, therapeutic, financial, or predictive guidance.
+                    I consent to ORIEL using this birth and intake data to
+                    prepare a symbolic Signature Letter. I understand this is
+                    not medical, legal, therapeutic, financial, or predictive
+                    guidance.
                   </label>
 
                   <button
                     type="submit"
                     disabled={!canSubmit || submitIntake.isPending}
-                    className="mt-7 inline-flex items-center justify-center gap-3 border px-6 py-4 text-sm uppercase tracking-[0.22em] disabled:opacity-50"
-                    style={{ borderColor: C.border, color: C.gold }}
+                    className="signature-button signature-button--primary mt-7 disabled:opacity-50"
                   >
                     {submitIntake.isPending ? "Submitting..." : "Submit intake"}
                   </button>
 
                   {submitIntake.error && (
-                    <div className="mt-4 text-sm" style={{ color: "#f1b5a8" }}>
+                    <div className="signature-error mt-4">
                       {submitIntake.error.message}
                     </div>
                   )}
@@ -215,10 +276,8 @@ export default function SignatureIntake() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="mt-4 block">
-      <span className="mb-2 block text-[11px] uppercase tracking-[0.2em]" style={{ color: C.gold }}>
-        {label}
-      </span>
+    <label className="signature-field mt-4">
+      <span className="signature-field-label">{label}</span>
       {children}
     </label>
   );
@@ -243,9 +302,8 @@ function Input({
       type={type}
       placeholder={placeholder}
       required={required}
-      onChange={(event) => onChange(event.target.value)}
-      className="h-11 w-full border bg-transparent px-3 text-sm outline-none"
-      style={{ borderColor: C.border, color: C.text }}
+      onChange={event => onChange(event.target.value)}
+      className="signature-input"
     />
   );
 }
@@ -263,10 +321,9 @@ function TextArea({
     <textarea
       value={value}
       required={required}
-      onChange={(event) => onChange(event.target.value)}
+      onChange={event => onChange(event.target.value)}
       rows={5}
-      className="w-full border bg-transparent px-3 py-3 text-sm leading-6 outline-none"
-      style={{ borderColor: C.border, color: C.text }}
+      className="signature-textarea"
     />
   );
 }

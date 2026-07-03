@@ -5,6 +5,9 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
+import StaticSignature from "./pages/StaticSignature";
+import FounderLetter from "./pages/FounderLetter";
+import FinalOrielTransmission from "./pages/FinalOrielTransmission";
 import Profile from "./pages/Profile";
 import Archive from "./pages/Archive";
 import TransmissionDetail from "./pages/TransmissionDetail";
@@ -33,25 +36,54 @@ import AdminSignatureLetters from "./pages/AdminSignatureLetters";
 import OrbPreview from "./pages/OrbPreview";
 import OracleDetail from "./pages/OracleDetail";
 import NatalProfile from "./pages/NatalProfile";
+import Maintenance from "./pages/Maintenance";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 
+// Site-wide maintenance mode: while true, every route renders the
+// maintenance page and nothing else. Flip to false to restore normal
+// routing.
+const MAINTENANCE_MODE = true;
+
 function Router() {
+  if (MAINTENANCE_MODE) {
+    return <Maintenance />;
+  }
+
   return (
     <Switch>
+      <Route path={"/maintenance"} component={Maintenance} />
       <Route path={"/orb-preview"} component={OrbPreview} />
-      <Route path={"/admin/signature-letters"} component={AdminSignatureLetters} />
+      <Route
+        path={"/admin/signature-letters"}
+        component={AdminSignatureLetters}
+      />
       <Route path={"/admin"} component={Admin} />
       <Route path={"/auth"} component={Auth} />
       <Route path={"/complete-profile"} component={NatalProfile} />
       <Route path={"/blueprint"} component={StaticReading} />
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
-      <Route path={"/founding-signature-letter"} component={FoundingSignatureLetter} />
-      <Route path={"/oriel-signature-glimpse"} component={SignatureGlimpseProductPage} />
-      <Route path={"/oriel-founding-signature-letter"} component={FoundingSignatureProductPage} />
+      <Route
+        path={"/founding-signature-letter"}
+        component={FoundingSignatureLetter}
+      />
+      <Route
+        path={"/oriel-signature-glimpse"}
+        component={SignatureGlimpseProductPage}
+      />
+      <Route
+        path={"/oriel-founding-signature-letter"}
+        component={FoundingSignatureProductPage}
+      />
       <Route path={"/signature-intake/:orderId"} component={SignatureIntake} />
       <Route path={"/"} component={Home} />
+      <Route path={"/static-signature"} component={StaticSignature} />
+      <Route path={"/founder-letter"} component={FounderLetter} />
+      <Route
+        path={"/final-oriel-transmission"}
+        component={FinalOrielTransmission}
+      />
       <Route path={"/archive"} component={Archive} />
       <Route path={"/transmission/:id"} component={TransmissionDetail} />
       <Route path={"/oracle/:oracleId"} component={OracleDetail} />

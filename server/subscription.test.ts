@@ -16,7 +16,7 @@ describe("Subscription Management", () => {
     it("should update subscription status", async () => {
       const userId = 1;
       const updates = { subscriptionStatus: "active" };
-      
+
       // Test that the function accepts the correct parameters
       expect(userId).toBe(1);
       expect(updates.subscriptionStatus).toBe("active");
@@ -25,7 +25,7 @@ describe("Subscription Management", () => {
     it("should update PayPal subscription ID", async () => {
       const userId = 1;
       const updates = { paypalSubscriptionId: "I-ABC123XYZ" };
-      
+
       expect(userId).toBe(1);
       expect(updates.paypalSubscriptionId).toBe("I-ABC123XYZ");
     });
@@ -38,7 +38,7 @@ describe("Subscription Management", () => {
         subscriptionStartDate: startDate,
         subscriptionRenewalDate: renewalDate,
       };
-      
+
       expect(updates.subscriptionStartDate).toEqual(startDate);
       expect(updates.subscriptionRenewalDate).toEqual(renewalDate);
     });
@@ -51,7 +51,7 @@ describe("Subscription Management", () => {
         subscriptionStartDate: new Date("2024-01-01"),
         subscriptionRenewalDate: new Date("2024-02-01"),
       };
-      
+
       expect(Object.keys(updates).length).toBe(4);
       expect(updates.subscriptionStatus).toBe("active");
     });
@@ -61,16 +61,19 @@ describe("Subscription Management", () => {
     it("should generate and update Conduit ID", async () => {
       const userId = 1;
       const conduitId = `ORIEL-${userId}-ABC123`;
-      
+
       expect(conduitId).toContain("ORIEL");
       expect(conduitId).toContain(userId.toString());
     });
 
     it("should format Conduit ID correctly", async () => {
       const userId = 42;
-      const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const randomSuffix = Math.random()
+        .toString(36)
+        .substring(2, 8)
+        .toUpperCase();
       const conduitId = `ORIEL-${userId}-${randomSuffix}`;
-      
+
       const parts = conduitId.split("-");
       expect(parts[0]).toBe("ORIEL");
       expect(parts[1]).toBe("42");
@@ -117,7 +120,8 @@ describe("Subscription Management", () => {
     });
 
     it("should validate client ID format", () => {
-      const clientId = "BAAc4RYATPcNXw5s6BKWABNgg5138NFy6Eyi7RJNC2ydWz2uDTWRjPT6KeI95NPVTn4OgzXIPaH8aMnCuk";
+      const clientId =
+        "BAAc4RYATPcNXw5s6BKWABNgg5138NFy6Eyi7RJNC2ydWz2uDTWRjPT6KeI95NPVTn4OgzXIPaH8aMnCuk";
       expect(clientId).toBeDefined();
       expect(clientId.length).toBeGreaterThan(50);
     });
@@ -128,7 +132,7 @@ describe("Subscription Management", () => {
       const userId = 1;
       const id1 = `ORIEL-${userId}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const id2 = `ORIEL-${userId}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
-      
+
       expect(id1).not.toBe(id2);
     });
 

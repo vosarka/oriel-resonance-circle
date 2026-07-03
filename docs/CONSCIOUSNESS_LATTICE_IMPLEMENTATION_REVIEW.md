@@ -68,20 +68,20 @@ not the full "Consciousness Lattice Unified Specification v1" implementation.
 
 These are practical engineering estimates, not formal test metrics.
 
-| Area | Compliance | Assessment |
-| --- | ---: | --- |
-| Swiss ephemeris / UTC / True Node / no houses | 85% | Strong, but failures are swallowed in higher-level routes. |
-| Two-timing conscious/design charts | 85% | New path implements iterative 88-degree solar arc. Legacy path still violates this. |
-| Mandala sequence and facet arc | 90% | Sequence and offset match validation vector. Tests are too weak. |
-| Center / channel / type / authority | 65% | Channel logic is good, but center map has four canonical mismatches and authority edge cases need tests. |
-| 64 codons x 4 facets library | 90% | Data exists and loads. Needs stronger integrity/version tests. |
-| Static Prime Stack | 75% | 9 positions and 26 activations exist internally. Output/persistence is incomplete. |
-| Carrierlock coherence formula | 90% | Formula exists both client and server. Labels differ from spec. |
-| Dynamic SLI / micro-correction engine | 35% | Engine exists, but live route does not wire it into dynamic readings. |
-| Data model | 45% | Useful JSON persistence exists, but not the normalized schema implied by the spec. |
-| API surface | 50% | Some endpoints exist, but compare/centers/channels/facet APIs are incomplete. |
-| UI visualization | 40% | Static wheel and 9-center map exist. 512 lattice, radar, transit, channel graph are missing. |
-| Tests | 40% | Some unit coverage exists, but validation-vector and spec-contract tests are insufficient. |
+| Area                                          | Compliance | Assessment                                                                                               |
+| --------------------------------------------- | ---------: | -------------------------------------------------------------------------------------------------------- |
+| Swiss ephemeris / UTC / True Node / no houses |        85% | Strong, but failures are swallowed in higher-level routes.                                               |
+| Two-timing conscious/design charts            |        85% | New path implements iterative 88-degree solar arc. Legacy path still violates this.                      |
+| Mandala sequence and facet arc                |        90% | Sequence and offset match validation vector. Tests are too weak.                                         |
+| Center / channel / type / authority           |        65% | Channel logic is good, but center map has four canonical mismatches and authority edge cases need tests. |
+| 64 codons x 4 facets library                  |        90% | Data exists and loads. Needs stronger integrity/version tests.                                           |
+| Static Prime Stack                            |        75% | 9 positions and 26 activations exist internally. Output/persistence is incomplete.                       |
+| Carrierlock coherence formula                 |        90% | Formula exists both client and server. Labels differ from spec.                                          |
+| Dynamic SLI / micro-correction engine         |        35% | Engine exists, but live route does not wire it into dynamic readings.                                    |
+| Data model                                    |        45% | Useful JSON persistence exists, but not the normalized schema implied by the spec.                       |
+| API surface                                   |        50% | Some endpoints exist, but compare/centers/channels/facet APIs are incomplete.                            |
+| UI visualization                              |        40% | Static wheel and 9-center map exist. 512 lattice, radar, transit, channel graph are missing.             |
+| Tests                                         |        40% | Some unit coverage exists, but validation-vector and spec-contract tests are insufficient.               |
 
 ## What Works
 

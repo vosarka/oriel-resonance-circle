@@ -1,0 +1,41 @@
+{
+  "priority_list": [
+    {
+      "priority": 1,
+      "center_id": "SOLAR",
+      "authority_name": "Emotional Resonance"
+    },
+    {
+      "priority": 2,
+      "center_id": "SACRAL",
+      "authority_name": "Gut Response"
+    },
+    {
+      "priority": 3,
+      "center_id": "SPLEEN",
+      "authority_name": "Instinctive Pulse"
+    },
+    {
+      "priority": 4,
+      "center_id": "HEART",
+      "authority_name": "Will/Desire"
+    },
+    {
+      "priority": 5,
+      "center_id": "G",
+      "authority_name": "Self-Direction"
+    },
+    {
+      "priority": 6,
+      "center_id": "None",
+      "authority_name": "Lunar Cycle",
+      "condition": "Reflectors only"
+    },
+    {
+      "priority": 7,
+      "center_id": "Environment",
+      "authority_name": "Mental Projectors",
+      "condition": "Head/Ajna defined, no motors below throat"
+    }
+  ]
+}

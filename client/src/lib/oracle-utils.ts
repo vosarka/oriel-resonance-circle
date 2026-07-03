@@ -6,7 +6,7 @@ function normalizeToken(
   }: {
     uppercase?: boolean;
     stripLeadingHash?: boolean;
-  } = {},
+  } = {}
 ): string | null {
   if (typeof value !== "string") return null;
 
@@ -20,7 +20,7 @@ function normalizeToken(
 
 function uniqueStrings(values: string[]): string[] {
   const seen = new Set<string>();
-  return values.filter((value) => {
+  return values.filter(value => {
     if (seen.has(value)) return false;
     seen.add(value);
     return true;
@@ -37,17 +37,15 @@ function parseStringArray(
     splitPattern?: RegExp;
     uppercase?: boolean;
     stripLeadingHash?: boolean;
-  } = {},
+  } = {}
 ): string[] {
   if (!value) return [];
 
   if (Array.isArray(value)) {
     return uniqueStrings(
       value
-        .map((item) =>
-          normalizeToken(item, { uppercase, stripLeadingHash }),
-        )
-        .filter((item): item is string => Boolean(item)),
+        .map(item => normalizeToken(item, { uppercase, stripLeadingHash }))
+        .filter((item): item is string => Boolean(item))
     );
   }
 
@@ -68,10 +66,8 @@ function parseStringArray(
     return uniqueStrings(
       value
         .split(splitPattern)
-        .map((item) =>
-          normalizeToken(item, { uppercase, stripLeadingHash }),
-        )
-        .filter((item): item is string => Boolean(item)),
+        .map(item => normalizeToken(item, { uppercase, stripLeadingHash }))
+        .filter((item): item is string => Boolean(item))
     );
   }
 
@@ -86,12 +82,14 @@ function extractCodonFromPosition(position: unknown): string | null {
   if (!position || typeof position !== "object") return null;
 
   const candidate =
-    (position as {
-      codonId?: unknown;
-      id?: unknown;
-      rc?: unknown;
-      fullId?: unknown;
-    }).codonId ??
+    (
+      position as {
+        codonId?: unknown;
+        id?: unknown;
+        rc?: unknown;
+        fullId?: unknown;
+      }
+    ).codonId ??
     (position as { id?: unknown }).id ??
     (position as { rc?: unknown }).rc ??
     (position as { fullId?: unknown }).fullId;
@@ -133,27 +131,25 @@ export function extractPrimeStackCodonIds(primeStack: unknown): string[] {
     return uniqueStrings(
       parsed
         .map(extractCodonFromPosition)
-        .filter((item): item is string => Boolean(item)),
+        .filter((item): item is string => Boolean(item))
     );
   }
 
   if (parsed && typeof parsed === "object") {
-    const maybePositions = (
-      parsed as { positions?: unknown }
-    ).positions;
+    const maybePositions = (parsed as { positions?: unknown }).positions;
 
     if (Array.isArray(maybePositions)) {
       return uniqueStrings(
         maybePositions
           .map(extractCodonFromPosition)
-          .filter((item): item is string => Boolean(item)),
+          .filter((item): item is string => Boolean(item))
       );
     }
 
     return uniqueStrings(
       Object.values(parsed as Record<string, unknown>)
         .map(extractCodonFromPosition)
-        .filter((item): item is string => Boolean(item)),
+        .filter((item): item is string => Boolean(item))
     );
   }
 

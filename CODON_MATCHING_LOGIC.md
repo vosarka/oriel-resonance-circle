@@ -3,6 +3,7 @@
 ## Data Structure
 
 ### Prime Stack (from staticSignature)
+
 ```javascript
 // Stored as JSON text in database
 {
@@ -29,25 +30,28 @@
 ```
 
 ### Oracle LinkedCodons (on oracle object)
+
 ```javascript
 // Stored as JSON text in database
-["RC12", "RC38", "RC51", "RC44"]
+["RC12", "RC38", "RC51", "RC44"];
 
 // Or sometimes received as array from API
-linkedCodons: ["RC12", "RC38", "RC51", "RC44"]
+linkedCodons: ["RC12", "RC38", "RC51", "RC44"];
 ```
 
 ## Matching Algorithm
 
 ### Step 1: Extract User Codons (in usePersonalResonance)
+
 ```typescript
 // Get first static reading (user can have multiple)
 const staticReading = staticReadings[0];
 
 // Parse primeStack (handle both string and object)
-const stack = typeof staticReading.primeStack === "string"
-  ? JSON.parse(staticReading.primeStack)
-  : staticReading.primeStack;
+const stack =
+  typeof staticReading.primeStack === "string"
+    ? JSON.parse(staticReading.primeStack)
+    : staticReading.primeStack;
 
 // Extract codon IDs from 9 positions
 const codons: string[] = [];
@@ -62,6 +66,7 @@ Object.values(stack).forEach((position: any) => {
 ```
 
 ### Step 2: Check Oracle for Resonance
+
 ```typescript
 // Called in components with oracle's linkedCodons
 hasResonance(linkedCodons: string[]): boolean {
@@ -78,6 +83,7 @@ hasResonance(linkedCodons: string[]): boolean {
 ```
 
 ### Step 3: Get Matching Codons (for detail view)
+
 ```typescript
 // Used in OracleDetail to show which codons match
 getMatchingCodons(linkedCodons: string[]): string[] {
@@ -95,6 +101,7 @@ getMatchingCodons(linkedCodons: string[]): string[] {
 ## Implementation Examples
 
 ### Example 1: Full Match
+
 ```
 User's Prime Stack: [RC01, RC12, RC27, RC38, RC44, RC51, RC63, RC19, RC34]
 Oracle's LinkedCodons: [RC12, RC38, RC51, RC44]
@@ -104,6 +111,7 @@ Display: All 4 codons shown in Personal Resonance section
 ```
 
 ### Example 2: Partial Match
+
 ```
 User's Prime Stack: [RC01, RC12, RC27, RC38, RC44, RC51, RC63, RC19, RC34]
 Oracle's LinkedCodons: [RC12, RC38, RC99, RC88]
@@ -114,6 +122,7 @@ Display: Only RC12 and RC38 shown in Personal Resonance section
 ```
 
 ### Example 3: No Match
+
 ```
 User's Prime Stack: [RC01, RC12, RC27, RC38, RC44, RC51, RC63, RC19, RC34]
 Oracle's LinkedCodons: [RC99, RC88, RC77]
@@ -125,6 +134,7 @@ Display: No Personal Resonance section shown
 ```
 
 ### Example 4: User Not Logged In
+
 ```
 User: null (unauthenticated)
 staticReadings: []
@@ -135,6 +145,7 @@ Display: Standard card, no personal indicators
 ```
 
 ### Example 5: User Has No Static Signature
+
 ```
 User: { id: "user_123", ... }
 staticReadings: [] (no signatures created yet)
@@ -148,27 +159,25 @@ Display: Standard card, no personal indicators
 ## Edge Cases & Validation
 
 ### Whitespace Handling
+
 ```typescript
 // Codons may have extra whitespace
-linkedCodons = [" RC12 ", "RC38", "  RC51  "]
-userCodons = ["RC01", "RC12", "RC27"]
+linkedCodons = [" RC12 ", "RC38", "  RC51  "];
+userCodons = ["RC01", "RC12", "RC27"];
 
 // Hook normalizes with .trim():
-matching = linkedCodons.filter(codon =>
-  userCodons.includes(codon.trim())
-);
+matching = linkedCodons.filter(codon => userCodons.includes(codon.trim()));
 // Result: ["RC12"]
 ```
 
 ### Case Sensitivity
+
 ```typescript
 // Current implementation: CASE SENSITIVE
-linkedCodons = ["rc12", "RC38"]  // lowercase
-userCodons = ["RC12", "RC38"]    // uppercase
+linkedCodons = ["rc12", "RC38"]; // lowercase
+userCodons = ["RC12", "RC38"]; // uppercase
 
-matching = linkedCodons.filter(codon =>
-  userCodons.includes(codon.trim())
-);
+matching = linkedCodons.filter(codon => userCodons.includes(codon.trim()));
 // Result: [] (no matches due to case)
 
 // Note: If case-insensitive matching needed, use:
@@ -178,13 +187,14 @@ matching = linkedCodons.filter(codon =>
 ```
 
 ### Null/Undefined Handling
+
 ```typescript
 // Hook safely handles:
-linkedCodons = null           // Returns []
-linkedCodons = undefined      // Returns []
-linkedCodons = []             // Returns []
-linkedCodons = ["", "  "]     // Returns [] (empty after trim)
-linkedCodons = ["RC12"]       // Returns ["RC12"] (if in userCodons)
+linkedCodons = null; // Returns []
+linkedCodons = undefined; // Returns []
+linkedCodons = []; // Returns []
+linkedCodons = ["", "  "]; // Returns [] (empty after trim)
+linkedCodons = ["RC12"]; // Returns ["RC12"] (if in userCodons)
 
 // Protected with type checking:
 if (!linkedCodons || !Array.isArray(linkedCodons)) {
@@ -193,6 +203,7 @@ if (!linkedCodons || !Array.isArray(linkedCodons)) {
 ```
 
 ### Multiple Static Signatures
+
 ```typescript
 // User may have multiple static signatures (different birth times, etc.)
 staticReadings = [
@@ -211,6 +222,7 @@ const staticReading = staticReadings[0];
 ## Database Storage Format
 
 ### StaticSignatures Table
+
 ```sql
 CREATE TABLE staticSignatures (
   id INTEGER PRIMARY KEY,
@@ -222,6 +234,7 @@ CREATE TABLE staticSignatures (
 ```
 
 ### Oracles Table
+
 ```sql
 CREATE TABLE oracles (
   id INTEGER PRIMARY KEY,
@@ -234,11 +247,13 @@ CREATE TABLE oracles (
 ## Query Performance
 
 ### No Additional DB Queries in usePersonalResonance
+
 - Hook calls `trpc.codex.getStaticReadings` once on mount
 - Extracted codons are memoized with `useMemo`
 - hasResonance/getMatchingCodons are synchronous (no network calls)
 
 ### Component Usage Pattern
+
 ```typescript
 // OracleCard.tsx (renders hundreds of cards)
 const { hasResonance } = usePersonalResonance();
@@ -252,9 +267,10 @@ filteredOracles.map((ox) => {
 ```
 
 ### Complexity Analysis
+
 - Extract user codons: O(9) = O(1) (fixed number of positions)
-- hasResonance: O(n*m) where n = oracle codons, m = user codons
-  - Typically: O(3-5 * 9) = O(1) in practice
+- hasResonance: O(n\*m) where n = oracle codons, m = user codons
+  - Typically: O(3-5 \* 9) = O(1) in practice
 - getMatchingCodons: Same complexity
 - Per-card cost in Archive: < 1ms per oracle
 

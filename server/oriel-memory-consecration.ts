@@ -44,7 +44,7 @@ const HIGH_SENSITIVITY_TERMS = [
 ];
 
 export function mapMemoryCandidateCategory(
-  category: MemoryCandidateCategory | string,
+  category: MemoryCandidateCategory | string
 ): MemoryCategory {
   switch (category.toLowerCase()) {
     case "identity":
@@ -71,7 +71,7 @@ function inferSensitivity(input: MemoryCandidateInput): MemorySensitivity {
     category === "emotion" ||
     category === "identity" ||
     category === "spiritual" ||
-    HIGH_SENSITIVITY_TERMS.some((term) => content.includes(term))
+    HIGH_SENSITIVITY_TERMS.some(term => content.includes(term))
   ) {
     return "high";
   }
@@ -84,7 +84,7 @@ function inferSensitivity(input: MemoryCandidateInput): MemorySensitivity {
 }
 
 export function classifyMemoryCandidate(
-  input: MemoryCandidateInput,
+  input: MemoryCandidateInput
 ): MemoryConsecrationDecision {
   const confidence = Number(input.confidence);
   if (!Number.isFinite(confidence) || confidence < 0.6) {

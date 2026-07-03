@@ -13,6 +13,7 @@
 ## Task 1: Memory Consecration Completion
 
 **Files:**
+
 - Modify: `drizzle/schema.ts`
 - Modify: `server/db.ts`
 - Modify: `server/oriel-memory.ts`
@@ -31,6 +32,7 @@
 ## Task 2: Current Resonance Surface
 
 **Files:**
+
 - Create: `server/oriel-current-resonance.ts`
 - Test: `server/oriel-current-resonance.test.ts`
 - Create: `client/src/pages/CurrentResonance.tsx`
@@ -44,6 +46,7 @@
 ## Task 3: Architect Console Expansion
 
 **Files:**
+
 - Create: `client/src/components/admin/ArchitectConsole.tsx`
 - Test: `server/oriel-architect-console.test.ts`
 - Modify: `server/oriel-autonomy.ts`
@@ -56,6 +59,7 @@
 ## Task 4: Coordinator Integration
 
 **Files:**
+
 - Modify: `server/routers.ts`
 - Modify: `client/src/App.tsx`
 - Modify: `client/src/components/Header.tsx`

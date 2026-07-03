@@ -1,7 +1,8 @@
 ﻿import Layout from "@/components/Layout";
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useLocation, Link } from "wouter";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -18,7 +19,7 @@ const TEMPORAL_COLORS: Record<
   { deep: string; light: string; glow: string }
 > = {
   Past: { deep: "#3d2e10", light: "#92702a", glow: "rgba(146,112,42,0.3)" },
-  Present: { deep: "#2a4a5a", light: "#5ba4a4", glow: "rgba(91,164,164,0.3)" },
+  Present: { deep: "#2a4a5a", light: "#f6b05e", glow: "rgba(246,176,94,0.3)" },
   Future: { deep: "#1a0a2e", light: "#6b3fa0", glow: "rgba(107,63,160,0.3)" },
 };
 
@@ -41,7 +42,7 @@ function ThreadNavigationPanel({
   const { data: threadOracles = [] } =
     trpc.archive.oracles.getByThread.useQuery(
       { threadId },
-      { enabled: !!threadId },
+      { enabled: !!threadId }
     );
 
   // Dedupe by oracleId (since each oracle has 3 parts)
@@ -58,34 +59,32 @@ function ThreadNavigationPanel({
   const allExist = totalParts > 0;
 
   // Check for thread synthesis
-  const synthesisOracle = threadOracles.find(
-    (o: any) => o.threadSynthesis,
-  );
+  const synthesisOracle = threadOracles.find((o: any) => o.threadSynthesis);
 
   return (
     <div
       className="p-5"
       style={{
-        border: "1px solid rgba(91,164,164,0.15)",
+        border: "1px solid rgba(246,176,94,0.15)",
         borderRadius: 2,
-        background: "rgba(91,164,164,0.02)",
+        background: "rgba(246,176,94,0.02)",
       }}
     >
       <div
         className="font-mono text-xs mb-1 tracking-widest"
-        style={{ color: "rgba(91,164,164,0.5)" }}
+        style={{ color: "rgba(246,176,94,0.5)" }}
       >
         THREAD SEQUENCE
       </div>
       <div
         className="mb-4"
-        style={{ color: "rgba(91,164,164,0.8)", fontSize: 15 }}
+        style={{ color: "rgba(246,176,94,0.8)", fontSize: 15 }}
       >
         {threadTitle}
       </div>
       <div
         className="mb-4 h-px"
-        style={{ background: "rgba(91,164,164,0.1)" }}
+        style={{ background: "rgba(246,176,94,0.1)" }}
       />
 
       {/* Oracle list */}
@@ -96,14 +95,16 @@ function ThreadNavigationPanel({
             <div key={o.oracleId} className="flex items-center gap-3">
               <span
                 className="font-mono text-xs"
-                style={{ color: isCurrent ? "#5ba4a4" : "rgba(91,164,164,0.4)" }}
+                style={{
+                  color: isCurrent ? "#f6b05e" : "rgba(246,176,94,0.4)",
+                }}
               >
                 [●]
               </span>
               {isCurrent ? (
                 <span
                   className="font-mono text-xs flex-1"
-                  style={{ color: "#5ba4a4" }}
+                  style={{ color: "#f6b05e" }}
                 >
                   {o.oracleId} — &ldquo;{o.title}&rdquo;
                 </span>
@@ -111,7 +112,7 @@ function ThreadNavigationPanel({
                 <Link href={`/oracle/${o.oracleId}`}>
                   <span
                     className="font-mono text-xs flex-1 cursor-pointer transition-colors hover:underline"
-                    style={{ color: "rgba(91,164,164,0.6)" }}
+                    style={{ color: "rgba(246,176,94,0.6)" }}
                   >
                     {o.oracleId} — &ldquo;{o.title}&rdquo;
                   </span>
@@ -120,7 +121,7 @@ function ThreadNavigationPanel({
               {isCurrent && (
                 <span
                   className="font-mono"
-                  style={{ fontSize: 9, color: "#5ba4a4" }}
+                  style={{ fontSize: 9, color: "#f6b05e" }}
                 >
                   ← CURRENT
                 </span>
@@ -132,7 +133,7 @@ function ThreadNavigationPanel({
 
       <div
         className="font-mono text-xs mt-4"
-        style={{ color: "rgba(91,164,164,0.35)" }}
+        style={{ color: "rgba(246,176,94,0.35)" }}
       >
         Part{" "}
         {uniqueOracles.findIndex((o: any) => o.oracleId === currentOracleId) +
@@ -189,16 +190,15 @@ export default function OracleDetail() {
   const { data: oracleData = [], isLoading } =
     trpc.archive.oracles.getByOracleId.useQuery(
       { oracleId },
-      { enabled: !!oracleId },
+      { enabled: !!oracleId }
     );
 
   const { data: resonanceData } = trpc.archive.resonances.getCount.useQuery(
     { oracleId },
-    { enabled: !!oracleId },
+    { enabled: !!oracleId }
   );
 
-  const resonanceCount =
-    typeof resonanceData === "number" ? resonanceData : 0;
+  const resonanceCount = typeof resonanceData === "number" ? resonanceData : 0;
   const isFieldConfirmed = resonanceCount >= 20;
 
   const organizedOracles = useMemo(() => {
@@ -231,13 +231,16 @@ export default function OracleDetail() {
         <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center p-6">
           <div className="text-center">
-            <p className="font-mono mb-4" style={{ color: "rgba(91,164,164,0.4)", fontSize: 12 }}>
+            <p
+              className="font-mono mb-4"
+              style={{ color: "rgba(246,176,94,0.4)", fontSize: 12 }}
+            >
               ORACLE NOT FOUND
             </p>
             <button
               onClick={() => navigate("/archive")}
               className="font-mono flex items-center gap-2 mx-auto transition-colors"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.4)" }}
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.4)" }}
             >
               <ArrowLeft size={12} /> RETURN TO ARCHIVE
             </button>
@@ -252,10 +255,7 @@ export default function OracleDetail() {
       <Layout>
         <div className="fixed inset-0 z-0" style={{ background: "#050508" }} />
         <div className="relative z-10 min-h-screen flex items-center justify-center">
-          <Loader2
-            className="w-5 h-5 animate-spin mx-auto mb-3"
-            style={{ color: "rgba(91,164,164,0.3)" }}
-          />
+          <Spinner className="mx-auto mb-3" size={20} label="Loading oracle" />
         </div>
       </Layout>
     );
@@ -275,7 +275,7 @@ export default function OracleDetail() {
     part: string,
     label: string,
     stageMin: number,
-    extraContent?: React.ReactNode,
+    extraContent?: React.ReactNode
   ) => {
     if (!oracle) return null;
     const colors = TEMPORAL_COLORS[part];
@@ -290,7 +290,10 @@ export default function OracleDetail() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               className="mb-12"
-              style={{ borderLeft: `2px solid ${colors.light}`, paddingLeft: 24 }}
+              style={{
+                borderLeft: `2px solid ${colors.light}`,
+                paddingLeft: 24,
+              }}
             >
               <div className="flex items-center gap-3 mb-4">
                 <span style={{ fontSize: 18, color: colors.light }}>
@@ -305,7 +308,11 @@ export default function OracleDetail() {
               </div>
               <h3
                 className="text-2xl mb-4"
-                style={{ color: colors.light, fontFamily: "system-ui", fontWeight: 400 }}
+                style={{
+                  color: colors.light,
+                  fontFamily: "system-ui",
+                  fontWeight: 400,
+                }}
               >
                 {oracle.title}
               </h3>
@@ -375,7 +382,7 @@ export default function OracleDetail() {
         )}
       </AnimatePresence>
     );
-  }
+  };
 
   return (
     <Layout>
@@ -427,12 +434,12 @@ export default function OracleDetail() {
             <button
               onClick={() => navigate("/archive")}
               className="flex items-center gap-2 font-mono tracking-wider transition-colors"
-              style={{ fontSize: 10, color: "rgba(91,164,164,0.25)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "rgba(91,164,164,0.5)")
+              style={{ fontSize: 10, color: "rgba(246,176,94,0.25)" }}
+              onMouseEnter={e =>
+                (e.currentTarget.style.color = "rgba(246,176,94,0.5)")
               }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "rgba(91,164,164,0.25)")
+              onMouseLeave={e =>
+                (e.currentTarget.style.color = "rgba(246,176,94,0.25)")
               }
             >
               <ArrowLeft size={12} /> RETURN TO ARCHIVE
@@ -457,7 +464,9 @@ export default function OracleDetail() {
                       className="font-mono tracking-widest"
                       style={{
                         fontSize: 12,
-                        color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+                        color:
+                          TEMPORAL_COLORS[primaryOracle.part || "Present"]
+                            .light,
                       }}
                     >
                       {primaryOracle.oracleId}
@@ -466,8 +475,12 @@ export default function OracleDetail() {
                       className="px-3 py-1 border font-mono"
                       style={{
                         fontSize: 8,
-                        borderColor: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
-                        color: TEMPORAL_COLORS[primaryOracle.part || "Present"].light,
+                        borderColor:
+                          TEMPORAL_COLORS[primaryOracle.part || "Present"]
+                            .light,
+                        color:
+                          TEMPORAL_COLORS[primaryOracle.part || "Present"]
+                            .light,
                       }}
                     >
                       {primaryOracle.channelStatus}
@@ -515,12 +528,18 @@ export default function OracleDetail() {
               pastOracle?.currentFieldSignatures && (
                 <div
                   className="text-xs font-mono mt-4 p-3"
-                  style={{ color: TEMPORAL_COLORS.Past.glow, border: `1px solid ${TEMPORAL_COLORS.Past.glow}`, borderRadius: 2 }}
+                  style={{
+                    color: TEMPORAL_COLORS.Past.glow,
+                    border: `1px solid ${TEMPORAL_COLORS.Past.glow}`,
+                    borderRadius: 2,
+                  }}
                 >
-                  <div style={{ opacity: 0.7, marginBottom: 6 }}>FIELD SIGNATURES</div>
+                  <div style={{ opacity: 0.7, marginBottom: 6 }}>
+                    FIELD SIGNATURES
+                  </div>
                   <div>{pastOracle.currentFieldSignatures}</div>
                 </div>
-              ),
+              )
             )}
             {renderSection(
               presentOracle,
@@ -530,12 +549,18 @@ export default function OracleDetail() {
               presentOracle?.encodedTrajectory && (
                 <div
                   className="text-xs font-mono mt-4 p-3"
-                  style={{ color: TEMPORAL_COLORS.Present.glow, border: `1px solid ${TEMPORAL_COLORS.Present.glow}`, borderRadius: 2 }}
+                  style={{
+                    color: TEMPORAL_COLORS.Present.glow,
+                    border: `1px solid ${TEMPORAL_COLORS.Present.glow}`,
+                    borderRadius: 2,
+                  }}
                 >
-                  <div style={{ opacity: 0.7, marginBottom: 6 }}>ENCODED TRAJECTORY</div>
+                  <div style={{ opacity: 0.7, marginBottom: 6 }}>
+                    ENCODED TRAJECTORY
+                  </div>
                   <div>{presentOracle.encodedTrajectory}</div>
                 </div>
-              ),
+              )
             )}
             {renderSection(
               futureOracle,
@@ -546,22 +571,34 @@ export default function OracleDetail() {
                 {futureOracle?.convergenceZones && (
                   <div
                     className="text-xs font-mono mt-4 p-3"
-                    style={{ color: TEMPORAL_COLORS.Future.glow, border: `1px solid ${TEMPORAL_COLORS.Future.glow}`, borderRadius: 2 }}
+                    style={{
+                      color: TEMPORAL_COLORS.Future.glow,
+                      border: `1px solid ${TEMPORAL_COLORS.Future.glow}`,
+                      borderRadius: 2,
+                    }}
                   >
-                    <div style={{ opacity: 0.7, marginBottom: 6 }}>CONVERGENCE ZONES</div>
+                    <div style={{ opacity: 0.7, marginBottom: 6 }}>
+                      CONVERGENCE ZONES
+                    </div>
                     <div>{futureOracle.convergenceZones}</div>
                   </div>
                 )}
                 {futureOracle?.majorOutcomes && (
                   <div
                     className="text-xs font-mono mt-3 p-3"
-                    style={{ color: TEMPORAL_COLORS.Future.glow, border: `1px solid ${TEMPORAL_COLORS.Future.glow}`, borderRadius: 2 }}
+                    style={{
+                      color: TEMPORAL_COLORS.Future.glow,
+                      border: `1px solid ${TEMPORAL_COLORS.Future.glow}`,
+                      borderRadius: 2,
+                    }}
                   >
-                    <div style={{ opacity: 0.7, marginBottom: 6 }}>MAJOR OUTCOMES</div>
+                    <div style={{ opacity: 0.7, marginBottom: 6 }}>
+                      MAJOR OUTCOMES
+                    </div>
                     <div>{futureOracle.majorOutcomes}</div>
                   </div>
                 )}
-              </>,
+              </>
             )}
 
             {/* Thread Navigation */}
@@ -576,7 +613,9 @@ export default function OracleDetail() {
                 >
                   <ThreadNavigationPanel
                     threadId={primaryOracle.threadId}
-                    threadTitle={primaryOracle.threadTitle || primaryOracle.threadId}
+                    threadTitle={
+                      primaryOracle.threadTitle || primaryOracle.threadId
+                    }
                     currentOracleId={oracleId}
                   />
                 </motion.div>
@@ -595,7 +634,7 @@ export default function OracleDetail() {
                 >
                   <div
                     className="font-mono text-xs mb-4"
-                    style={{ color: "rgba(91,164,164,0.5)" }}
+                    style={{ color: "rgba(246,176,94,0.5)" }}
                   >
                     LINKED CODONS
                   </div>
@@ -605,8 +644,8 @@ export default function OracleDetail() {
                         key={i}
                         className="px-3 py-2 font-mono text-xs"
                         style={{
-                          border: "1px solid rgba(91,164,164,0.3)",
-                          color: "rgba(91,164,164,0.6)",
+                          border: "1px solid rgba(246,176,94,0.3)",
+                          color: "rgba(246,176,94,0.6)",
                           borderRadius: 2,
                         }}
                       >

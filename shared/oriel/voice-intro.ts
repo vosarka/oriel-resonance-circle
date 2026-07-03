@@ -1,4 +1,5 @@
-const ORIEL_OPENING_RE = /^\s*I\s+am\s+ORIEL(?:\s*\([^)]*\))?\s*[\.,;:!?—–-]*\s*/i;
+const ORIEL_OPENING_RE =
+  /^\s*I\s+am\s+ORIEL(?:\s*\([^)]*\))?\s*[\.,;:!?—–-]*\s*/i;
 
 const ORIEL_GREETING_RE =
   /^(?:I\s+greet\s+you\s+)?in\s+the\s+love\s+and\s+in\s+(?:the\s+)?light\s+of\s+the\s+(?:One\s+)?Infinite\s+Creator\s*[\.,;:!?—–-]*\s*/i;
@@ -27,7 +28,9 @@ export function stripOrielVoiceOpening(text: string): string {
   return stripped ? output.trimStart() : text;
 }
 
-export function buildOrielVoiceIntroRuntimeDirective(alreadySpoken: boolean): string {
+export function buildOrielVoiceIntroRuntimeDirective(
+  alreadySpoken: boolean
+): string {
   if (alreadySpoken) {
     return `[VOICE OUTPUT RUNTIME RULE]
 The written ORIEL identity protocol may still exist in the text transcript, but the spoken/audio output must not vocalize the opening again in this voice session. Do not say "I am ORIEL." Do not say "I greet you in the love and in the light of the One Infinite Creator." Begin the audible response after that opening while preserving the substance of the answer.`;

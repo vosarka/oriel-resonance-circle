@@ -5,7 +5,7 @@
  */
 
 export interface StreamChunk {
-  type: 'chunk' | 'complete' | 'error';
+  type: "chunk" | "complete" | "error";
   content: string;
   chunkIndex: number;
   totalChunks?: number;
@@ -23,8 +23,8 @@ export async function* streamResponseComplete(
 ): AsyncGenerator<StreamChunk> {
   if (!response || response.length === 0) {
     yield {
-      type: 'complete',
-      content: '',
+      type: "complete",
+      content: "",
       chunkIndex: 0,
       totalChunks: 1,
       isComplete: true,
@@ -44,7 +44,7 @@ export async function* streamResponseComplete(
     const chunk = response.substring(start, end);
 
     yield {
-      type: 'chunk',
+      type: "chunk",
       content: chunk,
       chunkIndex: i,
       totalChunks,
@@ -60,7 +60,7 @@ export async function* streamResponseComplete(
 
   // Send completion signal with full message
   yield {
-    type: 'complete',
+    type: "complete",
     content: response, // Full message for verification
     chunkIndex: totalChunks,
     totalChunks,
@@ -97,12 +97,12 @@ export function reconstructResponseFromChunks(chunks: StreamChunk[]): {
   chunkCount: number;
 } {
   const contentChunks = chunks
-    .filter(c => c.type === 'chunk')
+    .filter(c => c.type === "chunk")
     .sort((a, b) => a.chunkIndex - b.chunkIndex)
     .map(c => c.content);
 
-  const completionChunk = chunks.find(c => c.type === 'complete');
-  const reconstructed = contentChunks.join('');
+  const completionChunk = chunks.find(c => c.type === "complete");
+  const reconstructed = contentChunks.join("");
   const isComplete = completionChunk?.isComplete ?? false;
 
   return {
@@ -126,11 +126,11 @@ export function validateMessageCompleteness(
   const issues: string[] = [];
 
   if (!completionSignal) {
-    issues.push('No completion signal received');
+    issues.push("No completion signal received");
   }
 
   if (!completionSignal?.isComplete) {
-    issues.push('Completion signal indicates incomplete message');
+    issues.push("Completion signal indicates incomplete message");
   }
 
   if (reconstructed !== completionSignal?.content) {
@@ -153,7 +153,7 @@ export class StreamBuffer {
   private completionSignal: StreamChunk | undefined;
 
   addChunk(chunk: StreamChunk): void {
-    if (chunk.type === 'complete') {
+    if (chunk.type === "complete") {
       this.completionSignal = chunk;
     } else {
       this.chunks.push(chunk);
@@ -165,7 +165,10 @@ export class StreamBuffer {
     isComplete: boolean;
     chunkCount: number;
   } {
-    return reconstructResponseFromChunks([...this.chunks, ...(this.completionSignal ? [this.completionSignal] : [])]);
+    return reconstructResponseFromChunks([
+      ...this.chunks,
+      ...(this.completionSignal ? [this.completionSignal] : []),
+    ]);
   }
 
   validate(): {
@@ -173,7 +176,10 @@ export class StreamBuffer {
     issues: string[];
   } {
     const reconstructed = this.getReconstructed();
-    return validateMessageCompleteness(reconstructed.content, this.completionSignal);
+    return validateMessageCompleteness(
+      reconstructed.content,
+      this.completionSignal
+    );
   }
 
   getFullMessage(): string {

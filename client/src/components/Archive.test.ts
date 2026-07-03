@@ -25,14 +25,14 @@ describe("Archive Components", () => {
     it("should handle channel status colors correctly", () => {
       const statusMap = {
         OPEN: "bg-green-900/30",
-        RESONANT: "bg-blue-900/30",
-        COHERENT: "bg-purple-900/30",
+        RESONANT: "bg-primary/10",
+        COHERENT: "bg-amber-900/30",
         PROPHETIC: "bg-amber-900/30",
         LIVE: "bg-red-900/30",
       };
 
       expect(statusMap.OPEN).toBe("bg-green-900/30");
-      expect(statusMap.RESONANT).toBe("bg-blue-900/30");
+      expect(statusMap.RESONANT).toBe("bg-primary/10");
     });
   });
 
@@ -73,12 +73,18 @@ describe("Archive Components", () => {
   describe("Archive Page Filtering", () => {
     it("should filter transmissions by search term", () => {
       const transmissions = [
-        { id: "TX-001", title: "The Cosmic Whisper", coreMessage: "consciousness" },
+        {
+          id: "TX-001",
+          title: "The Cosmic Whisper",
+          coreMessage: "consciousness",
+        },
         { id: "TX-002", title: "The Spiral", coreMessage: "time" },
       ];
 
       const searchTerm = "cosmic";
-      const filtered = transmissions.filter((tx) => tx.title.toLowerCase().includes(searchTerm.toLowerCase()));
+      const filtered = transmissions.filter(tx =>
+        tx.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
       expect(filtered.length).toBe(1);
       expect(filtered[0].title).toBe("The Cosmic Whisper");
@@ -92,7 +98,7 @@ describe("Archive Components", () => {
       ];
 
       const filterField = "Consciousness Genesis";
-      const filtered = transmissions.filter((tx) => tx.field === filterField);
+      const filtered = transmissions.filter(tx => tx.field === filterField);
 
       expect(filtered.length).toBe(2);
     });
@@ -105,24 +111,41 @@ describe("Archive Components", () => {
       ];
 
       const filterStatus = "Confirmed";
-      const filtered = transmissions.filter((tx) => tx.status === filterStatus);
+      const filtered = transmissions.filter(tx => tx.status === filterStatus);
 
       expect(filtered.length).toBe(2);
     });
 
     it("should apply multiple filters simultaneously", () => {
       const transmissions = [
-        { id: "TX-001", title: "Cosmic", field: "Consciousness", status: "Confirmed" },
-        { id: "TX-002", title: "Spiral", field: "Field Theory", status: "Draft" },
-        { id: "TX-003", title: "Breath", field: "Consciousness", status: "Confirmed" },
+        {
+          id: "TX-001",
+          title: "Cosmic",
+          field: "Consciousness",
+          status: "Confirmed",
+        },
+        {
+          id: "TX-002",
+          title: "Spiral",
+          field: "Field Theory",
+          status: "Draft",
+        },
+        {
+          id: "TX-003",
+          title: "Breath",
+          field: "Consciousness",
+          status: "Confirmed",
+        },
       ];
 
       const searchTerm = "cosmic";
       const filterField = "Consciousness";
       const filterStatus = "Confirmed";
 
-      const filtered = transmissions.filter((tx) => {
-        const matchesSearch = tx.title.toLowerCase().includes(searchTerm.toLowerCase());
+      const filtered = transmissions.filter(tx => {
+        const matchesSearch = tx.title
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
         const matchesField = tx.field === filterField;
         const matchesStatus = tx.status === filterStatus;
         return matchesSearch && matchesField && matchesStatus;

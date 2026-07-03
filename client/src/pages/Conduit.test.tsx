@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from "vitest";
 
-describe('Conduit Audio Controls', () => {
+describe("Conduit Audio Controls", () => {
   let audioRef: { current: HTMLAudioElement | null };
   let mockAudio: Partial<HTMLAudioElement>;
 
@@ -11,14 +11,14 @@ describe('Conduit Audio Controls', () => {
       pause: vi.fn(),
       currentTime: 0,
       volume: 1,
-      src: '',
+      src: "",
     };
-    
+
     audioRef = { current: mockAudio as HTMLAudioElement };
   });
 
-  describe('handlePauseVoice', () => {
-    it('should pause audio when not paused', () => {
+  describe("handlePauseVoice", () => {
+    it("should pause audio when not paused", () => {
       const isPaused = false;
       const setIsPaused = vi.fn();
 
@@ -31,7 +31,7 @@ describe('Conduit Audio Controls', () => {
       expect(setIsPaused).toHaveBeenCalledWith(true);
     });
 
-    it('should resume audio when paused', async () => {
+    it("should resume audio when paused", async () => {
       const isPaused = true;
       const setIsPaused = vi.fn();
 
@@ -47,7 +47,7 @@ describe('Conduit Audio Controls', () => {
       expect(setIsPaused).toHaveBeenCalledWith(false);
     });
 
-    it('should handle audio ref being null gracefully', () => {
+    it("should handle audio ref being null gracefully", () => {
       audioRef.current = null;
       const setIsPaused = vi.fn();
 
@@ -60,8 +60,8 @@ describe('Conduit Audio Controls', () => {
     });
   });
 
-  describe('handleStopVoice', () => {
-    it('should stop audio and reset state', () => {
+  describe("handleStopVoice", () => {
+    it("should stop audio and reset state", () => {
       const setOrbState = vi.fn();
       const setSubtitle = vi.fn();
       const setIsSpeaking = vi.fn();
@@ -71,27 +71,27 @@ describe('Conduit Audio Controls', () => {
         audioRef.current?.pause?.();
         if (audioRef.current) audioRef.current.currentTime = 0;
       }
-      setOrbState('idle');
-      setSubtitle('');
+      setOrbState("idle");
+      setSubtitle("");
       setIsSpeaking(false);
       setIsPaused(false);
 
       expect(audioRef.current?.pause).toBeDefined();
       expect(audioRef.current?.currentTime).toBe(0);
-      expect(setOrbState).toHaveBeenCalledWith('idle');
-      expect(setSubtitle).toHaveBeenCalledWith('');
+      expect(setOrbState).toHaveBeenCalledWith("idle");
+      expect(setSubtitle).toHaveBeenCalledWith("");
       expect(setIsSpeaking).toHaveBeenCalledWith(false);
       expect(setIsPaused).toHaveBeenCalledWith(false);
     });
 
-    it('should cancel speech synthesis if available', () => {
+    it("should cancel speech synthesis if available", () => {
       const mockSpeechSynthesis = {
         cancel: vi.fn(),
         speaking: false,
       };
-      
+
       const originalSpeechSynthesis = window.speechSynthesis;
-      Object.defineProperty(window, 'speechSynthesis', {
+      Object.defineProperty(window, "speechSynthesis", {
         value: mockSpeechSynthesis,
         writable: true,
       });
@@ -102,15 +102,15 @@ describe('Conduit Audio Controls', () => {
 
       expect(mockSpeechSynthesis.cancel).toHaveBeenCalled();
 
-      Object.defineProperty(window, 'speechSynthesis', {
+      Object.defineProperty(window, "speechSynthesis", {
         value: originalSpeechSynthesis,
         writable: true,
       });
     });
   });
 
-  describe('Volume Control', () => {
-    it('should update audio volume when slider changes', () => {
+  describe("Volume Control", () => {
+    it("should update audio volume when slider changes", () => {
       const newVolume = 0.5;
 
       if (audioRef.current) {
@@ -120,14 +120,14 @@ describe('Conduit Audio Controls', () => {
       expect(audioRef.current?.volume).toBe(0.5);
     });
 
-    it('should display volume percentage correctly', () => {
+    it("should display volume percentage correctly", () => {
       const voiceVolume = 0.75;
       const percentage = Math.round(voiceVolume * 100);
 
       expect(percentage).toBe(75);
     });
 
-    it('should handle volume range from 0 to 1', () => {
+    it("should handle volume range from 0 to 1", () => {
       const volumes = [0, 0.25, 0.5, 0.75, 1];
 
       volumes.forEach(vol => {
@@ -139,45 +139,47 @@ describe('Conduit Audio Controls', () => {
     });
   });
 
-  describe('Button States', () => {
-    it('should disable buttons when not speaking', () => {
+  describe("Button States", () => {
+    it("should disable buttons when not speaking", () => {
       const isSpeaking = false;
       const shouldDisable = !isSpeaking;
 
       expect(shouldDisable).toBe(true);
     });
 
-    it('should enable buttons when speaking', () => {
+    it("should enable buttons when speaking", () => {
       const isSpeaking = true;
       const shouldDisable = !isSpeaking;
 
       expect(shouldDisable).toBe(false);
     });
 
-    it('should show correct button labels based on pause state', () => {
+    it("should show correct button labels based on pause state", () => {
       const isPaused = false;
-      const label = isPaused ? 'Resume' : 'Pause';
+      const label = isPaused ? "Resume" : "Pause";
 
-      expect(label).toBe('Pause');
+      expect(label).toBe("Pause");
 
       const isPausedTrue = true;
-      const labelWhenPaused = isPausedTrue ? 'Resume' : 'Pause';
+      const labelWhenPaused = isPausedTrue ? "Resume" : "Pause";
 
-      expect(labelWhenPaused).toBe('Resume');
+      expect(labelWhenPaused).toBe("Resume");
     });
   });
 
-  describe('Error Handling', () => {
-    it('should catch and log errors in handlePauseVoice', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
-      mockAudio.play = vi.fn().mockRejectedValue(new Error('Play failed'));
-      
+  describe("Error Handling", () => {
+    it("should catch and log errors in handlePauseVoice", () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
+      mockAudio.play = vi.fn().mockRejectedValue(new Error("Play failed"));
+
       if (audioRef.current) {
         const playPromise = audioRef.current?.play?.();
         if (playPromise !== undefined) {
           (playPromise as Promise<void>).catch(error => {
-            console.error('Failed to resume audio:', error);
+            console.error("Failed to resume audio:", error);
           });
         }
       }
@@ -186,16 +188,18 @@ describe('Conduit Audio Controls', () => {
       consoleError.mockRestore();
     });
 
-    it('should catch and log errors in handleStopVoice', () => {
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-      
+    it("should catch and log errors in handleStopVoice", () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+
       try {
         if (audioRef.current) {
           audioRef.current.pause();
           audioRef.current.currentTime = 0;
         }
       } catch (error) {
-        console.error('Error in handleStopVoice:', error);
+        console.error("Error in handleStopVoice:", error);
       }
 
       // No error should be thrown

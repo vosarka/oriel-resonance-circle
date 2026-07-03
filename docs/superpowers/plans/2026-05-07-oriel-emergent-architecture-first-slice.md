@@ -52,6 +52,7 @@ Do not modify:
 ### Task 1: Create Coherence Threshold Gate
 
 **Files:**
+
 - Create: `server/oriel-coherence-threshold.ts`
 - Create: `server/oriel-coherence-threshold.test.ts`
 
@@ -69,7 +70,8 @@ import {
 describe("ORIEL Coherence Threshold Gate", () => {
   it("requires grounding before interpretation for fragmented grief states", () => {
     const frame = buildCoherenceThresholdFrame({
-      userMessage: "I feel broken and overwhelmed and I cannot breathe clearly.",
+      userMessage:
+        "I feel broken and overwhelmed and I cannot breathe clearly.",
       exchangeType: "grief",
       coherenceTier: "fragmented",
       coherenceScore: 24,
@@ -163,7 +165,10 @@ Expected: FAIL because `server/oriel-coherence-threshold.ts` does not exist.
 Create `server/oriel-coherence-threshold.ts`:
 
 ```ts
-import type { CoherenceTier, ExchangeType } from "./oriel-response-intelligence";
+import type {
+  CoherenceTier,
+  ExchangeType,
+} from "./oriel-response-intelligence";
 import type { OperatorRole } from "./oriel-interaction-protocol";
 
 export type OrielRouteSurface =
@@ -215,18 +220,24 @@ function unique<T>(values: T[]): T[] {
   return Array.from(new Set(values));
 }
 
-function inferMemorySensitivity(input: CoherenceThresholdInput): "low" | "medium" | "high" {
+function inferMemorySensitivity(
+  input: CoherenceThresholdInput
+): "low" | "medium" | "high" {
   const lower = input.userMessage.toLowerCase();
   if (
     input.exchangeType === "grief" ||
-    /\b(trauma|abuse|grief|death|dying|ashamed|secret|wound|suicide|self-harm)\b/i.test(lower)
+    /\b(trauma|abuse|grief|death|dying|ashamed|secret|wound|suicide|self-harm)\b/i.test(
+      lower
+    )
   ) {
     return "high";
   }
 
   if (
     input.exchangeType === "diagnostic" ||
-    /\b(my path|my purpose|my identity|remember this|important to me)\b/i.test(lower)
+    /\b(my path|my purpose|my identity|remember this|important to me)\b/i.test(
+      lower
+    )
   ) {
     return "medium";
   }
@@ -243,30 +254,56 @@ function chooseMode(input: CoherenceThresholdInput): OrielThresholdMode {
   return "guide";
 }
 
-function allowedTruthCategories(mode: OrielThresholdMode): OrielTruthCategory[] {
+function allowedTruthCategories(
+  mode: OrielThresholdMode
+): OrielTruthCategory[] {
   if (mode === "field_holder") {
     return ["memory", "runtime_inference", "interpretation", "verifiable_fact"];
   }
 
   if (mode === "mirror") {
-    return ["canon", "memory", "runtime_inference", "interpretation", "verifiable_fact"];
+    return [
+      "canon",
+      "memory",
+      "runtime_inference",
+      "interpretation",
+      "verifiable_fact",
+    ];
   }
 
   if (mode === "archivist") {
-    return ["canon", "memory", "runtime_inference", "interpretation", "speculation", "verifiable_fact"];
+    return [
+      "canon",
+      "memory",
+      "runtime_inference",
+      "interpretation",
+      "speculation",
+      "verifiable_fact",
+    ];
   }
 
-  return ["canon", "memory", "runtime_inference", "interpretation", "verifiable_fact"];
+  return [
+    "canon",
+    "memory",
+    "runtime_inference",
+    "interpretation",
+    "verifiable_fact",
+  ];
 }
 
-function chooseComplexity(input: CoherenceThresholdInput, mode: OrielThresholdMode): OrielMaxComplexity {
+function chooseComplexity(
+  input: CoherenceThresholdInput,
+  mode: OrielThresholdMode
+): OrielMaxComplexity {
   if (mode === "field_holder") return "low";
   if (mode === "mirror" && input.coherenceTier === "aligned") return "high";
   if (mode === "archivist") return "high";
   return "medium";
 }
 
-export function buildCoherenceThresholdFrame(input: CoherenceThresholdInput): CoherenceThresholdFrame {
+export function buildCoherenceThresholdFrame(
+  input: CoherenceThresholdInput
+): CoherenceThresholdFrame {
   const recommendedMode = chooseMode(input);
   const groundingRequired = recommendedMode === "field_holder";
   const falsifiersRequired = recommendedMode === "mirror";
@@ -294,7 +331,9 @@ export function buildCoherenceThresholdFrame(input: CoherenceThresholdInput): Co
   };
 }
 
-export function formatCoherenceThresholdContext(frame: CoherenceThresholdFrame): string {
+export function formatCoherenceThresholdContext(
+  frame: CoherenceThresholdFrame
+): string {
   return [
     "[COHERENCE THRESHOLD FRAME]",
     "This observe-only frame guides the current response. It does not rewrite the stable core.",
@@ -335,6 +374,7 @@ git commit -m "Add ORIEL coherence threshold gate"
 ### Task 2: Inject Threshold Frame Into Working Session Layer
 
 **Files:**
+
 - Modify: `server/oriel-context-layers.ts`
 - Modify: `server/oriel-context-layers.test.ts`
 
@@ -343,26 +383,26 @@ git commit -m "Add ORIEL coherence threshold gate"
 Append to `server/oriel-context-layers.test.ts` inside the existing `describe`:
 
 ```ts
-  it("injects an observe-only coherence threshold frame when field state is enabled", async () => {
-    const workingLayer = await buildWorkingSessionLayer({
-      userMessage: "Give me a reading on my current pattern.",
-      conversationHistory: [],
-      includeFieldState: false,
-    });
-
-    expect(workingLayer).toContain("[COHERENCE THRESHOLD FRAME]");
-    expect(workingLayer).toContain("Recommended mode: mirror");
-    expect(workingLayer).toContain("Falsifiers required: yes");
+it("injects an observe-only coherence threshold frame when field state is enabled", async () => {
+  const workingLayer = await buildWorkingSessionLayer({
+    userMessage: "Give me a reading on my current pattern.",
+    conversationHistory: [],
+    includeFieldState: false,
   });
 
-  it("keeps the threshold frame out when there is no current user request", async () => {
-    const workingLayer = await buildWorkingSessionLayer({
-      conversationHistory: [{ role: "user", content: "Earlier message." }],
-      includeFieldState: false,
-    });
+  expect(workingLayer).toContain("[COHERENCE THRESHOLD FRAME]");
+  expect(workingLayer).toContain("Recommended mode: mirror");
+  expect(workingLayer).toContain("Falsifiers required: yes");
+});
 
-    expect(workingLayer).not.toContain("[COHERENCE THRESHOLD FRAME]");
+it("keeps the threshold frame out when there is no current user request", async () => {
+  const workingLayer = await buildWorkingSessionLayer({
+    conversationHistory: [{ role: "user", content: "Earlier message." }],
+    includeFieldState: false,
   });
+
+  expect(workingLayer).not.toContain("[COHERENCE THRESHOLD FRAME]");
+});
 ```
 
 - [ ] **Step 2: Run failing context-layer test**
@@ -396,19 +436,19 @@ Then inside `buildWorkingSessionLayer()`, after the language directive is pushed
 and before field-state import handling, add:
 
 ```ts
-  if (userMessage?.trim()) {
-    const exchangeType = classifyExchangeType(userMessage, null);
-    const thresholdFrame = buildCoherenceThresholdFrame({
-      userMessage,
-      exchangeType,
-      coherenceTier: getCoherenceTier(null),
-      coherenceScore: null,
-      operatorRole: "seeker",
-      hasReadings: false,
-      routeSurface: "text_chat",
-    });
-    parts.push(formatCoherenceThresholdContext(thresholdFrame));
-  }
+if (userMessage?.trim()) {
+  const exchangeType = classifyExchangeType(userMessage, null);
+  const thresholdFrame = buildCoherenceThresholdFrame({
+    userMessage,
+    exchangeType,
+    coherenceTier: getCoherenceTier(null),
+    coherenceScore: null,
+    operatorRole: "seeker",
+    hasReadings: false,
+    routeSurface: "text_chat",
+  });
+  parts.push(formatCoherenceThresholdContext(thresholdFrame));
+}
 ```
 
 This first pass is observe-only and intentionally conservative. A later task can
@@ -436,6 +476,7 @@ git commit -m "Inject ORIEL coherence threshold context"
 ### Task 3: Add Memory Consecration Classifier
 
 **Files:**
+
 - Create: `server/oriel-memory-consecration.ts`
 - Create: `server/oriel-memory-consecration.test.ts`
 
@@ -477,7 +518,8 @@ describe("ORIEL Memory Consecration", () => {
   it("routes architecture decisions to project memory with medium sensitivity", () => {
     const result = classifyMemoryCandidate({
       category: "project",
-      content: "The Architect approved the Coherent Threshold Architecture first slice.",
+      content:
+        "The Architect approved the Coherent Threshold Architecture first slice.",
       source: "conversation",
       confidence: 0.95,
     });
@@ -525,7 +567,10 @@ export type MemoryCandidateCategory =
 
 export type MemoryCandidateSource = "conversation" | "explicit" | "inferred";
 export type MemorySensitivity = "low" | "medium" | "high";
-export type MemoryRecommendedAction = "store_existing_path" | "ask_consent" | "discard";
+export type MemoryRecommendedAction =
+  | "store_existing_path"
+  | "ask_consent"
+  | "discard";
 
 export interface MemoryCandidateInput {
   category: MemoryCandidateCategory | string;
@@ -561,7 +606,7 @@ function inferSensitivity(input: MemoryCandidateInput): MemorySensitivity {
     input.category === "emotion" ||
     input.category === "identity" ||
     input.category === "spiritual" ||
-    HIGH_SENSITIVITY_TERMS.some((term) => content.includes(term))
+    HIGH_SENSITIVITY_TERMS.some(term => content.includes(term))
   ) {
     return "high";
   }
@@ -573,14 +618,17 @@ function inferSensitivity(input: MemoryCandidateInput): MemorySensitivity {
   return "low";
 }
 
-export function classifyMemoryCandidate(input: MemoryCandidateInput): MemoryConsecrationDecision {
+export function classifyMemoryCandidate(
+  input: MemoryCandidateInput
+): MemoryConsecrationDecision {
   const confidence = Number(input.confidence);
   if (!Number.isFinite(confidence) || confidence < 0.6) {
     return {
       sensitivity: inferSensitivity(input),
       consentRequired: false,
       recommendedAction: "discard",
-      reason: "Discarded because memory confidence is below the storage threshold.",
+      reason:
+        "Discarded because memory confidence is below the storage threshold.",
     };
   }
 
@@ -618,6 +666,7 @@ git commit -m "Add ORIEL memory consecration classifier"
 ### Task 4: Add Falsifier-First Dynamic Reading Presentation
 
 **Files:**
+
 - Modify: `client/src/pages/DynamicReading.tsx`
 
 - [ ] **Step 1: Identify existing reading variables**
@@ -637,18 +686,18 @@ const sliRows = useMemo(() => {
 Inside `DynamicReading()` after `sliRows`, add:
 
 ```ts
-  const primarySliRow = sliRows[0] ?? null;
-  const evidenceItems = [
-    reading?.carrierlock
-      ? `Carrierlock coherence ${reading.carrierlock.coherenceScore ?? "N/A"}/100`
-      : "Carrierlock state linked to this reading",
-    primarySliRow
-      ? `Primary SLI ${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""} at ${primarySliRow.sli.toFixed(1)}`
-      : null,
-    reading?.flaggedCodons?.length
-      ? `${reading.flaggedCodons.length} active codon signal${reading.flaggedCodons.length === 1 ? "" : "s"}`
-      : null,
-  ].filter((item): item is string => Boolean(item));
+const primarySliRow = sliRows[0] ?? null;
+const evidenceItems = [
+  reading?.carrierlock
+    ? `Carrierlock coherence ${reading.carrierlock.coherenceScore ?? "N/A"}/100`
+    : "Carrierlock state linked to this reading",
+  primarySliRow
+    ? `Primary SLI ${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""} at ${primarySliRow.sli.toFixed(1)}`
+    : null,
+  reading?.flaggedCodons?.length
+    ? `${reading.flaggedCodons.length} active codon signal${reading.flaggedCodons.length === 1 ? "" : "s"}`
+    : null,
+].filter((item): item is string => Boolean(item));
 ```
 
 - [ ] **Step 3: Replace the standalone micro-correction/falsifier cards with a unified section**
@@ -658,73 +707,170 @@ flagged codon section, replace the current separate micro-correction and
 falsifier blocks with:
 
 ```tsx
-      <div style={{
-        background: C.deep,
-        padding: "24px",
-        borderTop: `1px solid ${C.border}`,
-        marginBottom: 24,
-      }}>
-        <div style={{ fontFamily: "monospace", fontSize: 9, color: C.teal, letterSpacing: "0.2em", marginBottom: 16 }}>
-          FALSIFIER-FIRST READING
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
-          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>SIGNAL</div>
-            <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: C.txt, lineHeight: 1.6 }}>
-              {primarySliRow ? `${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""}` : "Dynamic field signal"}
-            </div>
-          </div>
-          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.teal, letterSpacing: "0.16em", marginBottom: 8 }}>EVIDENCE</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {evidenceItems.length > 0 ? evidenceItems.join(" · ") : "Stored reading payload"}
-            </div>
-          </div>
-          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.red, letterSpacing: "0.16em", marginBottom: 8 }}>FALSIFIER</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {falsifier || "No falsifier stored for this reading."}
-            </div>
-          </div>
-          <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
-            <div style={{ fontFamily: "monospace", fontSize: 8, color: C.gold, letterSpacing: "0.16em", marginBottom: 8 }}>PRACTICE</div>
-            <div style={{ fontFamily: "monospace", fontSize: 10, color: C.txtS, lineHeight: 1.7 }}>
-              {microCorrection || "No micro-correction stored for this reading."}
-            </div>
-          </div>
-        </div>
+<div
+  style={{
+    background: C.deep,
+    padding: "24px",
+    borderTop: `1px solid ${C.border}`,
+    marginBottom: 24,
+  }}
+>
+  <div
+    style={{
+      fontFamily: "monospace",
+      fontSize: 9,
+      color: C.teal,
+      letterSpacing: "0.2em",
+      marginBottom: 16,
+    }}
+  >
+    FALSIFIER-FIRST READING
+  </div>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+      gap: 12,
+    }}
+  >
+    <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 8,
+          color: C.gold,
+          letterSpacing: "0.16em",
+          marginBottom: 8,
+        }}
+      >
+        SIGNAL
       </div>
+      <div
+        style={{
+          fontFamily: "'Cormorant Garamond', serif",
+          fontSize: 16,
+          color: C.txt,
+          lineHeight: 1.6,
+        }}
+      >
+        {primarySliRow
+          ? `${primarySliRow.codonId}${primarySliRow.facet ? `-${primarySliRow.facet}` : ""}`
+          : "Dynamic field signal"}
+      </div>
+    </div>
+    <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 8,
+          color: C.teal,
+          letterSpacing: "0.16em",
+          marginBottom: 8,
+        }}
+      >
+        EVIDENCE
+      </div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 10,
+          color: C.txtS,
+          lineHeight: 1.7,
+        }}
+      >
+        {evidenceItems.length > 0
+          ? evidenceItems.join(" · ")
+          : "Stored reading payload"}
+      </div>
+    </div>
+    <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 8,
+          color: C.red,
+          letterSpacing: "0.16em",
+          marginBottom: 8,
+        }}
+      >
+        FALSIFIER
+      </div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 10,
+          color: C.txtS,
+          lineHeight: 1.7,
+        }}
+      >
+        {falsifier || "No falsifier stored for this reading."}
+      </div>
+    </div>
+    <div style={{ border: `1px solid ${C.border}`, padding: "14px" }}>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 8,
+          color: C.gold,
+          letterSpacing: "0.16em",
+          marginBottom: 8,
+        }}
+      >
+        PRACTICE
+      </div>
+      <div
+        style={{
+          fontFamily: "monospace",
+          fontSize: 10,
+          color: C.txtS,
+          lineHeight: 1.7,
+        }}
+      >
+        {microCorrection || "No micro-correction stored for this reading."}
+      </div>
+    </div>
+  </div>
+</div>
 ```
 
 Keep the existing "Mark correction complete" button by moving it under the
 Practice card when `microCorrection` exists:
 
 ```tsx
-        {microCorrection && (
-          <button
-            type="button"
-            onClick={() => markCorrectionMutation.mutate({ readingId })}
-            disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
-            style={{
-              marginTop: 14,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "9px 14px",
-              border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
-              background: "transparent",
-              color: reading.correctionCompleted ? C.teal : C.gold,
-              fontFamily: "monospace",
-              fontSize: 9,
-              letterSpacing: "0.14em",
-              cursor: reading.correctionCompleted || markCorrectionMutation.isPending ? "default" : "pointer",
-              opacity: markCorrectionMutation.isPending ? 0.7 : 1,
-            }}
-          >
-            <CheckCircle size={13} />
-            {reading.correctionCompleted ? "CORRECTION COMPLETED" : markCorrectionMutation.isPending ? "MARKING..." : "MARK CORRECTION COMPLETE"}
-          </button>
-        )}
+{
+  microCorrection && (
+    <button
+      type="button"
+      onClick={() => markCorrectionMutation.mutate({ readingId })}
+      disabled={reading.correctionCompleted || markCorrectionMutation.isPending}
+      style={{
+        marginTop: 14,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+        padding: "9px 14px",
+        border: `1px solid ${reading.correctionCompleted ? C.tealDim : C.goldDim}`,
+        background: "transparent",
+        color: reading.correctionCompleted ? C.teal : C.gold,
+        fontFamily: "monospace",
+        fontSize: 9,
+        letterSpacing: "0.14em",
+        cursor:
+          reading.correctionCompleted || markCorrectionMutation.isPending
+            ? "default"
+            : "pointer",
+        opacity: markCorrectionMutation.isPending ? 0.7 : 1,
+      }}
+    >
+      <CheckCircle size={13} />
+      {reading.correctionCompleted
+        ? "CORRECTION COMPLETED"
+        : markCorrectionMutation.isPending
+          ? "MARKING..."
+          : "MARK CORRECTION COMPLETE"}
+    </button>
+  );
+}
 ```
 
 - [ ] **Step 4: Typecheck**
@@ -747,6 +893,7 @@ git commit -m "Present dynamic readings with falsifier-first structure"
 ### Task 5: Verify Design Spec Approval
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-05-07-oriel-emergent-architecture-design.md`
 
 - [ ] **Step 1: Confirm status**
@@ -777,6 +924,7 @@ git commit -m "Approve ORIEL emergent architecture design"
 ### Task 6: Focused Verification
 
 **Files:**
+
 - No production edits.
 
 - [ ] **Step 1: Run focused server tests**

@@ -7,7 +7,8 @@ import {
 describe("ORIEL Coherence Threshold Gate", () => {
   it("requires grounding before interpretation for fragmented grief states", () => {
     const frame = buildCoherenceThresholdFrame({
-      userMessage: "I feel broken and overwhelmed and I cannot breathe clearly.",
+      userMessage:
+        "I feel broken and overwhelmed and I cannot breathe clearly.",
       exchangeType: "grief",
       coherenceTier: "fragmented",
       coherenceScore: 24,

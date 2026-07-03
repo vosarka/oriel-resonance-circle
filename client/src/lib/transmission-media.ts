@@ -55,7 +55,7 @@ export function getYouTubeVideoId(value?: string | null): string | null {
   }
 
   const fallbackMatch = normalized.match(
-    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/,
+    /(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/
   );
 
   return normalizeYouTubeId(fallbackMatch?.[1]);
@@ -77,5 +77,8 @@ export function getTransmissionPosterUrl(media: {
   imageUrl?: string | null;
   youtubeUrl?: string | null;
 }): string | null {
-  return getTransmissionImageUrl(media.imageUrl) ?? getYouTubeThumbnailUrl(media.youtubeUrl);
+  return (
+    getTransmissionImageUrl(media.imageUrl) ??
+    getYouTubeThumbnailUrl(media.youtubeUrl)
+  );
 }

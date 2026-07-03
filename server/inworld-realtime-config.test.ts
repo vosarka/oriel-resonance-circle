@@ -15,10 +15,10 @@ describe("Inworld realtime ORIEL session config", () => {
 
     expect(update.type).toBe("session.update");
     expect(update.session.audio.output.model).toBe(
-      DEFAULT_ORIEL_REALTIME_TTS_MODEL,
+      DEFAULT_ORIEL_REALTIME_TTS_MODEL
     );
     expect(update.session.audio.output.voice).toBe(
-      "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema",
+      "default-0o0vqxaayifb0rqvrpyf5a__oriel_fema"
     );
   });
 

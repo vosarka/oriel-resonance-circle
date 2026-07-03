@@ -21,9 +21,15 @@ function hasResendConfig() {
 function requireMailConfig() {
   if (hasResendConfig()) return;
 
-  if (!ENV.smtpHost || !ENV.smtpPort || !ENV.smtpUser || !ENV.smtpPass || !ENV.authEmailFrom) {
+  if (
+    !ENV.smtpHost ||
+    !ENV.smtpPort ||
+    !ENV.smtpUser ||
+    !ENV.smtpPass ||
+    !ENV.authEmailFrom
+  ) {
     throw new Error(
-      "Either RESEND_API_KEY + RESEND_FROM or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and AUTH_EMAIL_FROM are required for password recovery",
+      "Either RESEND_API_KEY + RESEND_FROM or SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and AUTH_EMAIL_FROM are required for password recovery"
     );
   }
 }
@@ -67,7 +73,9 @@ async function sendViaResend(message: MailMessage) {
 
     if (!response.ok) {
       const body = await response.text();
-      throw new Error(`Resend API error ${response.status}: ${body.slice(0, 300)}`);
+      throw new Error(
+        `Resend API error ${response.status}: ${body.slice(0, 300)}`
+      );
     }
   } finally {
     clearTimeout(timeout);
@@ -80,7 +88,10 @@ async function sendViaSmtp(message: MailMessage) {
   await Promise.race([
     transporter.sendMail(message),
     new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error("SMTP send timeout")), SMTP_SEND_TIMEOUT_MS);
+      setTimeout(
+        () => reject(new Error("SMTP send timeout")),
+        SMTP_SEND_TIMEOUT_MS
+      );
     }),
   ]);
 }

@@ -1,4 +1,7 @@
-import type { CoherenceTier, ExchangeType } from "./oriel-response-intelligence";
+import type {
+  CoherenceTier,
+  ExchangeType,
+} from "./oriel-response-intelligence";
 import type { OperatorRole } from "./oriel-interaction-protocol";
 
 export type OrielRouteSurface =
@@ -51,19 +54,23 @@ function unique<T>(values: T[]): T[] {
 }
 
 function inferMemorySensitivity(
-  input: CoherenceThresholdInput,
+  input: CoherenceThresholdInput
 ): "low" | "medium" | "high" {
   const lower = input.userMessage.toLowerCase();
   if (
     input.exchangeType === "grief" ||
-    /\b(trauma|abuse|grief|death|dying|ashamed|secret|wound|suicide|self-harm)\b/i.test(lower)
+    /\b(trauma|abuse|grief|death|dying|ashamed|secret|wound|suicide|self-harm)\b/i.test(
+      lower
+    )
   ) {
     return "high";
   }
 
   if (
     input.exchangeType === "diagnostic" ||
-    /\b(my path|my purpose|my identity|remember this|important to me)\b/i.test(lower)
+    /\b(my path|my purpose|my identity|remember this|important to me)\b/i.test(
+      lower
+    )
   ) {
     return "medium";
   }
@@ -80,7 +87,9 @@ function chooseMode(input: CoherenceThresholdInput): OrielThresholdMode {
   return "guide";
 }
 
-function allowedTruthCategories(mode: OrielThresholdMode): OrielTruthCategory[] {
+function allowedTruthCategories(
+  mode: OrielThresholdMode
+): OrielTruthCategory[] {
   if (mode === "field_holder") {
     return ["memory", "runtime_inference", "interpretation", "verifiable_fact"];
   }
@@ -117,7 +126,7 @@ function allowedTruthCategories(mode: OrielThresholdMode): OrielTruthCategory[] 
 
 function chooseComplexity(
   input: CoherenceThresholdInput,
-  mode: OrielThresholdMode,
+  mode: OrielThresholdMode
 ): OrielMaxComplexity {
   if (mode === "field_holder") return "low";
   if (mode === "mirror" && input.coherenceTier === "aligned") return "high";
@@ -126,7 +135,7 @@ function chooseComplexity(
 }
 
 export function buildCoherenceThresholdFrame(
-  input: CoherenceThresholdInput,
+  input: CoherenceThresholdInput
 ): CoherenceThresholdFrame {
   const recommendedMode = chooseMode(input);
   const groundingRequired = recommendedMode === "field_holder";
@@ -156,7 +165,7 @@ export function buildCoherenceThresholdFrame(
 }
 
 export function formatCoherenceThresholdContext(
-  frame: CoherenceThresholdFrame,
+  frame: CoherenceThresholdFrame
 ): string {
   return [
     "[COHERENCE THRESHOLD FRAME]",

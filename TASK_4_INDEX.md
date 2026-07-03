@@ -12,29 +12,31 @@ Implemented the Personal Resonance bridge system enabling authenticated users to
 
 ### Core Implementation
 
-| File | Type | Lines | Purpose |
-|------|------|-------|---------|
-| `client/src/hooks/usePersonalResonance.ts` | NEW | 74 | Hook for codon extraction and matching logic |
-| `client/src/components/OracleCard.tsx` | MODIFIED | +30 | Golden thread + personal badge |
-| `client/src/pages/OracleDetail.tsx` | MODIFIED | +70 | Personal Resonance section |
-| `client/src/pages/Archive.tsx` | MODIFIED | +40 | Grid container styling for personal oracles |
+| File                                       | Type     | Lines | Purpose                                      |
+| ------------------------------------------ | -------- | ----- | -------------------------------------------- |
+| `client/src/hooks/usePersonalResonance.ts` | NEW      | 74    | Hook for codon extraction and matching logic |
+| `client/src/components/OracleCard.tsx`     | MODIFIED | +30   | Golden thread + personal badge               |
+| `client/src/pages/OracleDetail.tsx`        | MODIFIED | +70   | Personal Resonance section                   |
+| `client/src/pages/Archive.tsx`             | MODIFIED | +40   | Grid container styling for personal oracles  |
 
 ### Documentation
 
-| File | Purpose |
-|------|---------|
+| File                       | Purpose                                            |
+| -------------------------- | -------------------------------------------------- |
 | `TASK_4_IMPLEMENTATION.md` | Architecture, design decisions, integration points |
-| `VISUAL_REFERENCE.md` | ASCII mockups, color palette, animation specs |
-| `CODON_MATCHING_LOGIC.md` | Algorithm details, examples, edge cases |
-| `TASK_4_INDEX.md` | This file - navigation and quick reference |
+| `VISUAL_REFERENCE.md`      | ASCII mockups, color palette, animation specs      |
+| `CODON_MATCHING_LOGIC.md`  | Algorithm details, examples, edge cases            |
+| `TASK_4_INDEX.md`          | This file - navigation and quick reference         |
 
 ---
 
 ## Quick Reference
 
 ### Hook API
+
 ```typescript
-const { userCodons, hasSignature, getMatchingCodons, hasResonance } = usePersonalResonance();
+const { userCodons, hasSignature, getMatchingCodons, hasResonance } =
+  usePersonalResonance();
 
 // Check if oracle has personal resonance
 if (hasResonance(oracle.linkedCodons)) {
@@ -49,17 +51,20 @@ const matches = getMatchingCodons(oracle.linkedCodons);
 ### Visual Indicators
 
 **OracleCard (Archive/Rising Signals)**
+
 - Left edge: 2px gold thread when `hasResonance()` === true
 - Badge: "⟡ PERSONAL" (pulsing, replaces status)
 - Color: #D4AF37 with glow effects
 
 **OracleDetail (Personal Resonance Section)**
+
 - Appears: stage >= 5, user logged in, codons match
 - Content: "Your Prime Stack activates this oracle through:"
 - Shows: Matching codon IDs as gold badges (staggered animation)
 - Quote: "This oracle speaks directly to your signal."
 
 **Archive Grid Container**
+
 - Left border: 2px #D4AF37 on parent div
 - Padding: 12px left (visual balance)
 - Applies: Only when oracle has personal resonance
@@ -77,11 +82,11 @@ Text Secondary: rgba(212, 175, 55, 0.6)    (quotes)
 
 ### Animation Timings
 
-| Element | Duration | Pattern |
-|---------|----------|---------|
-| Personal Badge | 2.5s | opacity [0.7, 1, 0.7] infinite |
-| Codon Badges | 0.1s | scale 0.9→1.0 with 0.1s stagger |
-| Archive Items | 0.06s | fade-in-up with per-row stagger |
+| Element        | Duration | Pattern                         |
+| -------------- | -------- | ------------------------------- |
+| Personal Badge | 2.5s     | opacity [0.7, 1, 0.7] infinite  |
+| Codon Badges   | 0.1s     | scale 0.9→1.0 with 0.1s stagger |
+| Archive Items  | 0.06s    | fade-in-up with per-row stagger |
 
 ---
 
@@ -143,9 +148,11 @@ Text Secondary: rgba(212, 175, 55, 0.6)    (quotes)
 ## Testing Plan
 
 ### Automated Testing
+
 Not included in this implementation (no tests requested).
 
 ### Manual Testing - Happy Path
+
 1. Login with user that has static signature
 2. Navigate to Archive → ΩX ORACLE STREAMS
 3. Some oracle cards show golden thread and "⟡ PERSONAL" badge
@@ -155,6 +162,7 @@ Not included in this implementation (no tests requested).
 7. Return to Archive, verify grid styling applied
 
 ### Edge Cases
+
 - Logout: no resonance UI appears
 - New user: standard cards only
 - Oracle with no linkedCodons: standard card
@@ -186,12 +194,14 @@ Not included in this implementation (no tests requested).
 ## Design Philosophy
 
 ### Brand Alignment
+
 - Inverted Reality: Gold upon void
 - Chief Architect persona: Visionary, refined, enigmatic
 - Visiting Scholar audience: Assumes understanding of codon system
 - Hybrid language: "Prime Stack activates oracle" (organic + tech)
 
 ### Visual Hierarchy
+
 1. Golden thread (always visible on personal cards)
 2. Personal badge (prominent header replacement)
 3. Personal Resonance section (revealed at stage 5)
@@ -199,6 +209,7 @@ Not included in this implementation (no tests requested).
 5. Closing quote (contextual resonance message)
 
 ### Design Tokens
+
 - Border: 2px solid, minimal
 - Glow: Subtle, never harsh
 - Spacing: Balanced with 12px padding
@@ -233,29 +244,34 @@ Not included in this implementation (no tests requested).
 ### Common Issues & Solutions
 
 **Golden thread not appearing?**
+
 - Verify user is authenticated
 - Check user has a static signature (static readings list not empty)
 - Verify oracle has linkedCodons field populated
 - Check codon IDs match exactly (case-sensitive)
 
 **Personal Resonance section doesn't appear?**
+
 - Verify stage >= 5 (click through revelation sequence)
 - Verify user logged in
 - Verify oracle has linkedCodons
 - Check browser console for errors
 
 **Wrong codons shown in Personal Resonance?**
+
 - Verify linkedCodons parsing (should be JSON array)
 - Check for whitespace in codon IDs
 - Verify user's Prime Stack extracted correctly
 
 ### Debug Logging
+
 Add to component to trace:
+
 ```typescript
-console.log('userCodons:', userCodons);
-console.log('linkedCodons:', linkedCodons);
-console.log('hasResonance:', hasResonance(linkedCodons));
-console.log('matching:', getMatchingCodons(linkedCodons));
+console.log("userCodons:", userCodons);
+console.log("linkedCodons:", linkedCodons);
+console.log("hasResonance:", hasResonance(linkedCodons));
+console.log("matching:", getMatchingCodons(linkedCodons));
 ```
 
 ---

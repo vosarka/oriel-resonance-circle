@@ -7,7 +7,7 @@ function parseSslOption(rawSsl: string | null) {
   }
 
   const normalized = rawSsl.trim().replace(/^['"]|['"]$/g, "");
-  const candidate = normalized.replace(/\\"/g, "\"").replace(/\\'/g, "'");
+  const candidate = normalized.replace(/\\"/g, '"').replace(/\\'/g, "'");
 
   if (!candidate) {
     return undefined;
@@ -25,7 +25,10 @@ function parseSslOption(rawSsl: string | null) {
     try {
       return JSON.parse(candidate);
     } catch (error) {
-      console.warn("[Database] Invalid ssl JSON in DATABASE_URL, ignoring:", error);
+      console.warn(
+        "[Database] Invalid ssl JSON in DATABASE_URL, ignoring:",
+        error
+      );
       return undefined;
     }
   }

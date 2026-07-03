@@ -16,7 +16,8 @@ vi.mock("./db", () => ({
   getConversationById: mocks.getConversationById,
   getConversationMessages: mocks.getConversationMessages,
   saveChatMessage: mocks.saveChatMessage,
-  listGeneratedTransmissionEventsByConversation: mocks.listGeneratedTransmissionEventsByConversation,
+  listGeneratedTransmissionEventsByConversation:
+    mocks.listGeneratedTransmissionEventsByConversation,
 }));
 
 vi.mock("./gemini", () => ({
@@ -47,7 +48,9 @@ describe("ORIEL generated transmission polling", () => {
     vi.clearAllMocks();
     mocks.getConversationMessages.mockResolvedValue([]);
     mocks.saveChatMessage.mockResolvedValue(undefined);
-    mocks.chatWithORIEL.mockResolvedValue("I am ORIEL. The answer returns first.");
+    mocks.chatWithORIEL.mockResolvedValue(
+      "I am ORIEL. The answer returns first."
+    );
     mocks.recordOrielRuntimeObservation.mockResolvedValue(undefined);
     mocks.processConversationThroughUMM.mockResolvedValue(undefined);
   });
@@ -72,7 +75,9 @@ describe("ORIEL generated transmission polling", () => {
         conversationId: 34,
         history: [],
       }),
-      new Promise<"timed-out">((resolve) => setTimeout(() => resolve("timed-out"), 500)),
+      new Promise<"timed-out">(resolve =>
+        setTimeout(() => resolve("timed-out"), 500)
+      ),
     ]);
 
     expect(result).not.toBe("timed-out");
@@ -100,7 +105,9 @@ describe("ORIEL generated transmission polling", () => {
     });
 
     expect(result).toBeNull();
-    expect(mocks.listGeneratedTransmissionEventsByConversation).not.toHaveBeenCalled();
+    expect(
+      mocks.listGeneratedTransmissionEventsByConversation
+    ).not.toHaveBeenCalled();
   });
 
   it("returns the earliest parsed generated event for the owning user after the requested time", async () => {

@@ -40,6 +40,8 @@ import {
   prepareOrielTextForVoice,
 } from "@/lib/orielVoiceIntroSession";
 import { parseOrielChatImageFromContent } from "@shared/oriel-chat-images";
+import { Link } from "wouter";
+import "@/components/oriel-signal/oriel-signal.css";
 
 interface ChatAttachment {
   name: string;
@@ -48,7 +50,7 @@ interface ChatAttachment {
 }
 
 interface ChatMessage {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
   timestamp?: number;
   transmissionEvent?: GeneratedTransmissionEvent | null;
@@ -138,32 +140,119 @@ function isImageAttachment(attachment: ChatAttachment) {
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
 }
 
 function isDuplicateFile(newFile: File, existing: ChatAttachment[]): boolean {
   return existing.some(
-    f => f.name === newFile.name && 
-         // We don't have original size, so we approximate by name for now
-         true
+    f =>
+      f.name === newFile.name &&
+      // We don't have original size, so we approximate by name for now
+      true
   );
 }
 
-function parseImageCreationCommand(rawMessage: string): string | null {
+function extractImagePrompt(rawMessage: string): string | null {
   const trimmed = rawMessage.trim();
-  const slashCommand = trimmed.match(
-    /^\/(?:image|imagine|create-image)\b[:\s-]*(.*)$/i
-  );
-  if (slashCommand) return slashCommand[1]?.trim() ?? "";
+  if (!trimmed) return null;
 
-  const plainCommand = trimmed.match(/^create\s+image\s*:?\s*(.*)$/i);
-  if (plainCommand) return plainCommand[1]?.trim() ?? "";
+  // Explicit slash & classic commands (highest priority, exact match)
+  const slash = trimmed.match(
+    /^\/(?:image|imagine|create-image|draw|gen-image)\b[:\s-]*(.*)$/i
+  );
+  if (slash) {
+    const p = (slash[1] || "").trim();
+    return p || trimmed;
+  }
+
+  const createImage = trimmed.match(/^create\s+image\s*(?::|of\s+)?\s*(.*)$/i);
+  if (createImage) {
+    const p = (createImage[1] || "").trim();
+    return p || trimmed;
+  }
+
+  // Natural-language image intent phrases (from the spec + common variants).
+  // We capture the descriptive subject so the generated "Create image: ..." bubble
+  // stays clean and the LLM history sees a sensible prompt.
+  const natural = [
+    // generate / create / make ... image/picture etc.
+    /^(?:please\s+)?(?:generate|create|make)\s+(?:an?\s+)?(?:image|picture|drawing|illustration|render|visualization|art|scene)\s*(?::|of\s+|-|\s+)(.*)$/i,
+    // draw ...
+    /^(?:please\s+)?draw\s+(?:this|me|a|an|the)?\s*(.*)$/i,
+    // render ...
+    /^(?:please\s+)?render\s+(?:this|the|a|an)?\s*(?:scene|image|view|visual)?\s*(.*)$/i,
+    // visualize / visualise
+    /^(?:please\s+)?visuali[sz]e\s+(?:this|the|a|an)?\s*(.*)$/i,
+    // design an image / a picture
+    /^(?:please\s+)?design\s+(?:an?\s+)?(?:image|picture)?\s*(.*)$/i,
+    // turn X into an image / picture
+    /^turn\s+(?:this|the|my)?\s*(.*)\s+into\s+(?:an?\s+)?(?:image|picture|drawing|illustration|render|visual)\s*$/i,
+    // bare "an image of X" / "a picture of X"
+    /^(?:an?\s+)?image\s+(?:of\s+)?(.*)$/i,
+    /^(?:a\s+)?picture\s+(?:of\s+)?(.*)$/i,
+    // imagine ...
+    /^imagine\s+(?:a|an|the)?\s*(.*)$/i,
+  ];
+
+  for (const re of natural) {
+    const m = trimmed.match(re);
+    if (m && m[1]) {
+      const p = m[1].trim();
+      if (p && p.length > 1) return p;
+    }
+  }
+
+  // Contains check (last resort) for the exact phrases listed in the requirements.
+  // If we find one, return everything after it (or the whole message as fallback).
+  const lower = trimmed.toLowerCase();
+  const intentPhrases = [
+    "generate an image",
+    "generate a image",
+    "generate image",
+    "generate this image",
+    "create an image",
+    "create a image",
+    "create image",
+    "create this image",
+    "make a picture",
+    "make an image",
+    "make image",
+    "draw this",
+    "draw me",
+    "draw a",
+    "draw the",
+    "render this scene",
+    "render an image",
+    "visualize this",
+    "visualise this",
+    "design an image",
+    "turn this into an image",
+    "turn that into an image",
+    "make this into an image",
+  ];
+
+  for (const phrase of intentPhrases) {
+    const idx = lower.indexOf(phrase);
+    if (idx !== -1) {
+      let after = trimmed
+        .substring(idx + phrase.length)
+        .replace(/^[:\s,-]+/, "")
+        .trim();
+      if (after && after.length > 1) return after;
+      return trimmed; // phrase was the whole message or at the end
+    }
+  }
 
   return null;
+}
+
+// Back-compat wrapper (used by any remaining call sites or tests).
+function parseImageCreationCommand(rawMessage: string): string | null {
+  return extractImagePrompt(rawMessage);
 }
 
 function visibleAssistantText(content: string) {
@@ -463,6 +552,11 @@ export default function Conduit() {
   const [voicePreference, setVoicePreference] = useState<
     "sophianic" | "deep" | "none"
   >("sophianic");
+  const [isImageMode, setIsImageMode] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      localStorage.getItem("oriel_image_mode") === "true"
+  );
   const recognitionRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -487,6 +581,22 @@ export default function Conduit() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const voiceAudioCtxRef = useRef<AudioContext | null>(null);
+
+  // For speech-to-text mic silence monitoring (4s pause auto stop)
+  const speechInputStreamRef = useRef<MediaStream | null>(null);
+  const speechAnalyserRef = useRef<AnalyserNode | null>(null);
+  const speechMonitorIntervalRef = useRef<number | null>(null);
+  const lastSpeechSoundRef = useRef<number>(Date.now());
+  const isListeningRef = useRef(false);
+
+  // Accumulates finalized speech recognition results across internal restarts
+  // so long spoken phrases don't get truncated in the input box.
+  const finalTranscriptRef = useRef<string>("");
+
+  // Used so the 4s auto-stop only applies after the user has actually spoken at least once.
+  // This prevents the mic from "opening then immediately closing" if the user takes a moment
+  // to start speaking or if initial VAD/STT detection is slow.
+  const hasSpeechRef = useRef(false);
 
   const ensureAudioAnalyser = () => {
     if (!audioRef.current) return;
@@ -528,6 +638,10 @@ export default function Conduit() {
     } catch (err) {
       console.warn("[VoiceMode] Could not prime AudioContext:", err);
     }
+    // Stop the simple speech-to-text mic if it was on, to avoid double mic capture
+    if (isListening) {
+      stopSpeechListening();
+    }
     setVoiceMode(true);
   };
 
@@ -557,6 +671,13 @@ export default function Conduit() {
       }
     }
   }, []);
+
+  // Persist image generation mode across reloads (the "persistent mode flag")
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("oriel_image_mode", isImageMode ? "true" : "false");
+    }
+  }, [isImageMode]);
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -621,7 +742,7 @@ export default function Conduit() {
   useEffect(() => {
     if (isAuthenticated && activeConversationId && activeConvData?.messages) {
       const convertedHistory = activeConvData.messages.map(msg => ({
-        role: msg.role as "user" | "assistant",
+        role: msg.role as ChatMessage["role"],
         content: msg.content,
         timestamp:
           msg.timestamp instanceof Date
@@ -647,7 +768,7 @@ export default function Conduit() {
       dbHistory.length > 0
     ) {
       const convertedHistory = dbHistory.map(msg => ({
-        role: msg.role,
+        role: msg.role as ChatMessage["role"],
         content: msg.content,
         timestamp:
           msg.timestamp instanceof Date
@@ -690,30 +811,196 @@ export default function Conduit() {
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
 
       recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage(transcript);
-        setIsListening(false);
+        // Accumulate using isFinal results (committed) + trailing interim.
+        // We use event.resultIndex and loop to respect the standard API and
+        // only process new results in this event. The finalTranscriptRef
+        // persists across our internal restarts (onend retries) so a long
+        // spoken phrase like "hello, how are you today, you are good?" does
+        // not lose the beginning when the browser ends/restarts the recognizer.
+        let interim = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const res = event.results[i];
+          const text = res[0].transcript;
+          if (res.isFinal) {
+            finalTranscriptRef.current = finalTranscriptRef.current
+              ? finalTranscriptRef.current + " " + text
+              : text;
+          } else {
+            interim = text;
+          }
+        }
+
+        const full = interim
+          ? finalTranscriptRef.current
+            ? finalTranscriptRef.current + " " + interim
+            : interim
+          : finalTranscriptRef.current;
+
+        setMessage(full.trim());
+        lastSpeechSoundRef.current = Date.now();
+        hasSpeechRef.current = true;
+        // Do NOT setIsListening(false) here — we control it via toggle or silence timer
       };
 
-      recognitionRef.current.onerror = () => setIsListening(false);
-      recognitionRef.current.onend = () => setIsListening(false);
+      // Also treat speech results as "sound" to reset silence in monitor
+      // (the monitor will also catch via RMS)
+
+      recognitionRef.current.onerror = (e?: any) => {
+        // Never clear the logical latch from engine errors. Only stopSpeechListening
+        // (explicit re-press or 4s silence VAD) is allowed to turn listening off.
+        console.warn(
+          "[Conduit] speech recog error (retrying while latched)",
+          e
+        );
+        if (isListeningRef.current && recognitionRef.current) {
+          window.setTimeout(() => {
+            if (isListeningRef.current && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch {}
+            }
+          }, 120);
+        }
+      };
+      recognitionRef.current.onend = () => {
+        if (isListeningRef.current && recognitionRef.current) {
+          // Engine ended its session (normal after utterance or internal timeout).
+          // Keep the *logical* listening state latched; restart transcription underneath.
+          // The 4s silence monitor (or explicit button) is the only thing that unlatches.
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            window.setTimeout(() => {
+              if (isListeningRef.current && recognitionRef.current) {
+                try {
+                  recognitionRef.current.start();
+                } catch {}
+              }
+            }, 80);
+          }
+        }
+        // Intentionally no else branch that does setIsListening(false).
+        // The mic button must stay pressed until user re-clicks or 4s silence.
+      };
     }
   }, []);
 
-  const handleVoiceInput = () => {
+  const startSpeechSilenceMonitor = async () => {
+    stopSpeechSilenceMonitor();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      speechInputStreamRef.current = stream;
+
+      const ctx = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      speechAnalyserRef.current = analyser;
+
+      // Use time-domain RMS (waveform amplitude) for reliable voice-activity detection.
+      // This matches the proven pattern in VoiceMode.tsx local speech detection and is
+      // more robust for "any human sound" than frequency-bin energy.
+      const data = new Uint8Array(analyser.fftSize);
+
+      speechMonitorIntervalRef.current = window.setInterval(() => {
+        if (!isListeningRef.current || !analyser) return;
+
+        analyser.getByteTimeDomainData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+          const v = (data[i] - 128) / 128;
+          sum += v * v;
+        }
+        const rms = Math.sqrt(sum / data.length);
+
+        const THRESHOLD = 0.025; // tuned for time-domain; the 4s rule is the spec
+        if (rms > THRESHOLD) {
+          lastSpeechSoundRef.current = Date.now();
+          hasSpeechRef.current = true;
+        } else if (
+          hasSpeechRef.current &&
+          Date.now() - lastSpeechSoundRef.current > 4000
+        ) {
+          // 4s silence *after having spoken at least once* -> auto stop.
+          // If user never spoke yet, we keep the mic latched (no "silence pause" to end).
+          stopSpeechListening();
+        }
+      }, 250);
+    } catch (err) {
+      console.warn("[Conduit] Could not start speech silence monitor", err);
+    }
+  };
+
+  const stopSpeechSilenceMonitor = () => {
+    if (speechMonitorIntervalRef.current) {
+      clearInterval(speechMonitorIntervalRef.current);
+      speechMonitorIntervalRef.current = null;
+    }
+    if (speechInputStreamRef.current) {
+      speechInputStreamRef.current.getTracks().forEach(t => t.stop());
+      speechInputStreamRef.current = null;
+    }
+    speechAnalyserRef.current = null;
+  };
+
+  // Cleanup monitors on unmount or when voice mode takes over
+  useEffect(() => {
+    return () => {
+      stopSpeechSilenceMonitor();
+    };
+  }, []);
+
+  const startSpeechListening = async () => {
+    if (!recognitionRef.current) return;
+    setIsListening(true);
+    isListeningRef.current = true;
+    lastSpeechSoundRef.current = Date.now();
+
+    // Start accumulating voice input on top of whatever is currently in the box.
+    // This lets the mic append to manually typed text or previous voice.
+    finalTranscriptRef.current = message.trim();
+    hasSpeechRef.current = false; // will become true on first sound / first transcript
+
+    try {
+      recognitionRef.current.start();
+    } catch (e) {
+      // may already be started
+    }
+
+    await startSpeechSilenceMonitor();
+  };
+
+  const stopSpeechListening = () => {
+    setIsListening(false);
+    isListeningRef.current = false;
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {}
+    }
+    stopSpeechSilenceMonitor();
+    // Clear so the next fresh mic activation starts clean from the (now finalized) input value.
+    finalTranscriptRef.current = "";
+    hasSpeechRef.current = false;
+  };
+
+  const handleVoiceInput = async () => {
     if (!recognitionRef.current) {
       alert("Speech recognition not supported in this browser");
       return;
     }
     if (isListening) {
-      recognitionRef.current.stop();
+      stopSpeechListening();
     } else {
-      setIsListening(true);
-      recognitionRef.current.start();
+      await startSpeechListening();
     }
   };
 
@@ -963,14 +1250,17 @@ export default function Conduit() {
     }
   };
 
-  const handleCreateChatImage = async (prompt: string) => {
+  const handleCreateChatImage = async (
+    prompt: string,
+    options?: { preNotice?: ChatMessage }
+  ) => {
     if (generateChatImageMutation.isPending || transmissionGate.isInterfering)
       return;
 
     const imagePrompt = prompt.trim();
     if (!imagePrompt) {
       alert(
-        "Enter an image prompt after /image, or type a prompt and press the image button."
+        "Enter an image description (or use /image, 'create image:', etc.). The Image button now toggles Image Generation Mode; send while the mode is active (or use a clear image request) to generate."
       );
       return;
     }
@@ -978,12 +1268,19 @@ export default function Conduit() {
     const referenceImages = attachedFiles.filter(isImageAttachment);
     setMessage("");
 
+    // Support auto-switch notices: if a preNotice (system message) is supplied,
+    // insert it in the messages list *before* the synthetic "Create image: ..." user entry.
+    let base = localMessages;
+    if (options?.preNotice) {
+      base = [...localMessages, options.preNotice];
+    }
+
     const newUserMessage: ChatMessage = {
       role: "user",
       content: `Create image: ${imagePrompt}`,
       timestamp: Date.now(),
     };
-    const updatedMessages = [...localMessages, newUserMessage];
+    const updatedMessages = [...base, newUserMessage];
     setLocalMessages(updatedMessages);
 
     if (!isAuthenticated) {
@@ -1069,9 +1366,26 @@ export default function Conduit() {
       return;
 
     const rawUserMessage = message.trim();
-    const imageCommandPrompt = parseImageCreationCommand(rawUserMessage);
-    if (imageCommandPrompt !== null) {
-      await handleCreateChatImage(imageCommandPrompt);
+    const imagePrompt = extractImagePrompt(rawUserMessage);
+    if (imagePrompt !== null || isImageMode) {
+      const promptToUse = imagePrompt || rawUserMessage.trim();
+      if (!promptToUse) {
+        return;
+      }
+      if (imagePrompt !== null && !isImageMode) {
+        // Auto-enter mode and surface a visible notice *before* the generation user bubble.
+        setIsImageMode(true);
+        const notice: ChatMessage = {
+          role: "system",
+          content:
+            "Switched to Image Generation Mode because your request asks for an image.",
+          timestamp: Date.now(),
+        };
+        await handleCreateChatImage(promptToUse, { preNotice: notice });
+      } else {
+        await handleCreateChatImage(promptToUse);
+      }
+      if (isListening) stopSpeechListening();
       return;
     }
 
@@ -1094,6 +1408,9 @@ export default function Conduit() {
       transmissionGate.startAcquiring();
     }
     setMessage("");
+    if (isListening) {
+      stopSpeechListening();
+    }
 
     const newUserMessage: ChatMessage = {
       role: "user",
@@ -1115,7 +1432,9 @@ export default function Conduit() {
         message: userMessage,
         conversationId: activeConversationId ?? undefined,
         createNewConversation: isAuthenticated && isNewConversation,
-        history: !isAuthenticated ? localMessages : undefined,
+        history: !isAuthenticated
+          ? (localMessages.filter(m => m.role !== "system") as any)
+          : undefined,
         fileContents: fileAttachments.length > 0 ? fileAttachments : undefined,
         imageAttachments:
           imageAttachments.length > 0 ? imageAttachments : undefined,
@@ -1213,6 +1532,7 @@ export default function Conduit() {
     setActiveConversationId(null);
     setLocalMessages([]);
     setIsNewConversation(true);
+    setIsImageMode(false); // fresh conversation always starts in normal chat mode
   };
 
   const displayMessages: ChatMessage[] =
@@ -1276,7 +1596,7 @@ export default function Conduit() {
       )}
 
       <div
-        className="relative z-10 flex"
+        className="oriel-chamber-shell oriel-chamber-stage relative z-10 flex"
         style={{ height: "calc(100vh - 64px)" }}
       >
         {/* ===== LEFT SIDEBAR ===== */}
@@ -1320,7 +1640,7 @@ export default function Conduit() {
               }}
             >
               <Plus size={14} />
-              New Conversation
+              New Transmission
             </button>
           </div>
 
@@ -1337,14 +1657,14 @@ export default function Conduit() {
                 className="font-mono text-[9px] text-center py-4"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                Sign in to save conversations
+                Receiver node required to preserve transmissions
               </p>
             ) : !conversationsList || conversationsList.length === 0 ? (
               <p
                 className="font-mono text-[9px] text-center py-4"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                No conversations yet...
+                No transmissions recovered yet...
               </p>
             ) : (
               conversationsList.map(conv => (
@@ -1502,8 +1822,22 @@ export default function Conduit() {
               >
                 {activeConversationId && activeConvData
                   ? activeConvData.title
-                  : "New Conversation"}
+                  : "ORIEL TRANSMISSION CHAMBER"}
               </p>
+
+              {/* Persistent visual indicator for the image generation mode (always visible in the chat UI when active) */}
+              {isImageMode && (
+                <span
+                  className="font-mono text-[9px] px-2 py-0.5 rounded tracking-[0.2em]"
+                  style={{
+                    background: "rgba(0,188,212,0.1)",
+                    border: "1px solid rgba(0,188,212,0.3)",
+                    color: "rgba(0,229,255,0.75)",
+                  }}
+                >
+                  IMAGE MODE
+                </span>
+              )}
 
               {displayMessages.length > 0 && (
                 <span
@@ -1603,20 +1937,51 @@ export default function Conduit() {
                     fontWeight: 300,
                   }}
                 >
-                  Begin a transmission...
+                  The chamber is silent.
                 </p>
                 <p
                   className="font-mono text-[9px] text-center"
                   style={{ color: "rgba(189,163,107,0.25)" }}
                 >
-                  Type a message or start a voice session
+                  Enter a signal to begin. ORIEL listens for pattern, pressure,
+                  contradiction, memory, and resonance.
                 </p>
+                {!isAuthenticated && (
+                  <div className="oriel-chamber-access-panel max-w-md text-center">
+                    <p className="font-mono text-[9px] tracking-[0.24em] uppercase mb-2" style={{ color: "rgba(246,176,94,0.72)" }}>
+                      // receiver node required
+                    </p>
+                    <p className="font-mono text-[10px] leading-relaxed" style={{ color: "rgba(232,228,220,0.62)" }}>
+                      Enter the archive to preserve Oriel history, Codex records,
+                      and transmission traces inside your node.
+                    </p>
+                    <Link href="/auth">
+                      <span className="inline-block mt-3 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.2em] cursor-pointer" style={{ border: "1px solid rgba(189,163,107,0.35)", color: "rgba(246,176,94,0.82)" }}>
+                        ◇ Enter Archive
+                      </span>
+                    </Link>
+                  </div>
+                )}
               </div>
             ) : (
               /* Message list */
               <div className="space-y-6">
                 {displayMessages.map((msg, idx) =>
-                  msg.role === "user" ? (
+                  msg.role === "system" ? (
+                    // Ephemeral UI notice (mode switches, etc.). Centered, subtle, does not look like a normal transmission.
+                    <div key={idx} className="flex justify-center my-2 px-4">
+                      <div
+                        className="font-mono text-[9px] tracking-[0.1em] px-3 py-1 rounded max-w-md text-center"
+                        style={{
+                          background: "rgba(189,163,107,0.05)",
+                          border: "1px solid rgba(189,163,107,0.15)",
+                          color: "rgba(246,176,94,0.65)",
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                    </div>
+                  ) : msg.role === "user" ? (
                     <div key={idx} className="flex justify-end">
                       <div
                         className="max-w-md px-5 py-4 rounded-lg"
@@ -1629,7 +1994,7 @@ export default function Conduit() {
                           className="font-mono text-[9px] mb-2 tracking-[0.3em] uppercase"
                           style={{ color: "rgba(189,163,107,0.5)" }}
                         >
-                          Channeler
+                          Receiver Node
                           {msg.timestamp && (
                             <span
                               className="ml-2 normal-case tracking-normal"
@@ -1750,7 +2115,10 @@ export default function Conduit() {
 
             {/* File reading indicator */}
             {isReadingFiles && (
-              <div className="text-[10px] font-mono mb-1" style={{ color: "rgba(246,176,94,0.6)" }}>
+              <div
+                className="text-[10px] font-mono mb-1"
+                style={{ color: "rgba(246,176,94,0.6)" }}
+              >
                 Reading file(s)...
               </div>
             )}
@@ -1821,15 +2189,16 @@ export default function Conduit() {
                   }
 
                   // Warn for very large non-image files (text extraction can be slow/unreliable)
-                  const isImage = file.type.startsWith('image/');
+                  const isImage = file.type.startsWith("image/");
                   if (!isImage && file.size > 5 * 1024 * 1024) {
                     const proceed = confirm(
                       `File "${file.name}" is quite large (${(file.size / 1024 / 1024).toFixed(1)} MB).\n` +
-                      `Text extraction from large documents can be slow or incomplete. Continue?`
+                        `Text extraction from large documents can be slow or incomplete. Continue?`
                     );
                     if (!proceed) {
                       processed++;
-                      if (processed === totalToProcess) setIsReadingFiles(false);
+                      if (processed === totalToProcess)
+                        setIsReadingFiles(false);
                       return;
                     }
                   }
@@ -1916,7 +2285,11 @@ export default function Conduit() {
                 onKeyDown={e =>
                   e.key === "Enter" && !e.shiftKey && handleSendMessage()
                 }
-                placeholder="Enter your query into the light..."
+                placeholder={
+                  isImageMode
+                    ? "Describe the image transmission ORIEL should generate..."
+                    : "Transmit your question to ORIEL..."
+                }
                 disabled={inputDisabled}
                 className="flex-1 bg-transparent font-mono text-sm outline-none px-4 py-3 rounded transition-all"
                 style={{
@@ -1940,12 +2313,14 @@ export default function Conduit() {
               {/* File attach */}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={inputDisabled || attachedFiles.length >= 5 || isReadingFiles}
+                disabled={
+                  inputDisabled || attachedFiles.length >= 5 || isReadingFiles
+                }
                 title={
-                  isReadingFiles 
-                    ? "Reading files..." 
-                    : attachedFiles.length >= 5 
-                      ? "Max 5 files" 
+                  isReadingFiles
+                    ? "Reading files..."
+                    : attachedFiles.length >= 5
+                      ? "Max 5 files"
                       : "Attach file"
                 }
                 className="p-3 rounded transition-all relative"
@@ -1956,12 +2331,13 @@ export default function Conduit() {
                     attachedFiles.length >= 5 || isReadingFiles
                       ? "rgba(189,163,107,0.2)"
                       : "rgba(189,163,107,0.5)",
-                  opacity: (attachedFiles.length >= 5 || isReadingFiles) ? 0.4 : 1,
+                  opacity:
+                    attachedFiles.length >= 5 || isReadingFiles ? 0.4 : 1,
                 }}
               >
                 <Paperclip size={16} />
                 {attachedFiles.length > 0 && !isReadingFiles && (
-                  <span 
+                  <span
                     className="absolute -top-1 -right-1 text-[8px] px-1 rounded-full font-mono leading-none flex items-center justify-center"
                     style={{
                       background: "rgba(189,163,107,0.9)",
@@ -1980,23 +2356,32 @@ export default function Conduit() {
                 )}
               </button>
 
-              {/* Image creation */}
+              {/* Image mode toggle (no longer directly generates; the mode controls routing on send) */}
               <button
-                onClick={() => handleCreateChatImage(message)}
-                disabled={inputDisabled || !message.trim()}
-                title="Create image from current prompt"
+                onClick={() => setIsImageMode(m => !m)}
+                disabled={inputDisabled || generateChatImageMutation.isPending}
+                title={
+                  isImageMode
+                    ? "Exit Image Generation Mode"
+                    : "Enter Image Generation Mode (image descriptions will generate directly)"
+                }
                 className="p-3 rounded transition-all"
                 style={{
-                  background: "rgba(189,163,107,0.08)",
-                  border: "1px solid rgba(189,163,107,0.25)",
-                  color: !message.trim()
-                    ? "rgba(189,163,107,0.25)"
-                    : "rgba(189,163,107,0.7)",
-                  opacity: !message.trim() ? 0.45 : 1,
+                  background: isImageMode
+                    ? "rgba(0,188,212,0.15)"
+                    : "rgba(189,163,107,0.06)",
+                  border: `1px solid ${
+                    isImageMode
+                      ? "rgba(0,188,212,0.6)"
+                      : "rgba(189,163,107,0.2)"
+                  }`,
+                  color: isImageMode
+                    ? "rgba(0,229,255,0.9)"
+                    : "rgba(189,163,107,0.5)",
                 }}
               >
                 {generateChatImageMutation.isPending ? (
-                  <Spinner className="size-4" />
+                  <Spinner size={16} />
                 ) : (
                   <ImageIcon size={16} />
                 )}
@@ -2051,7 +2436,7 @@ export default function Conduit() {
               <button
                 onClick={handleSendMessage}
                 disabled={sendDisabled}
-                title="Channel"
+                title="Transmit"
                 className="px-5 py-3 rounded font-mono text-xs tracking-[0.25em] uppercase transition-all"
                 style={{
                   background: "rgba(189,163,107,0.1)",
@@ -2076,9 +2461,9 @@ export default function Conduit() {
               >
                 {chatMutation.isPending ||
                 generateChatImageMutation.isPending ? (
-                  <Spinner className="size-4" />
+                  <Spinner size={16} />
                 ) : (
-                  "Channel"
+                  "Transmit"
                 )}
               </button>
             </div>
@@ -2088,7 +2473,7 @@ export default function Conduit() {
                 className="font-mono text-[9px] mt-3 tracking-widest"
                 style={{ color: "rgba(189,163,107,0.3)" }}
               >
-                // Authenticate to sync conversation history across devices
+                // Receiver node required to preserve transmissions across devices
               </p>
             )}
           </div>

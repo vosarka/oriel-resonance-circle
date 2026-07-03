@@ -45,7 +45,7 @@ const DEEP_VOICE_ID =
 async function buildRealtimeInstructions(
   userId: number,
   userMessage?: string,
-  voiceIntroAlreadySpoken = false,
+  voiceIntroAlreadySpoken = false
 ): Promise<string> {
   const instructions = await buildOrielPromptContext({
     userId,
@@ -54,7 +54,7 @@ async function buildRealtimeInstructions(
   });
   console.log(
     `[Realtime] Built instructions: ${instructions.length} chars ` +
-    `(base + UMM${userMessage?.trim() ? " + field state" : ""})`,
+      `(base + UMM${userMessage?.trim() ? " + field state" : ""})`
   );
 
   return buildRealtimeInstructionsText({
@@ -68,12 +68,12 @@ async function buildRealtimeInstructions(
 async function buildSessionUpdate(
   userId: number,
   userMessage?: string,
-  voiceIntroAlreadySpoken = false,
+  voiceIntroAlreadySpoken = false
 ): Promise<object> {
   const instructions = await buildRealtimeInstructions(
     userId,
     userMessage,
-    voiceIntroAlreadySpoken,
+    voiceIntroAlreadySpoken
   );
 
   const user = await db.getUserById(userId);
@@ -92,7 +92,7 @@ async function buildSessionUpdate(
 
 async function refreshRealtimeInstructions(
   state: SessionState,
-  inworldWs: WebSocket,
+  inworldWs: WebSocket
 ): Promise<void> {
   if (inworldWs.readyState !== WebSocket.OPEN) return;
 
@@ -100,7 +100,7 @@ async function refreshRealtimeInstructions(
     const sessionUpdate = await buildSessionUpdate(
       state.userId,
       state.latestUserTranscript || undefined,
-      state.voiceIntroAlreadySpoken,
+      state.voiceIntroAlreadySpoken
     );
     inworldWs.send(JSON.stringify(sessionUpdate));
   } catch (err) {
@@ -124,7 +124,9 @@ interface SessionState {
 /**
  * Resolve the legacy user from the session cookie in the WebSocket upgrade request.
  */
-async function resolveUser(req: IncomingMessage): Promise<{ id: number } | null> {
+async function resolveUser(
+  req: IncomingMessage
+): Promise<{ id: number } | null> {
   try {
     const session = await auth.api.getSession({
       headers: fromNodeHeaders(req.headers),
@@ -159,221 +161,262 @@ export function setupRealtimeWebSocket(server: HttpServer): void {
       return;
     }
 
-    wss.handleUpgrade(req, socket, head, (clientWs) => {
+    wss.handleUpgrade(req, socket, head, clientWs => {
       wss.emit("connection", clientWs, req, query);
     });
   });
 
-  wss.on("connection", async (clientWs: WebSocket, req: IncomingMessage, query: Record<string, any>) => {
-    console.log("[Realtime] New client connection");
+  wss.on(
+    "connection",
+    async (
+      clientWs: WebSocket,
+      req: IncomingMessage,
+      query: Record<string, any>
+    ) => {
+      console.log("[Realtime] New client connection");
 
-    // ── Auth ──────────────────────────────────────────────────────────────
-    const user = await resolveUser(req);
-    if (!user) {
-      console.warn("[Realtime] Unauthorized — closing");
-      clientWs.close(4001, "Unauthorized");
-      return;
-    }
-
-    // ── Validate conversation ownership ──────────────────────────────────
-    let conversationId: number | null = null;
-    if (query.conversationId) {
-      const parsedId = parseInt(query.conversationId as string, 10);
-      if (!isNaN(parsedId)) {
-        const conv = await db.getConversationById(parsedId, user.id);
-        if (conv) {
-          conversationId = parsedId;
-        } else {
-          console.warn(`[Realtime] Conversation ${parsedId} not owned by user ${user.id}`);
-          // Don't reject — just start a fresh conversation
-        }
-      }
-    }
-
-    // ── Session state ────────────────────────────────────────────────────
-    const state: SessionState = {
-      userId: user.id,
-      conversationId,
-      currentUserTranscript: "",
-      userTranscriptSavedForCurrentItem: false,
-      currentAssistantTranscript: "",
-      latestUserTranscript: "",
-      pendingUmmUserTranscript: "",
-      voiceIntroAlreadySpoken: isTruthyQueryFlag(query.voiceIntroAlreadySpoken),
-      saveQueue: Promise.resolve(),
-    };
-
-    // ── Connect to Inworld ───────────────────────────────────────────────
-    const apiKey = ENV.inworldApiKey;
-    if (!apiKey) {
-      console.error("[Realtime] INWORLD_API_KEY not set");
-      clientWs.close(4002, "Server misconfigured");
-      return;
-    }
-
-    let inworldWs: WebSocket;
-    try {
-      // Inworld requires key (session identifier) and protocol query params
-      const sessionKey = `voice-${Date.now()}`;
-      const inworldUrl = `${INWORLD_REALTIME_BASE}?key=${sessionKey}&protocol=realtime`;
-      console.log("[Realtime] Connecting to Inworld:", inworldUrl);
-
-      inworldWs = new WebSocket(inworldUrl, {
-        headers: {
-          Authorization: getInworldAuthorizationValue(apiKey),
-        },
-      });
-    } catch (err) {
-      console.error("[Realtime] Failed to create Inworld WebSocket:", err);
-      clientWs.close(4003, "Failed to connect to voice service");
-      return;
-    }
-
-    let inworldReady = false;
-    let sessionConfigured = false;
-
-    // ── Inworld → Client forwarding ──────────────────────────────────────
-    inworldWs.on("open", () => {
-      console.log("[Realtime] Connected to Inworld, waiting for session.created...");
-      // Don't send session.update yet — wait for session.created from Inworld
-    });
-
-    inworldWs.on("message", (data) => {
-      try {
-        const msg = JSON.parse(data.toString());
-        console.log("[Realtime] ← Inworld event:", msg.type, msg.error ? JSON.stringify(msg.error) : "");
-
-        // Handle session lifecycle events
-        if (msg.type === "session.created" && !sessionConfigured) {
-          // Inworld is ready — now send our session config with user context
-          sessionConfigured = true;
-          buildSessionUpdate(
-            state.userId,
-            undefined,
-            state.voiceIntroAlreadySpoken,
-          ).then((sessionUpdate) => {
-            console.log("[Realtime] Sending session.update");
-            inworldWs.send(JSON.stringify(sessionUpdate));
-          }).catch((err) => {
-            console.error("[Realtime] Failed to build session update:", err);
-          });
-          return; // Don't forward session.created to client
-        }
-
-        if (msg.type === "session.updated") {
-          if (!inworldReady) {
-            // Initial session config accepted. Keep realtime voice focused on
-            // the current spoken turn; old chat history can dominate simple
-            // greetings if injected as active conversation items.
-            console.log("[Realtime] Session configured successfully");
-
-            inworldReady = true;
-            if (clientWs.readyState === WebSocket.OPEN) {
-              clientWs.send(JSON.stringify({ type: "session.ready" }));
-            }
-          } else {
-            console.log("[Realtime] Session instructions refreshed");
-          }
-          return; // Don't forward session.updated to client
-        }
-
-        if (msg.type === "error") {
-          console.error("[Realtime] Inworld error event:", JSON.stringify(msg));
-          if (clientWs.readyState === WebSocket.OPEN) {
-            clientWs.send(JSON.stringify({
-              type: "error",
-              error: msg.error?.message || msg.message || "Voice service error",
-            }));
-          }
-        }
-
-        // Intercept transcript events for saving to DB and runtime state.
-        handleInworldEvent(msg, state, clientWs);
-        if (msg.type === "response.done" && state.voiceIntroAlreadySpoken) {
-          void refreshRealtimeInstructions(state, inworldWs);
-        }
-
-        // Forward everything else to the client
-        if (clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(data.toString());
-        }
-      } catch {
-        // Binary or unparseable — forward raw
-        if (clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(data);
-        }
-      }
-    });
-
-    inworldWs.on("error", (err) => {
-      console.error("[Realtime] Inworld WebSocket error:", err);
-      if (clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(JSON.stringify({ type: "error", error: "Voice service error" }));
-      }
-    });
-
-    inworldWs.on("close", (code, reason) => {
-      console.log(`[Realtime] Inworld closed: ${code} ${reason.toString()}`);
-      if (clientWs.readyState === WebSocket.OPEN) {
-        clientWs.send(JSON.stringify({
-          type: "error",
-          error: `Voice service disconnected (${code})${reason ? `: ${reason.toString()}` : ""}`,
-        }));
-        clientWs.close(1000, "Voice service disconnected");
-      }
-    });
-
-    // ── Client → Inworld forwarding ──────────────────────────────────────
-    clientWs.on("message", (data) => {
-      if (!inworldReady || inworldWs.readyState !== WebSocket.OPEN) {
+      // ── Auth ──────────────────────────────────────────────────────────────
+      const user = await resolveUser(req);
+      if (!user) {
+        console.warn("[Realtime] Unauthorized — closing");
+        clientWs.close(4001, "Unauthorized");
         return;
       }
 
-      const payload = data.toString();
+      // ── Validate conversation ownership ──────────────────────────────────
+      let conversationId: number | null = null;
+      if (query.conversationId) {
+        const parsedId = parseInt(query.conversationId as string, 10);
+        if (!isNaN(parsedId)) {
+          const conv = await db.getConversationById(parsedId, user.id);
+          if (conv) {
+            conversationId = parsedId;
+          } else {
+            console.warn(
+              `[Realtime] Conversation ${parsedId} not owned by user ${user.id}`
+            );
+            // Don't reject — just start a fresh conversation
+          }
+        }
+      }
+
+      // ── Session state ────────────────────────────────────────────────────
+      const state: SessionState = {
+        userId: user.id,
+        conversationId,
+        currentUserTranscript: "",
+        userTranscriptSavedForCurrentItem: false,
+        currentAssistantTranscript: "",
+        latestUserTranscript: "",
+        pendingUmmUserTranscript: "",
+        voiceIntroAlreadySpoken: isTruthyQueryFlag(
+          query.voiceIntroAlreadySpoken
+        ),
+        saveQueue: Promise.resolve(),
+      };
+
+      // ── Connect to Inworld ───────────────────────────────────────────────
+      const apiKey = ENV.inworldApiKey;
+      if (!apiKey) {
+        console.error("[Realtime] INWORLD_API_KEY not set");
+        clientWs.close(4002, "Server misconfigured");
+        return;
+      }
+
+      let inworldWs: WebSocket;
       try {
-        const msg = JSON.parse(payload);
-        if (msg?.type === "response.create") {
-          state.voiceIntroAlreadySpoken = state.voiceIntroAlreadySpoken || msg.voiceIntroAlreadySpoken === true;
-          void (async () => {
-            await refreshRealtimeInstructions(state, inworldWs);
-            if (inworldWs.readyState === WebSocket.OPEN) {
-              const { voiceIntroAlreadySpoken: _voiceIntroAlreadySpoken, ...responseCreate } = msg;
-              inworldWs.send(JSON.stringify(responseCreate));
+        // Inworld requires key (session identifier) and protocol query params
+        const sessionKey = `voice-${Date.now()}`;
+        const inworldUrl = `${INWORLD_REALTIME_BASE}?key=${sessionKey}&protocol=realtime`;
+        console.log("[Realtime] Connecting to Inworld:", inworldUrl);
+
+        inworldWs = new WebSocket(inworldUrl, {
+          headers: {
+            Authorization: getInworldAuthorizationValue(apiKey),
+          },
+        });
+      } catch (err) {
+        console.error("[Realtime] Failed to create Inworld WebSocket:", err);
+        clientWs.close(4003, "Failed to connect to voice service");
+        return;
+      }
+
+      let inworldReady = false;
+      let sessionConfigured = false;
+
+      // ── Inworld → Client forwarding ──────────────────────────────────────
+      inworldWs.on("open", () => {
+        console.log(
+          "[Realtime] Connected to Inworld, waiting for session.created..."
+        );
+        // Don't send session.update yet — wait for session.created from Inworld
+      });
+
+      inworldWs.on("message", data => {
+        try {
+          const msg = JSON.parse(data.toString());
+          console.log(
+            "[Realtime] ← Inworld event:",
+            msg.type,
+            msg.error ? JSON.stringify(msg.error) : ""
+          );
+
+          // Handle session lifecycle events
+          if (msg.type === "session.created" && !sessionConfigured) {
+            // Inworld is ready — now send our session config with user context
+            sessionConfigured = true;
+            buildSessionUpdate(
+              state.userId,
+              undefined,
+              state.voiceIntroAlreadySpoken
+            )
+              .then(sessionUpdate => {
+                console.log("[Realtime] Sending session.update");
+                inworldWs.send(JSON.stringify(sessionUpdate));
+              })
+              .catch(err => {
+                console.error(
+                  "[Realtime] Failed to build session update:",
+                  err
+                );
+              });
+            return; // Don't forward session.created to client
+          }
+
+          if (msg.type === "session.updated") {
+            if (!inworldReady) {
+              // Initial session config accepted. Keep realtime voice focused on
+              // the current spoken turn; old chat history can dominate simple
+              // greetings if injected as active conversation items.
+              console.log("[Realtime] Session configured successfully");
+
+              inworldReady = true;
+              if (clientWs.readyState === WebSocket.OPEN) {
+                clientWs.send(JSON.stringify({ type: "session.ready" }));
+              }
+            } else {
+              console.log("[Realtime] Session instructions refreshed");
             }
-          })();
+            return; // Don't forward session.updated to client
+          }
+
+          if (msg.type === "error") {
+            console.error(
+              "[Realtime] Inworld error event:",
+              JSON.stringify(msg)
+            );
+            if (clientWs.readyState === WebSocket.OPEN) {
+              clientWs.send(
+                JSON.stringify({
+                  type: "error",
+                  error:
+                    msg.error?.message || msg.message || "Voice service error",
+                })
+              );
+            }
+          }
+
+          // Intercept transcript events for saving to DB and runtime state.
+          handleInworldEvent(msg, state, clientWs);
+          if (msg.type === "response.done" && state.voiceIntroAlreadySpoken) {
+            void refreshRealtimeInstructions(state, inworldWs);
+          }
+
+          // Forward everything else to the client
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(data.toString());
+          }
+        } catch {
+          // Binary or unparseable — forward raw
+          if (clientWs.readyState === WebSocket.OPEN) {
+            clientWs.send(data);
+          }
+        }
+      });
+
+      inworldWs.on("error", err => {
+        console.error("[Realtime] Inworld WebSocket error:", err);
+        if (clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(
+            JSON.stringify({ type: "error", error: "Voice service error" })
+          );
+        }
+      });
+
+      inworldWs.on("close", (code, reason) => {
+        console.log(`[Realtime] Inworld closed: ${code} ${reason.toString()}`);
+        if (clientWs.readyState === WebSocket.OPEN) {
+          clientWs.send(
+            JSON.stringify({
+              type: "error",
+              error: `Voice service disconnected (${code})${reason ? `: ${reason.toString()}` : ""}`,
+            })
+          );
+          clientWs.close(1000, "Voice service disconnected");
+        }
+      });
+
+      // ── Client → Inworld forwarding ──────────────────────────────────────
+      clientWs.on("message", data => {
+        if (!inworldReady || inworldWs.readyState !== WebSocket.OPEN) {
           return;
         }
-      } catch {
-        // Non-JSON payloads are forwarded below.
-      }
 
-      // Inworld requires text frames (JSON), not binary — convert Buffer to string
-      inworldWs.send(payload);
-    });
+        const payload = data.toString();
+        try {
+          const msg = JSON.parse(payload);
+          if (msg?.type === "response.create") {
+            state.voiceIntroAlreadySpoken =
+              state.voiceIntroAlreadySpoken ||
+              msg.voiceIntroAlreadySpoken === true;
+            void (async () => {
+              await refreshRealtimeInstructions(state, inworldWs);
+              if (inworldWs.readyState === WebSocket.OPEN) {
+                const {
+                  voiceIntroAlreadySpoken: _voiceIntroAlreadySpoken,
+                  ...responseCreate
+                } = msg;
+                inworldWs.send(JSON.stringify(responseCreate));
+              }
+            })();
+            return;
+          }
+        } catch {
+          // Non-JSON payloads are forwarded below.
+        }
 
-    clientWs.on("close", () => {
-      console.log("[Realtime] Client disconnected");
-      // Save any remaining transcripts (chained onto the queue)
-      flushTranscripts(state);
-      if (inworldWs.readyState === WebSocket.OPEN) {
-        inworldWs.close();
-      }
-    });
+        // Inworld requires text frames (JSON), not binary — convert Buffer to string
+        inworldWs.send(payload);
+      });
 
-    clientWs.on("error", (err) => {
-      console.error("[Realtime] Client WebSocket error:", err);
-      if (inworldWs.readyState === WebSocket.OPEN) {
-        inworldWs.close();
-      }
-    });
-  });
+      clientWs.on("close", () => {
+        console.log("[Realtime] Client disconnected");
+        // Save any remaining transcripts (chained onto the queue)
+        flushTranscripts(state);
+        if (inworldWs.readyState === WebSocket.OPEN) {
+          inworldWs.close();
+        }
+      });
+
+      clientWs.on("error", err => {
+        console.error("[Realtime] Client WebSocket error:", err);
+        if (inworldWs.readyState === WebSocket.OPEN) {
+          inworldWs.close();
+        }
+      });
+    }
+  );
 
   console.log("[Realtime] WebSocket proxy ready on /api/realtime");
 }
 
 // ── Event interception for transcript saving ─────────────────────────────────
 
-function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket): void {
+function handleInworldEvent(
+  msg: any,
+  state: SessionState,
+  clientWs: WebSocket
+): void {
   const type = msg?.type;
   if (!type) return;
 
@@ -397,7 +440,10 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
       break;
 
     case "conversation.item.done":
-      if (state.currentUserTranscript.trim() && !state.userTranscriptSavedForCurrentItem) {
+      if (
+        state.currentUserTranscript.trim() &&
+        !state.userTranscriptSavedForCurrentItem
+      ) {
         enqueueSaveUser(state, clientWs);
       }
       break;
@@ -440,7 +486,10 @@ function handleInworldEvent(msg: any, state: SessionState, clientWs: WebSocket):
  * Enqueue a user message save onto the per-connection promise chain.
  * Captures and clears the transcript before awaiting I/O to prevent races.
  */
-function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void {
+function enqueueSaveUser(
+  state: SessionState,
+  clientWs: WebSocket | null
+): void {
   const content = state.currentUserTranscript.trim();
   state.currentUserTranscript = "";
   state.userTranscriptSavedForCurrentItem = true;
@@ -450,17 +499,24 @@ function enqueueSaveUser(state: SessionState, clientWs: WebSocket | null): void 
     try {
       // Auto-create conversation on first message
       if (!state.conversationId) {
-        const title = content.length > 60 ? content.substring(0, 57) + "..." : content;
+        const title =
+          content.length > 60 ? content.substring(0, 57) + "..." : content;
         const conv = await db.createConversation(state.userId, title);
         state.conversationId = conv?.id ?? null;
         console.log(`[Realtime] Created conversation ${state.conversationId}`);
 
         // Notify client so it can update its sidebar
-        if (state.conversationId && clientWs && clientWs.readyState === WebSocket.OPEN) {
-          clientWs.send(JSON.stringify({
-            type: "conversation.created",
-            conversationId: state.conversationId,
-          }));
+        if (
+          state.conversationId &&
+          clientWs &&
+          clientWs.readyState === WebSocket.OPEN
+        ) {
+          clientWs.send(
+            JSON.stringify({
+              type: "conversation.created",
+              conversationId: state.conversationId,
+            })
+          );
         }
       }
 
@@ -497,11 +553,15 @@ function enqueueSaveAssistant(state: SessionState): void {
         role: "assistant",
         content,
       });
-      console.log(`[Realtime] Saved assistant message (${content.length} chars)`);
+      console.log(
+        `[Realtime] Saved assistant message (${content.length} chars)`
+      );
 
       if (pendingUserMessage) {
         try {
-          const { recordOrielRuntimeObservation } = await import("./oriel-autonomy-observer");
+          const { recordOrielRuntimeObservation } = await import(
+            "./oriel-autonomy-observer"
+          );
           await recordOrielRuntimeObservation({
             source: "voice_realtime",
             userId: state.userId,
@@ -516,7 +576,11 @@ function enqueueSaveAssistant(state: SessionState): void {
 
         try {
           const { processConversationThroughUMM } = await import("./oriel-umm");
-          await processConversationThroughUMM(state.userId, pendingUserMessage, content);
+          await processConversationThroughUMM(
+            state.userId,
+            pendingUserMessage,
+            content
+          );
           state.pendingUmmUserTranscript = "";
         } catch (err) {
           console.error("[Realtime] UMM processing failed:", err);

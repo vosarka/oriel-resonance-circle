@@ -20,7 +20,7 @@ describe("VoiceMode realtime response policy", () => {
         realtimeAutoResponds: true,
         hasSpeechSinceLastResponse: true,
         isWaitMode: false,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -30,14 +30,14 @@ describe("VoiceMode realtime response policy", () => {
         realtimeAutoResponds: false,
         hasSpeechSinceLastResponse: true,
         isWaitMode: false,
-      }),
+      })
     ).toBe(true);
     expect(
       shouldVoiceModeRequestManualResponse({
         realtimeAutoResponds: false,
         hasSpeechSinceLastResponse: true,
         isWaitMode: true,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -47,7 +47,7 @@ describe("VoiceMode realtime response policy", () => {
         speechSource: "server",
         assistantResponseActive: true,
         isPlaying: true,
-      }),
+      })
     ).toBe(true);
   });
 
@@ -57,7 +57,7 @@ describe("VoiceMode realtime response policy", () => {
         speechSource: "local",
         assistantResponseActive: true,
         isPlaying: true,
-      }),
+      })
     ).toBe(false);
   });
 
@@ -67,21 +67,21 @@ describe("VoiceMode realtime response policy", () => {
         websocketOpen: true,
         isMuted: true,
         isWaitMode: false,
-      }),
+      })
     ).toBe(false);
     expect(
       shouldVoiceModeStreamMicAudio({
         websocketOpen: true,
         isMuted: false,
         isWaitMode: true,
-      }),
+      })
     ).toBe(false);
     expect(
       shouldVoiceModeStreamMicAudio({
         websocketOpen: true,
         isMuted: false,
         isWaitMode: false,
-      }),
+      })
     ).toBe(true);
   });
 

@@ -1,15 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { Play, Pause, RotateCcw, Volume2, VolumeX, Check } from "lucide-react";
 
 // Breath phase configuration
 const BREATH_CONFIG = {
-  inhale: 4000,   // 4 seconds inhale
-  hold: 4000,     // 4 seconds hold
-  exhale: 6000,   // 6 seconds exhale
-  pause: 1000,    // 1 second pause between cycles
+  inhale: 4000, // 4 seconds inhale
+  hold: 4000, // 4 seconds hold
+  exhale: 6000, // 6 seconds exhale
+  pause: 1000, // 1 second pause between cycles
 };
 
 const TOTAL_CYCLES = 3;
@@ -23,22 +29,27 @@ interface BreathProtocolProps {
 
 // Audio prompts for ORIEL voice guidance
 const AUDIO_PROMPTS = {
-  start: "Begin the breath protocol. Center yourself. Let go of external noise.",
+  start:
+    "Begin the breath protocol. Center yourself. Let go of external noise.",
   inhale: "Breathe in slowly. Fill your lungs completely.",
   hold: "Hold. Let the breath settle within you.",
   exhale: "Release slowly. Let tension dissolve with each exhale.",
   cycleComplete: "Cycle complete. Prepare for the next breath.",
-  complete: "The protocol is complete. Your field is now calibrated for assessment.",
+  complete:
+    "The protocol is complete. Your field is now calibrated for assessment.",
 };
 
-export default function BreathProtocol({ onComplete, isCompleted }: BreathProtocolProps) {
+export default function BreathProtocol({
+  onComplete,
+  isCompleted,
+}: BreathProtocolProps) {
   const [phase, setPhase] = useState<BreathPhase>("idle");
   const [currentCycle, setCurrentCycle] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const progressRef = useRef<NodeJS.Timeout | null>(null);
@@ -48,33 +59,42 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
   const generateSpeechMutation = trpc.oriel.generateSpeech.useMutation();
 
   // Generate and play audio for a given prompt
-  const playAudioPrompt = useCallback(async (prompt: string) => {
-    if (!audioEnabled || isGeneratingAudioRef.current) return;
+  const playAudioPrompt = useCallback(
+    async (prompt: string) => {
+      if (!audioEnabled || isGeneratingAudioRef.current) return;
 
-    try {
-      isGeneratingAudioRef.current = true;
-      setIsGeneratingAudio(true);
-      const result = await generateSpeechMutation.mutateAsync({ text: prompt });
+      try {
+        isGeneratingAudioRef.current = true;
+        setIsGeneratingAudio(true);
+        const result = await generateSpeechMutation.mutateAsync({
+          text: prompt,
+        });
 
-      if (result.audioUrl && audioRef.current) {
-        audioRef.current.src = result.audioUrl;
-        audioRef.current.play().catch(console.error);
+        if (result.audioUrl && audioRef.current) {
+          audioRef.current.src = result.audioUrl;
+          audioRef.current.play().catch(console.error);
+        }
+      } catch (error) {
+        console.error("Failed to generate audio:", error);
+      } finally {
+        isGeneratingAudioRef.current = false;
+        setIsGeneratingAudio(false);
       }
-    } catch (error) {
-      console.error("Failed to generate audio:", error);
-    } finally {
-      isGeneratingAudioRef.current = false;
-      setIsGeneratingAudio(false);
-    }
-  }, [audioEnabled, generateSpeechMutation]);
+    },
+    [audioEnabled, generateSpeechMutation]
+  );
 
   // Ref to always hold latest playAudioPrompt — decouples audio from timer effect
   const playAudioPromptRef = useRef(playAudioPrompt);
-  useEffect(() => { playAudioPromptRef.current = playAudioPrompt; });
+  useEffect(() => {
+    playAudioPromptRef.current = playAudioPrompt;
+  });
 
   // Ref for onComplete to prevent parent re-renders from resetting timers
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => { onCompleteRef.current = onComplete; });
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
 
   // Start the breath protocol
   const startProtocol = useCallback(() => {
@@ -119,9 +139,10 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
       }
     }
 
-    const phaseDuration = phase === "pause"
-      ? BREATH_CONFIG.pause
-      : BREATH_CONFIG[phase as keyof typeof BREATH_CONFIG] || 4000;
+    const phaseDuration =
+      phase === "pause"
+        ? BREATH_CONFIG.pause
+        : BREATH_CONFIG[phase as keyof typeof BREATH_CONFIG] || 4000;
 
     // Progress animation
     setProgress(0);
@@ -177,35 +198,52 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
   // Get phase display text
   const getPhaseText = () => {
     switch (phase) {
-      case "idle": return "Ready to Begin";
-      case "inhale": return "Breathe In";
-      case "hold": return "Hold";
-      case "exhale": return "Breathe Out";
-      case "pause": return "Prepare";
-      case "complete": return "Complete";
-      default: return "";
+      case "idle":
+        return "Ready to Begin";
+      case "inhale":
+        return "Breathe In";
+      case "hold":
+        return "Hold";
+      case "exhale":
+        return "Breathe Out";
+      case "pause":
+        return "Prepare";
+      case "complete":
+        return "Complete";
+      default:
+        return "";
     }
   };
 
   // Get phase color
   const getPhaseColor = () => {
     switch (phase) {
-      case "inhale": return "from-primary/60 to-primary";
-      case "hold": return "from-purple-500/60 to-purple-400";
-      case "exhale": return "from-blue-500/60 to-blue-400";
-      case "complete": return "from-primary/50 to-primary/30";
-      default: return "from-zinc-600/60 to-zinc-500";
+      case "inhale":
+        return "from-primary/60 to-primary";
+      case "hold":
+        return "from-amber-500/55 to-yellow-300";
+      case "exhale":
+        return "from-secondary/60 to-primary";
+      case "complete":
+        return "from-primary/50 to-primary/30";
+      default:
+        return "from-zinc-600/60 to-zinc-500";
     }
   };
 
   // Get glow color
   const getGlowColor = () => {
     switch (phase) {
-      case "inhale": return "rgba(104, 211, 145, 0.4)";
-      case "hold": return "rgba(168, 85, 247, 0.4)";
-      case "exhale": return "rgba(59, 130, 246, 0.4)";
-      case "complete": return "rgba(34, 197, 94, 0.4)";
-      default: return "rgba(113, 113, 122, 0.2)";
+      case "inhale":
+        return "rgba(104, 211, 145, 0.4)";
+      case "hold":
+        return "rgba(246, 176, 94, 0.38)";
+      case "exhale":
+        return "rgba(189, 163, 107, 0.34)";
+      case "complete":
+        return "rgba(34, 197, 94, 0.4)";
+      default:
+        return "rgba(113, 113, 122, 0.2)";
     }
   };
 
@@ -227,9 +265,12 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-primary font-orbitron">Breath Completion Protocol</CardTitle>
+            <CardTitle className="text-primary font-orbitron">
+              Breath Completion Protocol
+            </CardTitle>
             <CardDescription>
-              Complete 3 conscious breath cycles to calibrate your field (+10 Coherence)
+              Complete 3 conscious breath cycles to calibrate your field (+10
+              Coherence)
             </CardDescription>
           </div>
           <Button
@@ -238,19 +279,23 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
             onClick={() => setAudioEnabled(!audioEnabled)}
             className="text-zinc-400 hover:text-primary"
           >
-            {audioEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            {audioEnabled ? (
+              <Volume2 className="w-5 h-5" />
+            ) : (
+              <VolumeX className="w-5 h-5" />
+            )}
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-4">
         {/* Hidden audio element */}
         <audio ref={audioRef} className="hidden" />
-        
+
         {/* Breathing Circle Visualization */}
         <div className="flex flex-col items-center justify-center py-8">
           {/* Outer glow ring */}
-          <div 
+          <div
             className="relative flex items-center justify-center"
             style={{
               width: "280px",
@@ -265,7 +310,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
                 transform: `scale(${getCircleScale() * 1.2})`,
               }}
             />
-            
+
             {/* Main breathing circle */}
             <div
               className={`relative flex items-center justify-center rounded-full bg-gradient-to-br ${getPhaseColor()} transition-transform`}
@@ -273,7 +318,12 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
                 width: "200px",
                 height: "200px",
                 transform: `scale(${getCircleScale()})`,
-                transitionDuration: phase === "inhale" ? "4s" : phase === "exhale" ? "6s" : "0.3s",
+                transitionDuration:
+                  phase === "inhale"
+                    ? "4s"
+                    : phase === "exhale"
+                      ? "6s"
+                      : "0.3s",
                 transitionTimingFunction: "ease-in-out",
                 boxShadow: `0 0 60px ${getGlowColor()}`,
               }}
@@ -294,22 +344,24 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
                   </div>
                 )}
               </div>
-              
+
               {/* Decorative rings */}
-              <div 
+              <div
                 className="absolute inset-2 rounded-full border border-white/20"
                 style={{
                   animation: isPlaying ? "spin 20s linear infinite" : "none",
                 }}
               />
-              <div 
+              <div
                 className="absolute inset-4 rounded-full border border-white/10"
                 style={{
-                  animation: isPlaying ? "spin 30s linear infinite reverse" : "none",
+                  animation: isPlaying
+                    ? "spin 30s linear infinite reverse"
+                    : "none",
                 }}
               />
             </div>
-            
+
             {/* Progress ring */}
             {phase !== "idle" && phase !== "complete" && (
               <svg
@@ -336,7 +388,13 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
                   stroke="currentColor"
                   strokeWidth="4"
                   strokeLinecap="round"
-                  className={phase === "inhale" ? "text-primary" : phase === "hold" ? "text-purple-400" : "text-blue-400"}
+                  className={
+                    phase === "inhale"
+                      ? "text-primary"
+                      : phase === "hold"
+                        ? "text-amber-300"
+                        : "text-primary/80"
+                  }
                   style={{
                     strokeDasharray: `${2 * Math.PI * 130}`,
                     strokeDashoffset: `${2 * Math.PI * 130 * (1 - progress / 100)}`,
@@ -346,7 +404,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
               </svg>
             )}
           </div>
-          
+
           {/* Cycle indicators */}
           <div className="flex items-center gap-3 mt-6">
             {Array.from({ length: TOTAL_CYCLES }).map((_, i) => (
@@ -356,13 +414,13 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
                   i < currentCycle || phase === "complete"
                     ? "bg-primary scale-110"
                     : i === currentCycle - 1 && isPlaying
-                    ? "bg-primary/50 animate-pulse"
-                    : "bg-zinc-700"
+                      ? "bg-primary/50 animate-pulse"
+                      : "bg-zinc-700"
                 }`}
               />
             ))}
           </div>
-          
+
           {/* Phase timing info */}
           {phase !== "idle" && phase !== "complete" && (
             <div className="text-xs text-zinc-500 mt-4 font-mono">
@@ -373,19 +431,19 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
             </div>
           )}
         </div>
-        
+
         {/* Control buttons */}
         <div className="flex items-center justify-center gap-4 mt-4">
           {phase === "idle" && (
             <Button
               onClick={startProtocol}
-              className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-400 font-orbitron"
+              className="bg-gradient-to-r from-primary to-amber-400 hover:from-primary/90 hover:to-amber-300 font-orbitron"
             >
               <Play className="w-4 h-4 mr-2" />
               Begin Protocol
             </Button>
           )}
-          
+
           {isPlaying && phase !== "complete" && (
             <Button
               onClick={pauseProtocol}
@@ -396,12 +454,12 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
               Pause
             </Button>
           )}
-          
+
           {!isPlaying && phase !== "idle" && phase !== "complete" && (
             <>
               <Button
                 onClick={() => setIsPlaying(true)}
-                className="bg-gradient-to-r from-primary to-purple-500 hover:from-primary/90 hover:to-purple-400"
+                className="bg-gradient-to-r from-primary to-amber-400 hover:from-primary/90 hover:to-amber-300"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Resume
@@ -416,7 +474,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
               </Button>
             </>
           )}
-          
+
           {phase === "complete" && (
             <div className="flex items-center gap-2 text-primary">
               <Check className="w-5 h-5" />
@@ -424,7 +482,7 @@ export default function BreathProtocol({ onComplete, isCompleted }: BreathProtoc
             </div>
           )}
         </div>
-        
+
         {/* Audio status indicator */}
         {isGeneratingAudio && (
           <div className="text-center text-xs text-zinc-500 mt-4">

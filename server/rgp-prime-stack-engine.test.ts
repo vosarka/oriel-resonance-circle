@@ -4,7 +4,7 @@
  * Tests the two-chart calculation system (Conscious + Design charts)
  * and the VRC Mandala-based codon assignment.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 import {
   calculatePrimeStack,
   calculate9CenterMap,
@@ -12,46 +12,48 @@ import {
   calculateAuthorityNode,
   validatePrimeStack,
   generatePrimeStackSummary,
-} from './rgp-prime-stack-engine';
-import { calculateBothCharts } from './ephemeris-service';
+} from "./rgp-prime-stack-engine";
+import { calculateBothCharts } from "./ephemeris-service";
 
 // ─── Sample charts ────────────────────────────────────────────────────────────
 
 /** Conscious chart: planets at T_birth (all longitudes in degrees). */
 const sampleConscious: Record<string, { longitude: number }> = {
-  Sun:           { longitude: 45 },
-  Moon:          { longitude: 135 },
-  Mercury:       { longitude: 75 },
-  Venus:         { longitude: 105 },
-  Mars:          { longitude: 165 },
-  Jupiter:       { longitude: 195 },
-  Saturn:        { longitude: 225 },
-  Uranus:        { longitude: 255 },
-  Neptune:       { longitude: 285 },
-  Pluto:         { longitude: 345 },
-  'North Node':  { longitude: 315 },
-  'South Node':  { longitude: 135 },
-  Earth:         { longitude: 225 },
+  Sun: { longitude: 45 },
+  Moon: { longitude: 135 },
+  Mercury: { longitude: 75 },
+  Venus: { longitude: 105 },
+  Mars: { longitude: 165 },
+  Jupiter: { longitude: 195 },
+  Saturn: { longitude: 225 },
+  Uranus: { longitude: 255 },
+  Neptune: { longitude: 285 },
+  Pluto: { longitude: 345 },
+  "North Node": { longitude: 315 },
+  "South Node": { longitude: 135 },
+  Earth: { longitude: 225 },
 };
 
 /** Design chart: planets at T_design (88° Solar Arc offset). */
 const sampleDesign: Record<string, { longitude: number }> = {
-  Sun:           { longitude: ((45 - 88) + 360) % 360 },   // ≈ 317°
-  Moon:          { longitude: ((135 - 88) + 360) % 360 },  // ≈ 47°
-  Mercury:       { longitude: ((75 - 88) + 360) % 360 },
-  Venus:         { longitude: ((105 - 88) + 360) % 360 },
-  Mars:          { longitude: ((165 - 88) + 360) % 360 },
-  Jupiter:       { longitude: ((195 - 88) + 360) % 360 },
-  Saturn:        { longitude: ((225 - 88) + 360) % 360 },
-  Uranus:        { longitude: ((255 - 88) + 360) % 360 },
-  Neptune:       { longitude: ((285 - 88) + 360) % 360 },
-  Pluto:         { longitude: ((345 - 88) + 360) % 360 },
-  'North Node':  { longitude: ((315 - 88) + 360) % 360 },  // ≈ 227°
-  'South Node':  { longitude: ((135 - 88) + 360) % 360 },
-  Earth:         { longitude: (((45 - 88) + 360) % 360 + 180) % 360 },
+  Sun: { longitude: (45 - 88 + 360) % 360 }, // ≈ 317°
+  Moon: { longitude: (135 - 88 + 360) % 360 }, // ≈ 47°
+  Mercury: { longitude: (75 - 88 + 360) % 360 },
+  Venus: { longitude: (105 - 88 + 360) % 360 },
+  Mars: { longitude: (165 - 88 + 360) % 360 },
+  Jupiter: { longitude: (195 - 88 + 360) % 360 },
+  Saturn: { longitude: (225 - 88 + 360) % 360 },
+  Uranus: { longitude: (255 - 88 + 360) % 360 },
+  Neptune: { longitude: (285 - 88 + 360) % 360 },
+  Pluto: { longitude: (345 - 88 + 360) % 360 },
+  "North Node": { longitude: (315 - 88 + 360) % 360 }, // ≈ 227°
+  "South Node": { longitude: (135 - 88 + 360) % 360 },
+  Earth: { longitude: (((45 - 88 + 360) % 360) + 180) % 360 },
 };
 
-function chartToLongitudeMap(chart: { planets: Record<string, { longitude: number }> }) {
+function chartToLongitudeMap(chart: {
+  planets: Record<string, { longitude: number }>;
+}) {
   return Object.fromEntries(
     Object.entries(chart.planets).map(([planet, position]) => [
       planet,
@@ -60,46 +62,48 @@ function chartToLongitudeMap(chart: { planets: Record<string, { longitude: numbe
   );
 }
 
-describe('RGP Prime Stack Calculation Engine', () => {
-  describe('Prime Stack Calculation', () => {
-    it('should calculate Prime Stack from two charts', () => {
+describe("RGP Prime Stack Calculation Engine", () => {
+  describe("Prime Stack Calculation", () => {
+    it("should calculate Prime Stack from two charts", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack).toBeDefined();
       expect(primeStack.positions).toBeDefined();
     });
 
-    it('should have 9 positions in Prime Stack', () => {
+    it("should have 9 positions in Prime Stack", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.positions.length).toBe(9);
     });
 
-    it('should build the canonical 26-activation lattice', () => {
+    it("should build the canonical 26-activation lattice", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.activations).toHaveLength(26);
     });
 
-    it('rejects missing conscious chart bodies instead of defaulting to zero longitudes', () => {
+    it("rejects missing conscious chart bodies instead of defaulting to zero longitudes", () => {
       const incompleteConscious = { ...sampleConscious };
       delete incompleteConscious.Moon;
 
-      expect(() => calculatePrimeStack(incompleteConscious, sampleDesign))
-        .toThrow(/Incomplete conscious Prime Stack chart.*Moon/);
+      expect(() =>
+        calculatePrimeStack(incompleteConscious, sampleDesign)
+      ).toThrow(/Incomplete conscious Prime Stack chart.*Moon/);
     });
 
-    it('rejects non-finite design chart longitudes before resolving positions', () => {
+    it("rejects non-finite design chart longitudes before resolving positions", () => {
       const invalidDesign = {
         ...sampleDesign,
         Sun: { longitude: Number.NaN },
       };
 
-      expect(() => calculatePrimeStack(sampleConscious, invalidDesign))
-        .toThrow(/Incomplete design Prime Stack chart.*Sun/);
+      expect(() => calculatePrimeStack(sampleConscious, invalidDesign)).toThrow(
+        /Incomplete design Prime Stack chart.*Sun/
+      );
     });
 
-    it('should build 26 activations from the real ephemeris validation vector', async () => {
+    it("should build 26 activations from the real ephemeris validation vector", async () => {
       const charts = await calculateBothCharts(
-        new Date('2024-01-01'),
-        '12:00:00',
+        new Date("2024-01-01"),
+        "12:00:00",
         0,
         0,
         0
@@ -115,7 +119,7 @@ describe('RGP Prime Stack Calculation Engine', () => {
       expect(primeStack.positions[2].codon).toBe(57);
     });
 
-    it('should assign VRC format codon256 IDs (<codon>-<facet>)', () => {
+    it("should assign VRC format codon256 IDs (<codon>-<facet>)", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const position of primeStack.positions) {
         // VRC format: "38-A", legacy format: "RC38-A" — both accepted
@@ -123,7 +127,7 @@ describe('RGP Prime Stack Calculation Engine', () => {
       }
     });
 
-    it('should assign codon numbers between 1 and 64', () => {
+    it("should assign codon numbers between 1 and 64", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const position of primeStack.positions) {
         expect(position.codon).toBeGreaterThanOrEqual(1);
@@ -131,14 +135,14 @@ describe('RGP Prime Stack Calculation Engine', () => {
       }
     });
 
-    it('should label positions with source (conscious or design)', () => {
+    it("should label positions with source (conscious or design)", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const sources = primeStack.positions.map(p => p.source);
-      expect(sources).toContain('conscious');
-      expect(sources).toContain('design');
+      expect(sources).toContain("conscious");
+      expect(sources).toContain("design");
     });
 
-    it('should calculate weighted frequencies (≥ 0)', () => {
+    it("should calculate weighted frequencies (≥ 0)", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const position of primeStack.positions) {
         expect(position.weightedFrequency).toBeGreaterThanOrEqual(0);
@@ -146,59 +150,65 @@ describe('RGP Prime Stack Calculation Engine', () => {
       }
     });
 
-    it('should allow weighted amplitudes above 100 for high-weight positions', () => {
+    it("should allow weighted amplitudes above 100 for high-weight positions", () => {
       const highBaseConscious = {
         ...sampleConscious,
         Sun: { longitude: 16.8 },
       };
       const primeStack = calculatePrimeStack(highBaseConscious, sampleDesign);
-      const consciousSun = primeStack.positions.find((position) => position.position === 1);
+      const consciousSun = primeStack.positions.find(
+        position => position.position === 1
+      );
 
       expect(consciousSun?.baseFrequency).toBeGreaterThan(95);
       expect(consciousSun?.weightedFrequency).toBeGreaterThan(100);
       expect(consciousSun?.weightedFrequency).toBeLessThanOrEqual(180);
     });
 
-    it('should identify dominant position (1–9)', () => {
+    it("should identify dominant position (1–9)", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.dominantPosition).toBeGreaterThanOrEqual(1);
       expect(primeStack.dominantPosition).toBeLessThanOrEqual(9);
     });
 
-    it('should calculate total weight > 0', () => {
+    it("should calculate total weight > 0", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.totalWeight).toBeGreaterThan(0);
     });
 
-    it('should map facets to A, B, C, or D', () => {
+    it("should map facets to A, B, C, or D", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const position of primeStack.positions) {
-        expect(['A', 'B', 'C', 'D']).toContain(position.facet);
+        expect(["A", "B", "C", "D"]).toContain(position.facet);
       }
     });
 
-    it('should include VRC Type and Authority', () => {
+    it("should include VRC Type and Authority", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
-      expect(['Reflector', 'Resonator', 'Catalyst', 'Harmonizer']).toContain(primeStack.vrcType);
+      expect(["Reflector", "Resonator", "Catalyst", "Harmonizer"]).toContain(
+        primeStack.vrcType
+      );
       expect(primeStack.vrcAuthority).toBeDefined();
     });
   });
 
-  describe('Circuit Links', () => {
-    it('should calculate circuit links between positions', () => {
+  describe("Circuit Links", () => {
+    it("should calculate circuit links between positions", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(primeStack.circuitLinks).toBeDefined();
       expect(Array.isArray(primeStack.circuitLinks)).toBe(true);
     });
 
-    it('should have valid link types', () => {
+    it("should have valid link types", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const link of primeStack.circuitLinks) {
-        expect(['harmonic', 'opposition', 'square', 'trine']).toContain(link.linkType);
+        expect(["harmonic", "opposition", "square", "trine"]).toContain(
+          link.linkType
+        );
       }
     });
 
-    it('should have strength values 0–100', () => {
+    it("should have strength values 0–100", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       for (const link of primeStack.circuitLinks) {
         expect(link.strength).toBeGreaterThanOrEqual(0);
@@ -207,39 +217,49 @@ describe('RGP Prime Stack Calculation Engine', () => {
     });
   });
 
-  describe('9-Center Resonance Map', () => {
-    it('should calculate 9-Center map', () => {
+  describe("9-Center Resonance Map", () => {
+    it("should calculate 9-Center map", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
       expect(nineCenter).toBeDefined();
     });
 
-    it('should have all 9 VRC centers', () => {
+    it("should have all 9 VRC centers", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
       expect(Object.keys(nineCenter).length).toBe(9);
     });
 
-    it('should include valid VRC center names', () => {
+    it("should include valid VRC center names", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
-      const validCenters = ['Crown','Ajna','Throat','G-Self','Heart','Solar Plexus','Sacral','Spleen','Root'];
+      const validCenters = [
+        "Crown",
+        "Ajna",
+        "Throat",
+        "G-Self",
+        "Heart",
+        "Solar Plexus",
+        "Sacral",
+        "Spleen",
+        "Root",
+      ];
       for (const [name] of Object.entries(nineCenter)) {
         expect(validCenters).toContain(name);
       }
     });
 
-    it('should include defined/open status for each center', () => {
+    it("should include defined/open status for each center", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
       for (const center of Object.values(nineCenter)) {
-        expect(typeof center.defined).toBe('boolean');
+        expect(typeof center.defined).toBe("boolean");
       }
     });
   });
 
-  describe('Fractal Role Calculation', () => {
-    it('should calculate fractal role', () => {
+  describe("Fractal Role Calculation", () => {
+    it("should calculate fractal role", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const role = calculateFractalRole(primeStack);
       expect(role.role).toBeDefined();
@@ -247,13 +267,15 @@ describe('RGP Prime Stack Calculation Engine', () => {
       expect(role.alignment).toBeDefined();
     });
 
-    it('should identify valid VRC role types', () => {
+    it("should identify valid VRC role types", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const role = calculateFractalRole(primeStack);
-      expect(['Reflector', 'Resonator', 'Catalyst', 'Harmonizer']).toContain(role.role);
+      expect(["Reflector", "Resonator", "Catalyst", "Harmonizer"]).toContain(
+        role.role
+      );
     });
 
-    it('should calculate alignment percentage 0–100', () => {
+    it("should calculate alignment percentage 0–100", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const role = calculateFractalRole(primeStack);
       expect(role.alignment).toBeGreaterThanOrEqual(0);
@@ -261,8 +283,8 @@ describe('RGP Prime Stack Calculation Engine', () => {
     });
   });
 
-  describe('Authority Node Calculation', () => {
-    it('should calculate authority node', () => {
+  describe("Authority Node Calculation", () => {
+    it("should calculate authority node", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const authority = calculateAuthorityNode(primeStack);
       expect(authority.node).toBeDefined();
@@ -270,29 +292,29 @@ describe('RGP Prime Stack Calculation Engine', () => {
       expect(authority.strength).toBeDefined();
     });
 
-    it('should identify valid position (1–9)', () => {
+    it("should identify valid position (1–9)", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const authority = calculateAuthorityNode(primeStack);
       expect(authority.position).toBeGreaterThanOrEqual(1);
       expect(authority.position).toBeLessThanOrEqual(9);
     });
 
-    it('should have non-negative strength', () => {
+    it("should have non-negative strength", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const authority = calculateAuthorityNode(primeStack);
       expect(authority.strength).toBeGreaterThanOrEqual(0);
     });
   });
 
-  describe('Validation', () => {
-    it('should validate Prime Stack integrity', () => {
+  describe("Validation", () => {
+    it("should validate Prime Stack integrity", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const validation = validatePrimeStack(primeStack);
       expect(validation.valid).toBe(true);
       expect(validation.errors.length).toBe(0);
     });
 
-    it('should detect missing positions', () => {
+    it("should detect missing positions", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       primeStack.positions = primeStack.positions.slice(0, 5);
       const validation = validatePrimeStack(primeStack);
@@ -301,15 +323,15 @@ describe('RGP Prime Stack Calculation Engine', () => {
     });
   });
 
-  describe('Prime Stack Summary', () => {
-    it('should generate Prime Stack summary string', () => {
+  describe("Prime Stack Summary", () => {
+    it("should generate Prime Stack summary string", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const summary = generatePrimeStackSummary(primeStack);
-      expect(typeof summary).toBe('string');
+      expect(typeof summary).toBe("string");
       expect(summary.length).toBeGreaterThan(0);
     });
 
-    it('should include all 9 position numbers in summary', () => {
+    it("should include all 9 position numbers in summary", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const summary = generatePrimeStackSummary(primeStack);
       for (let i = 1; i <= 9; i++) {
@@ -317,57 +339,57 @@ describe('RGP Prime Stack Calculation Engine', () => {
       }
     });
 
-    it('should include VRC Type in summary', () => {
+    it("should include VRC Type in summary", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const summary = generatePrimeStackSummary(primeStack);
-      expect(summary).toContain('VRC Type:');
+      expect(summary).toContain("VRC Type:");
     });
 
-    it('should include Authority in summary', () => {
+    it("should include Authority in summary", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const summary = generatePrimeStackSummary(primeStack);
-      expect(summary).toContain('Authority:');
+      expect(summary).toContain("Authority:");
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should handle different chart configurations', () => {
+  describe("Integration Tests", () => {
+    it("should handle different chart configurations", () => {
       const altConscious: Record<string, { longitude: number }> = {
-        Sun:          { longitude: 0 },
-        Moon:         { longitude: 90 },
-        Mercury:      { longitude: 120 },
-        Venus:        { longitude: 150 },
-        Mars:         { longitude: 180 },
-        Jupiter:      { longitude: 210 },
-        Saturn:       { longitude: 240 },
-        Uranus:       { longitude: 270 },
-        Neptune:      { longitude: 300 },
-        Pluto:        { longitude: 330 },
-        'North Node': { longitude: 270 },
-        'South Node': { longitude: 90 },
-        Earth:        { longitude: 180 },
+        Sun: { longitude: 0 },
+        Moon: { longitude: 90 },
+        Mercury: { longitude: 120 },
+        Venus: { longitude: 150 },
+        Mars: { longitude: 180 },
+        Jupiter: { longitude: 210 },
+        Saturn: { longitude: 240 },
+        Uranus: { longitude: 270 },
+        Neptune: { longitude: 300 },
+        Pluto: { longitude: 330 },
+        "North Node": { longitude: 270 },
+        "South Node": { longitude: 90 },
+        Earth: { longitude: 180 },
       };
       const altDesign: Record<string, { longitude: number }> = {
-        Sun:          { longitude: (360 - 88) % 360 },
-        Moon:         { longitude: (90 - 88 + 360) % 360 },
-        Mercury:      { longitude: (120 - 88 + 360) % 360 },
-        Venus:        { longitude: (150 - 88 + 360) % 360 },
-        Mars:         { longitude: (180 - 88 + 360) % 360 },
-        Jupiter:      { longitude: (210 - 88 + 360) % 360 },
-        Saturn:       { longitude: (240 - 88 + 360) % 360 },
-        Uranus:       { longitude: (270 - 88 + 360) % 360 },
-        Neptune:      { longitude: (300 - 88 + 360) % 360 },
-        Pluto:        { longitude: (330 - 88 + 360) % 360 },
-        'North Node': { longitude: (270 - 88 + 360) % 360 },
-        'South Node': { longitude: (90 - 88 + 360) % 360 },
-        Earth:        { longitude: ((360 - 88) + 180) % 360 },
+        Sun: { longitude: (360 - 88) % 360 },
+        Moon: { longitude: (90 - 88 + 360) % 360 },
+        Mercury: { longitude: (120 - 88 + 360) % 360 },
+        Venus: { longitude: (150 - 88 + 360) % 360 },
+        Mars: { longitude: (180 - 88 + 360) % 360 },
+        Jupiter: { longitude: (210 - 88 + 360) % 360 },
+        Saturn: { longitude: (240 - 88 + 360) % 360 },
+        Uranus: { longitude: (270 - 88 + 360) % 360 },
+        Neptune: { longitude: (300 - 88 + 360) % 360 },
+        Pluto: { longitude: (330 - 88 + 360) % 360 },
+        "North Node": { longitude: (270 - 88 + 360) % 360 },
+        "South Node": { longitude: (90 - 88 + 360) % 360 },
+        Earth: { longitude: (360 - 88 + 180) % 360 },
       };
       const primeStack = calculatePrimeStack(altConscious, altDesign);
       expect(primeStack.positions.length).toBe(9);
       expect(primeStack.dominantPosition).toBeGreaterThanOrEqual(1);
     });
 
-    it('should return consistent results for identical inputs', () => {
+    it("should return consistent results for identical inputs", () => {
       const ps1 = calculatePrimeStack(sampleConscious, sampleDesign);
       const ps2 = calculatePrimeStack(sampleConscious, sampleDesign);
       expect(ps1.dominantPosition).toBe(ps2.dominantPosition);
@@ -377,7 +399,7 @@ describe('RGP Prime Stack Calculation Engine', () => {
       }
     });
 
-    it('should generate complete diagnostic from Prime Stack', () => {
+    it("should generate complete diagnostic from Prime Stack", () => {
       const primeStack = calculatePrimeStack(sampleConscious, sampleDesign);
       const nineCenter = calculate9CenterMap(primeStack);
       const role = calculateFractalRole(primeStack);
