@@ -36,12 +36,23 @@ import AdminSignatureLetters from "./pages/AdminSignatureLetters";
 import OrbPreview from "./pages/OrbPreview";
 import OracleDetail from "./pages/OracleDetail";
 import NatalProfile from "./pages/NatalProfile";
+import Maintenance from "./pages/Maintenance";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useEffect } from "react";
 
+// Site-wide maintenance mode: while true, every route renders the
+// maintenance page and nothing else. Flip to false to restore normal
+// routing.
+const MAINTENANCE_MODE = true;
+
 function Router() {
+  if (MAINTENANCE_MODE) {
+    return <Maintenance />;
+  }
+
   return (
     <Switch>
+      <Route path={"/maintenance"} component={Maintenance} />
       <Route path={"/orb-preview"} component={OrbPreview} />
       <Route
         path={"/admin/signature-letters"}
