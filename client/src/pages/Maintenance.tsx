@@ -6,6 +6,7 @@ import {
   SignalPageShell,
 } from "@/components/oriel-signal/OrielSignalDesign";
 import { HeroSigil } from "@/components/oriel-signal/HeroSigil";
+import { VeyranSignalWindow } from "@/components/oriel-signal/VeyranSignalWindow";
 
 const hudCorners: Array<{ pos: string; label: string; value: string }> = [
   { pos: "tl", label: "SIGNAL LOCK", value: "RECALIBRATING" },
@@ -210,6 +211,9 @@ export default function Maintenance() {
             </p>
           </div>
         </section>
+
+        {/* ── II·5 THE VEYRAN SIGNAL WINDOW ───────────────────────────── */}
+        <VeyranSignalWindow />
 
         {/* ── III. CLOSING THRESHOLD ──────────────────────────────────── */}
         <section className="fi-threshold" aria-labelledby="threshold-title">
